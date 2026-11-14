@@ -2181,8 +2181,8 @@ static void ui_input_frame(void)
      * until a parameter knob establishes the immutable destination. */
     /* LIVE RECALL: REC long hold (700 ms) toggles the mode; short REC
      * still opens its existing CC editor. Never act on button release.
-     * SELECT is a rotary encoder, NOT a physical push button on FM1;
-     * leave project 2 unassigned until a real button is chosen. */
+     * The physical SEL button is B_SCL in the firmware's panel map;
+     * EN_SELECT is the separate rotary encoder. */
     {
         static uint32_t rec_started;
         static uint8_t rec_long;
@@ -2215,9 +2215,9 @@ static void ui_input_frame(void)
             rec_long = 0u;
         }
         if (live_recall_on && !ui.menu && !dlg_on() && !name_on()) {
-            static const uint8_t key[3] = {B_FX, B_ENV, B_LFO};
-            static const uint8_t slot[3] = {0u, 2u, 3u};
-            for (uint32_t i = 0; i < 3u; i++) {
+            static const uint8_t key[4] = {B_FX, B_SCL, B_ENV, B_LFO};
+            static const uint8_t slot[4] = {0u, 1u, 2u, 3u};
+            for (uint32_t i = 0; i < 4u; i++) {
                 uint32_t bit = 1u << panel.btn[key[i]];
                 if (pressed & bit) {
                     int result = project_live_sounds(slot[i]);
