@@ -1852,6 +1852,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
 
 /* the picked action would do something now (OCT+ breathes): another pattern, a used slot, stopped for
  * a flash write, steps to clear */
+static int project_clear_slot(uint32_t slot); /* project.c is included after ui_input.c */
 static int act_ready(void)
 {
     uint32_t c = act_col(), s = song.sel, id;
