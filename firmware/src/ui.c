@@ -1860,9 +1860,16 @@ static int act_ready(void)
     if (cur_page()->graph == GR_MOTION) return !chain_busy() && motion_count(TSEL);
     if (cur_page()->graph == GR_EVENTS) return ev_act_ready();
     if (cur_page()->graph == GR_LYRIC) return 1;
-    if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
+    if (cur_page()->graph == GR_TOOLS) {
+#if FELUCCA_NO_SEQUENCER
+        /* SLOT is independent of the song chain. A saved project can be
+         * cleared even when ARRANGE is empty; never arm an empty slot. */
+        if (c == 3u)
+            return !chain_busy() && project_used((uint32_t)song.g[G_SLOT] - 1u);
+#endif
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u || c >= 4u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);
+    }
     if (cur_page()->graph == GR_SONG)
         return !chain_busy() && chain_config.count < CHAIN_ROWS;
     if (cur_page()->graph == GR_PATS)
