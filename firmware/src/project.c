@@ -2124,6 +2124,29 @@ static int project_save_as(uint32_t slot, const char *name)
     ui_message("SAVED (NO FLASH)");
     return 0;
 }
+/* Clear only the selected section of the current song. Persist an invalid
+ * zeroed store so the slot stays empty across reboot and flash reload. */
+static int project_clear_slot(uint32_t slot)
+{
+    if (slot >= 4u) return 1;
+    if (transport_busy()) { ui_message("STOP TO CLEAR"); return 1; }
+#if FELUCCA_FLASH
+    if (flash_ok) {
+        memset(&proj_wire, 0, sizeof proj_wire);
+        proj_wire_gen++;
+        if (st_save(proj_obj(slot), &proj_wire, sizeof proj_wire)) {
+            ui_message("CLEAR ERROR");
+            return 1;
+        }
+    }
+#endif
+    memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
+    live.dirty &= (uint8_t)~(1u << slot);
+    if (proj_cur == slot) proj_cur = PROJ_NO_SLOT;
+    ui_message("PROJECT SLOT CLEARED");
+    ui.force = 1u;
+    return 0;
+}
 static int project_save(uint32_t slot) { return project_save_as(slot, 0); }
 static void project_cur_name(char *b) { str_cpy(b, proj_name, PROJ_NAME_LEN + 1u); }   /* b: 13 bytes */
 
