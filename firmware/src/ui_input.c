@@ -2198,6 +2198,7 @@ static void ui_input_frame(void)
             live_recall_on ^= 1u;
             ui.rec_t0 |= 2u; /* prevent REC tap/layer action on release */
             cm_ui_open = 0u;
+            ui.ly = 0u; ui.ly_t0 = 0u;
             ui.drum_map_open = ui.drum_perf_open = 0u;
             ui_message(live_recall_on ? "LIVE RECALL ON" : "LIVE RECALL OFF");
             ui.force = 1u;
@@ -2436,7 +2437,11 @@ static void ui_input_frame(void)
     layer_oct_open(pressed);                            /* (OCT± with a SET layer's button down: it opens now) */
     oct = oct_taps(pressed, ui.menu || ui.confirm || act_cols() || name_on() || layer_set_open());
     oct = layer_oct(pressed, oct);                      /* (a SET layer's OCT-: put back) */
-    layer_masks();                                      /* seq.c: keys pressed with a layer's button are its own */
+    layer_masks();
+#if FELUCCA_NO_SEQUENCER
+    /* Recall keys must never steal keyboard notes for their quick layers. */
+    if (live_recall_on) kb_mask = perf_mask = fx_lock_on = 0u;
+#endif                                      /* seq.c: keys pressed with a layer's button are its own */
     live_frame();                                       /* (0.9.11) GLO > LIVE: MANO's keys, OCT- held, the modifiers */
     {   /* (0.6.67) a button held + SELECT (rule 5): its dice (HOME the generator, GEN; EDIT the sound, SEQ the sequence,
          * LFO the LFO, FX the effects; GLO + SELECT the tempo), ENV SCL ARP SAVE their chain (nav_jump); the button's tap
