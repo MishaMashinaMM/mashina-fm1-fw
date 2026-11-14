@@ -15,6 +15,9 @@ static const engine_t *trk_engp(const track_t *t) { return ENGINES[trk_eng(t)]; 
 static int project_save(uint32_t slot);
 static void panel_setup(void);
 static void project_load(uint32_t slot);
+#if FELUCCA_NO_SEQUENCER
+static int project_live_sounds(uint32_t slot);
+#endif
 static int section_jump(uint32_t s);    /* (song_main.c: 0.6.80, channel 16's PROGRAM CHANGE) */
 static int song_select(uint32_t n);
 static void undo_mark(void);                    /* (0.6.21) project.c: the music before a change, */
