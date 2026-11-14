@@ -1442,7 +1442,13 @@ static void draw_columns(void)
         return;
     }
     if (cur_page()->graph == GR_TOOLS) {
-        static const char *const labels[] = {"PAT", "SOUND", "ROW", "SONG"};
+        static const char *const labels[] = {"PAT", "SOUND", "ROW",
+#if FELUCCA_NO_SEQUENCER
+            "SLOT"
+#else
+            "SONG"
+#endif
+        };
         static const uint8_t icons[] = {ICON_AUTO, ICON_AUTO, ICON_X_SONG, ICON_X_SONG};   /* ROW, SONG: the song's */
         for (c = 0; c < 4u; c++) draw_act_column(c, labels[c], VAL(c), icons[c]);
         return;
@@ -1838,6 +1844,11 @@ static void confirm_text(char *a, char *b)
         break;
     case CF_DEL_ROW:
         str_cpy(a, "DELETE SONG ROW?", 24);
+        break;
+    case CF_CLEAR_SLOT:
+        str_cpy(a, "CLEAR PROJECT SLOT A?", 24);
+        a[19] = (char)('A' + (k & 3u));
+        str_cpy(b, "SAVED SOUND WILL BE LOST", 24);
         break;
     case CF_CLEAR_SONG:
         str_cpy(a, "CLEAR SONG ORDER?", 24);
