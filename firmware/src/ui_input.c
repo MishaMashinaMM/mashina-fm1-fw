@@ -1269,10 +1269,10 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (pg->graph == GR_TOOLS) {                          /* (0.6.25) TOOLS: a list, any knob (and PRESETS) moves the
                                                          * pick down / up; OCT+ does it (its dialog first) */
 #if FELUCCA_NO_SEQUENCER
-        /* Keep the original action IDs: only INIT SOUND, NEW PROJECT and CPU TEST are exposed. */
-        int32_t pos = ui.act == 2u ? 1 : ui.act == 5u ? 2 : ui.act == 6u ? 3 : 0;
-        pos = clamp(pos + (steps > 0 ? 1 : -1), 0, 3);
-        ui.act = (uint8_t)(pos == 1 ? 2 : pos == 2 ? 5 : pos == 3 ? 6 : 0);
+        /* INIT SOUND, CLEAR SLOT, NEW PROJECT and CPU TEST. */
+        int32_t pos = ui.act == 2u ? 1 : ui.act == 4u ? 2 : ui.act == 5u ? 3 : ui.act == 6u ? 4 : 0;
+        pos = clamp(pos + (steps > 0 ? 1 : -1), 0, 4);
+        ui.act = (uint8_t)(pos == 1 ? 2 : pos == 2 ? 4 : pos == 3 ? 5 : pos == 4 ? 6 : 0);
 #else
         ui.act = steps < 0 && ui.act <= 1u ? 0u : (uint8_t)clamp((int32_t)ui.act + (steps > 0 ? 1 : -1), 1, 6);   /* (left
                                                          * past the first: none picked) */
@@ -1393,7 +1393,13 @@ static void act_do(void)
             return;
         }
         confirm_open(c == 0u ? CF_CLEAR_SEQ : c == 1u ? CF_INIT_SOUND : c == 2u ? CF_DEL_ROW : c == 4u ? CF_INIT_SYS :
-                     c == 5u ? CF_CPU_TEST : CF_CLEAR_SONG, c == 2u ? ui.song_row : song.sel);
+                     c == 5u ? CF_CPU_TEST :
+#if FELUCCA_NO_SEQUENCER
+                     CF_CLEAR_SLOT,
+#else
+                     CF_CLEAR_SONG,
+#endif
+                     c == 2u ? ui.song_row : (uint32_t)song.g[G_SLOT] - 1u);
         return;
     }
     if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row after the
@@ -2594,7 +2600,7 @@ static void ui_input_frame(void)
             ui.confirm = 0;
             ui.force = 1;
             if (kind != CF_OVR_PROJ && kind != CF_OVR_USER && kind != CF_ERASE_USER && kind != CF_DICE_ALL &&
-                !dice_kind(kind) && kind != CF_DEL_ROW && kind != CF_CLEAR_SONG && !chain_busy())
+                !dice_kind(kind) && kind != CF_DEL_ROW && kind != CF_CLEAR_SONG && kind != CF_CLEAR_SLOT && !chain_busy())
                 undo_mark();                            /* (0.6.21) the music before a clear, INIT, RECALL, pattern */
             if (kind == CF_OVR_PROJ) {                  /* overwrite: the NAME screen writes it */
                 name_open(NK_PROJ_SAVE, ui.confirm_trk & 3u);
@@ -2624,6 +2630,8 @@ static void ui_input_frame(void)
                     if (ui.song_row > chain_config.count) ui.song_row = chain_config.count;
                     ui_message("ROW DELETED");
                 }
+            } else if (kind == CF_CLEAR_SLOT) {
+                if (!chain_busy()) (void)project_clear_slot(ui.confirm_trk & 3u);
             } else if (kind == CF_CLEAR_SONG) {
                 if (!chain_busy()) {
                     chain_defaults(&chain_config);
