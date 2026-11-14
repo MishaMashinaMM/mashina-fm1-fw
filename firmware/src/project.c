@@ -2265,6 +2265,31 @@ static void sound_put(project_t *p, uint32_t k)
     ui.force = 1;
 }
 
+/* LIVE PROJECT RECALL, stage 1: sound-only project source, no persistent writes.
+ * Return 0 for a valid sound recall, 1 for an empty slot, 2 for invalid data.
+ * The input handler must perform a synchronous hard voice reset before calling
+ * this routine. In particular, panic_req alone is not a hard-reset guarantee.
+ * Do not wire this to performance buttons until that reset is verified. */
+static int project_live_sounds(uint32_t slot)
+{
+    project_t *p = &proj_scratch;
+    uint32_t k;
+    if (slot >= 4u) return 2;
+#if FELUCCA_FLASH
+    if (flash_ok && !proj_import(p, &proj_slot[slot], sizeof(project_store_t)))
+        proj_fetch(slot);
+#endif
+    if (!proj_import(p, &proj_slot[slot], sizeof(project_store_t)))
+        return 1;
+    proj_bound(p);
+    if (!proj_ok(p) || !proj_engines_ok(p))
+        return 2;
+    /* sound_put uses proj_scratch, retaining all non-sound project settings. */
+    for (k = 0; k < NTRK; k++)
+        sound_put(p, k);
+    return 0;
+}
+
 /* (0.6.52) a section's FUGUE settings into the heads' (fugue.c fg_set) */
 static void fg_load(const project_t *p)
 {
