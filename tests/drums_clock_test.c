@@ -134,12 +134,15 @@ static int live_only_ui_test(void)
     turn(EN_K1, 1);
     int first = ui.act == 2u;
     turn(EN_K1, 1);
-    int second = ui.act == 5u;
+    int second = ui.act == 4u;
     turn(EN_K1, 1);
-    int third = ui.act == 6u;
+    int third = ui.act == 5u;
     turn(EN_K1, 1);
-    bad += check("DRUMS: TOOLS offers INIT SOUND, NEW PROJECT, CPU TEST only",
-                 first && second && third && ui.act == 6u && str_eq(act_name(5u), "RUN"));
+    int fourth = ui.act == 6u;
+    turn(EN_K1, 1);
+    bad += check("DRUMS: TOOLS offers INIT SOUND, CLEAR SLOT, NEW PROJECT, CPU TEST",
+                 first && second && third && fourth && ui.act == 6u &&
+                 str_eq(act_name(3u), "CLEAR") && str_eq(act_name(5u), "RUN"));
     uint32_t old_mode = live.mode;
     uint32_t old_rec = live.srec;
     song_key(SK_MODE);
