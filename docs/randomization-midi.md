@@ -4,8 +4,8 @@ Status: MIDI dispatch, saved-project sound recall and dedicated regression tests
 
 ## Commands
 - Incoming MIDI channel 13 targets physical track T1; channel 14 T2; channel 15 T3, independent of each track's note RX channel.
-- CC85: Slight, select up to two distinct eligible parameters; each independently gets a random signed 15–30 point offset.
-- CC86: Hard, select up to three distinct eligible parameters; each independently gets a random signed 30–60 point offset.
+- CC85: Slight, select up to two distinct eligible parameters; each independently gets a random signed 20–60 point offset.
+- CC86: Hard, select up to three distinct eligible parameters; each independently gets a random signed 40–90 point offset.
 - CC87: reload only the targeted track's sound and engine from its last explicitly saved project slot, including undoing all manual edits. Existing mix/performance settings and global effects stay untouched.
 - CC85/86 operate only on eligible melodic engines. CC87 may restore a saved melodic engine after an unsaved engine change, even if that change was to a drum engine. A saved DRUM-X or DRUM-LAB track is excluded.
 - Repeated mutation of a selected parameter always uses its saved baseline, NOT its already mutated live value. Parameters not selected by the current trigger retain their current live values.
