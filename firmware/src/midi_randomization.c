@@ -83,6 +83,7 @@ static uint8_t random_baseline_valid[3];
 static uint32_t random_last_ms[3][3];
 static uint8_t random_pad_held[3][3];
 static uint32_t random_seed = 0xA3C59AC3u;
+static uint8_t random_seed_ready;
 static volatile uint8_t random_ui_dirty;
 static volatile uint8_t random_reset_pending;
 /* The saved section used for each track; 0xff means there is no saved sound. */
@@ -151,6 +152,12 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
     if (!random_baseline_valid[k] || random_saved_slot[k] >= 4u ||
         random_baseline_engine[k] != t->eng_req)
         return;
+    /* A human pad's first press timing diversifies the sequence across boots,
+     * while keeping all subsequent choices deterministic for host regressions. */
+    if (!random_seed_ready) {
+        random_seed ^= (fm1_ms + 1u) * 0x9e3779b9u;
+        random_seed_ready = 1u;
+    }
     n = random_sound_pool(t, pool, sizeof pool);
     take = cmd == 0u ? 2u : 3u;
     if (take > n) take = n;
