@@ -2937,7 +2937,7 @@ static int project_used(uint32_t slot) { return proj_import(&proj_scratch, &proj
 
 /* (0.8.5) SAVE > LIBRARY: project n's sections stored (a bit each) and its section A's name (b, PROJ_NAME_LEN + 1),
  * from the flash: the newer valid header of each section's two copies, and the name's 12 bytes of section A's
- * payload (today's 3840-byte store; an older one: no name). Validate the A/B payload CRC and project magic, not just the header. The UI scans one project per frame. The project open: its RAM copy */
+ * payload (today's 3840-byte store; an older one: no name). Validate the A/B payload CRC and the actual project importer, not just the header. The UI scans one project per frame. The project open: its RAM copy */
 static uint32_t lib_scan(uint32_t n, char *b)
 {
     uint32_t k, m = 0;
@@ -2955,19 +2955,12 @@ static uint32_t lib_scan(uint32_t n, char *b)
     for (k = 0; k < 4u; k++) {
         uint32_t obj = n ? OBJ_SONG1 + (n - 1u) * 4u + k : OBJ_PROJECT0 + k;
         st_hdr_t h;
-        uint32_t first;
-        /* The overview must agree with proj_fetch(): a header alone (or a
-         * nonzero payload sentinel) cannot establish a valid saved section.
-         * st_current checks payload CRC and falls back to the older A/B copy
-         * if the newer one is damaged. The first word must also identify a
-         * supported project format, not a CLEAR SLOT tombstone. */
-        if (st_current(obj, &h) < 0 || h.len < sizeof first)
-            continue;
-        memcpy(&first, st_buf, sizeof first);
-        if (first != PROJ_MAGIC && first != PROJ_MAGIC_VB && first != PROJ_MAGIC_VA &&
-            first != PROJ_MAGIC_V9 && first != PROJ_MAGIC_V8 && first != PROJ_MAGIC_V7 &&
-            first != PROJ_MAGIC_V6 && first != PROJ_MAGIC_V5 && first != PROJ_MAGIC_V4 &&
-            first != PROJ_MAGIC_V3 && first != PROJ_MAGIC_V2 && first != PROJ_MAGIC_V1)
+        /* Match the same format, checksum and engine validation used when
+         * selecting a project. A CRC-valid flash payload with a recognizable
+         * magic is not necessarily a loadable project (e.g. old layouts).
+         * st_current has already loaded the winning A/B payload in st_buf. */
+        if (st_current(obj, &h) < 0 ||
+            !proj_import(&proj_scratch, st_buf, (int)h.len))
             continue;
         m |= 1u << k;
         if (!k && h.len == PROJ_STORE_SIZE) {
