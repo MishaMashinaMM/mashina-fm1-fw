@@ -140,9 +140,9 @@ int main(void)
         int32_t d = (int32_t)t->p[pool[i]] - 64;
         if (!d) continue;
         changed++;
-        if ((d < 0 ? -d : d) < 15 || (d < 0 ? -d : d) > 30) valid = 0;
+        if ((d < 0 ? -d : d) < 20 || (d < 0 ? -d : d) > 60) valid = 0;
     }
-    bad += check("CC85 changes exactly two distinct eligible sound parameters by 15..30",
+    bad += check("CC85 changes exactly two distinct eligible sound parameters by 20..60",
                  changed == 2 && valid);
     bad += check("MIDI channel 13 always targets only physical track 1",
                  !memcmp(trk[1].p, t2_before, sizeof t2_before) &&
@@ -178,7 +178,7 @@ int main(void)
     bad += check("MIDI randomization never writes the stored project",
                  !memcmp(&saved_snapshot, &proj_slot[0], sizeof saved_snapshot));
 
-    /* Hard randomization draws three distinct slots with 30..60 offsets. */
+    /* Hard randomization draws three distinct slots with 40..90 offsets. */
     changed = 0;
     valid = 1;
     random_cc_test(13u, 86u, 127u);
@@ -186,9 +186,9 @@ int main(void)
         int32_t d = (int32_t)t->p[pool[i]] - 64;
         if (!d) continue;
         changed++;
-        if ((d < 0 ? -d : d) < 30 || (d < 0 ? -d : d) > 60) valid = 0;
+        if ((d < 0 ? -d : d) < 40 || (d < 0 ? -d : d) > 90) valid = 0;
     }
-    bad += check("CC86 changes exactly three distinct eligible parameters by 30..60",
+    bad += check("CC86 changes exactly three distinct eligible parameters by 40..90",
                  changed == 3 && valid);
     random_cc_test(13u, 87u, 0u);
     random_cc_test(13u, 87u, 127u);
