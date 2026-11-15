@@ -12,7 +12,7 @@ static int random_sound_param(const track_t *t, uint32_t id)
     if (id == P_DIST)
         return 1;
     if (id == P_FCUT || id == P_FRES)
-        return e != ENGI_FM6; /* FM6 uses its own operator-based tone shaping. */
+        return e != 12u; /* FM6 uses its own operator-based tone shaping. */
     if (id == P_MORPH)
         return e == ENGI_ANALOG || e == ENGI_PHASE || e == ENGI_LOFI;
     if (id < P_E0 || id > P_E7)
@@ -42,7 +42,7 @@ static int random_sound_param(const track_t *t, uint32_t id)
     case ENGI_ANIMAL:
         /* Mode-dependent controls: only stable continuous tonal slots. */
         return id == P_E1 || id == P_E2 || (mode == 0u && id == P_E3);
-    case ENGI_FM6:
+    case 12u:
         return 0; /* FM6's EDIT macros are signed, pitch or patch selectors. */
     default:
         return 0;
