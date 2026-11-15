@@ -1848,7 +1848,7 @@ static void confirm_text(char *a, char *b)
     case CF_CLEAR_SLOT:
         str_cpy(a, "CLEAR PROJECT SLOT A?", 24);
         a[19] = (char)('A' + (k & 3u));
-        str_cpy(b, "SAVED SOUND WILL BE LOST", 24);
+        str_cpy(b, "SAVED SOUND WILL BE LOST", 32);
         break;
     case CF_CLEAR_SONG:
         str_cpy(a, "CLEAR SONG ORDER?", 24);
