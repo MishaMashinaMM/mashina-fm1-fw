@@ -310,10 +310,15 @@ static uint32_t ml_id(uint32_t code)        /* an entry's code -> P_* id, P_COUN
 {
     return code >= ML_E0 ? P_E0 + code - ML_E0 : code && code <= P_E0 ? code - 1u : P_COUNT;
 }
+#include "midi_randomization.c"
+
+/* Reserved on every channel for the dedicated live sound randomization commands. */
+static int midi_random_cc(uint32_t cc) { return cc >= 85u && cc <= 87u; }
+
 static int ml_free_cc(uint32_t cc)
 {
     uint32_t i;
-    if (cc < 2u || cc == 6u || cc == 11u || cc == 32u || cc == 38u || cc == 64u || (cc >= 96u && cc <= 101u) || cc >= 120u)
+    if (midi_random_cc(cc) || cc < 2u || cc == 6u || cc == 11u || cc == 32u || cc == 38u || cc == 64u || (cc >= 96u && cc <= 101u) || cc >= 120u)
         return 0;
     for (i = 0; i < NELEM(MIDI_CC_MAP); i++)
         if (MIDI_CC_MAP[i][0] == cc)
@@ -389,6 +394,12 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
 {
     midi_channel_t *c = midi_channel(ch);
     uint32_t i, mask;
+    /* Until the dedicated command handler is installed, swallow reserved CCs
+     * before REC capture, legacy MIDI LEARN, macros, and the standard map. */
+    if (midi_random_cc(cc)) {
+        random_command(ch, cc, value);
+        return;
+    }
 #if FELUCCA_NO_SEQUENCER
     if (cm_wait == 1u) {                              /* REC > ADD: capture CC and its actual incoming channel */
         if (ml_free_cc(cc)) {
@@ -511,6 +522,12 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
     uint32_t i, mask;
     if (st == 0xC0u && ch == 15u) {
         midi_song_req = (uint8_t)(d1 + 1u);
+        return;
+    }
+    /* Reserved live commands bypass normal note RX masks entirely. They must
+     * also bypass mod_midi, MIDI Learn and REC macros on ALL 16 channels. */
+    if (st == 0xB0u && midi_random_cc(d1)) {
+        midi_control(ch, d1, d2);
         return;
     }
     mask = midi_route_mask(ch);
