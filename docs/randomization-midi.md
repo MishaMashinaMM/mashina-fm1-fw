@@ -1,13 +1,13 @@
 # MIDI sound randomization — implementation specification
 
-Status: initial MIDI dispatch, eligibility, mutation and baseline integration committed on this branch. CI compilation and hardware behavior are not yet verified.
+Status: MIDI dispatch, saved-project sound recall and dedicated regression tests implemented on this branch. The emulator build, smoke test, dedicated MIDI tests and existing live-drum tests have passed GitHub Actions. Physical FM1 firmware and hardware pad behavior have not yet been verified.
 
 ## Commands
 - Incoming MIDI channel 13 targets physical track T1; channel 14 T2; channel 15 T3, independent of each track's note RX channel.
 - CC85: Slight, select up to two distinct eligible parameters; each independently gets a random signed 15–30 point offset.
 - CC86: Hard, select up to three distinct eligible parameters; each independently gets a random signed 30–60 point offset.
-- CC87: reset only the targeted track's sound to the project's saved baseline.
-- Commands are for active melodic engines only; DRUM-X and DRUM-LAB must be ignored.
+- CC87: reload only the targeted track's sound and engine from its last explicitly saved project slot, including undoing all manual edits. Existing mix/performance settings and global effects stay untouched.
+- CC85/86 operate only on eligible melodic engines. CC87 may restore a saved melodic engine after an unsaved engine change, even if that change was to a drum engine. A saved DRUM-X or DRUM-LAB track is excluded.
 - Repeated mutation of a selected parameter always uses its saved baseline, NOT its already mutated live value. Parameters not selected by the current trigger retain their current live values.
 - Clamp resulting values to 0..127. Never select more parameters than are eligible; an empty pool is a no-op.
 
@@ -42,11 +42,14 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 
 ## Baseline integration
 - Successful explicit project saves refresh the baseline for T1..T3.
-- Full project restore and nonempty Live Recall refresh the baseline.
-- First use after an engine change captures the then-current sound; review other individual sound-load pathways before release.
-- Reset preserves parameters designated by `param_kept` (mix/performance settings).
+- Explicit project load, nonempty Live Recall, and individual saved-sound recall establish per-track saved origins.
+- No unsaved engine or preset change replaces the saved baseline. Randomization on a different unsaved engine is ignored until the saved sound returns or another explicit save occurs.
+- CC87 queues a main-thread call to the existing `project_recall_sound` / `sound_put` code, restoring the saved engine, FM6 patch when applicable and sound parameters while retaining mix/performance settings.
+- Clearing a saved slot invalidates any randomization baseline that references it. A project restored only from automatic unsaved recovery is not implicitly treated as an explicit save.
 - No auto-save is requested by the MIDI command handler.
 
 ## Validation
 - Branch-specific GitHub Actions workflow: `.github/workflows/randomization-midi.yml`.
-- This workflow builds the emulator and runs existing live-drum regression tests; no test success is claimed until CI results are available.
+- This workflow compiles the emulator, runs its smoke test, runs `tests/randomization_midi_test.c`, and runs the existing live-drum regression suite.
+- Successful run #11: https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43749851627
+- Hardware behavior and native device firmware build still need verification before release.
