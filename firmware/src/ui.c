@@ -15,6 +15,9 @@ static const engine_t *trk_engp(const track_t *t) { return ENGINES[trk_eng(t)]; 
 static int project_save(uint32_t slot);
 static void panel_setup(void);
 static void project_load(uint32_t slot);
+#if FELUCCA_NO_SEQUENCER
+static int project_live_sounds(uint32_t slot);
+#endif
 static int section_jump(uint32_t s);    /* (song_main.c: 0.6.80, channel 16's PROGRAM CHANGE) */
 static int song_select(uint32_t n);
 static void undo_mark(void);                    /* (0.6.21) project.c: the music before a change, */
@@ -337,7 +340,7 @@ static uint16_t val_col(uint32_t c) { return c == ui.hot_col && ui.hot_t ? T_ACC
 enum { CF_NONE, CF_CLEAR_SEQ, CF_CLEAR_TRK, CF_OVR_PROJ, CF_OVR_USER, CF_LOAD_PAT,
        CF_DEL_ROW, CF_CLEAR_SONG, CF_INIT_SOUND, CF_CLEAR_MOTION, CF_ERASE_USER, CF_CLEAR_PFX,
        CF_RECALL_SOUND, CF_CLEAR_ALL, CF_DICE_ALL, CF_INIT_SYS, CF_DICE_SOUND, CF_DICE_SEQ, CF_DICE_LFO,
-       CF_DICE_FX, CF_CPU_TEST, CF_MUT_BACK, CF_LIVE_COMMIT };   /* ui.confirm: TOOLS' clears; (0.6.21) HOME + SELECT:
+       CF_DICE_FX, CF_CPU_TEST, CF_MUT_BACK, CF_LIVE_COMMIT, CF_CLEAR_SLOT };   /* ui.confirm: TOOLS' clears; (0.6.21) HOME + SELECT:
                                    * everything diced; (0.6.65) EDIT + SELECT: keep the diced sound?; (0.6.67) SEQ / LFO / FX + SELECT:
                                    * keep the diced sequence / LFO / effects?;
                                    * SAVE over a used slot; a pattern over the user's steps;
@@ -1833,6 +1836,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
     if (cur_page()->graph == GR_TOOLS) {
 #if FELUCCA_NO_SEQUENCER
         if (c == 5u) return "RUN";
+        if (c == 3u) return "CLEAR";
 #endif
         static const char *const actions[] = {"CLEAR", "INIT", "DELETE", "CLEAR", "INIT"};
         return actions[c < 5u ? c : 4u];
@@ -1848,6 +1852,7 @@ static const char *act_name(uint32_t c)          /* column c's action (the foote
 
 /* the picked action would do something now (OCT+ breathes): another pattern, a used slot, stopped for
  * a flash write, steps to clear */
+static int project_clear_slot(uint32_t slot); /* project.c is included after ui_input.c */
 static int act_ready(void)
 {
     uint32_t c = act_col(), s = song.sel, id;
@@ -1856,9 +1861,16 @@ static int act_ready(void)
     if (cur_page()->graph == GR_MOTION) return !chain_busy() && motion_count(TSEL);
     if (cur_page()->graph == GR_EVENTS) return ev_act_ready();
     if (cur_page()->graph == GR_LYRIC) return 1;
-    if (cur_page()->graph == GR_TOOLS)                  /* one case per column: CLEAR PAT, INIT, DELETE ROW, CLEAR SONG */
+    if (cur_page()->graph == GR_TOOLS) {
+#if FELUCCA_NO_SEQUENCER
+        /* SLOT is independent of the song chain. A saved project can be
+         * cleared even when ARRANGE is empty; never arm an empty slot. */
+        if (c == 3u)
+            return !chain_busy() && project_used((uint32_t)song.g[G_SLOT] - 1u);
+#endif
         return !chain_busy() && (c == 0u ? !seq_is_empty(TSEL) || motion_count(TSEL) : c == 1u || c >= 4u ? 1 :
                                  c == 2u ? ui.song_row < chain_config.count : chain_config.count != 0u);
+    }
     if (cur_page()->graph == GR_SONG)
         return !chain_busy() && chain_config.count < CHAIN_ROWS;
     if (cur_page()->graph == GR_PATS)

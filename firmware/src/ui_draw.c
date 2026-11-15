@@ -1442,9 +1442,20 @@ static void draw_columns(void)
         return;
     }
     if (cur_page()->graph == GR_TOOLS) {
+#if FELUCCA_NO_SEQUENCER
+        static const char *const labels[] = {"SOUND", "SLOT", "PROJECT", "CPU"};
+        static const uint8_t actions[] = {2u, 4u, 5u, 6u};
+        for (c = 0; c < 4u; c++) {
+            int picked = ui.act == actions[c];
+            card_arm_next = (uint8_t)picked;
+            draw_column(c, labels[c], picked ? "OCT+" : "", "",
+                        picked ? (act_ready() ? T_TEXT : T_DIM) : VAL(c), -1, ICON_AUTO);
+        }
+#else
         static const char *const labels[] = {"PAT", "SOUND", "ROW", "SONG"};
-        static const uint8_t icons[] = {ICON_AUTO, ICON_AUTO, ICON_X_SONG, ICON_X_SONG};   /* ROW, SONG: the song's */
+        static const uint8_t icons[] = {ICON_AUTO, ICON_AUTO, ICON_X_SONG, ICON_X_SONG};
         for (c = 0; c < 4u; c++) draw_act_column(c, labels[c], VAL(c), icons[c]);
+#endif
         return;
     }
     if (cur_page()->scope == SC_TRK) {                 /* LEVEL PAN REV of the selected track, the DJ FILTER */
@@ -1839,6 +1850,11 @@ static void confirm_text(char *a, char *b)
     case CF_DEL_ROW:
         str_cpy(a, "DELETE SONG ROW?", 24);
         break;
+    case CF_CLEAR_SLOT:
+        str_cpy(a, "CLEAR PROJECT SLOT A?", 24);
+        a[19] = (char)('A' + (k & 3u));
+        str_cpy(b, "SAVED SOUND WILL BE LOST", 32);
+        break;
     case CF_CLEAR_SONG:
         str_cpy(a, "CLEAR SONG ORDER?", 24);
         break;
@@ -1988,7 +2004,7 @@ static void dlg_button(int32_t x, int32_t y, int32_t w, const char *k, const cha
 }
 static void draw_confirm(void)
 {
-    char a[24], b[24];
+    char a[24], b[32];
     const aafont_t *tf = &AF_M;
     int dk = ui.confirm >= CF_DICE_SOUND && ui.confirm <= CF_DICE_FX;
     confirm_text(a, b);

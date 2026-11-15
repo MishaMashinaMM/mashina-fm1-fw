@@ -2124,6 +2124,29 @@ static int project_save_as(uint32_t slot, const char *name)
     ui_message("SAVED (NO FLASH)");
     return 0;
 }
+/* Clear only the selected section of the current song. Persist an invalid
+ * zeroed store so the slot stays empty across reboot and flash reload. */
+static int project_clear_slot(uint32_t slot)
+{
+    if (slot >= 4u) return 1;
+    if (transport_busy()) { ui_message("STOP TO CLEAR"); return 1; }
+#if FELUCCA_FLASH
+    if (flash_ok) {
+        memset(&proj_wire, 0, sizeof proj_wire);
+        proj_wire_gen++;
+        if (st_save(proj_obj(slot), &proj_wire, sizeof proj_wire)) {
+            ui_message("CLEAR ERROR");
+            return 1;
+        }
+    }
+#endif
+    memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
+    live.dirty &= (uint8_t)~(1u << slot);
+    if (proj_cur == slot) proj_cur = PROJ_NO_SLOT;
+    ui_message("PROJECT SLOT CLEARED");
+    ui.force = 1u;
+    return 0;
+}
 static int project_save(uint32_t slot) { return project_save_as(slot, 0); }
 static void project_cur_name(char *b) { str_cpy(b, proj_name, PROJ_NAME_LEN + 1u); }   /* b: 13 bytes */
 
@@ -2263,6 +2286,65 @@ static void sound_put(project_t *p, uint32_t k)
         sync_reload = 1;
     load_end(t);
     ui.force = 1;
+}
+
+/* LIVE PROJECT RECALL: validate before stopping any voices. An unoccupied
+ * slot intentionally selects silence; malformed nonempty data is rejected.
+ * This never changes the current project slot or writes to flash. */
+static uint8_t live_recall_muted, live_recall_mutes[NTRK];
+static int project_live_sounds(uint32_t slot)
+{
+    project_t *p = &proj_scratch;
+    uint32_t k;
+    int empty;
+    if (slot >= 4u) return 2;
+#if FELUCCA_FLASH
+    if (flash_ok && !proj_import(p, &proj_slot[slot], sizeof(project_store_t)))
+        proj_fetch(slot);
+#endif
+    /* A cleared slot has no format header. Any other failed import is an error. */
+    empty = proj_slot[slot].raw[0] == 0 && proj_slot[slot].raw[1] == 0 &&
+            proj_slot[slot].raw[2] == 0 && proj_slot[slot].raw[3] == 0;
+    if (!empty && (!proj_import(p, &proj_slot[slot], sizeof(project_store_t)) ||
+                   !proj_ok(p) || !proj_engines_ok(p)))
+        return 2;
+    if (!empty)
+        proj_bound(p);
+    /* Hard stop is synchronous, not a Note Off or a queued panic fade. */
+    fm1_irq_off();
+    for (k = 0; k < NTRK; k++) {
+        uint32_t v;
+        track_t *t = &trk[k];
+        midi_silence_track(k);
+        for (v = 0; v < NVOICE; v++) {
+            t->v[v].active = t->v[v].gate = t->v[v].stage = 0;
+            t->v[v].env = t->v[v].env_out = 0;
+        }
+        t->xf_on = t->xf = t->xf_len = t->xf_dip = 0;
+        t->xin = t->xin_len = t->xp_n = 0;
+    }
+    fm1_irq_on();
+    /* A temporary mute is required for empty slots: new notes must remain
+     * silent, but recalling a saved project must restore the live mix. */
+    if (empty) {
+        for (k = 0; k < NTRK; k++) {
+            if (!live_recall_muted)
+                live_recall_mutes[k] = (uint8_t)trk[k].p[P_MUTE];
+            trk[k].p[P_MUTE] = 1;
+        }
+        live_recall_muted = 1;
+        ui_message("LIVE: EMPTY / MUTE");
+    } else {
+        if (live_recall_muted)
+            for (k = 0; k < NTRK; k++)
+                trk[k].p[P_MUTE] = live_recall_mutes[k];
+        live_recall_muted = 0;
+        for (k = 0; k < NTRK; k++)
+            sound_put(p, k);
+        ui_message("LIVE: SOUNDS LOADED");
+    }
+    ui.force = 1;
+    return empty ? 1 : 0;
 }
 
 /* (0.6.52) a section's FUGUE settings into the heads' (fugue.c fg_set) */

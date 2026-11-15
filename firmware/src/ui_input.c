@@ -339,6 +339,9 @@ static uint32_t key_leds(uint32_t *br)                 /* (*br: a layer's keys t
  * rest: the root's keys lit, the scale's at the mid level, the others glowing; the keys held and playing as ever
  * (lit, INV dark). Each picture is built off-line and copied one byte per column, the
  * glow first: an LED going from lit to dim never has a dark frame */
+#if FELUCCA_NO_SEQUENCER
+static uint8_t live_recall_on; /* REC long-press toggles performance recall */
+#endif
 static void ui_leds(void)
 {
     uint8_t nl[FM1_NCOL] = {0}, nd[FM1_NCOL] = {0}, own[FM1_NCOL] = {0}, og[FM1_NCOL] = {0}, nb[FM1_NCOL] = {0};
@@ -360,7 +363,7 @@ static void ui_leds(void)
      * key and leave the others available at the normal idle LED brightness. */
     led_put(nl, panel.btn[B_SEQ], ui.drum_map_open != 0u);
     led_put(nl, panel.btn[B_PLAY], ui.drum_perf_open != 0u);
-    led_put(nl, panel.btn[B_REC], cm_ui_open != 0u);
+    led_put(nl, panel.btn[B_REC], live_recall_on || cm_ui_open != 0u);
 #endif
     if ((k = arp_led()) != 2u && (!ui.layer || layer_btn() != B_ARP))
         led_put(nl, panel.btn[B_ARP], FAM_BTN[fam] == B_ARP ? !k : (int)k);   /* (on ARP's page: dark flashes) */
@@ -1266,10 +1269,11 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (pg->graph == GR_TOOLS) {                          /* (0.6.25) TOOLS: a list, any knob (and PRESETS) moves the
                                                          * pick down / up; OCT+ does it (its dialog first) */
 #if FELUCCA_NO_SEQUENCER
-        /* Keep the original action IDs: only INIT SOUND, NEW PROJECT and CPU TEST are exposed. */
-        int32_t pos = ui.act == 2u ? 1 : ui.act == 5u ? 2 : ui.act == 6u ? 3 : 0;
-        pos = clamp(pos + (steps > 0 ? 1 : -1), 0, 3);
-        ui.act = (uint8_t)(pos == 1 ? 2 : pos == 2 ? 5 : pos == 3 ? 6 : 0);
+        /* Each knob selects the matching visible tool; turn left to deselect.
+         * K1 INIT SOUND, K2 CLEAR SLOT, K3 NEW PROJECT, K4 CPU TEST. */
+        static const uint8_t live_tool_action[4] = {2u, 4u, 5u, 6u};
+        uint8_t action = live_tool_action[slot & 3u];
+        ui.act = steps > 0 ? action : ui.act == action ? 0u : ui.act;
 #else
         ui.act = steps < 0 && ui.act <= 1u ? 0u : (uint8_t)clamp((int32_t)ui.act + (steps > 0 ? 1 : -1), 1, 6);   /* (left
                                                          * past the first: none picked) */
@@ -1390,7 +1394,13 @@ static void act_do(void)
             return;
         }
         confirm_open(c == 0u ? CF_CLEAR_SEQ : c == 1u ? CF_INIT_SOUND : c == 2u ? CF_DEL_ROW : c == 4u ? CF_INIT_SYS :
-                     c == 5u ? CF_CPU_TEST : CF_CLEAR_SONG, c == 2u ? ui.song_row : song.sel);
+                     c == 5u ? CF_CPU_TEST :
+#if FELUCCA_NO_SEQUENCER
+                     CF_CLEAR_SLOT,
+#else
+                     CF_CLEAR_SONG,
+#endif
+                     c == 2u ? ui.song_row : (uint32_t)song.g[G_SLOT] - 1u);
         return;
     }
     if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row after the
@@ -2176,6 +2186,55 @@ static void ui_input_frame(void)
     /* Freed REC/SEQ/PLAY buttons open three independent live editors. REC
      * captures CC first; after capture normal sound pages remain accessible
      * until a parameter knob establishes the immutable destination. */
+    /* LIVE RECALL: REC long hold (700 ms) toggles the mode; short REC
+     * still opens its existing CC editor. Never act on button release.
+     * The physical SEL button is B_SCL in the firmware's panel map;
+     * EN_SELECT is the separate rotary encoder. */
+    {
+        static uint32_t rec_started;
+        static uint8_t rec_long;
+        uint32_t rb = 1u << panel.btn[B_REC];
+        uint32_t held = fm1_in.buttons & rb;
+        if (pressed & rb) {
+            rec_started = fm1_ms | 1u;
+            rec_long = 0u;
+        }
+        if (held && rec_started && !rec_long && fm1_ms - (rec_started & ~1u) >= 700u &&
+            !ui.menu && !dlg_on() && !name_on()) {
+            rec_long = 1u;
+            live_recall_on ^= 1u;
+            ui.rec_t0 |= 2u; /* prevent REC tap/layer action on release */
+            cm_ui_open = 0u;
+            ui.ly = 0u; ui.ly_t0 = 0u;
+            ui.drum_map_open = ui.drum_perf_open = 0u;
+            ui_message(live_recall_on ? "LIVE RECALL ON" : "LIVE RECALL OFF");
+            ui.force = 1u;
+        }
+        if (!held && rec_started) {
+            if (!rec_long && !ui.menu && !dlg_on() && !name_on() && !live_recall_on) {
+                if (cm_wait == 2u) cm_wait = 0u;
+                cm_ui_open ^= 1u;
+                cm_delete = 0u;
+                if (!cm_ui_open && cm_wait == 1u) cm_wait = 0u;
+                ui.drum_map_open = ui.drum_perf_open = 0u;
+                ui.force = 1u;
+            }
+            rec_started = 0u;
+            rec_long = 0u;
+        }
+        if (live_recall_on && !ui.menu && !dlg_on() && !name_on()) {
+            static const uint8_t key[4] = {B_FX, B_SCL, B_ENV, B_LFO};
+            static const uint8_t slot[4] = {0u, 1u, 2u, 3u};
+            for (uint32_t i = 0; i < 4u; i++) {
+                uint32_t bit = 1u << panel.btn[key[i]];
+                if (pressed & bit) {
+                    int result = project_live_sounds(slot[i]);
+                    if (result == 2) ui_message("INVALID PROJECT");
+                }
+                pressed &= ~bit; /* no section navigation or layer tap */
+            }
+        }
+    }
     {
         static uint8_t cm_wait_last;
         /* These are ordinary tap-opened pages. A different family button
@@ -2207,14 +2266,6 @@ static void ui_input_frame(void)
             if (ui.drum_perf_open) ui.drum_map_open = 0;
             cm_ui_open = 0;
             if (cm_wait == 1u) cm_wait = 0u;
-            ui.force = 1u;
-        }
-        if ((pressed & (1u << panel.btn[B_REC])) && !ui.menu && !dlg_on() && !name_on()) {
-            if (cm_wait == 2u) cm_wait = 0u;          /* REC cancels an unfinished destination capture */
-            cm_ui_open ^= 1u;
-            cm_delete = 0;
-            if (!cm_ui_open && cm_wait == 1u) cm_wait = 0u;
-            ui.drum_map_open = ui.drum_perf_open = 0u;
             ui.force = 1u;
         }
         if (cm_wait != cm_wait_last) {
@@ -2393,7 +2444,11 @@ static void ui_input_frame(void)
     layer_oct_open(pressed);                            /* (OCT± with a SET layer's button down: it opens now) */
     oct = oct_taps(pressed, ui.menu || ui.confirm || act_cols() || name_on() || layer_set_open());
     oct = layer_oct(pressed, oct);                      /* (a SET layer's OCT-: put back) */
-    layer_masks();                                      /* seq.c: keys pressed with a layer's button are its own */
+    layer_masks();
+#if FELUCCA_NO_SEQUENCER
+    /* Recall keys must never steal keyboard notes for their quick layers. */
+    if (live_recall_on) kb_mask = perf_mask = fx_lock_on = 0u;
+#endif                                      /* seq.c: keys pressed with a layer's button are its own */
     live_frame();                                       /* (0.9.11) GLO > LIVE: MANO's keys, OCT- held, the modifiers */
     {   /* (0.6.67) a button held + SELECT (rule 5): its dice (HOME the generator, GEN; EDIT the sound, SEQ the sequence,
          * LFO the LFO, FX the effects; GLO + SELECT the tempo), ENV SCL ARP SAVE their chain (nav_jump); the button's tap
@@ -2546,7 +2601,7 @@ static void ui_input_frame(void)
             ui.confirm = 0;
             ui.force = 1;
             if (kind != CF_OVR_PROJ && kind != CF_OVR_USER && kind != CF_ERASE_USER && kind != CF_DICE_ALL &&
-                !dice_kind(kind) && kind != CF_DEL_ROW && kind != CF_CLEAR_SONG && !chain_busy())
+                !dice_kind(kind) && kind != CF_DEL_ROW && kind != CF_CLEAR_SONG && kind != CF_CLEAR_SLOT && !chain_busy())
                 undo_mark();                            /* (0.6.21) the music before a clear, INIT, RECALL, pattern */
             if (kind == CF_OVR_PROJ) {                  /* overwrite: the NAME screen writes it */
                 name_open(NK_PROJ_SAVE, ui.confirm_trk & 3u);
@@ -2576,6 +2631,8 @@ static void ui_input_frame(void)
                     if (ui.song_row > chain_config.count) ui.song_row = chain_config.count;
                     ui_message("ROW DELETED");
                 }
+            } else if (kind == CF_CLEAR_SLOT) {
+                if (!chain_busy()) (void)project_clear_slot(ui.confirm_trk & 3u);
             } else if (kind == CF_CLEAR_SONG) {
                 if (!chain_busy()) {
                     chain_defaults(&chain_config);
