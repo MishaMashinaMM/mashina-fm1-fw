@@ -23,13 +23,15 @@ static int random_sound_param(const track_t *t, uint32_t id)
     case ENGI_PHASE:
         return id == P_E2 || id == P_E6 || id == P_E7;
     case ENGI_LOFI:
-        /* BYTE/FLOAT remap EDIT fields to algorithms and time-based motion.
-         * Restrict to continuous timbre/feedback parameters only. */
-        if (t->p[P_E1] == 5u || t->p[P_E1] == 6u)
-            return id == P_E3 || (t->p[P_E1] == 5u && id == P_E5);
-        if (t->p[P_E1] == 4u)
-            return id == P_E6 || id == P_E7;
-        return (id == P_E2 && t->p[P_E1] != 4u) || (id == P_E3 && mode != 4u) || id == P_E6 || id == P_E7;
+        /* WAVE is E1: BYTE has VAR/GRIT; FLOAT has VAR but E5 is
+         * envelope decay. STEP repurposes CRUSH as an envelope.
+         * BEND and VIB affect pitch modulation, so exclude both. */
+        if (t->p[P_E1] == 5u)
+            return id == P_E3 || id == P_E5;
+        if (t->p[P_E1] == 6u)
+            return id == P_E3;
+        return (id == P_E2 && t->p[P_E1] != 4u) ||
+               (id == P_E3 && mode != 4u) || id == P_E7;
     case ENGI_VOICE:
         /* VOICE words mode remaps E0..E2 and E7 to selectors/articulation. */
         return id == P_E4 || id == P_E5 || id == P_E6 ||
