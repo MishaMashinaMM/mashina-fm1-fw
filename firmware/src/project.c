@@ -2085,6 +2085,28 @@ static void project_capture(project_t *p)
     p->sum = proj_sum(p);
 }
 
+/* Snapshot exactly the values packed into the successfully saved section.
+ * motion_base_value may differ from the live parameter during automation. */
+static void random_saved_project(const project_t *p, uint32_t slot)
+{
+    uint32_t k, i;
+    for (k = 0; k < 3u; k++) {
+        for (i = 0; i < P_COUNT; i++)
+            random_baseline[k][i] = p->t[k].p[i];
+        random_baseline_engine[k] = p->t[k].engine;
+        random_baseline_valid[k] = 1u;
+        random_saved_slot[k] = (uint8_t)slot;
+    }
+    random_reset_pending = 0u;
+}
+static void random_saved_live(uint32_t slot)
+{
+    uint32_t k;
+    random_capture_all();
+    for (k = 0; k < 3u; k++) random_saved_slot[k] = (uint8_t)slot;
+    random_reset_pending = 0u;
+}
+
 /* the music as it is now -> slot, named `name` (0: the current name; "" none); 0 saved, nonzero refused or failed.
  * The current name becomes the saved one */
 static int project_save_as(uint32_t slot, const char *name)
@@ -2113,7 +2135,7 @@ static int project_save_as(uint32_t slot, const char *name)
         proj_cur = (uint8_t)(slot & 3u);
         live.cur = (int8_t)(slot & 3u);                 /* (0.6.12: the section playing, SAVE > PROJECT shows it) */
         live.dirty &= (uint8_t)~(1u << (slot & 3u));    /* (stored in flash now) */
-        random_capture_all();
+        random_saved_project(p, slot);
         ui_message("SAVED");
         return 0;
     }
@@ -2122,7 +2144,7 @@ static int project_save_as(uint32_t slot, const char *name)
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);
     live.cur = (int8_t)(slot & 3u);
-    random_capture_all();
+    random_saved_project(p, slot);
     ui_message("SAVED (NO FLASH)");
     return 0;
 }
@@ -2143,6 +2165,12 @@ static int project_clear_slot(uint32_t slot)
     }
 #endif
     memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
+    for (uint32_t k = 0; k < 3u; k++)
+        if (random_saved_slot[k] == slot) {
+            random_saved_slot[k] = 0xffu;
+            random_baseline_valid[k] = 0u;
+            random_reset_pending &= (uint8_t)~(1u << k);
+        }
     live.dirty &= (uint8_t)~(1u << slot);
     if (proj_cur == slot) proj_cur = PROJ_NO_SLOT;
     ui_message("PROJECT SLOT CLEARED");
@@ -2214,6 +2242,10 @@ static int project_recall_sound(uint32_t slot, uint32_t k)
     if (slot > 3u || !proj_import(p, &proj_slot[slot], sizeof(project_store_t)) || !proj_ok(p) || !proj_engines_ok(p))
         return 1;
     sound_put(p, k);
+    if (k < 3u) {
+        random_capture_track(k);
+        random_saved_slot[k] = (uint8_t)slot;
+    }
     return 0;
 }
 /* track k's sound (engine, sound parameters, FM6 patch; DRUM: the DRUM-X kit) from project p; the rest plays on */
@@ -2345,7 +2377,7 @@ static int project_live_sounds(uint32_t slot)
             sound_put(p, k);
         ui_message("LIVE: SOUNDS LOADED");
     }
-    if (!empty) random_capture_all();
+    if (!empty) random_saved_live(slot);
     ui.force = 1;
     return empty ? 1 : 0;
 }
@@ -2471,7 +2503,6 @@ static int project_restore_runtime(const project_t *input)
             drumlab_kit[k][lane].kind = p->lab_type_present[k] ?
                 p->lab_kind[k][lane] : drumlab_default_kind(lane);
     }
-    random_capture_all();
     song.sel = (uint8_t)(p->sel < NTRK ? p->sel : 0u);
     if (!proj_lfo_keep)
         lfo_fade_restart((1u << NTRK) - 1u);            /* (0.9.18) the LFOs' FADE from 0 (MODE FREE: only now) */
@@ -2891,6 +2922,7 @@ static void project_load(uint32_t slot)
     if (!proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t))) { ui_message("EMPTY SLOT"); return; }
     proj_bound(&proj_scratch);                          /* a retained RAM slot of an older format: as from flash */
     if (!project_restore_runtime(&proj_scratch)) {
+        random_saved_live(slot);
         proj_cur = (uint8_t)(slot & 3u);
         live.cur = (int8_t)(slot & 3u);                 /* (0.6.12: the section playing) */
     }
