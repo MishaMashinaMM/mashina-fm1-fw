@@ -2113,6 +2113,7 @@ static int project_save_as(uint32_t slot, const char *name)
         proj_cur = (uint8_t)(slot & 3u);
         live.cur = (int8_t)(slot & 3u);                 /* (0.6.12: the section playing, SAVE > PROJECT shows it) */
         live.dirty &= (uint8_t)~(1u << (slot & 3u));    /* (stored in flash now) */
+        random_capture_all();
         ui_message("SAVED");
         return 0;
     }
@@ -2121,6 +2122,7 @@ static int project_save_as(uint32_t slot, const char *name)
     proj_name_get(proj_name, (const uint8_t *)p->name);
     proj_cur = (uint8_t)(slot & 3u);
     live.cur = (int8_t)(slot & 3u);
+    random_capture_all();
     ui_message("SAVED (NO FLASH)");
     return 0;
 }
@@ -2343,6 +2345,7 @@ static int project_live_sounds(uint32_t slot)
             sound_put(p, k);
         ui_message("LIVE: SOUNDS LOADED");
     }
+    if (!empty) random_capture_all();
     ui.force = 1;
     return empty ? 1 : 0;
 }
@@ -2468,6 +2471,7 @@ static int project_restore_runtime(const project_t *input)
             drumlab_kit[k][lane].kind = p->lab_type_present[k] ?
                 p->lab_kind[k][lane] : drumlab_default_kind(lane);
     }
+    random_capture_all();
     song.sel = (uint8_t)(p->sel < NTRK ? p->sel : 0u);
     if (!proj_lfo_keep)
         lfo_fade_restart((1u << NTRK) - 1u);            /* (0.9.18) the LFOs' FADE from 0 (MODE FREE: only now) */
