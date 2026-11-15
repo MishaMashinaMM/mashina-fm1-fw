@@ -165,14 +165,14 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
     n = random_sound_pool(t, pool, sizeof pool);
     take = cmd == 0u ? 2u : 3u;
     if (take > n) take = n;
-    strength = cmd == 0u ? 15u : 30u;
+    strength = cmd == 0u ? 20u : 40u;
     for (i = 0; i < take; i++) {
         uint32_t j = i + random_next() % (n - i);
         uint8_t id = pool[i];
         int32_t offset, v;
         pool[i] = pool[j];
         pool[j] = id;
-        offset = (int32_t)(strength + random_next() % (strength + 1u));
+        offset = (int32_t)(strength + random_next() % (cmd == 0u ? 41u : 51u));
         if (random_next() & 1u) offset = -offset;
         v = clamp((int32_t)random_baseline[k][id] + offset, 0, 127);
         t->p[id] = (int16_t)v;
