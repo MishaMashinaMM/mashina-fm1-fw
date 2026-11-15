@@ -2096,18 +2096,30 @@ static void scale_link(void)
 }
 
 static void ui_input_frame(void);
-/* MIDI receives only queue CC87: recalling a project sound needs the UI/main
- * thread because it loads storage and invokes the established sound_put path. */
+/* Apply CC87 on the UI thread without sound_put(), which kills active voices.
+ * Restore the saved sound parameters in place, retaining mixer controls and
+ * the current engine/voices. An unsaved engine switch is deliberately ignored. */
 static void random_reset_poll(void)
 {
-    uint32_t k;
+    uint32_t k, id;
     uint8_t pending = random_reset_pending;
     random_reset_pending &= (uint8_t)~pending;
     for (k = 0; k < 3u; k++) {
+        track_t *t = &trk[k];
         if (!(pending & (1u << k))) continue;
-        if (random_saved_slot[k] >= 4u ||
-            project_recall_sound(random_saved_slot[k], k))
-            ui_message("NO SAVED SOUND");
+        if (!random_baseline_valid[k] || random_saved_slot[k] >= 4u ||
+            t->eng_req != random_baseline_engine[k] ||
+            t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB ||
+            eng_gone(t->eng_req))
+            continue;
+        for (id = 0; id < P_COUNT; id++) {
+            if (id == P_LEVEL || id == P_PAN) continue;
+            if (t->p[id] != random_baseline[k][id]) {
+                t->p[id] = random_baseline[k][id];
+                (void)motion_capture(t, id, random_baseline[k][id]);
+            }
+        }
+        random_ui_dirty = 1u;
     }
 }
 static void ui_input(void)
