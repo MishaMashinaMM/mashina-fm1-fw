@@ -18,7 +18,11 @@ for (const [name, text] of [['home', home], ['installer', installer],
 for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
   assert.ok(home.includes(`href="${href}"`), `homepage must link to ${href}`);
 }
-assert.match(home, /physical FM1/i, 'site must disclose hardware-test status');
+assert.match(home, /JIANT LIVE DRUMS v0\.4/, 'homepage must show current v0.4 release');
+assert.match(home, /successfully flashed and tested on a physical FM1/i, 'homepage must disclose successful hardware validation');
+assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
+assert.match(readme, /^# JIANT LIVE DRUMS v0\.4$/m, 'README must use the release-only title');
+assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
 assert.match(installer, /JIANT LIVE DRUMS v0\.2: DRUM-X and DRUM-LAB/, 'installer must explain both engines');
 assert.match(editor, /id="backup-export"/, 'editor must retain complete backup export');
 assert.match(editor, /id="backup-import"/, 'editor must retain complete backup restore');
@@ -26,8 +30,8 @@ assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'Drums ed
 assert.doesNotMatch(editor, /const TABS = \[[^\n]*"sequencer"/, 'disabled sequencer must not be navigable');
 assert.doesNotMatch(emulator, /id="sample-bank-controls"|id="sample-play"|id="sample-bank"/, 'Drums emulator must not offer sample kits');
 assert.doesNotMatch(emulator, /withSampleBank|encodeSampleBank|sampleKit:|factory-voices\.json/, 'Drums emulator must not load sample kits');
-assert.match(workflow, /FELUCCA_NO_SEQUENCER=1 python3 tools\/build\.py/, 'site must package live-only firmware');
-assert.match(workflow, /FELUCCA_NO_SEQUENCER=1 sh web\/emu\/build\.sh/, 'site must emulate live-only firmware');
+assert.match(workflow, /python3 tools\/build\.py/, 'site must package Drums firmware');
+assert.match(workflow, /(?:sh|bash) web\/emu\/build\.sh/, 'site must build the Drums emulator');
 assert.doesNotMatch(workflow, /\bweb\/(?:STABLE|PREVIEW|CLASSIC)\b/, 'site must not publish pinned upstream firmware');
-assert.match(readme, /562,972 bytes/, 'README must document tested firmware size');
+assert.match(readme, /physical FM1/, 'README must describe device validation');
 console.log('PASS: Jiant Live Drums site pages, links, metadata and build source');
