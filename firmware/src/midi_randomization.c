@@ -84,17 +84,9 @@ static uint32_t random_last_ms[3][3];
 static uint8_t random_pad_held[3][3];
 static uint32_t random_seed = 0xA3C59AC3u;
 static volatile uint8_t random_ui_dirty;
-
-/* Mirror ui.c's sound-load exclusion list without depending on UI code: MIDI
- * dispatch is compiled before ui.c and also in the headless host test. */
-static int random_param_kept(uint32_t i)
-{
-    return i == P_LEVEL || i == P_PAN || i == P_MUTE || (i >= P_AMODE && i <= P_SGATE) ||
-           (i >= P_SLCR && i <= P_SLDEPTH) || i == P_SOFS || i == P_POFS ||
-           (!FELUCCA_FM4 && (i == P_HVEL || i == P_HTIM || i == P_HGAT || i == P_HRQ)) ||
-           (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_TCHAN ||
-                             i == P_MSND || i == P_MPAT || i == P_MAMT || i == P_MMODE));
-}
+static volatile uint8_t random_reset_pending;
+/* The saved section used for each track; 0xff means there is no saved sound. */
+static uint8_t random_saved_slot[3] = {0xffu, 0xffu, 0xffu};
 
 static void random_capture_track(uint32_t k)
 {
@@ -141,18 +133,18 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         random_last_ms[k][cmd] = now;
     }
     t = &trk[k];
-    if (t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB || eng_gone(t->eng_req))
-        return;
-    if (!random_baseline_valid[k] || random_baseline_engine[k] != t->eng_req)
-        random_capture_track(k);
     if (cmd == 2u) {
-        for (i = 0; i < P_COUNT; i++) {
-            if (!random_param_kept(i) && t->p[i] != random_baseline[k][i])
-                t->p[i] = random_baseline[k][i];
-        }
-        random_ui_dirty = 1u;
+        /* Reset is a saved-project sound load. It can switch engines and must
+         * run on the UI thread (sound_put uses project storage/IRQ guards). */
+        random_reset_pending |= (uint8_t)(1u << k);
         return;
     }
+    if (t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB || eng_gone(t->eng_req))
+        return;
+    /* An unsaved engine switch is not a new saved baseline. Do not mutate it. */
+    if (!random_baseline_valid[k] || random_saved_slot[k] >= 4u ||
+        random_baseline_engine[k] != t->eng_req)
+        return;
     n = random_sound_pool(t, pool, sizeof pool);
     take = cmd == 0u ? 2u : 3u;
     if (take > n) take = n;
