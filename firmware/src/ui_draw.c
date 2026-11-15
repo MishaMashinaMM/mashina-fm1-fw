@@ -1999,7 +1999,7 @@ static void dlg_button(int32_t x, int32_t y, int32_t w, const char *k, const cha
 }
 static void draw_confirm(void)
 {
-    char a[24], b[24];
+    char a[24], b[32];
     const aafont_t *tf = &AF_M;
     int dk = ui.confirm >= CF_DICE_SOUND && ui.confirm <= CF_DICE_FX;
     confirm_text(a, b);
