@@ -310,6 +310,8 @@ static uint32_t ml_id(uint32_t code)        /* an entry's code -> P_* id, P_COUN
 {
     return code >= ML_E0 ? P_E0 + code - ML_E0 : code && code <= P_E0 ? code - 1u : P_COUNT;
 }
+#include "midi_randomization.c"
+
 /* Reserved on every channel for the dedicated live sound randomization commands. */
 static int midi_random_cc(uint32_t cc) { return cc >= 85u && cc <= 87u; }
 
