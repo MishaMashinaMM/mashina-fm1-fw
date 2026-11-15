@@ -2096,8 +2096,23 @@ static void scale_link(void)
 }
 
 static void ui_input_frame(void);
+/* MIDI receives only queue CC87: recalling a project sound needs the UI/main
+ * thread because it loads storage and invokes the established sound_put path. */
+static void random_reset_poll(void)
+{
+    uint32_t k;
+    uint8_t pending = random_reset_pending;
+    random_reset_pending &= (uint8_t)~pending;
+    for (k = 0; k < 3u; k++) {
+        if (!(pending & (1u << k))) continue;
+        if (random_saved_slot[k] >= 4u ||
+            project_recall_sound(random_saved_slot[k], k))
+            ui_message("NO SAVED SOUND");
+    }
+}
 static void ui_input(void)
 {
+    random_reset_poll();
     if (random_ui_dirty) { random_ui_dirty = 0u; ui.force = 1u; }
     cpt_poll();                                         /* (0.9.14) CPU TEST measured as it plays (ui_menu.c) */
     ui_input_frame();
