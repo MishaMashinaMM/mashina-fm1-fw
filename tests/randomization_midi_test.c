@@ -9,6 +9,13 @@ static void random_cc_test(uint32_t ch, uint32_t cc, uint32_t value)
 {
     midi_control(ch - 1u, cc, value);
 }
+/* Exercise the shared MIDI queue used by USB and TRS, not only the command handler. */
+static void queued_random_cc(uint32_t ch, uint32_t cc, uint32_t value, uint32_t source)
+{
+    uint32_t status = 0xB0u + ch - 1u;
+    midi_enqueue((status >> 4) | status << 8 | cc << 16 | value << 24, source);
+    events_block(CTL);
+}
 static void random_test_reset_state(void)
 {
     uint32_t k;
@@ -277,6 +284,21 @@ int main(void)
     bad += check("A saved DRUM-X track is excluded from randomization and reset",
                  random_seed == seed && trk[1].eng_req == ENGI_DRUM &&
                  !(random_reset_pending & 2u));
+
+    /* USB and TRS feed the same reserved-channel handler independently of
+     * note RX assignments, even if three melodic tracks layer on channel 1. */
+    trk[0].eng_req = ENGI_ANALOG; /* saved slot 2's T1 remains melodic */
+    midi_rx[0] = midi_rx[1] = midi_rx[2] = 1u;
+    queued_random_cc(13u, 85u, 0u, 1u);
+    seed = random_seed;
+    queued_random_cc(13u, 85u, 127u, 1u);
+    bad += check("USB MIDI queue dispatches reserved CC85 on channel 13",
+                 random_seed != seed);
+    queued_random_cc(13u, 85u, 0u, 2u);
+    seed = random_seed;
+    queued_random_cc(13u, 85u, 127u, 2u);
+    bad += check("TRS MIDI queue dispatches reserved CC85 on channel 13",
+                 random_seed != seed);
 
     printf(bad ? "randomization MIDI: %d FAILED\n" : "randomization MIDI: all passed\n", bad);
     return bad ? 1 : 0;
