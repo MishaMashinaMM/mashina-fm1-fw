@@ -159,18 +159,17 @@ int main(void)
     random_cc_test(13u, 85u, 127u);
     bad += check("Release value re-arms immediately", random_seed != seed);
 
-    /* Reset is deliberately asynchronous: the MIDI handler must not load
-     * flash or manipulate the UI; the UI poll loads the saved track sound. */
+    /* Reset is asynchronous: the UI poll restores parameters without sound_put(). */
     t->p[P_FCUT] = 17;
     t->p[P_ATK] = 4;
     t->p[P_LEVEL] = 97;
     t->p[P_PAN] = 95;
     global_eq_gain[0] = 7;
     random_cc_test(13u, 87u, 127u);
-    bad += check("CC87 queues rather than synchronously loading a project",
+    bad += check("CC87 queues rather than synchronously editing parameters",
                  (random_reset_pending & 1u) && t->p[P_ATK] == 4);
     frame();
-    bad += check("CC87 discards manual edits and restores the actual saved sound",
+    bad += check("CC87 restores saved parameters in place without replacing voices",
                  t->p[P_FCUT] == random_baseline[0][P_FCUT] &&
                  t->p[P_ATK] == 20 && !(random_reset_pending & 1u));
     bad += check("CC87 preserves mix and global EQ",
@@ -194,14 +193,15 @@ int main(void)
     random_cc_test(13u, 87u, 127u);
     frame();
 
-    /* Even an unsaved engine change cannot replace the saved original. */
+    /* Reset cannot replace an unsaved engine: no voice interruption. */
     t->eng_req = ENGI_LOFI;
     t->p[P_FCUT] = 8;
     random_cc_test(13u, 87u, 0u);
     random_cc_test(13u, 87u, 127u);
     frame();
-    bad += check("CC87 restores the saved engine after an unsaved engine switch",
-                 t->eng_req == ENGI_ANALOG && t->p[P_FCUT] == random_baseline[0][P_FCUT]);
+    bad += check("CC87 does not replace an unsaved engine",
+                 t->eng_req == ENGI_LOFI && t->p[P_FCUT] == 8);
+    t->eng_req = ENGI_ANALOG;
 
     /* The latest successful save, rather than the initial one, wins. */
     t->p[P_FCUT] = 90;
@@ -270,8 +270,8 @@ int main(void)
     random_cc_test(13u, 87u, 0u);
     random_cc_test(13u, 87u, 127u);
     frame();
-    bad += check("CC87 restores a saved melodic sound from an unsaved drum engine",
-                 t->eng_req == ENGI_ANALOG && t->p[P_ATK] == 20);
+    bad += check("CC87 does not interrupt an unsaved drum engine",
+                 t->eng_req == ENGI_DRUM && t->p[P_ATK] == 2);
 
     /* Conversely, a saved drum sound must not respond to either command. */
     trk[1].eng_req = ENGI_DRUM;
