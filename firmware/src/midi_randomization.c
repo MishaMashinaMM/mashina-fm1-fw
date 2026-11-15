@@ -134,8 +134,14 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
     }
     t = &trk[k];
     if (cmd == 2u) {
-        /* Reset is a saved-project sound load. It can switch engines and must
-         * run on the UI thread (sound_put uses project storage/IRQ guards). */
+        /* Reset is a saved-project sound load. A melodic saved sound may
+         * replace an unsaved DRUM engine, but never randomize a saved drum kit.
+         * The load runs on the main/UI thread (storage and IRQ guards). */
+        if (random_baseline_valid[k] &&
+            (random_baseline_engine[k] == ENGI_DRUM ||
+             random_baseline_engine[k] == ENGI_DRUMLAB ||
+             eng_gone(random_baseline_engine[k])))
+            return;
         random_reset_pending |= (uint8_t)(1u << k);
         return;
     }
