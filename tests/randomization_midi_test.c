@@ -25,6 +25,7 @@ int main(void)
     uint8_t pool[12];
     int16_t t2_before[P_COUNT], t3_before[P_COUNT];
     track_t *t;
+    static project_store_t saved_snapshot;
 
     ui_power_on();
     random_test_reset_state();
@@ -49,6 +50,7 @@ int main(void)
                  random_saved_slot[0] == 0u && random_saved_slot[1] == 0u &&
                  random_saved_slot[2] == 0u && random_baseline[0][P_ATK] == 20);
 
+    memcpy(&saved_snapshot, &proj_slot[0], sizeof saved_snapshot);
     memcpy(t2_before, trk[1].p, sizeof t2_before);
     memcpy(t3_before, trk[2].p, sizeof t3_before);
     random_cc_test(13u, 85u, 127u);
@@ -91,6 +93,24 @@ int main(void)
                  t->p[P_ATK] == 20 && !(random_reset_pending & 1u));
     bad += check("CC87 preserves mix and global EQ",
                  t->p[P_LEVEL] == 97 && t->p[P_PAN] == 95 && global_eq_gain[0] == 7);
+    bad += check("MIDI randomization never writes the stored project",
+                 !memcmp(&saved_snapshot, &proj_slot[0], sizeof saved_snapshot));
+
+    /* Hard randomization draws three distinct slots with 30..60 offsets. */
+    changed = 0;
+    valid = 1;
+    random_cc_test(13u, 86u, 127u);
+    for (i = 0; i < n; i++) {
+        int32_t d = (int32_t)t->p[pool[i]] - 64;
+        if (!d) continue;
+        changed++;
+        if ((d < 0 ? -d : d) < 30 || (d < 0 ? -d : d) > 60) valid = 0;
+    }
+    bad += check("CC86 changes exactly three distinct eligible parameters by 30..60",
+                 changed == 3 && valid);
+    random_cc_test(13u, 87u, 0u);
+    random_cc_test(13u, 87u, 127u);
+    frame();
 
     /* Even an unsaved engine change cannot replace the saved original. */
     t->eng_req = ENGI_LOFI;
