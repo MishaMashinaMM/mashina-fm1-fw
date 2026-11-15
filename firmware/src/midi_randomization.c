@@ -68,3 +68,80 @@ static uint32_t random_sound_pool(const track_t *t, uint8_t *ids, uint32_t cap)
     }
     return n;
 }
+
+/* Baselines are captured when a project is loaded or explicitly saved.
+ * Only T1..T3 are addressable by the reserved MIDI channels. */
+static int16_t random_baseline[3][P_COUNT];
+static uint8_t random_baseline_engine[3];
+static uint8_t random_baseline_valid[3];
+static uint8_t random_pad_held[3][3];
+static uint32_t random_seed = 0xA3C59AC3u;
+
+static void random_capture_track(uint32_t k)
+{
+    uint32_t j;
+    if (k >= 3u) return;
+    for (j = 0; j < P_COUNT; j++)
+        random_baseline[k][j] = trk[k].p[j];
+    random_baseline_engine[k] = trk[k].eng_req;
+    random_baseline_valid[k] = 1u;
+    memset(random_pad_held[k], 0, sizeof random_pad_held[k]);
+}
+static void random_capture_all(void)
+{
+    uint32_t k;
+    for (k = 0; k < 3u; k++) random_capture_track(k);
+}
+static uint32_t random_next(void)
+{
+    uint32_t x = random_seed;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    return random_seed = x;
+}
+/* Called from the MIDI dispatch before all other CC handlers. */
+static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
+{
+    uint32_t k, cmd, n, i, take, strength;
+    uint8_t pool[12];
+    track_t *t;
+    if (ch < 12u || ch > 14u) return;
+    k = ch - 12u;
+    cmd = cc - 85u;
+    if (value < 64u) {
+        random_pad_held[k][cmd] = 0u;
+        return;
+    }
+    if (random_pad_held[k][cmd]) return;
+    random_pad_held[k][cmd] = 1u;
+    t = &trk[k];
+    if (t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB || eng_gone(t->eng_req))
+        return;
+    if (!random_baseline_valid[k] || random_baseline_engine[k] != t->eng_req)
+        random_capture_track(k);
+    if (cmd == 2u) {
+        for (i = 0; i < P_COUNT; i++) {
+            if (t->p[i] != random_baseline[k][i])
+                t->p[i] = random_baseline[k][i];
+        }
+        ui.force = 1;
+        return;
+    }
+    n = random_sound_pool(t, pool, sizeof pool);
+    take = cmd == 0u ? 2u : 3u;
+    if (take > n) take = n;
+    strength = cmd == 0u ? 15u : 30u;
+    for (i = 0; i < take; i++) {
+        uint32_t j = i + random_next() % (n - i);
+        uint8_t id = pool[i];
+        int32_t offset, v;
+        pool[i] = pool[j];
+        pool[j] = id;
+        offset = (int32_t)(strength + random_next() % (strength + 1u));
+        if (random_next() & 1u) offset = -offset;
+        v = clamp((int32_t)random_baseline[k][id] + offset, 0, 127);
+        t->p[id] = (int16_t)v;
+    }
+    ui.force = 1;
+}
