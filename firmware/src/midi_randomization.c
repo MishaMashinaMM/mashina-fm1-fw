@@ -79,10 +79,22 @@ static uint8_t random_baseline_valid[3];
 /* High-only pads may repeat the same value on each new press. Suppress
  * close-together duplicate packets, but allow another high after 120 ms.
  * This cannot distinguish a held controller's slow repeats from new presses. */
-#define RANDOM_CC_DEBOUNCE_TICKS (120u * 1000u * FM1_TICKS_PER_US)
-static uint32_t random_last_tick[3][3];
+#define RANDOM_CC_DEBOUNCE_MS 120u
+static uint32_t random_last_ms[3][3];
 static uint8_t random_pad_held[3][3];
 static uint32_t random_seed = 0xA3C59AC3u;
+static volatile uint8_t random_ui_dirty;
+
+/* Mirror ui.c's sound-load exclusion list without depending on UI code: MIDI
+ * dispatch is compiled before ui.c and also in the headless host test. */
+static int random_param_kept(uint32_t i)
+{
+    return i == P_LEVEL || i == P_PAN || i == P_MUTE || (i >= P_AMODE && i <= P_SGATE) ||
+           (i >= P_SLCR && i <= P_SLDEPTH) || i == P_SOFS || i == P_POFS ||
+           (!FELUCCA_FM4 && (i == P_HVEL || i == P_HTIM || i == P_HGAT || i == P_HRQ)) ||
+           (!FELUCCA_FM4 && (i == P_CHRD || i == P_CVOI || i == P_CSTR || i == P_TCHAN ||
+                             i == P_MSND || i == P_MPAT || i == P_MAMT || i == P_MMODE));
+}
 
 static void random_capture_track(uint32_t k)
 {
@@ -121,12 +133,12 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         return;
     }
     {
-        uint32_t now = fm1_ticks();
+        uint32_t now = fm1_ms;
         if (random_pad_held[k][cmd] &&
-            (uint32_t)(now - random_last_tick[k][cmd]) < RANDOM_CC_DEBOUNCE_TICKS)
+            (uint32_t)(now - random_last_ms[k][cmd]) < RANDOM_CC_DEBOUNCE_MS)
             return;
         random_pad_held[k][cmd] = 1u;
-        random_last_tick[k][cmd] = now;
+        random_last_ms[k][cmd] = now;
     }
     t = &trk[k];
     if (t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB || eng_gone(t->eng_req))
@@ -135,10 +147,10 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         random_capture_track(k);
     if (cmd == 2u) {
         for (i = 0; i < P_COUNT; i++) {
-            if (!param_kept(i) && t->p[i] != random_baseline[k][i])
+            if (!random_param_kept(i) && t->p[i] != random_baseline[k][i])
                 t->p[i] = random_baseline[k][i];
         }
-        ui.force = 1;
+        random_ui_dirty = 1u;
         return;
     }
     n = random_sound_pool(t, pool, sizeof pool);
@@ -156,5 +168,5 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         v = clamp((int32_t)random_baseline[k][id] + offset, 0, 127);
         t->p[id] = (int16_t)v;
     }
-    ui.force = 1;
+    random_ui_dirty = 1u;
 }
