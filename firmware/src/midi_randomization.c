@@ -39,11 +39,11 @@ static int random_sound_param(const track_t *t, uint32_t id)
     case ENGI_WHEEL:
         return id == P_E5 || id == P_E6;
     case ENGI_NOISE:
-        return id == P_E1 || id == P_E2 || id == P_E3 || id == P_E6 ||
-               (mode < 2u && id == P_E7);
+        /* FREQ/DRIFT control oscillator pitch; CRUSH can retime its clock. */
+        return id == P_E1 || id == P_E3;
     case ENGI_ANIMAL:
-        /* Mode-dependent controls: only stable continuous tonal slots. */
-        return id == P_E1 || id == P_E2 || (mode == 0u && id == P_E3);
+        /* SIZE/CAP are excluded, as are SWEEP, RATE and GROUP. */
+        return id == P_E1 || id == P_E2;
     case 12u:
         return 0; /* FM6's EDIT macros are signed, pitch or patch selectors. */
     default:
