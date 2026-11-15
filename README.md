@@ -1,9 +1,9 @@
-# JIANT LIVE DRUMS v0.3 — Global EQ
+# JIANT LIVE DRUMS v0.4 — Live Project Recall
 
 **Performance-focused firmware for the M-VAVE FM1**, modified by **Misha Mashina** from **JIANT by Juan Jiant** (based on Felucca).
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
-[![Status: v0.3 device tested](https://img.shields.io/badge/v0.3-tested%20on%202%20FM1%20units-green.svg)](#status-and-safety)
+[![Status: v0.4 device tested](https://img.shields.io/badge/v0.4-flashed%20and%20tested-green.svg)](#status-and-safety)
 
 ![JIANT LIVE DRUMS: two 12-pad drum engines, SEQ MIDI mapping, PLAY performance controls, REC 32 MIDI CC macros, and eight shared voices](docs/jiant-live-drums-overview-32-macros.svg)
 
@@ -13,14 +13,16 @@
 
 The links above are the GitHub Pages routes for this separate Drums repository. The repository includes the Drums-specific browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated Drums control reference**.
 
-JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbral drum sound module**. It extends DRUM-X, adds DRUM-LAB, expands MIDI routing and CC control, and keeps the eight-voice shared pool. The latest update adds a **single global three-band EQ** before effects, with project save/load. The **sequencer is disabled by default** in this edition (no extra build flag required); its SEQ, PLAY, and REC buttons open dedicated live-MIDI pages. Original Jiant Live remains a separate project.
+JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbral drum sound module**. It extends DRUM-X, adds DRUM-LAB, expands MIDI routing and CC control, and keeps the eight-voice shared pool. The v0.4 update adds **live project sound recall**, persistent **CLEAR SLOT** and a clearer four-knob TOOLS page. The shared global three-band EQ from v0.3 remains available before effects, with project save/load. The **sequencer is disabled by default** in this edition (no extra build flag required); its SEQ, PLAY, and REC buttons open dedicated live-MIDI pages. Original Jiant Live remains a separate project.
 
-> **Current status:** v0.3 milestone; experimental, **not an official Juan Jiant release**. Dedicated live-drum host tests and update-package simulations pass. **The published v0.3 firmware (`v0.3-1956d21`) was successfully installed and booted on two physical FM1 units through two different starting-firmware paths: one directly from official FM1 V15 firmware, and the other from original JIANT firmware. Both upgrade paths worked**, and the owner reports that all tested functions work as expected. The REC macro screen's partial-redraw fix was **verified on physical hardware**: editing macro values updates the affected cells without full-screen flicker. The 32-macro REC paging and project save/load were verified in the emulator; the earlier four-macro build was also checked on the device for DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-MIDI CC macro control. The newer Global EQ preview was also flashed successfully on November 14, 2026, with normal operation reported; prolonged multitrack CPU stress remains unverified. These are successful owner-reported device tests, not an exhaustive hardware qualification. Back up your data and prepare a recovery method before installing. Do not use the original JIANT web installer to install Drums.
+> **Current status:** v0.4 milestone; experimental, **not an official Juan Jiant release**. Dedicated live-drum host tests and update-package simulations pass. **The published v0.3 firmware (`v0.3-1956d21`) was successfully installed and booted on two physical FM1 units through two different starting-firmware paths: one directly from official FM1 V15 firmware, and the other from original JIANT firmware. Both upgrade paths worked**, and the owner reports that all tested functions work as expected. The REC macro screen's partial-redraw fix was **verified on physical hardware**: editing macro values updates the affected cells without full-screen flicker. The 32-macro REC paging and project save/load were verified in the emulator; the earlier four-macro build was also checked on the device for DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-MIDI CC macro control. The newer Global EQ preview was also flashed successfully on November 14, 2026, with normal operation reported; prolonged multitrack CPU stress remains unverified. These are successful owner-reported device tests, not an exhaustive hardware qualification. Back up your data and prepare a recovery method before installing. Do not use the original JIANT web installer to install Drums.
 
 ## What's different from JIANT / Jiant Live
 
-| Feature | JIANT LIVE DRUMS v0.3 |
+| Feature | JIANT LIVE DRUMS v0.4 |
 | --- | --- |
+| Live project recall | Four sound slots (A–D) per project can be recalled during live performance using the physical **SEL** button; previous notes stop, while delay/reverb tails decay naturally. Project selection and recall were verified in the browser emulator. |
+| CLEAR SLOT | **SAVE → LIBRARY → TOOLS → CLEAR SLOT** permanently clears the selected saved project slot, with confirmation. Live TOOLS displays four actions mapped directly to **K1–K4**: INIT SOUND, CLEAR SLOT, NEW PROJECT and CPU TEST. Tested in emulator and after flashing. |
 | Global 3-band EQ | **GLO → MIX → EQ**: LOW 50 Hz shelf, MID 700 Hz peak (Q=1), HIGH 10 kHz shelf; each −15 to +15 dB, plus ON/bypass. One shared EQ for all tracks, before effects, saved per project. |
 | MIDI input per track | Independent **RX channel 1–16** for each of six tracks. Two or more tracks may share a channel and sound together. |
 | MIDI routing | **1-4**, **1-6** (assigned-channel routing), or **SEL** (selected-track routing). TRACKS 4/6 still determines how many tracks are active. |
@@ -32,11 +34,19 @@ JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbra
 | Repurposed SEQ, PLAY and REC buttons | **SEQ** opens **DRUM MIDI MAP**, **PLAY** opens **DRUM PERFORMANCE**, and **REC** opens **MIDI CC MACROS**. The three buttons illuminate with their active live pages; none starts the removed sequencer/transport. |
 | Polyphony | **Eight shared voices** across all tracks and both drum engines. |
 | Display | Static **JIANT LIVE DRUMS** startup splash, default JIANT presentation, larger UI retained; decorative screen animations disabled. |
-| ABOUT | JIANT LIVE DRUMS v0.3 identification and purpose, while retaining original author and license credits. |
+| ABOUT | JIANT LIVE DRUMS identification and purpose, while retaining original author and license credits. |
 | Browser emulator | Can load an existing JIANT **backup JSON** into an isolated session to audition saved sounds/projects without changing the physical FM1. |
 | Sequencer / sound engines | **Sequencer disabled** for live use; the inherited melodic engines and effects remain. |
 
-### Global three-band EQ (new in this update)
+### Live project recall and slot management (v0.4)
+
+The four saved slots A–D in each of the eight projects support live sound recall via the physical **SEL** button (second button in the top row). In the emulator, switching between saved sounds worked on the first note; the previous sound's active notes stopped while existing delay/reverb tails continued naturally. This feature and CLEAR SLOT were merged into `main` in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18), merge commit [`43b2e9a`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/43b2e9ad207cf62370e9e2aa6c132887caa9bfdf). The 11 live-drum regression suites and firmware build passed in the feature-branch CI run [#100](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43690733723).
+
+In **SAVE → LIBRARY → TOOLS**, the four visible actions are **INIT SOUND**, **CLEAR SLOT**, **NEW PROJECT** and **CPU TEST**, selected by turning **K1**, **K2**, **K3** and **K4** respectively. CLEAR SLOT requires confirmation; clearing a saved slot persists across reloads. The user reports successful flashing and operation of the merged firmware.
+
+**Known display issue:** On **SAVE → LIBRARY → PROJECTS** (page 4/5), the overview may incorrectly mark empty slots in projects 5–8 as occupied until the project is selected. The flash-header overview scan and active-project validity check currently differ. The saved slots themselves remain empty; this visual discrepancy is **not yet fixed**.
+
+### Global three-band EQ (introduced in v0.3)
 
 Open **GLO → MIX → EQ** to edit the **single shared EQ**. This replaces the earlier experimental idea of one EQ per track, which was too CPU-intensive. The three bands are **LOW 50 Hz**, **MID 700 Hz** and **HIGH 10 kHz**, each adjustable from **−15 to +15 dB**; **ON** enables or bypasses the EQ. The MID band is a peaking filter (Q=1); LOW/HIGH are broad shelves. Bypass and gain adjustments are smoothed to avoid abrupt switching artifacts.
 
@@ -198,6 +208,8 @@ The Drums emulator does not load a sample bank or offer sample-kit playback. It 
 
 ## Status and safety
 
+- **v0.4 milestone:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18). User reports successful firmware flashing and functional operation on FM1. A LIBRARY occupancy display inconsistency remains open; see above. The v0.4 version label in the firmware/installer should be verified separately from this README update.
+
 - **v0.3 release:** [GitHub Actions build and deployment](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42855710544) completed successfully; the [public installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/) serves `v0.3-1956d21`. Both physical FM1 units were flashed and checked successfully on November 10, 2026: **official V15 → JLD v0.3** and **original JIANT → JLD v0.3**.
 - **Host regression:** the live-drum host regression suite covers drum engines, MIDI routing, project serialization, macro control, and Stage 27B stress. The `macro-32` firmware and emulator build jobs, including all 11 live-drum host regression suites, passed on November 10, 2026.
 - **32-macro build:** source commit [`5c79b3b`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/5c79b3b7b394c9d2a6ac75d4847aef9ef81e44da) produced the [successful firmware and emulator preview artifacts](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42836474817), including the installer used for the latest device flash. The earlier Stage 29C package `felucca-v0.2-b9654ee.fwsc` is historical, not the current release.
@@ -222,7 +234,7 @@ JIANT LIVE DRUMS retains many JIANT synthesis engines, interfaces, effects and e
 - [Felucca](https://github.com/hugelton/Felucca), the firmware on which JIANT is based
 - [SLOOP](https://github.com/isod89/sloop-fm1), source of JIANT's song-system lineage
 
-**Important:** the inherited manual, navigation map, screenshots and cheat sheets describe upstream JIANT revisions; they are **not exact Jiant Live Drums v0.2 control maps**. Original illustrations under [`docs/`](docs/) are historical upstream assets.
+**Important:** the inherited manual, navigation map, screenshots and cheat sheets describe upstream JIANT revisions; they are **not exact Jiant Live Drums v0.4 control maps**. Original illustrations under [`docs/`](docs/) are historical upstream assets.
 
 ## Authors, credits and license
 
