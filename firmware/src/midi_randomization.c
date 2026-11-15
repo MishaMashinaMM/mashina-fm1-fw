@@ -74,6 +74,11 @@ static uint32_t random_sound_pool(const track_t *t, uint8_t *ids, uint32_t cap)
 static int16_t random_baseline[3][P_COUNT];
 static uint8_t random_baseline_engine[3];
 static uint8_t random_baseline_valid[3];
+/* High-only pads may repeat the same value on each new press. Suppress
+ * close-together duplicate packets, but allow another high after 120 ms.
+ * This cannot distinguish a held controller's slow repeats from new presses. */
+#define RANDOM_CC_DEBOUNCE_TICKS (120u * 1000u * FM1_TICKS_PER_US)
+static uint32_t random_last_tick[3][3];
 static uint8_t random_pad_held[3][3];
 static uint32_t random_seed = 0xA3C59AC3u;
 
@@ -85,7 +90,7 @@ static void random_capture_track(uint32_t k)
         random_baseline[k][j] = trk[k].p[j];
     random_baseline_engine[k] = trk[k].eng_req;
     random_baseline_valid[k] = 1u;
-    memset(random_pad_held[k], 0, sizeof random_pad_held[k]);
+    /* Do not reset trigger state here: a first command can capture its baseline. */
 }
 static void random_capture_all(void)
 {
@@ -113,8 +118,14 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         random_pad_held[k][cmd] = 0u;
         return;
     }
-    if (random_pad_held[k][cmd]) return;
-    random_pad_held[k][cmd] = 1u;
+    {
+        uint32_t now = fm1_ticks();
+        if (random_pad_held[k][cmd] &&
+            (uint32_t)(now - random_last_tick[k][cmd]) < RANDOM_CC_DEBOUNCE_TICKS)
+            return;
+        random_pad_held[k][cmd] = 1u;
+        random_last_tick[k][cmd] = now;
+    }
     t = &trk[k];
     if (t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB || eng_gone(t->eng_req))
         return;
