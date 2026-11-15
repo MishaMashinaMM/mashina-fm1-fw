@@ -21,7 +21,7 @@ JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbra
 
 | Feature | JIANT LIVE DRUMS v0.4 |
 | --- | --- |
-| Live project recall | Four sound slots (A–D) per project can be recalled during live performance using the physical **SEL** button; previous notes stop, while delay/reverb tails decay naturally. Project selection and recall were verified in the browser emulator. |
+| Live project recall | Long-press **REC** to enter Live Recall mode; **FX**, **SEL**, **ENV** and **LFO** then recall project slots **1–4**, respectively. Previous notes stop while delay/reverb tails decay naturally. Verified in the browser emulator and tested on FM1. |
 | CLEAR SLOT | **SAVE → LIBRARY → TOOLS → CLEAR SLOT** permanently clears the selected saved project slot, with confirmation. Live TOOLS displays four actions mapped directly to **K1–K4**: INIT SOUND, CLEAR SLOT, NEW PROJECT and CPU TEST. Tested in emulator and after flashing. |
 | Global 3-band EQ | **GLO → MIX → EQ**: LOW 50 Hz shelf, MID 700 Hz peak (Q=1), HIGH 10 kHz shelf; each −15 to +15 dB, plus ON/bypass. One shared EQ for all tracks, before effects, saved per project. |
 | MIDI input per track | Independent **RX channel 1–16** for each of six tracks. Two or more tracks may share a channel and sound together. |
@@ -40,7 +40,7 @@ JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbra
 
 ### Live project recall and slot management (v0.4)
 
-The four saved slots A–D in each of the eight projects support live sound recall via the physical **SEL** button (second button in the top row). In the emulator, switching between saved sounds worked on the first note; the previous sound's active notes stopped while existing delay/reverb tails continued naturally. This feature and CLEAR SLOT were merged into `main` in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18), merge commit [`43b2e9a`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/43b2e9ad207cf62370e9e2aa6c132887caa9bfdf). The 11 live-drum regression suites and firmware build passed in the feature-branch CI run [#100](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43690733723).
+To use Live Recall, **long-press REC** to enter recall mode. The four top-row buttons **FX**, **SEL**, **ENV** and **LFO** become dedicated recall buttons for **project slots 1, 2, 3 and 4**, respectively. **SEL** is one of four recall buttons, not the button that enters recall mode. In the emulator, switching between saved sounds worked on the first note; the previous sound's active notes stopped while existing delay/reverb tails continued naturally. This feature and CLEAR SLOT were merged into `main` in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18), merge commit [`43b2e9a`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/43b2e9ad207cf62370e9e2aa6c132887caa9bfdf). The 11 live-drum regression suites and firmware build passed in the feature-branch CI run [#100](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43690733723).
 
 In **SAVE → LIBRARY → TOOLS**, the four visible actions are **INIT SOUND**, **CLEAR SLOT**, **NEW PROJECT** and **CPU TEST**, selected by turning **K1**, **K2**, **K3** and **K4** respectively. CLEAR SLOT requires confirmation; clearing a saved slot persists across reloads. The user reports successful flashing and operation of the merged firmware.
 
