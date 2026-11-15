@@ -286,8 +286,13 @@ int main(void)
                  !(random_reset_pending & 2u));
 
     /* USB and TRS feed the same reserved-channel handler independently of
-     * note RX assignments, even if three melodic tracks layer on channel 1. */
-    trk[0].eng_req = ENGI_ANALOG; /* saved slot 2's T1 remains melodic */
+     * note RX assignments, even if three melodic tracks layer on channel 1.
+     * Restore a saved melodic baseline: slot 2 was captured with T1 temporarily
+     * set to DRUM, so changing eng_req alone would rightly block randomization. */
+    bad += check("USB/TRS dispatch setup recalls a saved ANALOG baseline",
+                 project_live_sounds(0u) == 0 && trk[0].eng_req == ENGI_ANALOG &&
+                 random_baseline_valid[0] &&
+                 random_baseline_engine[0] == ENGI_ANALOG);
     midi_rx[0] = midi_rx[1] = midi_rx[2] = 1u;
     queued_random_cc(13u, 85u, 0u, 1u);
     seed = random_seed;
