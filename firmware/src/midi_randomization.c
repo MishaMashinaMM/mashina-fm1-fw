@@ -133,7 +133,7 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         random_capture_track(k);
     if (cmd == 2u) {
         for (i = 0; i < P_COUNT; i++) {
-            if (t->p[i] != random_baseline[k][i])
+            if (!param_kept(i) && t->p[i] != random_baseline[k][i])
                 t->p[i] = random_baseline[k][i];
         }
         ui.force = 1;
