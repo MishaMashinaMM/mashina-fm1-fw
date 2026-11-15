@@ -1269,10 +1269,11 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (pg->graph == GR_TOOLS) {                          /* (0.6.25) TOOLS: a list, any knob (and PRESETS) moves the
                                                          * pick down / up; OCT+ does it (its dialog first) */
 #if FELUCCA_NO_SEQUENCER
-        /* INIT SOUND, CLEAR SLOT, NEW PROJECT and CPU TEST. */
-        int32_t pos = ui.act == 2u ? 1 : ui.act == 4u ? 2 : ui.act == 5u ? 3 : ui.act == 6u ? 4 : 0;
-        pos = clamp(pos + (steps > 0 ? 1 : -1), 0, 4);
-        ui.act = (uint8_t)(pos == 1 ? 2 : pos == 2 ? 4 : pos == 3 ? 5 : pos == 4 ? 6 : 0);
+        /* Each knob selects the matching visible tool; turn left to deselect.
+         * K1 INIT SOUND, K2 CLEAR SLOT, K3 NEW PROJECT, K4 CPU TEST. */
+        static const uint8_t live_tool_action[4] = {2u, 4u, 5u, 6u};
+        uint8_t action = live_tool_action[slot & 3u];
+        ui.act = steps > 0 ? action : ui.act == action ? 0u : ui.act;
 #else
         ui.act = steps < 0 && ui.act <= 1u ? 0u : (uint8_t)clamp((int32_t)ui.act + (steps > 0 ? 1 : -1), 1, 6);   /* (left
                                                          * past the first: none picked) */
