@@ -1,6 +1,6 @@
 # MIDI sound randomization — implementation specification
 
-Status: MIDI dispatch, saved-project sound recall and dedicated regression tests implemented on this branch. The emulator build, smoke test, dedicated MIDI tests and existing live-drum tests have passed GitHub Actions. Physical FM1 firmware and hardware pad behavior have not yet been verified.
+Status: MIDI dispatch, saved-project sound recall and dedicated regression tests implemented on this branch. The emulator build, smoke test, dedicated MIDI tests, existing live-drum tests and native firmware compilation/package have passed GitHub Actions. Physical FM1 hardware and pad behavior have not yet been verified.
 
 ## Commands
 - Incoming MIDI channel 13 targets physical track T1; channel 14 T2; channel 15 T3, independent of each track's note RX channel.
@@ -46,10 +46,15 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 - No unsaved engine or preset change replaces the saved baseline. Randomization on a different unsaved engine is ignored until the saved sound returns or another explicit save occurs.
 - CC87 queues a main-thread call to the existing `project_recall_sound` / `sound_put` code, restoring the saved engine, FM6 patch when applicable and sound parameters while retaining mix/performance settings.
 - Clearing a saved slot invalidates any randomization baseline that references it. A project restored only from automatic unsaved recovery is not implicitly treated as an explicit save.
-- No auto-save is requested by the MIDI command handler.
+- No auto-save is requested by the MIDI command handler; its edits update the in-memory motion base, so a subsequent explicit SAVE records what the user hears.
+- Without a saved project source, CC85/86 have no baseline and are ignored; CC87 reports that there is no saved sound.
+- USB and TRS MIDI queues both dispatch reserved CCs before note-RX routing, modulation, MIDI Learn and REC macros.
+- The first eligible command mixes human trigger timing into its pseudorandom seed so rebooting does not repeat an identical fixed sequence.
 
 ## Validation
 - Branch-specific GitHub Actions workflow: `.github/workflows/randomization-midi.yml`.
 - This workflow compiles the emulator, runs its smoke test, runs `tests/randomization_midi_test.c`, and runs the existing live-drum regression suite.
-- Successful run #11: https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43749851627
-- Hardware behavior and native device firmware build still need verification before release.
+- Successful native firmware build run #17: https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43750525254
+- Dedicated regression coverage now includes both USB and TRS MIDI queues, per-track persisted sound reset, hard/slight ranges, Live Recall, drum exclusions, source deletion and 8-engine parameter whitelist.
+- The workflow uploads a downloadable experimental emulator artifact named `randomization-midi-emulator`. It does not deploy to or alter the production GitHub Pages site.
+- Native firmware is compiled and packaged but deliberately not deployed or advertised as device-tested. Hardware pad behavior still needs verification before merge/release.
