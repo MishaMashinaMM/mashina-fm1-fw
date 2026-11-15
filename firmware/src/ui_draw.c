@@ -1442,15 +1442,20 @@ static void draw_columns(void)
         return;
     }
     if (cur_page()->graph == GR_TOOLS) {
-        static const char *const labels[] = {"PAT", "SOUND", "ROW",
 #if FELUCCA_NO_SEQUENCER
-            "SLOT"
+        static const char *const labels[] = {"SOUND", "SLOT", "PROJECT", "CPU"};
+        static const uint8_t actions[] = {2u, 4u, 5u, 6u};
+        for (c = 0; c < 4u; c++) {
+            int picked = ui.act == actions[c];
+            card_arm_next = (uint8_t)picked;
+            draw_column(c, labels[c], picked ? "OCT+" : "", "",
+                        picked ? (act_ready() ? T_TEXT : T_DIM) : VAL(c), -1, ICON_AUTO);
+        }
 #else
-            "SONG"
-#endif
-        };
-        static const uint8_t icons[] = {ICON_AUTO, ICON_AUTO, ICON_X_SONG, ICON_X_SONG};   /* ROW, SONG: the song's */
+        static const char *const labels[] = {"PAT", "SOUND", "ROW", "SONG"};
+        static const uint8_t icons[] = {ICON_AUTO, ICON_AUTO, ICON_X_SONG, ICON_X_SONG};
         for (c = 0; c < 4u; c++) draw_act_column(c, labels[c], VAL(c), icons[c]);
+#endif
         return;
     }
     if (cur_page()->scope == SC_TRK) {                 /* LEVEL PAN REV of the selected track, the DJ FILTER */
