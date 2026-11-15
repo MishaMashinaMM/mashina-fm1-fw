@@ -2937,7 +2937,7 @@ static int project_used(uint32_t slot) { return proj_import(&proj_scratch, &proj
 
 /* (0.8.5) SAVE > LIBRARY: project n's sections stored (a bit each) and its section A's name (b, PROJ_NAME_LEN + 1),
  * from the flash: the newer valid header of each section's two copies, and the name's 12 bytes of section A's
- * payload (today's 3840-byte store; an older one: no name). No payload read, no CRC: a picture, not a load (reads of a
+ * payload (today's 3840-byte store; an older one: no name). Only a four-byte payload sentinel read, no full CRC: a picture, not a load (reads of a
  * few bytes in st_read's short IRQ-off windows; the UI asks for one project a frame). The project open: its RAM copy */
 static uint32_t lib_scan(uint32_t n, char *b)
 {
@@ -2959,8 +2959,19 @@ static uint32_t lib_scan(uint32_t n, char *b)
         int va = st_head(obj, 0, &ha) == 0, vb = st_head(obj, 1, &hb) == 0, c;
         if (!va && !vb)
             continue;
-        m |= 1u << k;
         c = vb && (!va || (hb.seq != ha.seq && hb.seq - ha.seq < 0x80000000u));
+        /* CLEAR SLOT writes a zero-filled payload through st_save(), so its
+         * flash header remains valid. Do not display that tombstone as a
+         * saved section. Inspect just the first word of the latest copy;
+         * all supported project formats have a nonzero first word. */
+        {
+            uint32_t first = 0;
+            if ((c ? hb.len : ha.len) < sizeof first ||
+                st_read(st_sector(obj, (uint32_t)c) + ST_PAYLOAD_OFF, &first, sizeof first) ||
+                !first)
+                continue;
+        }
+        m |= 1u << k;
         if (!k && (c ? hb.len : ha.len) == PROJ_STORE_SIZE) {
             uint8_t nm[PROJ_NAME_LEN];
             if (!st_read(st_sector(obj, (uint32_t)c) + ST_PAYLOAD_OFF + PROJ_NAME_OFF, nm, sizeof nm))
