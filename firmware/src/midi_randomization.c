@@ -165,6 +165,9 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         if (random_next() & 1u) offset = -offset;
         v = clamp((int32_t)random_baseline[k][id] + offset, 0, 127);
         t->p[id] = (int16_t)v;
+        /* Match ordinary MIDI CC edits: update motion's live base so a later
+         * explicit SAVE captures this sound rather than an old automation value. */
+        (void)motion_capture(t, id, (int16_t)v);
     }
     random_ui_dirty = 1u;
 }
