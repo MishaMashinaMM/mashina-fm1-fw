@@ -4,43 +4,69 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JIANT LIVE DRUMS v0.3</title>
-<meta name="description" content="JIANT LIVE DRUMS v0.3: two 12-pad FM1 drum engines, independent live MIDI control and an eight-voice pool.">
+<title>JIANT LIVE DRUMS v0.4 — Firmware for M-VAVE FM1</title>
+<meta name="description" content="JIANT LIVE DRUMS v0.4 for M-VAVE FM1. Device-tested live firmware with two 12-pad drum engines, six MIDI-routed tracks, live project recall, 32 CC macros and shared 3-band EQ.">
+<meta property="og:title" content="JIANT LIVE DRUMS v0.4">
+<meta property="og:description" content="Device-tested M-VAVE FM1 firmware: DRUM-X, DRUM-LAB, live recall, 32 macros, MIDI routing and global EQ.">
 <style>
-  :root { color-scheme: dark; font: 16px/1.55 system-ui, sans-serif; background: #0e0e10; color: #f1f1ed; }
-  body { max-width: 960px; margin: 0 auto; padding: 3rem 1.5rem; }
-  h1 { font-size: clamp(2.2rem, 6vw, 4.5rem); line-height: 1.08; letter-spacing: -.05em; margin: .4em 0; }
-  h2 { font-size: 1.25rem; } p { max-width: 740px; }
+  :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #0e0e10; color: #f1f1ed; }
+  * { box-sizing: border-box; }
+  body { max-width: 1000px; margin: 0 auto; padding: 2.7rem 1.5rem 3.5rem; }
+  h1 { font-size: clamp(2.25rem, 6vw, 4.6rem); line-height: 1.08; letter-spacing: -.045em; margin: .25em 0; }
+  h2 { font-size: 1.5rem; margin: 2.4rem 0 .6rem; }
+  h3 { font-size: 1.08rem; margin: .1rem 0 .45rem; }
+  p { max-width: 800px; margin: .65rem 0 1rem; }
   .eyebrow { color: #b1b1b6; letter-spacing: .13em; font-size: .78rem; text-transform: uppercase; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin: 2rem 0; }
-  .card { border: 1px solid #45454b; padding: 1.2rem; border-radius: 8px; background: #19191c; }
-  .card a { font-size: 1.25rem; font-weight: bold; color: #fff; }
-  a { color: #d3d3ff; } .notice { padding: 1rem; border-left: 4px solid #f5a77b; background: #30251f; }
+  .intro { font-size: 1.15rem; color: #e3e3e5; }
+  .status { display: inline-block; margin: .7rem 0 1.2rem; color: #d1efd8; font-size: .95rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
+  .card { border: 1px solid #45454b; padding: 1.15rem; border-radius: 8px; background: #19191c; }
+  .card a { font-size: 1.16rem; font-weight: 700; color: #fff; }
+  .card p { margin: .65rem 0 0; font-size: .94rem; color: #d3d3d6; }
+  a { color: #d3d3ff; }
+  a:focus-visible { outline: 2px solid #d3d3ff; outline-offset: 4px; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1rem; }
+  .feature { border-top: 1px solid #45454b; padding: .85rem 0; }
+  .feature p { font-size: .96rem; color: #d3d3d6; margin: 0; }
+  .notice { margin: 2rem 0; padding: 1rem 1.1rem; border-left: 3px solid #e6b179; background: #29241f; }
+  .notice p { margin: .4rem 0; }
   footer { margin-top: 3rem; border-top: 1px solid #45454b; padding-top: 1rem; color: #c7c7ca; font-size: .9rem; }
 </style>
 </head>
 <body>
-<div class="eyebrow">M-VAVE FM1 · independent open-source firmware fork</div>
-<h1>JIANT LIVE<br>DRUMS <small>v0.3</small></h1>
-<p>Live-oriented FM1 firmware with <strong>DRUM-X and DRUM-LAB</strong> (12 pads each),
-  eight shared synthesis voices, per-track MIDI routing, and 32 assignable MIDI Learn destinations.
-  DRUM-LAB also has eight kit-wide sound controls. The sequencer is disabled in this edition.</p>
-<div class="cards">
-  <div class="card"><a href="emu/">Try the emulator</a><p>Audition the drum engines in your browser, with MIDI testing and backup import.</p></div>
-  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install this exact Drums build using USB-MIDI in Chrome or Edge.</p></div>
-  <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1, edit patches, and save or restore complete backups.</p></div>
-  <div class="card"><a href="manual/">Interactive manual</a><p>Inherited JIANT controls reference; some sequencer and drum pages differ in Drums.</p></div>
-</div>
-<p class="notice"><strong>Experimental:</strong> this Drums fork has passed host tests and a simulated Jiant Live → Drums upgrade,
-  but has not yet been verified on physical FM1 hardware. Save a backup and arrange a recovery method before flashing.
-  The editor/installer are fork-specific; do not use the original JIANT installer for this package.</p>
-<h2>Live behavior</h2>
-<p>Up to six independently routed tracks; overlapping or restarting drum hits; four configurable choke groups;
-  MIDI CC fan-out across tracks. Existing drum sounds have their own independent editing controls.</p>
+<header>
+  <div class="eyebrow">M-VAVE FM1 · independent GPL-3.0-only firmware fork</div>
+  <h1>JIANT LIVE DRUMS v0.4</h1>
+  <p class="intro">Live-performance firmware for the FM1, with two 12-pad synthesis drum engines, six independently routed MIDI tracks, expressive CC control and fast project sound recall.</p>
+  <p class="status"><strong>v0.4 successfully flashed and tested on a physical FM1</strong> · owner-confirmed November 15, 2026 · emulator and firmware regression tests also passed.</p>
+</header>
+
+<nav class="cards" aria-label="JIANT LIVE DRUMS tools">
+  <div class="card"><a href="emu/">Try the emulator</a><p>Play the current firmware in a browser, test MIDI controls and optionally import a JIANT backup into an isolated session.</p></div>
+  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the current v0.4 firmware using the dedicated browser-based device updater. Check the displayed build version before flashing.</p></div>
+  <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1 to manage compatible sounds, settings and backups. Some newer Drums controls, including global EQ, are not yet exposed here.</p></div>
+  <div class="card"><a href="manual/">Interactive manual</a><p>Inherited from original JIANT; useful for unchanged controls but not yet an exact reference for Drums' live pages.</p></div>
+</nav>
+
+<main>
+  <h2>What’s in v0.4</h2>
+  <div class="features">
+    <section class="feature"><h3>Two independent 12-pad drum engines</h3><p>DRUM-X retains the original eight sounds and adds independent B2, S2, O2 and T2 instances. DRUM-LAB provides 12 editable synthesized pads and kit-wide shaping controls.</p></section>
+    <section class="feature"><h3>Live Recall and project management</h3><p>Long-press REC to toggle Live Recall. Then tap FX, SEL, ENV or LFO to recall project slots 1–4. SAVE → LIBRARY includes CLEAR SLOT and NEW PROJECT; saved-section indicators were corrected and device-tested.</p></section>
+    <section class="feature"><h3>Six-track MIDI routing</h3><p>Assign each track its own receive channel (1–16), including shared channels for layered sounds. The GLO MIXER offers six-track controls, and project-specific channel assignments are recalled with projects.</p></section>
+    <section class="feature"><h3>32 CC macros and MIDI Learn</h3><p>Up to 32 saved CC macros per project, with range/toggle, reverse and independent enable settings. MIDI Learn provides 32 additional parameter destinations and CC fan-out across tracks.</p></section>
+    <section class="feature"><h3>Shared three-band EQ</h3><p>Global EQ before effects: LOW 50 Hz, MID 700 Hz and HIGH 10 kHz, each adjustable ±15 dB. Its settings are saved with each project.</p></section>
+    <section class="feature"><h3>Built for live performance</h3><p>Eight shared synthesis voices, the original melodic engines and effects, and a live-only layout: SEQ opens DRUM MIDI MAP, PLAY opens DRUM PERFORMANCE, and REC opens MIDI CC MACROS. The sequencer is disabled.</p></section>
+  </div>
+  <section class="notice">
+    <strong>Device-tested experimental firmware.</strong>
+    <p>JIANT LIVE DRUMS v0.4 has been flashed and functionally tested on physical FM1 hardware. This is owner-reported validation, not exhaustive long-duration stress or recovery certification. Back up your projects and settings and prepare a recovery path before updating. Use this fork’s installer, not the original JIANT installer.</p>
+    <p>For detailed controls, change history and validation, read the <a href="https://github.com/MishaMashinaMM/jiant-live-drums#readme">project README</a>.</p>
+  </section>
+</main>
 <footer>
-  Jiant Live Drums modification by Misha Mashina. Based on <a href="https://github.com/juanjiant-bit/JIANT">JIANT</a> by
-  Juan Ignacio Antonucci (Juan Jiant), itself based on Felucca by Hügelton Instruments.
-  <a href="https://github.com/MishaMashinaMM/jiant-live-drums">Source and licenses (GPL-3.0-only)</a>.
+  Modified by Misha Mashina from <a href="https://github.com/juanjiant-bit/JIANT">JIANT</a> by Juan Ignacio Antonucci (Juan Jiant), based on Felucca by Hügelton Instruments.
+  <a href="https://github.com/MishaMashinaMM/jiant-live-drums">Source code and licensing (GPL-3.0-only)</a>.
 </footer>
 </body>
 </html>
