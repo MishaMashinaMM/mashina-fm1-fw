@@ -2091,19 +2091,24 @@ static void random_saved_project(const project_t *p, uint32_t slot)
 {
     uint32_t k, i;
     for (k = 0; k < 3u; k++) {
+        random_baseline_valid[k] = 0u;
         for (i = 0; i < P_COUNT; i++)
             random_baseline[k][i] = p->t[k].p[i];
         random_baseline_engine[k] = p->t[k].engine;
-        random_baseline_valid[k] = 1u;
         random_saved_slot[k] = (uint8_t)slot;
+        RING_PUBLISH();
+        random_baseline_valid[k] = 1u;
     }
     random_reset_pending = 0u;
 }
 static void random_saved_live(uint32_t slot)
 {
     uint32_t k;
-    random_capture_all();
-    for (k = 0; k < 3u; k++) random_saved_slot[k] = (uint8_t)slot;
+    for (k = 0; k < 3u; k++) {
+        random_baseline_valid[k] = 0u;
+        random_saved_slot[k] = (uint8_t)slot;
+        random_capture_track(k);
+    }
     random_reset_pending = 0u;
 }
 
@@ -2167,8 +2172,8 @@ static int project_clear_slot(uint32_t slot)
     memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
     for (uint32_t k = 0; k < 3u; k++)
         if (random_saved_slot[k] == slot) {
-            random_saved_slot[k] = 0xffu;
             random_baseline_valid[k] = 0u;
+            random_saved_slot[k] = 0xffu;
             random_reset_pending &= (uint8_t)~(1u << k);
         }
     live.dirty &= (uint8_t)~(1u << slot);
@@ -2243,8 +2248,9 @@ static int project_recall_sound(uint32_t slot, uint32_t k)
         return 1;
     sound_put(p, k);
     if (k < 3u) {
-        random_capture_track(k);
+        random_baseline_valid[k] = 0u;
         random_saved_slot[k] = (uint8_t)slot;
+        random_capture_track(k);
     }
     return 0;
 }
