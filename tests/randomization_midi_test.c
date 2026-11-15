@@ -18,6 +18,79 @@ static void random_test_reset_state(void)
     random_reset_pending = random_ui_dirty = 0u;
     for (k = 0; k < 3u; k++) random_saved_slot[k] = 0xffu;
 }
+static int pool_has(const uint8_t *p, uint32_t n, uint32_t id)
+{
+    uint32_t i;
+    for (i = 0; i < n; i++) if (p[i] == id) return 1;
+    return 0;
+}
+static int random_whitelist_test(void)
+{
+    static const uint8_t engines[] = {
+        ENGI_ANALOG, ENGI_PHASE, ENGI_LOFI, ENGI_VOICE,
+        ENGI_WHEEL, ENGI_NOISE, 12u, ENGI_ANIMAL,
+        ENGI_DRUM, ENGI_DRUMLAB
+    };
+    uint8_t ids[12];
+    uint32_t e, i, j, n;
+    int valid = 1, special = 1;
+    track_t *t = &trk[0];
+    for (e = 0; e < sizeof engines; e++) {
+        t->eng_req = engines[e];
+        t->p[P_E0] = t->p[P_E1] = t->p[P_VLANG] = 0;
+        n = random_sound_pool(t, ids, sizeof ids);
+        if (n > sizeof ids) valid = 0;
+        if ((engines[e] == ENGI_DRUM || engines[e] == ENGI_DRUMLAB) && n)
+            valid = 0;
+        for (i = 0; i < n; i++) {
+            const param_desc_t *d = track_desc(t, ids[i]);
+            if (!d || d->min != 0 || d->max != 127) valid = 0;
+            for (j = 0; j < i; j++) if (ids[i] == ids[j]) valid = 0;
+        }
+        switch (engines[e]) {
+        case ENGI_ANALOG:
+            special &= !pool_has(ids, n, P_E0) && !pool_has(ids, n, P_E1) &&
+                       !pool_has(ids, n, P_E7);
+            break;
+        case ENGI_PHASE:
+            special &= !pool_has(ids, n, P_E3) && !pool_has(ids, n, P_E4);
+            break;
+        case ENGI_VOICE:
+            special &= !pool_has(ids, n, P_E2) && !pool_has(ids, n, P_E3) &&
+                       !pool_has(ids, n, P_E7);
+            t->p[P_VLANG] = 1;
+            n = random_sound_pool(t, ids, sizeof ids);
+            special &= !pool_has(ids, n, P_E0) && !pool_has(ids, n, P_E1);
+            break;
+        case ENGI_WHEEL:
+            special &= !pool_has(ids, n, P_E0) && !pool_has(ids, n, P_E7);
+            break;
+        case ENGI_NOISE:
+            special &= !pool_has(ids, n, P_E0) && !pool_has(ids, n, P_E2) &&
+                       !pool_has(ids, n, P_E6) && !pool_has(ids, n, P_E7);
+            break;
+        case ENGI_ANIMAL:
+            special &= !pool_has(ids, n, P_E0) && !pool_has(ids, n, P_E3) &&
+                       !pool_has(ids, n, P_E5) && !pool_has(ids, n, P_E6);
+            break;
+        case ENGI_LOFI:
+            t->p[P_E1] = 5; /* BYTE: gritty texture, not time-loop */
+            n = random_sound_pool(t, ids, sizeof ids);
+            special &= pool_has(ids, n, P_E5) && !pool_has(ids, n, P_E7);
+            t->p[P_E1] = 6; /* FLOAT: E5 is envelope decay */
+            n = random_sound_pool(t, ids, sizeof ids);
+            special &= !pool_has(ids, n, P_E5) && !pool_has(ids, n, P_E7);
+            t->p[P_E1] = 0; t->p[P_E0] = 4; /* STEP: CRUSH now decay */
+            n = random_sound_pool(t, ids, sizeof ids);
+            special &= !pool_has(ids, n, P_E3);
+            break;
+        default: break;
+        }
+    }
+    return check("All 8 melodic and 2 drum engines: unique in-range eligibility, drums excluded", valid) +
+           check("Engine-specific pitch, selector, envelope and time exclusions", special);
+}
+
 int main(void)
 {
     int bad = 0, valid = 1, changed = 0;
@@ -27,6 +100,8 @@ int main(void)
     track_t *t;
     static project_store_t saved_snapshot;
 
+    ui_power_on();
+    bad += random_whitelist_test();
     ui_power_on();
     random_test_reset_state();
     t = &trk[0];
