@@ -524,6 +524,12 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
         midi_song_req = (uint8_t)(d1 + 1u);
         return;
     }
+    /* Reserved live commands bypass normal note RX masks entirely. They must
+     * also bypass mod_midi, MIDI Learn and REC macros on ALL 16 channels. */
+    if (st == 0xB0u && midi_random_cc(d1)) {
+        midi_control(ch, d1, d2);
+        return;
+    }
     mask = midi_route_mask(ch);
     if (st == 0x80u || (st == 0x90u && !d2)) {
         midi_note_event(ch, d1, 0);
