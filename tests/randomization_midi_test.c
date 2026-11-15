@@ -244,6 +244,40 @@ int main(void)
     frame();
     bad += check("CC87 cannot resurrect a cleared saved section", t->p[P_ATK] == 3);
 
+    /* A Live Recall changes the source back to the actual recalled section. */
+    bad += check("Live Recall of the first saved section succeeds",
+                 project_live_sounds(0u) == 0);
+    bad += check("Live Recall updates the baseline and saved slot for all three tracks",
+                 random_saved_slot[0] == 0u && random_saved_slot[1] == 0u &&
+                 random_saved_slot[2] == 0u && t->p[P_ATK] == 20);
+    t->p[P_ATK] = 6;
+    random_cc_test(13u, 87u, 0u);
+    random_cc_test(13u, 87u, 127u);
+    frame();
+    bad += check("CC87 after Live Recall restores its section's saved sound",
+                 t->p[P_ATK] == 20);
+
+    /* The saved melodic sound wins even if the live engine becomes a drum. */
+    t->eng_req = ENGI_DRUM;
+    t->p[P_ATK] = 2;
+    random_cc_test(13u, 87u, 0u);
+    random_cc_test(13u, 87u, 127u);
+    frame();
+    bad += check("CC87 restores a saved melodic sound from an unsaved drum engine",
+                 t->eng_req == ENGI_ANALOG && t->p[P_ATK] == 20);
+
+    /* Conversely, a saved drum sound must not respond to either command. */
+    trk[1].eng_req = ENGI_DRUM;
+    bad += check("Saving a section containing DRUM-X succeeds", project_save_as(2u, 0) == 0);
+    seed = random_seed;
+    random_cc_test(14u, 85u, 0u);
+    random_cc_test(14u, 85u, 127u);
+    random_cc_test(14u, 87u, 127u);
+    frame();
+    bad += check("A saved DRUM-X track is excluded from randomization and reset",
+                 random_seed == seed && trk[1].eng_req == ENGI_DRUM &&
+                 !(random_reset_pending & 2u));
+
     printf(bad ? "randomization MIDI: %d FAILED\n" : "randomization MIDI: all passed\n", bad);
     return bad ? 1 : 0;
 }
