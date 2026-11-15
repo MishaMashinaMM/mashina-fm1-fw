@@ -396,8 +396,10 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     uint32_t i, mask;
     /* Until the dedicated command handler is installed, swallow reserved CCs
      * before REC capture, legacy MIDI LEARN, macros, and the standard map. */
-    if (midi_random_cc(cc))
+    if (midi_random_cc(cc)) {
+        random_command(ch, cc, value);
         return;
+    }
 #if FELUCCA_NO_SEQUENCER
     if (cm_wait == 1u) {                              /* REC > ADD: capture CC and its actual incoming channel */
         if (ml_free_cc(cc)) {
