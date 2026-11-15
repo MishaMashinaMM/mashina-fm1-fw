@@ -23,7 +23,7 @@ assert.match(home, /successfully flashed and tested on a physical FM1/i, 'homepa
 assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
 assert.match(readme, /^# JIANT LIVE DRUMS v0\.4$/m, 'README must use the release-only title');
 assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
-assert.match(installer, /JIANT LIVE DRUMS v0\.2: DRUM-X and DRUM-LAB/, 'installer must explain both engines');
+assert.match(installer, /JIANT LIVE DRUMS v0\.4: DRUM-X and DRUM-LAB/, 'installer must describe both engines in current v0.4');
 assert.match(editor, /id="backup-export"/, 'editor must retain complete backup export');
 assert.match(editor, /id="backup-import"/, 'editor must retain complete backup restore');
 assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'Drums editor must not offer disabled sequencer');
