@@ -75,7 +75,7 @@ static uint32_t random_sound_pool(const track_t *t, uint8_t *ids, uint32_t cap)
  * Only T1..T3 are addressable by the reserved MIDI channels. */
 static int16_t random_baseline[3][P_COUNT];
 static uint8_t random_baseline_engine[3];
-static uint8_t random_baseline_valid[3];
+static volatile uint8_t random_baseline_valid[3];
 /* High-only pads may repeat the same value on each new press. Suppress
  * close-together duplicate packets, but allow another high after 120 ms.
  * This cannot distinguish a held controller's slow repeats from new presses. */
@@ -87,15 +87,19 @@ static uint8_t random_seed_ready;
 static volatile uint8_t random_ui_dirty;
 static volatile uint8_t random_reset_pending;
 /* The saved section used for each track; 0xff means there is no saved sound. */
-static uint8_t random_saved_slot[3] = {0xffu, 0xffu, 0xffu};
+static volatile uint8_t random_saved_slot[3] = {0xffu, 0xffu, 0xffu};
 
 static void random_capture_track(uint32_t k)
 {
     uint32_t j;
     if (k >= 3u) return;
+    /* MIDI may arrive while the main thread copies a new saved baseline.
+     * Hide any partially written snapshot until the final publish. */
+    random_baseline_valid[k] = 0u;
     for (j = 0; j < P_COUNT; j++)
         random_baseline[k][j] = trk[k].p[j];
     random_baseline_engine[k] = trk[k].eng_req;
+    RING_PUBLISH();
     random_baseline_valid[k] = 1u;
     /* Do not reset trigger state here: a first command can capture its baseline. */
 }
