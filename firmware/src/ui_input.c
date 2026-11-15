@@ -2098,6 +2098,7 @@ static void scale_link(void)
 static void ui_input_frame(void);
 static void ui_input(void)
 {
+    if (random_ui_dirty) { random_ui_dirty = 0u; ui.force = 1u; }
     cpt_poll();                                         /* (0.9.14) CPU TEST measured as it plays (ui_menu.c) */
     ui_input_frame();
     scale_link();                                       /* (JIANT 0.4) one scale for every melodic track (after the
