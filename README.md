@@ -9,7 +9,7 @@
 
 **[Project homepage](https://mishamashinamm.github.io/jiant-live-drums/)** · **[Emulator](https://mishamashinamm.github.io/jiant-live-drums/emu/)** · **[Drums installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/)** · **[Drums editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/)** · **[Interactive manual (inherited)](https://mishamashinamm.github.io/jiant-live-drums/manual/)**
 
-**[JLD v0.3 illustrated manual (draft)](docs/JLD_MANUAL_V0.3.md)** — source-derived controls, live MIDI workflows, drum engines, and annotated schematics. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
+**[JLD illustrated manual (historical v0.3 draft)](docs/JLD_MANUAL_V0.3.md)** — source-derived controls, live MIDI workflows, drum engines, and annotated schematics. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
 
 The links above are the GitHub Pages routes for this separate Drums repository. The repository includes the Drums-specific browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated Drums control reference**.
 
@@ -156,7 +156,7 @@ On the tested FM1, these pages open with a single press and remain stable while 
 
 ### Display and startup
 
-The startup screen uses a black background with **JIANT LIVE DRUMS**, author attribution and **v0.3**. Decorative display animations and the startup LED sweep are disabled; informative UI and sound feedback remain.
+The startup screen uses a black background with **JIANT LIVE DRUMS**, author attribution and **v0.4**. Decorative display animations and the startup LED sweep are disabled; informative UI and sound feedback remain.
 
 ## Try JIANT LIVE DRUMS on your computer
 
@@ -208,9 +208,9 @@ The Drums emulator does not load a sample bank or offer sample-kit playback. It 
 
 ## Status and safety
 
-**Current hardware validation:** The owner confirms that **all current JLD v0.4 firmware features have been tested and approved on a physical FM1**. Emulator and host test results below are additional development evidence, **not indications that a feature has only been tested in software**. Historical v0.3 milestones are retained for provenance. Browser-only functions (such as browser backup import) are separate from device firmware functionality. The LIBRARY occupancy overview discrepancy has a proposed fix merged in PR #21 after successful emulator testing; the fix still awaits physical FM1 confirmation.
+**Current hardware validation:** The owner confirms that **all current JLD v0.4 firmware features have been tested and approved on a physical FM1**. Emulator and host test results below are additional development evidence, **not indications that a feature has only been tested in software**. Historical v0.3 milestones are retained for provenance. Browser-only functions (such as browser backup import) are separate from device firmware functionality. The LIBRARY occupancy overview correction was merged in PR #21 and successfully tested on a physical FM1.
 
-- **v0.4 milestone:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18). **Successfully flashed, tested and approved on physical FM1 hardware**, including Live Recall and slot management (owner-confirmed November 15, 2026). All current features are reported tested and approved on device. A LIBRARY occupancy display inconsistency was observed during hardware testing. PR #21's correction passed firmware, host, and emulator tests; physical FM1 confirmation of that correction is pending. Feature approval does not imply exhaustive long-duration stress qualification.
+- **v0.4 milestone:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18). **Successfully flashed, tested and approved on physical FM1 hardware**, including Live Recall and slot management (owner-confirmed November 15, 2026). All current features are reported tested and approved on device. A LIBRARY occupancy display inconsistency was observed during hardware testing. PR #21's correction passed firmware, host, and emulator tests; the owner subsequently confirmed the correction works on a physical FM1. Feature approval does not imply exhaustive long-duration stress qualification.
 
 - **v0.3 release:** [GitHub Actions build and deployment](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42855710544) completed successfully; the [public installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/) serves `v0.3-1956d21`. Both physical FM1 units were flashed and checked successfully on November 10, 2026: **official V15 → JLD v0.3** and **original JIANT → JLD v0.3**.
 - **Host regression:** the live-drum host regression suite covers drum engines, MIDI routing, project serialization, macro control, and Stage 27B stress. The `macro-32` firmware and emulator build jobs, including all 11 live-drum host regression suites, passed on November 10, 2026.
