@@ -1,6 +1,6 @@
 # MIDI sound randomization — implementation specification
 
-Status: design agreed; implementation pending. This document is intentionally not a claim that the feature is wired or tested.
+Status: initial MIDI dispatch, eligibility, mutation and baseline integration committed on this branch. CI compilation and hardware behavior are not yet verified.
 
 ## Commands
 - Incoming MIDI channel 13 targets physical track T1; channel 14 T2; channel 15 T3, independent of each track's note RX channel.
@@ -33,3 +33,20 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 - firmware/src/params.c: shared FILTER, DIST and MORPH descriptors.
 - firmware/src/midi_control.c: USB/TRS channel controls, CC map, MIDI learn, REC macros.
 - firmware/src/project.c: project capture and loading.
+
+## Current trigger compatibility
+- CC values 0..63 re-arm a command; values 64..127 activate it.
+- A second high-only command is accepted after a 120 ms duplicate-message debounce window.
+- There is no perfect way to distinguish a held controller's slow repeats from separate presses using CC messages alone.
+- CC85..87 are reserved on every MIDI channel and never reach MIDI Learn, REC macros or normal CC mapping.
+
+## Baseline integration
+- Successful explicit project saves refresh the baseline for T1..T3.
+- Full project restore and nonempty Live Recall refresh the baseline.
+- First use after an engine change captures the then-current sound; review other individual sound-load pathways before release.
+- Reset preserves parameters designated by `param_kept` (mix/performance settings).
+- No auto-save is requested by the MIDI command handler.
+
+## Validation
+- Branch-specific GitHub Actions workflow: `.github/workflows/randomization-midi.yml`.
+- This workflow builds the emulator and runs existing live-drum regression tests; no test success is claimed until CI results are available.
