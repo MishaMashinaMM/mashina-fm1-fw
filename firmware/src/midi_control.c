@@ -26,6 +26,8 @@ static uint16_t midi_owners[NTRK];
 /* The pitch started for each (channel, incoming note, track). A transpose edit
  * must not retarget Note Off or sustain release for an already held note. */
 static uint8_t midi_pitch[16][128][NTRK];
+/* Constant-time held-pitch check for both Note Off and the keyboard LED redraw. */
+static uint16_t midi_pitch_count[NTRK][128];
 /* Temporary per-track routing: CC88–90 select CH1/CH2 by value; 0 = saved RX. */
 static volatile uint8_t midi_live_rx[NTRK];
 static uint32_t midi_live_channel(uint32_t i)
@@ -93,12 +95,7 @@ static void midi_expression_channel(uint32_t ch)
 /* a MIDI note of track t sounds note */
 static int midi_note_held(const track_t *t, uint32_t note)
 {
-    uint32_t ch, bit = 1u << trk_index(t);
-    for (ch = 0; ch < 16u; ch++)
-        for (uint32_t src = 0; src < 128u; src++)
-            if ((mn_get(ch, src) & bit) && midi_pitch[ch][src][trk_index(t)] == note)
-                return 1;
-    return 0;
+    return note < 128u && midi_pitch_count[trk_index(t)][note] != 0u;
 }
 
 /* a key held on track t sounds note */
@@ -127,6 +124,7 @@ static void midi_release_mask(uint32_t ch, uint32_t note, uint32_t mask)
             continue;
         uint32_t pitch = midi_pitch[ch][note][i];
         midi_pitch[ch][note][i] = 0;
+        if (midi_pitch_count[i][pitch]) midi_pitch_count[i][pitch]--;
         midi_owners[i]--;
         if (!--midi_ch[ch].owned[i])
             midi_ch[ch].targets &= (uint8_t)~(1u << i);
@@ -186,6 +184,7 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
                 midi_hint = (uint8_t)(i + 1u);
             midi_play(t, ch, (uint32_t)pitch, vel);
             midi_pitch[ch][note][i] = (uint8_t)pitch;
+            midi_pitch_count[i][pitch]++;
             midi_owners[i]++;
             c->owned[i]++;
         }
@@ -230,6 +229,7 @@ static void __attribute__((noinline)) midi_forget_track(uint32_t track)
         midi_ch[ch].owned[track] = 0;
     }
     midi_owners[track] = 0;
+    memset(midi_pitch_count[track], 0, sizeof midi_pitch_count[track]);
     midi_bend_q8[track] = midi_bend_target[track] = 0;
 }
 
