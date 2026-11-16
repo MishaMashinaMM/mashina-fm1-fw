@@ -1473,7 +1473,8 @@ static void draw_columns(void)
         djf_format(song.g[G_DJF], val, &unit);          /* (0.9.1) KNOB 4: the master DJ FILTER (was the track's MUTE) */
         card_mot_next = (uint8_t)motion_djf_any();
         card_curve_next = (int16_t)(song.g[G_DJF] + 256);
-        draw_column(3, "DJ FILT", val, unit, VAL(3u), RATIO(&GP[G_DJF], song.g[G_DJF]), ICON_AUTO);
+        fmt_int(val, (int32_t)midi_transpose[song.sel]);
+        draw_column(3, "TRANSPOSE", val, "ST", VAL(3u), ((int32_t)midi_transpose[song.sel] + 24) * 1000 / 48, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_BROWSE) {
@@ -2231,16 +2232,27 @@ static void draw_cc_macros(void)
 
 static void draw_mixer_table(void)
 {
-    cv_begin(240, 158, T_BG);
+    /* cv_begin is capped at CV_MAX = 240*150 pixels. The old 158px
+     * canvas silently clipped the bottom of T6. Split the six rows
+     * into a 134px upper panel and a 24px final row, with no extra RAM. */
+    cv_begin(240, 134, T_BG);
     {   /* column headings */
         cv_text(4, CAP_IN(S, 14), &AF_S, "TRK", T_TEXT);
-        cv_text(48, CAP_IN(S, 14), &AF_S, "VOICE", T_TEXT);
-        cv_text(120, CAP_IN(S, 14), &AF_S, (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? "LIVE" : "MIDI", (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? T_ACCENT : T_TEXT);
-        cv_text(168, CAP_IN(S, 14), &AF_S, "VOL", T_TEXT);
-        cv_text(204, CAP_IN(S, 14), &AF_S, "PAN", T_TEXT);
+        cv_text(32, CAP_IN(S, 14), &AF_S, "VOICE", T_TEXT);
+        cv_text(101, CAP_IN(S, 14), &AF_S, (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? "LIVE" : "MIDI", (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? T_ACCENT : T_TEXT);
+        cv_text(132, CAP_IN(S, 14), &AF_S, "VOL", T_TEXT);
+        cv_text(168, CAP_IN(S, 14), &AF_S, "PAN", T_TEXT);
+        cv_text(207, CAP_IN(S, 14), &AF_S, "TRN", T_TEXT);
     }
     for (uint32_t i = 0; i < 6u; i++) {
         int32_t ry = 14 + (int32_t)i * 24;
+        if (i == 5u) {
+            cv_blit(0, 40);                    /* header and T1..T5: screen y 40..173 */
+            /* Retain the 14px local top margin so CAP_IN text baselines
+             * match T1..T5; send only the final 24px screen row. */
+            cv_begin(240, 38, T_BG);
+            ry = 14;
+        }
         uint16_t tc = (trk[i].p[P_MUTE]) ? T_DIM : ((i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT));
         uint16_t nc = (i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT);
         char b[16];
@@ -2261,21 +2273,21 @@ static void draw_mixer_table(void)
             cv_text(18, ry + CAP_IN(S, 20), &AF_S, "M", nc);
         }
         /* voice (clipped to column) */
-        cv_text_in(48, ry + CAP_IN(S, 20), 68, &AF_S, vname, tc, T_BG);
+        cv_text_in(32, ry + CAP_IN(S, 20), 66, &AF_S, vname, tc, T_BG);
         /* midi rx */
         { char m[8]; m[0]=0; /* format */
           /* simple itoa */
           uint32_t ch = midi_live_channel(i);
           m[0] = (char)('0' + (ch / 10u));
           if (ch >= 10u) { m[1] = (char)('0' + (ch % 10u)); m[2]=0; } else { m[0]=(char)('0'+ch); m[1]=0; }
-          cv_text(120, ry + CAP_IN(S, 20), &AF_S, m, midi_live_rx[i] ? T_ACCENT : tc);
+          cv_text(101, ry + CAP_IN(S, 20), &AF_S, m, midi_live_rx[i] ? T_ACCENT : tc);
         }
         /* volume */
         { char m[8]; uint32_t v = (uint32_t)trk[i].p[P_LEVEL];
           /* itoa */
           int k=0; char tmp[8];
           if (v==0) tmp[k++]='0'; else { uint32_t x=v; char r[8]; int ri=0; while(x){r[ri++]='0'+x%10;x/=10;} while(ri) tmp[k++]=r[--ri]; } tmp[k]=0;
-          str_cpy(m,tmp,8); cv_text(168, ry + CAP_IN(S, 20), &AF_S, m, tc);
+          str_cpy(m,tmp,8); cv_text(132, ry + CAP_IN(S, 20), &AF_S, m, tc);
         }
         /* pan */
         { char m[8]; int32_t p = trk[i].p[P_PAN];
@@ -2286,17 +2298,25 @@ static void draw_mixer_table(void)
           if (p > 0) { /* add + prefix */
              char mm[8]; mm[0]='+'; str_cpy(mm+1,tmp,7); str_cpy(m,mm,8);
           } else str_cpy(m,tmp,8);
-          cv_text(204, ry + CAP_IN(S, 20), &AF_S, m, tc);
+          cv_text(168, ry + CAP_IN(S, 20), &AF_S, m, tc);
+        }
+        /* Signed semitone transpose of incoming melodic MIDI only. */
+        {
+            char m[8];
+            int32_t v = midi_transpose[i];
+            if (v > 0) { m[0] = '+'; fmt_int(m + 1, v); }
+            else fmt_int(m, v);
+            cv_text(207, ry + CAP_IN(S, 20), &AF_S, m, tc);
         }
         /* pan motion indicator: a small filled square in the PAN cell's upper-right corner */
         {
             uint32_t mm[(P_COUNT + 31u) / 32u];
             (void)motion_mask(i, mm);
             if ((mm[P_PAN / 32u] >> (P_PAN % 32u)) & 1u)
-                cv_rect(234, ry + 1, 2, 2, T_ACCENT);
+                cv_rect(196, ry + 1, 2, 2, T_ACCENT);
         }
     }
-    cv_blit(0, 40);
+    cv_blit_from(0, 160, 14);             /* canvas y14..37 -> screen y174..197 */
     {   /* global status line, screen y 198..221 */
         char rb[8], db[8];
         const char *rs = (song.g[G_ROUTE] == 0u) ? "1-4" : (song.g[G_ROUTE] == 1u) ? "SEL" : "1-6";

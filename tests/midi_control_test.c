@@ -9,7 +9,9 @@ static void midi_test_reset(void)
 {
     ui_power_on();
     memset(midi_ch, 0, sizeof midi_ch); memset(midi_sel_on, 0, sizeof midi_sel_on);
-    memset(midi_owners, 0, sizeof midi_owners); memset(midi_bend_q8, 0, sizeof midi_bend_q8);
+    memset(midi_owners, 0, sizeof midi_owners); memset(midi_pitch, 0, sizeof midi_pitch);
+    memset(midi_pitch_count, 0, sizeof midi_pitch_count);
+    memset(midi_transpose, 0, sizeof midi_transpose); memset(midi_bend_q8, 0, sizeof midi_bend_q8);
     memset(midi_bend_target, 0, sizeof midi_bend_target); memset(&midi_clock, 0, sizeof midi_clock);
     memset(&um, 0, sizeof um); memset(midi_in_source, 0, sizeof midi_in_source);
     mi_r = mi_w = 0; midi_in_overflow = 0; midi_beat_samples = 0;
@@ -357,9 +359,100 @@ static int cc_map_test(void)
     bad += check("not armed: the CC is the new value, no event", trk[0].p[P_E4] == 77 && motion.count == 1u);
     return bad;
 }
+/* v0.6: per-track MIDI pitch snapshots survive edits and pedal release. */
+static int transpose_test(void)
+{
+    int bad = 0;
+    midi_test_reset();
+    midi_transpose[0] = 12;
+    midi_transpose[1] = -12;
+    midi_rx[1] = 1;                    /* layered tracks on the same input channel */
+    queued(0x90, 60, 100, 1);
+    bad += check("transpose: one MIDI note fans out to +12 and -12 tracks",
+                 gate_note(&trk[0], 72) && gate_note(&trk[1], 48));
+    midi_transpose[0] = 7; midi_transpose[1] = 0;
+    queued(0x80, 60, 0, 1);
+    bad += check("transpose: Note Off uses the pitches sounded before the edit",
+                 !gate_note(&trk[0], 72) && !gate_note(&trk[1], 48));
+    queued(0x90, 60, 100, 1);
+    bad += check("transpose: new note uses the changed values",
+                 gate_note(&trk[0], 67) && gate_note(&trk[1], 60));
+    queued(0x80, 60, 0, 1);
+    midi_test_reset();
+    midi_transpose[0] = 12;
+    queued(0x90, 60, 100, 1); queued(0xB0, 64, 127, 1);
+    queued(0x80, 60, 0, 1); midi_transpose[0] = -5;
+    bad += check("transpose: sustain pedal holds old pitch after edit", gate_note(&trk[0], 72));
+    queued(0xB0, 64, 0, 1);
+    bad += check("transpose: pedal up releases old pitch", !gate_note(&trk[0], 72));
+    midi_test_reset();
+    midi_transpose[0] = 24;
+    queued(0x90, 120, 100, 1);
+    bad += check("transpose: out-of-range note has no owner or sounding voice",
+                 !mn_get(0, 120) && !midi_owners[0]);
+    queued(0x80, 120, 0, 1);
+    midi_test_reset();
+    midi_transpose[3] = 12;
+    queued(0x93, 36, 100, 1);
+    bad += check("transpose: DRUM-X keeps the original MIDI note",
+                 midi_pitch_peek(3, 36, 3) == 36);
+    queued(0x83, 36, 0, 1);
+
+    /* The emulator's on-screen FM1 keys use keyboard_block(), not MIDI RX.
+     * Their pitch should also follow the selected track's TRN setting. */
+    midi_test_reset();
+    midi_transpose[0] = 12;
+    fm1_in.notes = 1u << 7;           /* C4 on the built-in 27-key keyboard */
+    events_block(CTL);
+    bad += check("transpose: local FM1 key sounds +12 semitones",
+                 gate_note(&trk[0], 72) && !gate_note(&trk[0], 60) && kb_snd[7][0] == 72);
+    midi_transpose[0] = -12;          /* change TRN while the key is still down */
+    fm1_in.notes = 0;
+    events_block(CTL);
+    bad += check("transpose: local key-up releases the pitch sounded before the edit",
+                 !gate_note(&trk[0], 72));
+    fm1_in.notes = 1u << 7;
+    events_block(CTL);
+    bad += check("transpose: next local FM1 press sounds -12 semitones",
+                 gate_note(&trk[0], 48) && !gate_note(&trk[0], 60) && kb_snd[7][0] == 48);
+    fm1_in.notes = 0;
+    events_block(CTL);
+    bad += check("transpose: local note-off releases its shifted pitch",
+                 !gate_note(&trk[0], 48));
+    midi_test_reset();
+    midi_transpose[0] = 24;
+    song.octave = 4;
+    fm1_in.notes = 1u << 7;     /* C4 + four octaves + TRN exceeds MIDI 127 */
+    events_block(CTL);
+    bad += check("transpose: local FM1 keyboard drops out-of-range notes",
+                 kb_sn[7] == 0 && !trk[0].v[0].gate);
+    fm1_in.notes = 0;
+    events_block(CTL);
+    song.octave = 0;
+
+    midi_test_reset();
+    midi_transpose[3] = 12;
+    song.sel = 3;              /* default drum track */
+    fm1_in.notes = 1u << 7;
+    events_block(CTL);
+    bad += check("transpose: local DRUM-X key keeps its native pad note",
+                 kb_sn[7] == 1 && kb_snd[7][0] == kb_note[7]);
+    fm1_in.notes = 0;
+    events_block(CTL);
+    return bad;
+}
+#ifdef TRANSPOSE_ONLY
 int main(void)
 {
-    int bad = controls_test() + sustain_test() + ownership_test() + clock_test(1) + clock_test(2) + clock_arp_and_boundaries() +
+    int bad = transpose_test();
+    printf("%s\n", bad ? "TRANSPOSE TEST FAILED" : "Transpose MIDI and local keyboard tests passed");
+    return bad != 0;
+}
+#else
+int main(void)
+{
+    int bad = transpose_test() + controls_test() + sustain_test() + ownership_test() + clock_test(1) + clock_test(2) + clock_arp_and_boundaries() +
               arp_ext_stop_test() + usb_burst_test() + route_test() + cc_map_test();
     printf("%s\n", bad ? "MIDI CONTROL/CLOCK TEST FAILED" : "MIDI control/clock integration tests passed"); return bad != 0;
 }
+#endif

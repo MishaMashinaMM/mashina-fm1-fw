@@ -10,6 +10,8 @@ static void reset_rx(void)
     memset(trk, 0, sizeof trk); memset(&song, 0, sizeof song);
     memset(midi_ch, 0, sizeof midi_ch); memset(midi_sel_on, 0, sizeof midi_sel_on);
     memset(midi_owners, 0, sizeof midi_owners); memset(kb_on, 0, sizeof kb_on);
+    memset(midi_pitch, 0, sizeof midi_pitch); memset(midi_pitch_count, 0, sizeof midi_pitch_count);
+    memset(midi_transpose, 0, sizeof midi_transpose);
     memset(dxo_n, 0, sizeof dxo_n);
     memset(ml_table, 0, sizeof ml_table);
     cm_count = 0; memset(cm_rows, 0, sizeof cm_rows);

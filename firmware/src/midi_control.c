@@ -23,6 +23,51 @@ static uint8_t midi_sel_on[16][128];
 static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
 static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
+/* Transposed MIDI note snapshots. The former 16*128*6 dense table used 12 KiB
+ * even when no notes were held and overflowed the FM1's RAM region.
+ * Each track can hold up to 128 simultaneous source-note/channel owners; beyond
+ * that capacity, new notes are ignored BEFORE ownership or playback is acquired.
+ * ch1 = 0 for a free slot, otherwise MIDI channel + 1. Three bytes per slot.
+ * No recording in project/global settings: this is transient MIDI state. */
+#define MIDI_SNAPSHOT_SLOTS 128u
+typedef struct { uint8_t ch1, note, pitch; } midi_pitch_slot_t;
+static midi_pitch_slot_t midi_pitch[NTRK][MIDI_SNAPSHOT_SLOTS];
+_Static_assert(sizeof(midi_pitch_slot_t) == 3, "MIDI snapshot must remain compact");
+/* At most 16 MIDI channels can hold the same sounding pitch on one track. */
+static uint8_t midi_pitch_count[NTRK][128];
+
+static int midi_pitch_save(uint32_t ch, uint32_t note, uint32_t track, uint32_t pitch)
+{
+    uint32_t j;
+    midi_pitch_slot_t *slots = midi_pitch[track];
+    for (j = 0; j < MIDI_SNAPSHOT_SLOTS; j++)
+        if (!slots[j].ch1) {
+            slots[j].ch1 = (uint8_t)(ch + 1u);
+            slots[j].note = (uint8_t)note;
+            slots[j].pitch = (uint8_t)pitch;
+            return 1;
+        }
+    return 0; /* saturated: caller MUST reject this owner and its note-on */
+}
+static uint32_t midi_pitch_take(uint32_t ch, uint32_t note, uint32_t track)
+{
+    midi_pitch_slot_t *slots = midi_pitch[track];
+    for (uint32_t j = 0; j < MIDI_SNAPSHOT_SLOTS; j++)
+        if (slots[j].ch1 == ch + 1u && slots[j].note == note) {
+            uint32_t pitch = slots[j].pitch;
+            slots[j].ch1 = 0;
+            return pitch;
+        }
+    return note; /* defensive fallback; all actual owners have a snapshot */
+}
+static uint32_t midi_pitch_peek(uint32_t ch, uint32_t note, uint32_t track)
+{
+    midi_pitch_slot_t *slots = midi_pitch[track];
+    for (uint32_t j = 0; j < MIDI_SNAPSHOT_SLOTS; j++)
+        if (slots[j].ch1 == ch + 1u && slots[j].note == note)
+            return slots[j].pitch;
+    return 0xFFu;
+}
 /* Temporary per-track routing: CC88–90 select CH1/CH2 by value; 0 = saved RX. */
 static volatile uint8_t midi_live_rx[NTRK];
 static uint32_t midi_live_channel(uint32_t i)
@@ -90,11 +135,7 @@ static void midi_expression_channel(uint32_t ch)
 /* a MIDI note of track t sounds note */
 static int midi_note_held(const track_t *t, uint32_t note)
 {
-    uint32_t ch, bit = 1u << trk_index(t);
-    for (ch = 0; ch < 16u; ch++)
-        if (mn_get(ch, note) & bit)
-            return 1;
-    return 0;
+    return note < 128u && midi_pitch_count[trk_index(t)][note] != 0u;
 }
 
 /* a key held on track t sounds note */
@@ -121,12 +162,14 @@ static void midi_release_mask(uint32_t ch, uint32_t note, uint32_t mask)
         track_t *t = &trk[i];
         if (!(owners & (1u << i)))
             continue;
+        uint32_t pitch = midi_pitch_take(ch, note, i);
+        if (midi_pitch_count[i][pitch]) midi_pitch_count[i][pitch]--;
         midi_owners[i]--;
         if (!--midi_ch[ch].owned[i])
             midi_ch[ch].targets &= (uint8_t)~(1u << i);
 #if FELUCCA_NO_SEQUENCER
-        if (!midi_local_held(t, note))
-            input_off(t, note);
+        if (!midi_note_held(t, pitch) && !midi_local_held(t, pitch))
+            input_off(t, pitch);
 #else
         if (drum_track(t) && drum_oct_of(note)) {
             dxo_off(t, DXO_MIDI + (ch << 7) + note);
@@ -167,12 +210,25 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
             midi_release(ch, note);
         for (i = 0; i < NTRK; i++) {
             track_t *t = &trk[i];
+            int32_t pitch;
             if (!(mask & (1u << i)))
                 continue;
+            pitch = (int32_t)note + ((drum_track(t) || t->eng_req == ENGI_DRUMLAB) ? 0 : midi_transpose[i]);
+            if (pitch < 0 || pitch > 127) {
+                mask &= ~(1u << i); /* out-of-range notes do not acquire ownership */
+                continue;
+            }
             midi_expression(t, c);
             if (t != TSEL)
                 midi_hint = (uint8_t)(i + 1u);
-            midi_play(t, ch, note, vel);
+            /* Reserve a snapshot before sounding a note: a rejected overflow
+             * must never leave an untracked sounding pitch or stuck Note Off. */
+            if (!midi_pitch_save(ch, note, i, (uint32_t)pitch)) {
+                mask &= ~(1u << i);
+                continue;
+            }
+            midi_play(t, ch, (uint32_t)pitch, vel);
+            midi_pitch_count[i][pitch]++;
             midi_owners[i]++;
             c->owned[i]++;
         }
@@ -211,11 +267,14 @@ static void __attribute__((noinline)) midi_forget_track(uint32_t track)
             if (mn_get(ch, note) & (1u << track)) {
                 uint32_t v = mn_get(ch, note) & ~(1u << track);
                 mn_set(ch, note, (v & MIDI_TRACK_MASK) ? v : 0u);
+                (void)midi_pitch_take(ch, note, track);
             }
         midi_ch[ch].targets &= (uint8_t)~(1u << track);
         midi_ch[ch].owned[track] = 0;
     }
     midi_owners[track] = 0;
+    memset(midi_pitch[track], 0, sizeof midi_pitch[track]);
+    memset(midi_pitch_count[track], 0, sizeof midi_pitch_count[track]);
     midi_bend_q8[track] = midi_bend_target[track] = 0;
 }
 

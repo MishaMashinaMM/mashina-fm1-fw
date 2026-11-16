@@ -207,6 +207,9 @@ static void ui_power_on(void)
     memset(midi_sel_on, 0, sizeof midi_sel_on);
     memset(midi_ch, 0, sizeof midi_ch);
     memset(midi_owners, 0, sizeof midi_owners);
+    memset(midi_pitch, 0, sizeof midi_pitch);
+    memset(midi_pitch_count, 0, sizeof midi_pitch_count);
+    memset(midi_transpose, 0, sizeof midi_transpose);
     memset(midi_bend_q8, 0, sizeof midi_bend_q8);
     memset(midi_bend_target, 0, sizeof midi_bend_target);
     memset(kb_on, 0, sizeof kb_on);                     /* no key held */
@@ -1810,12 +1813,12 @@ static int test_tracks(void)
     open_family(FAM_TRK);
     before = trk[0];
     turn(EN_PRESET, 1);
-    bad += check("#94 MIXER: the PRESETS knob loads the next sound; the steps and the mix stay",
-                 trk[0].preset != before.preset && !memcmp(trk[0].step, before.step, sizeof before.step) &&
-                 trk[0].p[P_LEVEL] == before.p[P_LEVEL] && cur_page()->graph == GR_TRK);
+    bad += check("v0.6 MIXER: PRESETS controls DJ Filter, not sound selection",
+                 trk[0].preset == before.preset && !memcmp(trk[0].step, before.step, sizeof before.step) &&
+                 trk[0].p[P_LEVEL] == before.p[P_LEVEL] && song.g[G_DJF] == 1);
     turn(EN_K4, 1);
-    bad += check("(0.9.1) MIXER KNOB 4 right: the DJ FILTER a high-pass (MUTE stays: the GLO layer's, below)",
-                 song.g[G_DJF] == 1 && trk[0].p[P_MUTE] == 0 && song.sel == 0);
+    bad += check("v0.6 MIXER: K4 sets transpose without changing DJ Filter",
+                 midi_transpose[0] == 1 && song.g[G_DJF] == 1 && trk[0].p[P_MUTE] == 0);
     {
         uint32_t rx0 = midi_rx_channel(0);
         uint32_t rx1 = midi_rx_channel(1);
@@ -1845,8 +1848,8 @@ static int test_tracks(void)
                      midi_rx_channel(1) == rx1 &&
                      song.g[G_DJF] == 1);
     }
-    turn(EN_K4, -3);
-    bad += check("KNOB 4 left across the middle: it stops there once (OFF; djf_test.c: on from there)",
+    turn(EN_PRESET, -3);
+    bad += check("PRESETS left across DJ Filter centre stops at OFF",
                  song.g[G_DJF] == 0 && trk[0].p[P_MUTE] == 0);
     turn(EN_ALGO, 1);
     bad += check("ALGORITHM selects the track", song.sel == 1);
@@ -3656,9 +3659,8 @@ static int test_product_ux(void)
     turn(EN_SELECT, 1); frames(320); ok = str_eq(cur_page()->title, "SENDS");   /* (0.9.2: SELECT the chain; a GLO tap */
     press(B_GLO); frames(320); ok &= cur_page()->fam == FAM_GLO && str_eq(cur_page()->title, "GLOBAL");   /* the next group) */
     press(B_GLO); frames(320); ok &= str_eq(cur_page()->title, "SYSTEM");
-    press(B_GLO); frames(320); ok &= cur_page()->graph == GR_LIVE && str_eq(cur_page()->title, "MANO");   /* (0.9.11: LIVE */
-    press(B_GLO); ok &= cur_page()->graph == GR_TRK && str_eq(cur_page()->title, "MIXER");          /* first, then MIX) */
-    bad += check("0.9.2 GLO: SELECT MIXER > SENDS, a GLO tap the next group: GLOBAL > SYSTEM > LIVE (MANO) > MIXER", ok);
+    press(B_GLO); ok &= cur_page()->graph == GR_TRK && str_eq(cur_page()->title, "MIXER");
+    bad += check("v0.6 GLO: SELECT MIXER > SENDS and GLO cycles GLOBAL > SYSTEM > MIXER (no LIVE pages)", ok);
     go_home(); hold(B_SEQ);
     bad += check("long SEQ off the SEQ pages is a tap (no SONG: SAVE held, G5)", cur_page()->graph != GR_SONG);
     go_page(GR_SONG);
@@ -5655,6 +5657,14 @@ static int mx_same_state_redraw(void)
     ui.force = force;
     return same;
 }
+static uint32_t mx_pixel_hash(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+{
+    uint32_t h = 2166136261u;
+    for (int32_t y = y0; y < y1; y++)
+        for (int32_t x = x0; x < x1; x++)
+            h = (h ^ host_screen[y * 240 + x]) * 16777619u;
+    return h;
+}
 static int test_mixer_highlight(void)
 {
     uint32_t selected, k, c;
@@ -5670,6 +5680,7 @@ static int test_mixer_highlight(void)
         song.g[G_DJF] = 0;
         go_page(GR_TRK);
         for (c = 0; c < selected; c++) turn(EN_ALGO, 1); /* ALGORITHM selects one track per input event. */
+        frames(800); /* Page flash briefly covers the bottom row; test the settled mixer. */
         frame();
     ok &= song.sel == selected &&
           cur_page()->graph == GR_TRK &&
@@ -5687,8 +5698,10 @@ static int test_mixer_highlight(void)
                 int16_t rev_before = trk[selected].p[P_REV];
                 int16_t mute_before = trk[selected].p[P_MUTE];
                 int pass = 1;
+                uint32_t pixels_before = mx_pixel_hash(99, 54 + 24 * selected, 130, 78 + 24 * selected);
 
                 turn(EN_K1, step);
+                if (selected == 5u) frames(1000); /* last row can be covered by a transient footer */
 
                 pass &= (int32_t)midi_rx_channel(selected) == rx_before + step;
                 pass &= trk[selected].p[P_LEVEL] == level_before;
@@ -5696,15 +5709,18 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= trk[selected].p[P_MUTE] == mute_before;
 
-                pass &= mx_colour_count(120, 54 + 24 * selected,
-                                        150, 78 + 24 * selected,
-                                        T_ACCENT) > 0;
+                pass &= selected == 5u
+                    ? mx_pixel_hash(99, 54 + 24 * selected, 130, 78 + 24 * selected) != pixels_before
+                    : mx_colour_count(99, 54 + 24 * selected, 130, 78 + 24 * selected, T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
 
                 if (!pass)
-                    printf("  MIXER new K1 MIDI RX failed for T%u\n",
-                           selected + 1u);
+                    printf("  MIXER new K1 MIDI RX failed T%u: rx %u expected %d, level %d/%d, pan %d/%d, rev %d/%d, mute %d/%d, live %u, colour %d\n",
+                           selected + 1u, midi_rx_channel(selected), (int)(rx_before + step),
+                           trk[selected].p[P_LEVEL], level_before, trk[selected].p[P_PAN], pan_before,
+                           trk[selected].p[P_REV], rev_before, trk[selected].p[P_MUTE], mute_before,
+                           midi_live_rx[selected], mx_colour_count(101,54+24*selected,129,78+24*selected,T_ACCENT));
 
                 ok &= pass;
                 continue;
@@ -5725,8 +5741,8 @@ static int test_mixer_highlight(void)
                        trk[selected].p[P_MUTE] == mute_before &&
                        midi_rx_channel(selected) == rx_before;
 
-                pass &= mx_colour_count(168, 54 + 24 * selected,
-                                        200, 78 + 24 * selected,
+                pass &= mx_colour_count(132, 54 + 24 * selected,
+                                        164, 78 + 24 * selected,
                                         T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
@@ -5754,8 +5770,8 @@ static int test_mixer_highlight(void)
                        trk[selected].p[P_MUTE] == mute_before &&
                        midi_rx_channel(selected) == rx_before;
 
-                pass &= mx_colour_count(204, 54 + 24 * selected,
-                                        240, 78 + 24 * selected,
+                pass &= mx_colour_count(168, 54 + 24 * selected,
+                                        201, 78 + 24 * selected,
                                         T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
@@ -5778,7 +5794,7 @@ static int test_mixer_highlight(void)
 
                 turn(EN_K4, 1);
 
-                pass = song.g[G_DJF] == djf_before + 1 &&
+                pass = song.g[G_DJF] == djf_before && midi_transpose[selected] == 1 &&
                        trk[selected].p[P_LEVEL] == level_before &&
                        trk[selected].p[P_PAN] == pan_before &&
                        trk[selected].p[P_REV] == rev_before &&
@@ -5788,7 +5804,7 @@ static int test_mixer_highlight(void)
                 pass &= mx_same_state_redraw();
 
                 if (!pass)
-                    printf("  MIXER new K4 DJ FILTER failed for T%u\n",
+                    printf("  MIXER new K4 TRANSPOSE failed for T%u\n",
                            selected + 1u);
 
                 ok &= pass;
@@ -5806,19 +5822,24 @@ static int test_mixer_highlight(void)
             int32_t y1 = 54 + 24 * selected;
             int32_t y2 = 78 + 24 * selected;
             for (k = 0; k < 2u; k++) {
-                lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(600);
+                uint32_t midi_before = mx_pixel_hash(101, y1, 131, y2);
+                lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(selected == 5u ? 1300u : 600u);
                 pass &= TSEL->p[P_MUTE] == (k == 0u);
                 /* selected track number stays accent; M indicator present iff muted */
                 pass &= mx_colour_count(4, y1, 17, y2, T_ACCENT) > 0;
                 pass &= (k == 0u)
-                    ? mx_colour_count(18, y1, 47, y2, T_ACCENT) > 0
-                    : mx_colour_count(18, y1, 47, y2, T_ACCENT) == 0;
+                    ? mx_colour_count(18, y1, 31, y2, T_ACCENT) > 0
+                    : mx_colour_count(18, y1, 31, y2, T_ACCENT) == 0;
                 /* muted parameter values use T_DIM; unmuted selected values use T_ACCENT */
                 {
                     uint16_t val_col = k == 0u ? T_DIM : T_ACCENT;
-                    pass &= mx_colour_count(120, y1, 167, y2, val_col) > 0;
-                    pass &= mx_colour_count(168, y1, 203, y2, val_col) > 0;
-                    pass &= mx_colour_count(204, y1, 239, y2, val_col) > 0;
+                    /* The small '7' glyph has no fully opaque colour pixels.
+                     * For T6, verify its cell actually recolours on mute instead. */
+                    pass &= selected == 5u
+                        ? mx_pixel_hash(101, y1, 131, y2) != midi_before
+                        : mx_colour_count(101, y1, 131, y2, val_col) > 0;
+                    pass &= mx_colour_count(132, y1, 167, y2, val_col) > 0;
+                    pass &= mx_colour_count(168, y1, 204, y2, val_col) > 0;
                 }
                 pass &= midi_rx_channel(selected) == rx_before;
                 pass &= trk[selected].p[P_LEVEL] == level_before;
@@ -5826,14 +5847,22 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= mx_same_state_redraw();
                 if (!pass) {
-                    printf("  MIXER TABLE: mute visual failed for T%u\n", selected + 1u);
+                    printf("  MIXER TABLE: mute visual failed T%u cycle %u: mute %d, n %d M %d, midi %d vol %d pan %d, djf %d\n",
+                           selected+1u,k,TSEL->p[P_MUTE],
+                           mx_colour_count(4,y1,17,y2,T_ACCENT),
+                           mx_colour_count(18,y1,47,y2,T_ACCENT),
+                           mx_colour_count(101,y1,131,y2,k==0u?T_DIM:T_ACCENT),
+                           mx_colour_count(132,y1,167,y2,k==0u?T_DIM:T_ACCENT),
+                           mx_colour_count(168,y1,204,y2,k==0u?T_DIM:T_ACCENT),
+                           song.g[G_DJF]);
                 }
             }
             ok &= pass;
-            turn(EN_K4, -1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
-            turn(EN_K4, -1); ok &= song.g[G_DJF] == -1 && TSEL->p[P_MUTE] == 0;
-            turn(EN_K4, 1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
-            turn(EN_K4, 1); ok &= song.g[G_DJF] == 1 && TSEL->p[P_MUTE] == 0;
+            /* PRESETS owns DJ Filter here; its initial value is zero. */
+            turn(EN_PRESET, -1); ok &= song.g[G_DJF] == -1 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, 1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, 1); ok &= song.g[G_DJF] == 1 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, -1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
             ok &= mx_colour_count(204, 198, 239, 221, T_TEXT) > 0;
             ok &= mx_same_state_redraw();
         }
@@ -12206,36 +12235,52 @@ static int test_lz_key(void)
     return bad;
 }
 
-/* GLO (0.9.2, ui_lzpage.c): MIX (MIXER, SENDS) . GLOBAL . SYSTEM one chain; a GLO tap the next group (MIX's first: MIXER),
- * from elsewhere the page left (was always MIXER); SENDS's knobs the track's sends. (0.9.11) LIVE (MANO, RIELES) first in
- * the chain; at power-on GLO still opens MIXER */
+/* v0.6 GLO: MIX (MIXER, SENDS, EQ) -> GLOBAL -> SYSTEM.
+ * No obsolete LIVE pages. Opening GLO from another section always shows MIXER. */
 static int test_lz_glo(void)
 {
     int bad = 0, ok;
     int16_t v;
     ui_power_on(); frame();
     press(B_GLO); frame();
-    ok = pd_on() && lz_fam() == LZ_GLO && pd_level() == 0u && str_eq(cur_page()->title, "MIXER") && lz_tab_lit(1) &&
-         lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("3/6");
+    ok = pd_on() && lz_fam() == LZ_GLO && pd_level() == 0u &&
+         str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
+         lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("1/5");
+    if (!ok) printf("  GLO NAV initial: page=%s count4=%d tabs=%d crumb=%d\n", cur_page()->title, lz_count_is("1/5"), lz_tab_lit(0), lz_crumb_is("GLO \xB7 MIX \xB7 MIXER"));
+    {   /* MIX is first; LIVE's MANO/RIELES must not be navigable. */
+        uint8_t pages[16];
+        uint32_t n = nav_list(SEC_GLO, pages);
+        if (n != 5u) printf("  GLO NAV count: n=%u expected 5, groups=%u\n", n, nav_ch(SEC_GLO)->ng);
+        ok &= n == 5u && nav_ch(SEC_GLO)->ng == 3u; /* MIXER, SENDS, EQ, GLOBAL, SYSTEM */
+        for (uint32_t i = 0; i < n; i++)
+            ok &= !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "MANO") &&
+                  !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "RIELES");
+    }
     turn(EN_SELECT, 1); frame();
     ok &= str_eq(cur_page()->title, "SENDS") && lz_crumb_is("GLO \xB7 MIX \xB7 SENDS");
+    if (!str_eq(cur_page()->title,"SENDS")) printf("  GLO NAV SELECT 1 => %s\n",cur_page()->title);
     v = TSEL->p[P_DLY];
     turn(EN_K3, 4); frame();
     ok &= TSEL->p[P_DLY] > v;
     frames(320); press(B_GLO); frame();
-    ok &= pd_level() == 1u && str_eq(cur_page()->title, "GLOBAL") && lz_tab_lit(2);
+    if (!str_eq(cur_page()->title,"GLOBAL")) printf("  GLO NAV GLO1 => %s\n",cur_page()->title);
+    ok &= pd_level() == 1u && str_eq(cur_page()->title, "GLOBAL") && lz_tab_lit(1);
     frames(320); press(B_GLO); frame();
-    ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(3) && lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
+    if (!str_eq(cur_page()->title,"SYSTEM")) printf("  GLO NAV GLO2 => %s\n",cur_page()->title);
+    ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(2) &&
+          lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
     frames(320); press(B_GLO); frame();
-    ok &= str_eq(cur_page()->title, "MANO") && lz_tab_lit(0) && lz_crumb_is("GLO \xB7 LIVE \xB7 MANO") && lz_count_is("1/6");
-    frames(320); press(B_GLO); frame();
-    ok &= pd_level() == 0u && str_eq(cur_page()->title, "MIXER");
-    turn(EN_SELECT, 3); frame();
+    if (!str_eq(cur_page()->title,"MIXER")) printf("  GLO NAV GLO3 => %s\n",cur_page()->title);
+    ok &= pd_level() == 0u && str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0);
+    turn(EN_SELECT, 4); frame();
+    if (!str_eq(cur_page()->title,"SYSTEM")) printf("  GLO NAV SELECT+3 => %s\n",cur_page()->title);
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM");
     open_family(FAM_ENV); frame();
     press(B_GLO); frame();
-    ok &= str_eq(cur_page()->title, "SYSTEM");
-    bad += check("0.9.2 GLO: MIXER SENDS GLOBAL SYSTEM by SELECT, a GLO tap the next group (0.9.11: LIVE first); from elsewhere the page left", ok);
+    if (!str_eq(cur_page()->title,"MIXER")) printf("  GLO NAV REENTRY => %s\n",cur_page()->title);
+    ok &= str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
+          lz_crumb_is("GLO \xB7 MIX \xB7 MIXER");
+    bad += check("v0.6 GLO navigation: MIXER first, no LIVE, three groups, reopen resets MIXER", ok);
     ui_power_on();
     return bad;
 }
@@ -13681,6 +13726,9 @@ int main(void)
 #endif
 #ifdef UI_TEST_HUD_AIR_ONLY
     return test_skin() ? 1 : 0;
+#endif
+#ifdef UI_TEST_GLO_NAV_ONLY
+    return test_lz_glo() ? 1 : 0;
 #endif
 #ifdef UI_TEST_MIXER_ONLY
     return test_mixer_highlight() ? 1 : 0;

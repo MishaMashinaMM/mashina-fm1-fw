@@ -1075,6 +1075,24 @@ static void key_next(uint32_t k, track_t *t)
 static void key_on(uint32_t k, track_t *t)
 {
     uint32_t n = chord_build(t, kb_note[k], kb_snd[k]), gap = n > 1u ? chord_gap(t) : 0u, i;
+    /* v0.6: local FM1 keys and external MIDI must sound the same
+     * per-track transpose. Snapshot the sounded notes in kb_snd so key_off
+     * and delayed chord strums release the original pitch after an edit.
+     * Keep the drum kits' pad-note maps unchanged. */
+    if (!drum_track(t) && t->eng_req != ENGI_DRUMLAB) {
+        int32_t shift = midi_transpose[trk_index(t)];
+        uint32_t count = 0;
+        for (i = 0; i < n; i++) {
+            int32_t pitch = (int32_t)kb_snd[k][i] + shift;
+            if (pitch >= 0 && pitch <= 127)
+                kb_snd[k][count++] = (uint8_t)pitch;
+        }
+        n = count;
+        if (!n) {
+            kb_on[k] = kb_sn[k] = 0;
+            return;
+        }
+    }
     if (key_latch(t)) {                             /* LATCH: a new chord lets the last one go */
         uint32_t j;
         if (!t->arp_phys)

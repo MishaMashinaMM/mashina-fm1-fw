@@ -4,6 +4,8 @@
 /* Current receive-only setup. New projects save it; older projects without an RX
  * block keep the global fallback from settings. One-based channels. */
 static uint8_t midi_rx[6] = {1, 2, 3, 4, 5, 6};
+/* v0.6: project-specific incoming MIDI transpose, melodic tracks only. */
+static int8_t midi_transpose[NTRK];
 static uint32_t midi_rx_channel(uint32_t track)
 {
     uint32_t v = midi_rx[track];
