@@ -5707,6 +5707,14 @@ static int test_mixer_highlight(void)
 
                 pass &= mx_same_state_redraw();
 
+                if (!pass && selected == 5u)
+                    printf("  T6 debug: sel %u page %u; MIDI ACC/TEXT/DIM=%d/%d/%d, x120 ACC=%d; hot=%u msg=%u\n",
+                           song.sel,ui.page,
+                           mx_colour_count(101,174,130,198,T_ACCENT),
+                           mx_colour_count(101,174,130,198,T_TEXT),
+                           mx_colour_count(101,174,130,198,T_DIM),
+                           mx_colour_count(120,174,140,198,T_ACCENT),
+                           ui.hot_t, ui.msg_t);
                 if (!pass)
                     printf("  MIXER new K1 MIDI RX failed T%u: rx %u expected %d, level %d/%d, pan %d/%d, rev %d/%d, mute %d/%d, live %u, colour %d\n",
                            selected + 1u, midi_rx_channel(selected), (int)(rx_before + step),
