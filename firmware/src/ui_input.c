@@ -520,22 +520,24 @@ static void knob_cap(track_t *t, uint32_t id)
     if (!cm_ui_open) ml_knob(t, id);
 }
 
-/* MIXER page: KNOB 1 LEVEL, 2 PAN, 3 REV send of the selected track (the track itself is ALGORITHM's, on every page),
- * (0.9.1) KNOB 4 the master DJ FILTER (G_DJF: was the track's MUTE, which the GLO layer's black keys latch, as before).
- * Pattern length stays on SEQ. */
+/* GLO > MIXER: K1 MIDI RX, K2 LEVEL, K3 PAN, K4 melodic MIDI transpose.
+ * PRESETS controls the master DJ FILTER only here (otherwise it browses presets). */
+static void mixer_djf_turn(int32_t steps)
+{
+    int32_t v = song.g[G_DJF], to = clamp(v + accel(EN_PRESET, steps, 127), -64, 63);
+    if ((v < 0 && to > 0) || (v > 0 && to < 0))
+        to = 0;
+    motion_djf_set(TSEL, (int16_t)to);
+}
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
     track_t *t = TSEL;
     int16_t *vp;
     const param_desc_t *d;
     switch (slot) {
-    case 3: {                                           /* (no acceleration across the middle: it stops there once) */
-        int32_t v = song.g[G_DJF], to = clamp(v + accel(EN_K4, steps, 127), -64, 63);
-        if ((v < 0 && to > 0) || (v > 0 && to < 0))
-            to = 0;
-        motion_djf_set(t, (int16_t)to);
+    case 3:
+        midi_transpose[song.sel] = (int8_t)clamp((int32_t)midi_transpose[song.sel] + steps, -24, 24);
         return;
-    }
     case 0: {
         int32_t v = (int32_t)midi_rx_channel(song.sel);
         int32_t to = clamp(v + accel(EN_K1, steps, 15), 1, 16);
@@ -2877,6 +2879,9 @@ static void ui_input_frame(void)
     if (!lay && (s = panel_enc(EN_PRESET)) != 0) {
         if (gen_on())
             gen_knob(0, s);                             /* (GEN: its GENRE, the generator's preset) */
+        else if (!ui.home && !ui.menu && !dlg_on() && cur_page()->graph == GR_TRK &&
+                 cur_page()->scope == SC_TRK)
+            mixer_djf_turn(s);
         else
             presets_turn(s);
     }
