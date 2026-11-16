@@ -2920,6 +2920,7 @@ static int undo_sound(uint32_t k)
     return 0;
 }
 
+static void midi_live_split_reset(void); /* implemented by MIDI routing module */
 static void project_load(uint32_t slot)
 {
 #if FELUCCA_FLASH
