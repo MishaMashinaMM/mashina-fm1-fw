@@ -5693,6 +5693,7 @@ static int test_mixer_highlight(void)
                 int pass = 1;
 
                 turn(EN_K1, step);
+                if (selected == 5u) frames(1000); /* last row can be covered by a transient footer */
 
                 pass &= (int32_t)midi_rx_channel(selected) == rx_before + step;
                 pass &= trk[selected].p[P_LEVEL] == level_before;
@@ -5813,7 +5814,7 @@ static int test_mixer_highlight(void)
             int32_t y1 = 54 + 24 * selected;
             int32_t y2 = 78 + 24 * selected;
             for (k = 0; k < 2u; k++) {
-                lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(600);
+                lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(selected == 5u ? 1300u : 600u);
                 pass &= TSEL->p[P_MUTE] == (k == 0u);
                 /* selected track number stays accent; M indicator present iff muted */
                 pass &= mx_colour_count(4, y1, 17, y2, T_ACCENT) > 0;
