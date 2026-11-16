@@ -494,7 +494,7 @@ static uint32_t midi_route_setup;
 static void midi_route_update(void)
 {
     uint32_t i, ch, note, setup = (uint32_t)(song.g[G_ROUTE] == 1u) | (uint32_t)trk_live << 1;
-    if (midi_live_split) setup = (uint32_t)trk_live << 1 | (uint32_t)midi_live_split << 26;
+    if (midi_live_split) setup = (uint32_t)trk_live << 1 | (uint32_t)midi_live_split << 29;
     if (!midi_live_split && song.g[G_ROUTE] != 1u)
         for (i = 0; i < (song.g[G_ROUTE] == 2u ? trk_live : 4u); i++)
             setup |= (midi_rx_channel(i) - 1u) << (5u + 4u * i);
