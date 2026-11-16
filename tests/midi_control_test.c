@@ -397,13 +397,43 @@ static int transpose_test(void)
     bad += check("transpose: DRUM-X keeps the original MIDI note",
                  midi_pitch[3][36][3] == 36);
     queued(0x83, 36, 0, 1);
+
+    /* The emulator's on-screen FM1 keys use keyboard_block(), not MIDI RX.
+     * Their pitch should also follow the selected track's TRN setting. */
+    midi_test_reset();
+    midi_transpose[0] = 12;
+    fm1_in.notes = 1u << 7;           /* C4 on the built-in 27-key keyboard */
+    events_block(CTL);
+    bad += check("transpose: local FM1 key sounds +12 semitones",
+                 gate_note(&trk[0], 72) && !gate_note(&trk[0], 60) && kb_snd[7][0] == 72);
+    midi_transpose[0] = -12;          /* change TRN while the key is still down */
+    fm1_in.notes = 0;
+    events_block(CTL);
+    bad += check("transpose: local key-up releases the pitch sounded before the edit",
+                 !gate_note(&trk[0], 72));
+    fm1_in.notes = 1u << 7;
+    events_block(CTL);
+    bad += check("transpose: next local FM1 press sounds -12 semitones",
+                 gate_note(&trk[0], 48) && !gate_note(&trk[0], 60) && kb_snd[7][0] == 48);
+    fm1_in.notes = 0;
+    events_block(CTL);
+    bad += check("transpose: local note-off releases its shifted pitch",
+                 !gate_note(&trk[0], 48));
+    midi_test_reset();
+    midi_transpose[0] = 24;
+    fm1_in.notes = 1u << 7;
+    events_block(CTL);
+    bad += check("transpose: local FM1 keyboard drops out-of-range notes",
+                 gate_note(&trk[0], 84) && kb_snd[7][0] == 84);
+    fm1_in.notes = 0;
+    events_block(CTL);
     return bad;
 }
 #ifdef TRANSPOSE_ONLY
 int main(void)
 {
     int bad = transpose_test();
-    printf("%s\n", bad ? "TRANSPOSE TEST FAILED" : "Transpose MIDI ownership tests passed");
+    printf("%s\n", bad ? "TRANSPOSE TEST FAILED" : "Transpose MIDI and local keyboard tests passed");
     return bad != 0;
 }
 #else
