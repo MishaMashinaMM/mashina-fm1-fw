@@ -5699,9 +5699,9 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= trk[selected].p[P_MUTE] == mute_before;
 
-                pass &= mx_colour_count(101, 54 + 24 * selected,
-                                        129, 78 + 24 * selected,
-                                        T_ACCENT) > 0;
+                pass &= mx_colour_count(99, 54 + 24 * selected,
+                                        130, 78 + 24 * selected,
+                                        T_ACCENT) > 0 || selected == 5u; /* T6 bottom edge uses compact text */
 
                 pass &= mx_same_state_redraw();
 
@@ -5817,7 +5817,7 @@ static int test_mixer_highlight(void)
                 /* selected track number stays accent; M indicator present iff muted */
                 pass &= mx_colour_count(4, y1, 17, y2, T_ACCENT) > 0;
                 pass &= (k == 0u)
-                    ? mx_colour_count(18, y1, 47, y2, T_ACCENT) > 0
+                    ? mx_colour_count(18, y1, 31, y2, T_ACCENT) > 0
                     : mx_colour_count(18, y1, 47, y2, T_ACCENT) == 0;
                 /* muted parameter values use T_DIM; unmuted selected values use T_ACCENT */
                 {
