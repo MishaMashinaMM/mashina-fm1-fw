@@ -141,6 +141,7 @@ typedef struct {
     uint8_t eq_on, eq_present;
     uint8_t rx_on;                               /* JLD: RX channels included in this project */
     uint8_t rx[6];                              /* one-based channels, 1..16 */
+    int8_t transpose[NTRK];                     /* v0.6: melodic MIDI transpose, -24..24 */
     uint8_t cm_count;                           /* optional REC CC macros, zero in older projects */
     uint8_t cm_rows[CM_N][CM_ROW_SIZE];         /* 32 independent seven-byte assignments */
     int8_t pad_pan[NPART][12];                   /* Stage 22B: optional per-track drum pan */
@@ -897,6 +898,8 @@ static uint32_t proj_packed_size(const project_t *q)
 {
     uint32_t n = 68u + sizeof q->chain + 4u + q->motion.count * sizeof q->motion.event[0] + 2u + G_SL_N, t, i;
     if (q->rx_on) n += 8u;                       /* 'R' 'X' and six MIDI channels */
+    for (i = 0; i < NTRK; i++)
+        if (q->transpose[i]) { n += 8u; break; } /* 'T' 'R', six biased transpose values */
     n += 6u;                                    /* 'E' 'Q', 3 signed gains biased by 15, ON */
     if (q->cm_count) n += 3u + q->cm_count * CM_ROW_SIZE;
     if (proj_djf_events(&q->motion))                    /* (0.9.1) the DJ FILTER's records: their block's head */
@@ -1272,6 +1275,11 @@ static int proj_pack(project_store_t *out, const project_t *q)
     if (q->rx_on) {                                     /* this fork: per-project GLO > MIXER receive channels */
         b[pos++] = 'R'; b[pos++] = 'X';
         for (i = 0; i < 6u; i++) b[pos++] = q->rx[i];
+    }
+    for (i = 0; i < NTRK; i++) if (q->transpose[i]) break;
+    if (i < NTRK) {
+        b[pos++] = 'T'; b[pos++] = 'R';
+        for (i = 0; i < NTRK; i++) b[pos++] = (uint8_t)(q->transpose[i] + 24);
     }
     if (q->cm_count) {
         b[pos++] = 'C'; b[pos++] = 'M'; b[pos++] = q->cm_count;
@@ -1715,6 +1723,14 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         q->rx_on = 1u;
         pos += 8u;
     }
+    if (pos + 2u <= room && b[pos] == 'T' && b[pos + 1u] == 'R') {
+        if (pos + 8u > room) return 0;
+        for (i = 0; i < NTRK; i++) {
+            if (b[pos + 2u + i] > 48u) return 0;
+            q->transpose[i] = (int8_t)((int32_t)b[pos + 2u + i] - 24);
+        }
+        pos += 8u;
+    }
     if (pos + 3u <= room && b[pos] == 'C' && b[pos + 1u] == 'M') {
         uint32_t count = b[pos + 2u];
         if (!count || count > CM_N || pos + 3u + count * CM_ROW_SIZE > room) return 0;
@@ -2018,6 +2034,7 @@ static void project_capture(project_t *p)
     }
     p->rx_on = 1u;
     for (i = 0; i < 6u; i++) p->rx[i] = (uint8_t)midi_rx_channel(i);
+    memcpy(p->transpose, midi_transpose, sizeof p->transpose);
     p->cm_count = cm_count;
     memcpy(p->cm_rows, cm_rows, sizeof cm_rows);
     p->motion = motion;
@@ -2422,6 +2439,7 @@ static int project_restore_runtime(const project_t *input)
     for (i = 0; i < 3u; i++) global_eq_gain[i] = p->eq_present ? p->eq_gain[i] : 0;
     global_eq_on = p->eq_present ? p->eq_on : 1;
     if (p->rx_on) memcpy(midi_rx, p->rx, sizeof p->rx);
+    memcpy(midi_transpose, p->transpose, sizeof midi_transpose);
     cm_count = p->cm_count;
     memcpy(cm_rows, p->cm_rows, sizeof cm_rows);
     chain.ended = 0;                                    /* (a song stopped by this load: the load wins, song_poll keeps out) */
