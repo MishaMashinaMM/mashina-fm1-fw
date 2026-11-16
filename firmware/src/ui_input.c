@@ -540,6 +540,7 @@ static void tracks_edit(uint32_t slot, int32_t steps)
         int32_t v = (int32_t)midi_rx_channel(song.sel);
         int32_t to = clamp(v + accel(EN_K1, steps, 15), 1, 16);
         midi_rx[song.sel] = (uint8_t)to;
+        midi_live_rx[song.sel] = 0u; /* K1 returns this track to its editable saved RX. */
         return;
     }
     case 1:
