@@ -421,10 +421,22 @@ static int transpose_test(void)
                  !gate_note(&trk[0], 48));
     midi_test_reset();
     midi_transpose[0] = 24;
-    fm1_in.notes = 1u << 7;
+    song.octave = 4;
+    fm1_in.notes = 1u << 7;     /* C4 + four octaves + TRN exceeds MIDI 127 */
     events_block(CTL);
     bad += check("transpose: local FM1 keyboard drops out-of-range notes",
-                 gate_note(&trk[0], 84) && kb_snd[7][0] == 84);
+                 kb_sn[7] == 0 && !trk[0].v[0].gate);
+    fm1_in.notes = 0;
+    events_block(CTL);
+    song.octave = 0;
+
+    midi_test_reset();
+    midi_transpose[3] = 12;
+    song.sel = 3;              /* default drum track */
+    fm1_in.notes = 1u << 7;
+    events_block(CTL);
+    bad += check("transpose: local DRUM-X key keeps its native pad note",
+                 kb_sn[7] == 1 && kb_snd[7][0] == kb_note[7]);
     fm1_in.notes = 0;
     events_block(CTL);
     return bad;
