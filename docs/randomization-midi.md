@@ -59,8 +59,8 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 - The workflow uploads a downloadable experimental emulator artifact named `randomization-midi-emulator`. It does not deploy to or alter the production GitHub Pages site.
 - Native firmware is compiled and packaged but deliberately not deployed or advertised as device-tested. Hardware pad behavior still needs verification before merge/release.
 
-## Temporary live routing toggles (CC88–90)
+## Temporary live MIDI routing (CC88–90)
 
-CC88 toggles T1, CC89 toggles T2 and CC90 toggles T3 independently between MIDI channels 1 and 2. Every received high value (64–127), including repeated 127 values, triggers another toggle; low values (0–63) are ignored as button releases. Commands are accepted on any incoming MIDI channel. Each command changes **only its assigned track**. All other tracks, including T4–T6, retain their existing saved MIDI RX assignments or active overrides.
+CC88 controls T1, CC89 controls T2 and CC90 controls T3. A CC value of 64–127 explicitly sets that track to CH1; 0–63 sets it to CH2. Repeated identical values do not toggle. The incoming MIDI channel does not matter. Only the addressed track changes; the other tracks keep their saved RX assignments or existing live overrides.
 
-The first live toggle enables per-track routing regardless of the saved ROUTE mode, but does not overwrite any saved RX values. The GLO > MIXER table displays effective RX channels; changing a track with K1 updates its saved RX channel and clears that track's temporary override, so K1 remains effective. Loading a project or power cycling clears all temporary overrides. CC88–90 are reserved from MIDI Learn and macros. Changed destinations release their existing MIDI note ownership without cutting unrelated effect tails.
+The first live command activates per-track routing independent of the saved ROUTE mode. Saved RX values are not overwritten. GLO > MIXER displays effective channels. Editing a track with K1 changes its saved RX assignment and clears that track's temporary live override, so K1 remains functional. Project reload or power cycling clears temporary overrides. CC88–90 are reserved from MIDI Learn and macros.
