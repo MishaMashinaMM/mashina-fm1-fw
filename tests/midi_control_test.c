@@ -399,9 +399,18 @@ static int transpose_test(void)
     queued(0x83, 36, 0, 1);
     return bad;
 }
+#ifdef TRANSPOSE_ONLY
+int main(void)
+{
+    int bad = transpose_test();
+    printf("%s\n", bad ? "TRANSPOSE TEST FAILED" : "Transpose MIDI ownership tests passed");
+    return bad != 0;
+}
+#else
 int main(void)
 {
     int bad = transpose_test() + controls_test() + sustain_test() + ownership_test() + clock_test(1) + clock_test(2) + clock_arp_and_boundaries() +
               arp_ext_stop_test() + usb_burst_test() + route_test() + cc_map_test();
     printf("%s\n", bad ? "MIDI CONTROL/CLOCK TEST FAILED" : "MIDI control/clock integration tests passed"); return bad != 0;
 }
+#endif
