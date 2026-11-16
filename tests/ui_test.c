@@ -12249,7 +12249,7 @@ static int test_lz_glo(void)
     {   /* MIX is first; LIVE's MANO/RIELES must not be navigable. */
         uint8_t pages[16];
         uint32_t n = nav_list(SEC_GLO, pages);
-        ok &= n == 5u && nav_ch(SEC_GLO)->ng == 3u;
+        ok &= n == 4u && nav_ch(SEC_GLO)->ng == 3u; /* EQ exists only as a retained table entry, not a visible page */
         for (uint32_t i = 0; i < n; i++)
             ok &= !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "MANO") &&
                   !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "RIELES");
@@ -12259,8 +12259,6 @@ static int test_lz_glo(void)
     v = TSEL->p[P_DLY];
     turn(EN_K3, 4); frame();
     ok &= TSEL->p[P_DLY] > v;
-    turn(EN_SELECT, 1); frame();
-    ok &= str_eq(cur_page()->title, "EQ") && lz_crumb_is("GLO \xB7 MIX \xB7 EQ");
     frames(320); press(B_GLO); frame();
     ok &= pd_level() == 1u && str_eq(cur_page()->title, "GLOBAL") && lz_tab_lit(1);
     frames(320); press(B_GLO); frame();
