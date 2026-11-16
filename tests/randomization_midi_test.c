@@ -305,42 +305,37 @@ int main(void)
     bad += check("TRS MIDI queue dispatches reserved CC85 on channel 13",
                  random_seed != seed);
 
-    /* Live CCs toggle only their track; other saved RX assignments survive. */
+    /* CC values explicitly select CH1/CH2 for one track only. */
     midi_live_split_reset();
     song.g[G_ROUTE] = 2u;
     trk_live = 6u;
     midi_rx[0] = 5u; midi_rx[1] = 3u; midi_rx[2] = 4u;
     midi_rx[3] = 6u; midi_rx[4] = 7u; midi_rx[5] = 8u;
     queued_random_cc(12u, 88u, 127u, 1u);
-    bad += check("CC88 high switches only T1 from saved CH5 to CH1",
+    bad += check("CC88 high selects only T1 CH1; other RX unchanged",
                  midi_live_rx[0] == 1u && !midi_live_rx[1] &&
-                 midi_route_mask(0u) == 1u && midi_route_mask(2u) == 2u &&
-                 midi_route_mask(5u) == 8u);
+                 midi_route_mask(0u) == 1u && midi_route_mask(2u) == 2u);
     queued_random_cc(12u, 88u, 127u, 1u);
-    bad += check("Repeated CC88=127 toggles T1 to CH2",
-                 midi_live_rx[0] == 2u && midi_route_mask(1u) == 1u);
+    bad += check("Repeated CC88 high is idempotent", midi_live_rx[0] == 1u);
     queued_random_cc(9u, 89u, 127u, 2u);
     queued_random_cc(16u, 90u, 127u, 1u);
-    bad += check("CC89 and CC90 independently toggle T2/T3 to CH1",
-                 midi_live_rx[1] == 1u && midi_live_rx[2] == 1u &&
-                 midi_route_mask(0u) == 6u && midi_route_mask(1u) == 1u);
+    bad += check("CC89/90 high independently select CH1",
+                 midi_live_rx[1] == 1u && midi_live_rx[2] == 1u && midi_route_mask(0u) == 7u);
     queued_random_cc(9u, 89u, 0u, 2u);
-    bad += check("CC89 low is ignored (momentary release)", midi_live_rx[1] == 1u);
-    queued_random_cc(9u, 89u, 127u, 2u);
-    bad += check("Second CC89 high toggles only T2 to CH2",
-                 midi_live_rx[1] == 2u && midi_live_rx[2] == 1u);
-    bad += check("Routing CCs reserved from MIDI Learn and macros",
+    bad += check("CC89 low selects T2 CH2 without affecting T1/T3",
+                 midi_live_rx[1] == 2u && midi_live_rx[0] == 1u && midi_live_rx[2] == 1u);
+    queued_random_cc(12u, 88u, 0u, 1u);
+    bad += check("CC88 low selects T1 CH2", midi_live_rx[0] == 2u);
+    bad += check("Reserved routing CCs excluded from MIDI Learn",
                  !ml_free_cc(88u) && !ml_free_cc(89u) && !ml_free_cc(90u));
-    bad += check("Saved RX values unchanged by CC routing",
-                 midi_rx[0] == 5u && midi_rx[1] == 3u && midi_rx[2] == 4u &&
-                 midi_rx[3] == 6u && song.g[G_ROUTE] == 2u);
-    /* The mixer knob changes saved RX and cancels that track's override. */
+    bad += check("Saved RX remains unchanged by incoming CCs",
+                 midi_rx[0] == 5u && midi_rx[1] == 3u && midi_rx[2] == 4u && midi_rx[3] == 6u);
     song.sel = 0u;
     tracks_edit(0u, 1);
-    bad += check("Mixer K1 updates effective RX even during live routing",
+    bad += check("Mixer K1 changes RX and clears that track's live override",
                  midi_live_rx[0] == 0u && midi_live_channel(0u) == midi_rx[0]);
     project_load(0u);
-    bad += check("Project load clears all temporary channel overrides",
+    bad += check("Project load clears temporary overrides",
                  !midi_live_rx[0] && !midi_live_rx[1] && !midi_live_rx[2]);
 
     printf(bad ? "randomization MIDI: %d FAILED\n" : "randomization MIDI: all passed\n", bad);
