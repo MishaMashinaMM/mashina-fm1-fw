@@ -5673,6 +5673,7 @@ static int test_mixer_highlight(void)
         song.g[G_DJF] = 0;
         go_page(GR_TRK);
         for (c = 0; c < selected; c++) turn(EN_ALGO, 1); /* ALGORITHM selects one track per input event. */
+        frames(800); /* Page flash briefly covers the bottom row; test the settled mixer. */
         frame();
     ok &= song.sel == selected &&
           cur_page()->graph == GR_TRK &&
@@ -5701,7 +5702,7 @@ static int test_mixer_highlight(void)
 
                 pass &= mx_colour_count(99, 54 + 24 * selected,
                                         130, 78 + 24 * selected,
-                                        T_ACCENT) > 0 || selected == 5u; /* T6 bottom edge uses compact text */
+                                        T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
 
