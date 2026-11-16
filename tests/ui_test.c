@@ -5842,6 +5842,19 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_PAN] == pan_before;
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= mx_same_state_redraw();
+                if (!pass && selected == 5u) {
+                    printf("  T6 predicate trace k%u: mute=%d expected=%d, num=%d, M=%d, midi=%d vol=%d pan=%d, rx=%d/%d lvl=%d/%d panv=%d/%d rev=%d/%d\n",
+                        k, TSEL->p[P_MUTE], k==0u,
+                        mx_colour_count(4,y1,17,y2,T_ACCENT),
+                        mx_colour_count(18,y1,31,y2,T_ACCENT),
+                        mx_colour_count(101,y1,131,y2,k==0u?T_DIM:T_ACCENT),
+                        mx_colour_count(132,y1,167,y2,k==0u?T_DIM:T_ACCENT),
+                        mx_colour_count(168,y1,204,y2,k==0u?T_DIM:T_ACCENT),
+                        midi_rx_channel(selected),rx_before,
+                        trk[selected].p[P_LEVEL],level_before,
+                        trk[selected].p[P_PAN],pan_before,
+                        trk[selected].p[P_REV],rev_before);
+                }
                 if (!pass) {
                     printf("  MIXER TABLE: mute visual failed T%u cycle %u: mute %d, n %d M %d, midi %d vol %d pan %d, djf %d\n",
                            selected+1u,k,TSEL->p[P_MUTE],
