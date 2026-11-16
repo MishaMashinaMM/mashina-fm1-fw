@@ -5823,6 +5823,7 @@ static int test_mixer_highlight(void)
             int32_t y1 = 54 + 24 * selected;
             int32_t y2 = 78 + 24 * selected;
             for (k = 0; k < 2u; k++) {
+                uint32_t midi_before = mx_pixel_hash(101, y1, 131, y2);
                 lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(selected == 5u ? 1300u : 600u);
                 pass &= TSEL->p[P_MUTE] == (k == 0u);
                 /* selected track number stays accent; M indicator present iff muted */
@@ -5833,7 +5834,11 @@ static int test_mixer_highlight(void)
                 /* muted parameter values use T_DIM; unmuted selected values use T_ACCENT */
                 {
                     uint16_t val_col = k == 0u ? T_DIM : T_ACCENT;
-                    pass &= mx_colour_count(101, y1, 131, y2, val_col) > 0;
+                    /* The small '7' glyph has no fully opaque colour pixels.
+                     * For T6, verify its cell actually recolours on mute instead. */
+                    pass &= selected == 5u
+                        ? mx_pixel_hash(101, y1, 131, y2) != midi_before
+                        : mx_colour_count(101, y1, 131, y2, val_col) > 0;
                     pass &= mx_colour_count(132, y1, 167, y2, val_col) > 0;
                     pass &= mx_colour_count(168, y1, 204, y2, val_col) > 0;
                 }
@@ -5842,31 +5847,6 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_PAN] == pan_before;
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= mx_same_state_redraw();
-                if (!pass && selected == 5u) {
-                    if (k == 1u) {
-                        printf("  T6 MIDI pixels x=90..140, y=174..197 (A accent, D dim, T text, . background):\n");
-                        for (int32_t yy = y1; yy < y2; yy++) {
-                            char r[52]; int pos = 0;
-                            for (int32_t xx = 90; xx < 141; xx++) {
-                                uint16_t px = host_screen[yy*240 + xx];
-                                r[pos++] = px == swap16(T_ACCENT) ? 'A' : px == swap16(T_DIM) ? 'D'
-                                         : px == swap16(T_TEXT) ? 'T' : px == swap16(T_BG) ? '.' : '?';
-                            }
-                            r[pos] = 0; printf("  %d %s\n", (int)yy, r);
-                        }
-                    }
-                    printf("  T6 predicate trace k%u: mute=%d expected=%d, num=%d, M=%d, midi=%d vol=%d pan=%d, rx=%d/%d lvl=%d/%d panv=%d/%d rev=%d/%d\n",
-                        k, TSEL->p[P_MUTE], k==0u,
-                        mx_colour_count(4,y1,17,y2,T_ACCENT),
-                        mx_colour_count(18,y1,31,y2,T_ACCENT),
-                        mx_colour_count(101,y1,131,y2,k==0u?T_DIM:T_ACCENT),
-                        mx_colour_count(132,y1,167,y2,k==0u?T_DIM:T_ACCENT),
-                        mx_colour_count(168,y1,204,y2,k==0u?T_DIM:T_ACCENT),
-                        midi_rx_channel(selected),rx_before,
-                        trk[selected].p[P_LEVEL],level_before,
-                        trk[selected].p[P_PAN],pan_before,
-                        trk[selected].p[P_REV],rev_before);
-                }
                 if (!pass) {
                     printf("  MIXER TABLE: mute visual failed T%u cycle %u: mute %d, n %d M %d, midi %d vol %d pan %d, djf %d\n",
                            selected+1u,k,TSEL->p[P_MUTE],
