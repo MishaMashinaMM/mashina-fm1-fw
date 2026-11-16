@@ -1744,7 +1744,7 @@ static void draw_splash(void)
     draw_text_box(0, 82, 240, &AF_L, "DRUMS", T_THEME, 1);
     draw_text_box(0, 122, 240, &AF_M, "FM1 DRUM PERFORMANCE", T_TEXT, 1);
     draw_text_box(0, 150, 240, &AF_X, "orig: Juan Jiant | mod: Misha Mashina", T_MID, 1);
-    draw_text_box(0, 191, 240, &AF_X, "v0.4", T_DIM, 1);
+    draw_text_box(0, 191, 240, &AF_X, "v0.5", T_DIM, 1);
     lcd_sync();
 }
 
@@ -2235,7 +2235,7 @@ static void draw_mixer_table(void)
     {   /* column headings */
         cv_text(4, CAP_IN(S, 14), &AF_S, "TRK", T_TEXT);
         cv_text(48, CAP_IN(S, 14), &AF_S, "VOICE", T_TEXT);
-        cv_text(120, CAP_IN(S, 14), &AF_S, "MIDI", T_TEXT);
+        cv_text(120, CAP_IN(S, 14), &AF_S, (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? "LIVE" : "MIDI", (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? T_ACCENT : T_TEXT);
         cv_text(168, CAP_IN(S, 14), &AF_S, "VOL", T_TEXT);
         cv_text(204, CAP_IN(S, 14), &AF_S, "PAN", T_TEXT);
     }
@@ -2265,10 +2265,10 @@ static void draw_mixer_table(void)
         /* midi rx */
         { char m[8]; m[0]=0; /* format */
           /* simple itoa */
-          uint32_t ch = midi_rx_channel(i);
+          uint32_t ch = midi_live_channel(i);
           m[0] = (char)('0' + (ch / 10u));
           if (ch >= 10u) { m[1] = (char)('0' + (ch % 10u)); m[2]=0; } else { m[0]=(char)('0'+ch); m[1]=0; }
-          cv_text(120, ry + CAP_IN(S, 20), &AF_S, m, tc);
+          cv_text(120, ry + CAP_IN(S, 20), &AF_S, m, midi_live_rx[i] ? T_ACCENT : tc);
         }
         /* volume */
         { char m[8]; uint32_t v = (uint32_t)trk[i].p[P_LEVEL];

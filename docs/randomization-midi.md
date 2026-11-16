@@ -58,3 +58,9 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 - Dedicated regression coverage now includes both USB and TRS MIDI queues, per-track persisted sound reset, hard/slight ranges, Live Recall, drum exclusions, source deletion and 8-engine parameter whitelist.
 - The workflow uploads a downloadable experimental emulator artifact named `randomization-midi-emulator`. It does not deploy to or alter the production GitHub Pages site.
 - Native firmware is compiled and packaged but deliberately not deployed or advertised as device-tested. Hardware pad behavior still needs verification before merge/release.
+
+## Temporary live MIDI routing (CC88–90)
+
+CC88 controls T1, CC89 controls T2 and CC90 controls T3. A CC value of 64–127 explicitly sets that track to CH1; 0–63 sets it to CH2. Repeated identical values do not toggle. The incoming MIDI channel does not matter. Only the addressed track changes; the other tracks keep their saved RX assignments or existing live overrides.
+
+The first live command activates per-track routing independent of the saved ROUTE mode. Saved RX values are not overwritten. GLO > MIXER displays effective channels. Editing a track with K1 changes its saved RX assignment and clears that track's temporary live override, so K1 remains functional. Project reload or power cycling clears temporary overrides. CC88–90 are reserved from MIDI Learn and macros.

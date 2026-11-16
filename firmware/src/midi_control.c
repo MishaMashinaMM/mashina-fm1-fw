@@ -23,11 +23,29 @@ static uint8_t midi_sel_on[16][128];
 static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
 static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
+/* Temporary per-track routing: CC88–90 select CH1/CH2 by value; 0 = saved RX. */
+static volatile uint8_t midi_live_rx[NTRK];
+static uint32_t midi_live_channel(uint32_t i)
+{
+    return midi_live_rx[i] ? midi_live_rx[i] : midi_rx_channel(i);
+}
+static void midi_live_split_reset(void)
+{
+    memset((void *)midi_live_rx, 0, sizeof midi_live_rx);
+}
+static int midi_command_cc(uint32_t cc) { return (cc >= 85u && cc <= 90u); }
+
 
 /* Note and ordinary controller destinations. TRACKS is the only activity limit. */
 static uint32_t midi_route_mask(uint32_t ch)
 {
     uint32_t i, mask = 0, limit;
+    if (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) {
+        for (i = 0; i < trk_live; i++)
+            if (midi_live_channel(i) == ch + 1u)
+                mask |= 1u << i;
+        return mask;
+    }
     if (song.g[G_ROUTE] == 1u)
         return song.sel < trk_live ? 1u << song.sel : 0u;
     limit = song.g[G_ROUTE] == 2u ? trk_live : 4u;
@@ -318,7 +336,7 @@ static int midi_random_cc(uint32_t cc) { return cc >= 85u && cc <= 87u; }
 static int ml_free_cc(uint32_t cc)
 {
     uint32_t i;
-    if (midi_random_cc(cc) || cc < 2u || cc == 6u || cc == 11u || cc == 32u || cc == 38u || cc == 64u || (cc >= 96u && cc <= 101u) || cc >= 120u)
+    if (midi_command_cc(cc) || cc < 2u || cc == 6u || cc == 11u || cc == 32u || cc == 38u || cc == 64u || (cc >= 96u && cc <= 101u) || cc >= 120u)
         return 0;
     for (i = 0; i < NELEM(MIDI_CC_MAP); i++)
         if (MIDI_CC_MAP[i][0] == cc)
@@ -396,8 +414,12 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     uint32_t i, mask;
     /* Until the dedicated command handler is installed, swallow reserved CCs
      * before REC capture, legacy MIDI LEARN, macros, and the standard map. */
-    if (midi_random_cc(cc)) {
-        random_command(ch, cc, value);
+    if (midi_command_cc(cc)) {
+        if (midi_random_cc(cc)) random_command(ch, cc, value);
+        else {
+            uint32_t k = cc - 88u;
+            midi_live_rx[k] = (uint8_t)(value >= 64u ? 1u : 2u);
+        }
         return;
     }
 #if FELUCCA_NO_SEQUENCER
@@ -481,7 +503,11 @@ static uint32_t midi_route_setup;
 static void midi_route_update(void)
 {
     uint32_t i, ch, note, setup = (uint32_t)(song.g[G_ROUTE] == 1u) | (uint32_t)trk_live << 1;
-    if (song.g[G_ROUTE] != 1u)
+    if (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) {
+        setup = (uint32_t)trk_live << 1 | 1u << 31;
+        for (i = 0; i < trk_live; i++)
+            setup |= (midi_live_channel(i) - 1u) << (5u + 4u * i);
+    } else if (song.g[G_ROUTE] != 1u)
         for (i = 0; i < (song.g[G_ROUTE] == 2u ? trk_live : 4u); i++)
             setup |= (midi_rx_channel(i) - 1u) << (5u + 4u * i);
     if (setup == midi_route_setup)
@@ -501,7 +527,9 @@ static void midi_route_update(void)
     }
     for (i = 0; i < NTRK; i++) {
         midi_bend_target[i] = 0;
-        if (song.g[G_ROUTE] != 1u && i < (song.g[G_ROUTE] == 2u ? trk_live : 4u))
+        if ((midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) && i < trk_live)
+            midi_expression(&trk[i], midi_channel(midi_live_channel(i) - 1u));
+        else if (!(midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) && song.g[G_ROUTE] != 1u && i < (song.g[G_ROUTE] == 2u ? trk_live : 4u))
             midi_expression(&trk[i], midi_channel(midi_rx_channel(i) - 1u));
     }
 }
@@ -526,7 +554,7 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
     }
     /* Reserved live commands bypass normal note RX masks entirely. They must
      * also bypass mod_midi, MIDI Learn and REC macros on ALL 16 channels. */
-    if (st == 0xB0u && midi_random_cc(d1)) {
+    if (st == 0xB0u && midi_command_cc(d1)) {
         midi_control(ch, d1, d2);
         return;
     }

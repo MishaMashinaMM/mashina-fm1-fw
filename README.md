@@ -1,9 +1,9 @@
-# JIANT LIVE DRUMS v0.4
+# JIANT LIVE DRUMS v0.5
 
 **Performance-focused firmware for the M-VAVE FM1**, modified by **Misha Mashina** from **JIANT by Juan Jiant** (based on Felucca).
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
-[![Status: v0.4 device tested](https://img.shields.io/badge/v0.4-flashed%20and%20tested-green.svg)](#status-and-safety)
+[![Status: v0.5 device tested](https://img.shields.io/badge/v0.5-flashed%20and%20tested-green.svg)](#status-and-safety)
 
 ![JIANT LIVE DRUMS: two 12-pad drum engines, SEQ MIDI mapping, PLAY performance controls, REC 32 MIDI CC macros, and eight shared voices](docs/jiant-live-drums-overview-32-macros.svg)
 
@@ -13,14 +13,15 @@
 
 The links above are the GitHub Pages routes for this separate Drums repository. The repository includes the Drums-specific browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated Drums control reference**.
 
-JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbral drum sound module**. It extends DRUM-X, adds DRUM-LAB, expands MIDI routing and CC control, and keeps the eight-voice shared pool. The v0.4 update adds **live project sound recall**, persistent **CLEAR SLOT**, a clearer four-knob TOOLS page, and **device-tested MIDI sound randomization with uninterrupted CC87 reset**. The shared global three-band EQ from v0.3 remains available before effects, with project save/load. The **sequencer is disabled by default** in this edition (no extra build flag required); its SEQ, PLAY, and REC buttons open dedicated live-MIDI pages. Original Jiant Live remains a separate project.
+JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbral drum sound module**. It extends DRUM-X, adds DRUM-LAB, expands MIDI routing and CC control, and keeps the eight-voice shared pool. The v0.5 update adds **independent live MIDI channel selection via CC88–90**, while retaining the v0.4 additions of **live project sound recall**, persistent **CLEAR SLOT**, a clearer four-knob TOOLS page, and **device-tested MIDI sound randomization with uninterrupted CC87 reset**. The shared global three-band EQ from v0.3 remains available before effects, with project save/load. The **sequencer is disabled by default** in this edition (no extra build flag required); its SEQ, PLAY, and REC buttons open dedicated live-MIDI pages. Original Jiant Live remains a separate project.
 
-> **Current status:** **JIANT LIVE DRUMS v0.4 successfully flashed, tested and approved on a physical FM1 device (owner-confirmed, November 15, 2026).** Live Recall (long-press REC; FX/SEL/ENV/LFO recall slots 1–4), CLEAR SLOT, the updated TOOLS controls, and MIDI CC85/86/87 live sound randomization (including non-interrupting CC87 reset) were tested on hardware. This remains an independent, experimental fork, **not an official Juan Jiant release**. Dedicated live-drum host tests and update-package simulations pass. **The earlier published v0.3 firmware (`v0.3-1956d21`) was successfully installed and booted on two physical FM1 units through two different starting-firmware paths: one directly from official FM1 V15 firmware, and the other from original JIANT firmware. Both upgrade paths worked**, and the owner reports that all tested functions work as expected. The REC macro screen's partial-redraw fix was **verified on physical hardware**: editing macro values updates the affected cells without full-screen flicker. The owner confirms that the full current feature set—including 32-macro REC paging, project save/load, DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-MIDI CC macro control—has now been tested and approved on a physical FM1. The newer Global EQ preview was also flashed successfully on November 14, 2026, with normal operation reported; all current features have been device-tested and approved by the owner; exhaustive long-duration stress and recovery qualification are separate from feature testing. These are successful owner-reported device tests, not an exhaustive hardware qualification. Back up your data and prepare a recovery method before installing. Do not use the original JIANT web installer to install Drums.
+> **Current status:** **JIANT LIVE DRUMS v0.5 features successfully tested in the browser emulator and on a physical FM1 (owner-confirmed, November 16, 2026).** The new CC88–90 live MIDI channel selection and GLO → MIXER K1 interaction were confirmed working after flashing. The preceding v0.4 release was also successfully flashed, tested and approved on November 15, 2026. Live Recall (long-press REC; FX/SEL/ENV/LFO recall slots 1–4), CLEAR SLOT, the updated TOOLS controls, and MIDI CC85/86/87 live sound randomization (including non-interrupting CC87 reset) were tested on hardware. This remains an independent, experimental fork, **not an official Juan Jiant release**. Dedicated live-drum host tests and update-package simulations pass. **The earlier published v0.3 firmware (`v0.3-1956d21`) was successfully installed and booted on two physical FM1 units through two different starting-firmware paths: one directly from official FM1 V15 firmware, and the other from original JIANT firmware. Both upgrade paths worked**, and the owner reports that all tested functions work as expected. The REC macro screen's partial-redraw fix was **verified on physical hardware**: editing macro values updates the affected cells without full-screen flicker. The owner confirms that the full current feature set—including 32-macro REC paging, project save/load, DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-MIDI CC macro control—has now been tested and approved on a physical FM1. The newer Global EQ preview was also flashed successfully on November 14, 2026, with normal operation reported; all current features have been device-tested and approved by the owner; exhaustive long-duration stress and recovery qualification are separate from feature testing. These are successful owner-reported device tests, not an exhaustive hardware qualification. Back up your data and prepare a recovery method before installing. Do not use the original JIANT web installer to install Drums.
 
 ## What's different from JIANT / Jiant Live
 
-| Feature | JIANT LIVE DRUMS v0.4 |
+| Feature | JIANT LIVE DRUMS v0.5 |
 | --- | --- |
+| Live MIDI channel selection (v0.5) | **CC88 / CC89 / CC90** select MIDI **CH1** (value 64–127) or **CH2** (value 0–63) for **T1 / T2 / T3** respectively, independently and from any incoming MIDI channel. Other tracks retain their existing RX assignments. **GLO → MIXER → K1** remains editable and clears only the selected track's temporary override. Tested in emulator and on physical FM1 (November 16, 2026). |
 | Live MIDI sound randomization | **CC85** slight, **CC86** hard, **CC87** restore last saved sound parameters without cutting held notes. Dedicated MIDI channels **13/14/15** control **T1/T2/T3**, independent of track RX assignments. Successfully tested on a physical FM1 via TRS MIDI (November 15, 2026). |
 | Live project recall | Long-press **REC** to enter Live Recall mode; **FX**, **SEL**, **ENV** and **LFO** then recall project slots **1–4**, respectively. Previous notes stop while delay/reverb tails decay naturally. Tested and approved on a physical FM1, as well as verified in the browser emulator. |
 | CLEAR SLOT | **SAVE → LIBRARY → TOOLS → CLEAR SLOT** permanently clears the selected saved project slot, with confirmation. Live TOOLS displays four actions mapped directly to **K1–K4**: INIT SOUND, CLEAR SLOT, NEW PROJECT and CPU TEST. Tested and approved on a physical FM1; emulator and automated tests also passed. |
@@ -38,6 +39,24 @@ JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbra
 | ABOUT | JIANT LIVE DRUMS identification and purpose, while retaining original author and license credits. |
 | Browser emulator | Can load an existing JIANT **backup JSON** into an isolated session to audition saved sounds/projects without changing the physical FM1. |
 | Sequencer / sound engines | **Sequencer disabled** for live use; the inherited melodic engines and effects remain. |
+
+### Live MIDI channel selection (v0.5 — device-tested)
+
+Use **CC88**, **CC89** and **CC90** to select the receiving MIDI channel of **track 1**, **track 2** and **track 3**, respectively, while performing. These commands are accepted from **any incoming MIDI channel**, via USB or TRS MIDI, and are reserved from MIDI Learn and REC macros.
+
+| Command | A CC value of 64–127 | A CC value of 0–63 |
+| --- | --- | --- |
+| **CC88** | T1 receives on **CH1** | T1 receives on **CH2** |
+| **CC89** | T2 receives on **CH1** | T2 receives on **CH2** |
+| **CC90** | T3 receives on **CH1** | T3 receives on **CH2** |
+
+**This is explicit channel selection, not a press-to-toggle command:** sending CC88/127 repeatedly leaves T1 on CH1; sending CC88/0 selects CH2. Each CC affects **only its assigned track**, so T1–T3 can be combined freely on CH1 or CH2. Other tracks (including T4–T6) retain their previously assigned channels. The commands are temporary and **do not overwrite the saved project RX assignments**.
+
+**GLO → MIXER** shows the currently effective MIDI channels (the **LIVE** label indicates temporary routing). **K1** still edits the selected track's MIDI RX channel, even after receiving a live CC command; turning K1 also clears that track's temporary override. Loading a project or restarting clears all live overrides and restores the project's saved RX settings. Incoming notes are rerouted to the selected channel; existing notes on removed destinations are released, while unrelated effects tails continue.
+
+**Example:** Send CC88/127 and CC89/127 to put both T1 and T2 on CH1, leaving T3 on its previous channel. Send CC88/0 to move only T1 to CH2. Use the mixer K1 to select another channel for a track manually.
+
+The v0.5 routing behavior, including mixer K1 operation, was **tested in the browser emulator and after flashing a physical FM1** on November 16, 2026. See [MIDI implementation notes](docs/randomization-midi.md).
 
 ### Live MIDI sound randomization (v0.4 — device-tested)
 
