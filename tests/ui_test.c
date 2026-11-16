@@ -5708,8 +5708,8 @@ static int test_mixer_highlight(void)
                 pass &= mx_same_state_redraw();
 
                 if (!pass && selected == 5u)
-                    printf("  T6 debug: sel %u page %u; MIDI ACC/TEXT/DIM=%d/%d/%d, x120 ACC=%d; hot=%u msg=%u\n",
-                           song.sel,ui.page,
+                    printf("  T6 debug: sel %u live %u page %u; MIDI ACC/TEXT/DIM=%d/%d/%d, x120 ACC=%d; hot=%u msg=%u\n",
+                           song.sel,trk_live,ui.page,
                            mx_colour_count(101,174,130,198,T_ACCENT),
                            mx_colour_count(101,174,130,198,T_TEXT),
                            mx_colour_count(101,174,130,198,T_DIM),
