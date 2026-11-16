@@ -395,7 +395,7 @@ static int transpose_test(void)
     midi_transpose[3] = 12;
     queued(0x93, 36, 100, 1);
     bad += check("transpose: DRUM-X keeps the original MIDI note",
-                 midi_pitch[3][36][3] == 36);
+                 midi_pitch_peek(3, 36, 3) == 36);
     queued(0x83, 36, 0, 1);
 
     /* The emulator's on-screen FM1 keys use keyboard_block(), not MIDI RX.
