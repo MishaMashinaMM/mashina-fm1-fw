@@ -305,31 +305,40 @@ int main(void)
     bad += check("TRS MIDI queue dispatches reserved CC85 on channel 13",
                  random_seed != seed);
 
-    /* CC88–90 are channel-independent temporary routing presets. */
+    /* CC88–90 toggle T1/T2/T3 independently; T4–T6 remain CH2. */
     midi_live_split_reset();
-    song.g[G_ROUTE] = 1u; /* SEL must be bypassed by the temporary split. */
+    song.g[G_ROUTE] = 1u; /* Temporary routing bypasses SEL. */
     trk_live = 6u;
-    midi_rx[0] = 5u; /* The saved RX configuration must remain untouched. */
+    midi_rx[0] = 5u; /* Saved RX configuration must remain untouched. */
     queued_random_cc(12u, 88u, 127u, 1u);
-    bad += check("CC88 USB enables T1 on CH1 and T2–T6 on CH2",
-                 midi_live_split == 1u && midi_route_mask(0u) == 1u &&
-                 midi_route_mask(1u) == 62u && midi_route_mask(2u) == 0u);
+    bad += check("CC88 toggles T1 to CH1, T2–T6 remain CH2",
+                 midi_live_active && midi_live_ch1_mask == 1u &&
+                 midi_route_mask(0u) == 1u && midi_route_mask(1u) == 62u);
     queued_random_cc(9u, 89u, 127u, 2u);
-    bad += check("CC89 TRS enables T1–T2 on CH1 and T3–T6 on CH2",
-                 midi_live_split == 2u && midi_route_mask(0u) == 3u &&
+    bad += check("CC89 independently toggles T2 to CH1 via TRS",
+                 midi_live_ch1_mask == 3u && midi_route_mask(0u) == 3u &&
                  midi_route_mask(1u) == 60u);
     queued_random_cc(16u, 90u, 127u, 1u);
-    bad += check("CC90 on CH16 enables T1–T3 on CH1 and T4–T6 on CH2",
-                 midi_live_split == 3u && midi_route_mask(0u) == 7u &&
+    bad += check("CC90 independently toggles T3 to CH1 via CH16",
+                 midi_live_ch1_mask == 7u && midi_route_mask(0u) == 7u &&
                  midi_route_mask(1u) == 56u);
-    queued_random_cc(16u, 88u, 0u, 1u);
-    bad += check("Low-value routing CC does not change the preset", midi_live_split == 3u);
-    bad += check("Routing commands cannot be captured by MIDI Learn or macros",
+    queued_random_cc(16u, 90u, 127u, 1u);
+    bad += check("Repeated high CC90 does not toggle twice", midi_live_ch1_mask == 7u);
+    queued_random_cc(16u, 90u, 0u, 1u);
+    queued_random_cc(16u, 90u, 127u, 1u);
+    bad += check("Low then high CC90 toggles T3 back to CH2",
+                 midi_live_ch1_mask == 3u && midi_route_mask(1u) == 60u);
+    queued_random_cc(12u, 88u, 0u, 1u);
+    queued_random_cc(12u, 88u, 127u, 1u);
+    bad += check("CC88 toggles T1 back independently",
+                 midi_live_ch1_mask == 2u && midi_route_mask(0u) == 2u);
+    bad += check("Routing CCs unavailable to MIDI Learn and new macros",
                  !ml_free_cc(88u) && !ml_free_cc(89u) && !ml_free_cc(90u));
     bad += check("Temporary routing leaves saved RX and ROUTE unchanged",
                  midi_rx[0] == 5u && song.g[G_ROUTE] == 1u);
     project_load(0u);
-    bad += check("Project reload clears temporary routing", midi_live_split == 0u);
+    bad += check("Project reload clears toggles and restores saved routing",
+                 !midi_live_active && !midi_live_ch1_mask);
 
     printf(bad ? "randomization MIDI: %d FAILED\n" : "randomization MIDI: all passed\n", bad);
     return bad ? 1 : 0;
