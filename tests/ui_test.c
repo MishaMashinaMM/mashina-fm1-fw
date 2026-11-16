@@ -13719,6 +13719,9 @@ int main(void)
 #ifdef UI_TEST_HUD_AIR_ONLY
     return test_skin() ? 1 : 0;
 #endif
+#ifdef UI_TEST_GLO_NAV_ONLY
+    return test_lz_glo() ? 1 : 0;
+#endif
 #ifdef UI_TEST_MIXER_ONLY
     return test_mixer_highlight() ? 1 : 0;
 #endif
