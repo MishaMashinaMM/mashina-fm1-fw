@@ -2232,7 +2232,10 @@ static void draw_cc_macros(void)
 
 static void draw_mixer_table(void)
 {
-    cv_begin(240, 158, T_BG);
+    /* cv_begin is capped at CV_MAX = 240*150 pixels. The old 158px
+     * canvas silently clipped the bottom of T6. Split the six rows
+     * into a 134px upper panel and a 24px final row, with no extra RAM. */
+    cv_begin(240, 134, T_BG);
     {   /* column headings */
         cv_text(4, CAP_IN(S, 14), &AF_S, "TRK", T_TEXT);
         cv_text(32, CAP_IN(S, 14), &AF_S, "VOICE", T_TEXT);
@@ -2243,6 +2246,11 @@ static void draw_mixer_table(void)
     }
     for (uint32_t i = 0; i < 6u; i++) {
         int32_t ry = 14 + (int32_t)i * 24;
+        if (i == 5u) {
+            cv_blit(0, 40);                    /* header and T1..T5: screen y 40..173 */
+            cv_begin(240, 24, T_BG);          /* T6: screen y 174..197 */
+            ry = 0;
+        }
         uint16_t tc = (trk[i].p[P_MUTE]) ? T_DIM : ((i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT));
         uint16_t nc = (i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT);
         char b[16];
@@ -2306,7 +2314,7 @@ static void draw_mixer_table(void)
                 cv_rect(196, ry + 1, 2, 2, T_ACCENT);
         }
     }
-    cv_blit(0, 40);
+    cv_blit(0, 174);
     {   /* global status line, screen y 198..221 */
         char rb[8], db[8];
         const char *rs = (song.g[G_ROUTE] == 0u) ? "1-4" : (song.g[G_ROUTE] == 1u) ? "SEL" : "1-6";
