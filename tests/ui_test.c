@@ -12245,13 +12245,13 @@ static int test_lz_glo(void)
     press(B_GLO); frame();
     ok = pd_on() && lz_fam() == LZ_GLO && pd_level() == 0u &&
          str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
-         lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("1/4");
-    if (!ok) printf("  GLO NAV initial: page=%s count4=%d tabs=%d crumb=%d\n", cur_page()->title, lz_count_is("1/4"), lz_tab_lit(0), lz_crumb_is("GLO \xB7 MIX \xB7 MIXER"));
+         lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("1/5");
+    if (!ok) printf("  GLO NAV initial: page=%s count4=%d tabs=%d crumb=%d\n", cur_page()->title, lz_count_is("1/5"), lz_tab_lit(0), lz_crumb_is("GLO \xB7 MIX \xB7 MIXER"));
     {   /* MIX is first; LIVE's MANO/RIELES must not be navigable. */
         uint8_t pages[16];
         uint32_t n = nav_list(SEC_GLO, pages);
-        if (n != 4u) printf("  GLO NAV count: n=%u expected 4, groups=%u\n", n, nav_ch(SEC_GLO)->ng);
-        ok &= n == 4u && nav_ch(SEC_GLO)->ng == 3u; /* EQ exists only as a retained table entry, not a visible page */
+        if (n != 5u) printf("  GLO NAV count: n=%u expected 5, groups=%u\n", n, nav_ch(SEC_GLO)->ng);
+        ok &= n == 5u && nav_ch(SEC_GLO)->ng == 3u; /* MIXER, SENDS, EQ, GLOBAL, SYSTEM */
         for (uint32_t i = 0; i < n; i++)
             ok &= !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "MANO") &&
                   !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "RIELES");
@@ -12272,7 +12272,7 @@ static int test_lz_glo(void)
     frames(320); press(B_GLO); frame();
     if (!str_eq(cur_page()->title,"MIXER")) printf("  GLO NAV GLO3 => %s\n",cur_page()->title);
     ok &= pd_level() == 0u && str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0);
-    turn(EN_SELECT, 3); frame();
+    turn(EN_SELECT, 4); frame();
     if (!str_eq(cur_page()->title,"SYSTEM")) printf("  GLO NAV SELECT+3 => %s\n",cur_page()->title);
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM");
     open_family(FAM_ENV); frame();
