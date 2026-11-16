@@ -23,11 +23,15 @@ static uint8_t midi_sel_on[16][128];
 static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
 static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
-/* Live CC88–90 explicitly select CH1 (64–127) or CH2 (0–63) for T1–T3. */
-static volatile uint8_t midi_live_active, midi_live_ch1_mask;
+/* Temporary per-track routing: CC88–90 select CH1/CH2 by value; 0 = saved RX. */
+static volatile uint8_t midi_live_rx[NTRK];
+static uint32_t midi_live_channel(uint32_t i)
+{
+    return midi_live_rx[i] ? midi_live_rx[i] : midi_rx_channel(i);
+}
 static void midi_live_split_reset(void)
 {
-    midi_live_active = midi_live_ch1_mask = 0;
+    memset((void *)midi_live_rx, 0, sizeof midi_live_rx);
 }
 static int midi_command_cc(uint32_t cc) { return (cc >= 85u && cc <= 90u); }
 
@@ -36,9 +40,9 @@ static int midi_command_cc(uint32_t cc) { return (cc >= 85u && cc <= 90u); }
 static uint32_t midi_route_mask(uint32_t ch)
 {
     uint32_t i, mask = 0, limit;
-    if (midi_live_active) {
+    if (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) {
         for (i = 0; i < trk_live; i++)
-            if (((i < 3u && (midi_live_ch1_mask & (1u << i))) ? 1u : 2u) == ch + 1u)
+            if (midi_live_channel(i) == ch + 1u)
                 mask |= 1u << i;
         return mask;
     }
@@ -414,10 +418,7 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
         if (midi_random_cc(cc)) random_command(ch, cc, value);
         else {
             uint32_t k = cc - 88u;
-            uint8_t bit = (uint8_t)(1u << k);
-            midi_live_active = 1u;
-            if (value >= 64u) midi_live_ch1_mask |= bit;
-            else midi_live_ch1_mask &= (uint8_t)~bit;
+            midi_live_rx[k] = (uint8_t)(value >= 64u ? 1u : 2u);
         }
         return;
     }
@@ -502,8 +503,11 @@ static uint32_t midi_route_setup;
 static void midi_route_update(void)
 {
     uint32_t i, ch, note, setup = (uint32_t)(song.g[G_ROUTE] == 1u) | (uint32_t)trk_live << 1;
-    if (midi_live_active) setup = (uint32_t)trk_live << 1 | (uint32_t)(midi_live_ch1_mask | 8u) << 27;
-    if (!midi_live_active && song.g[G_ROUTE] != 1u)
+    if (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) {
+        setup = (uint32_t)trk_live << 1 | 1u << 31;
+        for (i = 0; i < trk_live; i++)
+            setup |= (midi_live_channel(i) - 1u) << (5u + 4u * i);
+    } else if (song.g[G_ROUTE] != 1u)
         for (i = 0; i < (song.g[G_ROUTE] == 2u ? trk_live : 4u); i++)
             setup |= (midi_rx_channel(i) - 1u) << (5u + 4u * i);
     if (setup == midi_route_setup)
@@ -523,9 +527,9 @@ static void midi_route_update(void)
     }
     for (i = 0; i < NTRK; i++) {
         midi_bend_target[i] = 0;
-        if (midi_live_active && i < trk_live)
-            midi_expression(&trk[i], midi_channel(i < 3u && (midi_live_ch1_mask & (1u << i)) ? 0u : 1u));
-        else if (!midi_live_active && song.g[G_ROUTE] != 1u && i < (song.g[G_ROUTE] == 2u ? trk_live : 4u))
+        if ((midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) && i < trk_live)
+            midi_expression(&trk[i], midi_channel(midi_live_channel(i) - 1u));
+        else if (!(midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) && song.g[G_ROUTE] != 1u && i < (song.g[G_ROUTE] == 2u ? trk_live : 4u))
             midi_expression(&trk[i], midi_channel(midi_rx_channel(i) - 1u));
     }
 }
