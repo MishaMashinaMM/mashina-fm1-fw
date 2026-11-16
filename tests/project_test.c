@@ -929,6 +929,22 @@ int main(void)
             ok = proj_pack(&saved, &with_rx) && proj_import(&restored, &saved, sizeof saved) && !restored.rx_on;
             bad += check("JLD: older project without RX block keeps global channels on load", ok);
         }
+        {   /* v0.6: optional signed transpose block; old projects default to zero. */
+            static project_t src, dst;
+            static project_store_t wire;
+            src = f;
+            src.transpose[0] = -24; src.transpose[1] = 12;
+            src.transpose[2] = 0; src.transpose[3] = 7;
+            src.transpose[4] = -11; src.transpose[5] = 24;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire) &&
+                 !memcmp(dst.transpose, src.transpose, sizeof src.transpose);
+            bad += check("v0.6: six signed transpose settings survive project round trip", ok);
+            src = f; src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire);
+            for (k = 0; k < NTRK; k++) ok &= dst.transpose[k] == 0;
+            bad += check("v0.6: project without transpose block defaults all tracks to zero", ok);
+        }
         {   /* Global EQ: optional six-byte block, legacy default, and corrupt-value rejection. */
             static project_t eq_src, eq_dst;
             static project_store_t eq_wire;
