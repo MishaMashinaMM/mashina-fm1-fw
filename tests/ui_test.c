@@ -5859,10 +5859,11 @@ static int test_mixer_highlight(void)
                 }
             }
             ok &= pass;
-            turn(EN_PRESET, -1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
+            /* PRESETS owns DJ Filter here; its initial value is zero. */
             turn(EN_PRESET, -1); ok &= song.g[G_DJF] == -1 && TSEL->p[P_MUTE] == 0;
             turn(EN_PRESET, 1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
             turn(EN_PRESET, 1); ok &= song.g[G_DJF] == 1 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, -1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
             ok &= mx_colour_count(204, 198, 239, 221, T_TEXT) > 0;
             ok &= mx_same_state_redraw();
         }
