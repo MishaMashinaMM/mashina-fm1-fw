@@ -5658,6 +5658,14 @@ static int mx_same_state_redraw(void)
     ui.force = force;
     return same;
 }
+static uint32_t mx_pixel_hash(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
+{
+    uint32_t h = 2166136261u;
+    for (int32_t y = y0; y < y1; y++)
+        for (int32_t x = x0; x < x1; x++)
+            h = (h ^ host_screen[y * 240 + x]) * 16777619u;
+    return h;
+}
 static int test_mixer_highlight(void)
 {
     uint32_t selected, k, c;
@@ -5691,6 +5699,7 @@ static int test_mixer_highlight(void)
                 int16_t rev_before = trk[selected].p[P_REV];
                 int16_t mute_before = trk[selected].p[P_MUTE];
                 int pass = 1;
+                uint32_t pixels_before = mx_pixel_hash(99, 54 + 24 * selected, 130, 78 + 24 * selected);
 
                 turn(EN_K1, step);
                 if (selected == 5u) frames(1000); /* last row can be covered by a transient footer */
@@ -5701,20 +5710,12 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= trk[selected].p[P_MUTE] == mute_before;
 
-                pass &= mx_colour_count(99, 54 + 24 * selected,
-                                        130, 78 + 24 * selected,
-                                        T_ACCENT) > 0;
+                pass &= selected == 5u
+                    ? mx_pixel_hash(99, 54 + 24 * selected, 130, 78 + 24 * selected) != pixels_before
+                    : mx_colour_count(99, 54 + 24 * selected, 130, 78 + 24 * selected, T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
 
-                if (!pass && selected == 5u)
-                    printf("  T6 debug: sel %u live %u page %u; MIDI ACC/TEXT/DIM=%d/%d/%d, x120 ACC=%d; hot=%u msg=%u\n",
-                           song.sel,trk_live,ui.page,
-                           mx_colour_count(101,174,130,198,T_ACCENT),
-                           mx_colour_count(101,174,130,198,T_TEXT),
-                           mx_colour_count(101,174,130,198,T_DIM),
-                           mx_colour_count(120,174,140,198,T_ACCENT),
-                           ui.hot_t, ui.msg_t);
                 if (!pass)
                     printf("  MIXER new K1 MIDI RX failed T%u: rx %u expected %d, level %d/%d, pan %d/%d, rev %d/%d, mute %d/%d, live %u, colour %d\n",
                            selected + 1u, midi_rx_channel(selected), (int)(rx_before + step),
@@ -5822,13 +5823,17 @@ static int test_mixer_highlight(void)
             int32_t y1 = 54 + 24 * selected;
             int32_t y2 = 78 + 24 * selected;
             for (k = 0; k < 2u; k++) {
+                uint32_t marker_before = mx_pixel_hash(18, y1, 31, y2);
                 lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(selected == 5u ? 1300u : 600u);
                 pass &= TSEL->p[P_MUTE] == (k == 0u);
                 /* selected track number stays accent; M indicator present iff muted */
                 pass &= mx_colour_count(4, y1, 17, y2, T_ACCENT) > 0;
-                pass &= (k == 0u)
-                    ? mx_colour_count(18, y1, 31, y2, T_ACCENT) > 0
-                    : mx_colour_count(18, y1, 31, y2, T_ACCENT) == 0;
+                if (selected == 5u)
+                    pass &= mx_pixel_hash(18, y1, 31, y2) != marker_before;
+                else
+                    pass &= (k == 0u)
+                        ? mx_colour_count(18, y1, 31, y2, T_ACCENT) > 0
+                        : mx_colour_count(18, y1, 31, y2, T_ACCENT) == 0;
                 /* muted parameter values use T_DIM; unmuted selected values use T_ACCENT */
                 {
                     uint16_t val_col = k == 0u ? T_DIM : T_ACCENT;
