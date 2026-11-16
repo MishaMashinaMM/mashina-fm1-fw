@@ -23,11 +23,23 @@ static uint8_t midi_sel_on[16][128];
 static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
 static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
+/* 0 = saved routing; 1..3 = temporary live split after T1/T2/T3. */
+static volatile uint8_t midi_live_split;
+static void midi_live_split_reset(void) { midi_live_split = 0; }
+static int midi_live_cc(uint32_t cc) { return cc >= 88u && cc <= 90u; }
+static int midi_command_cc(uint32_t cc) { return (cc >= 85u && cc <= 90u); }
+
 
 /* Note and ordinary controller destinations. TRACKS is the only activity limit. */
 static uint32_t midi_route_mask(uint32_t ch)
 {
     uint32_t i, mask = 0, limit;
+    if (midi_live_split) {
+        for (i = 0; i < trk_live; i++)
+            if ((i < midi_live_split ? 1u : 2u) == ch + 1u)
+                mask |= 1u << i;
+        return mask;
+    }
     if (song.g[G_ROUTE] == 1u)
         return song.sel < trk_live ? 1u << song.sel : 0u;
     limit = song.g[G_ROUTE] == 2u ? trk_live : 4u;
@@ -318,7 +330,7 @@ static int midi_random_cc(uint32_t cc) { return cc >= 85u && cc <= 87u; }
 static int ml_free_cc(uint32_t cc)
 {
     uint32_t i;
-    if (midi_random_cc(cc) || cc < 2u || cc == 6u || cc == 11u || cc == 32u || cc == 38u || cc == 64u || (cc >= 96u && cc <= 101u) || cc >= 120u)
+    if (midi_command_cc(cc) || cc < 2u || cc == 6u || cc == 11u || cc == 32u || cc == 38u || cc == 64u || (cc >= 96u && cc <= 101u) || cc >= 120u)
         return 0;
     for (i = 0; i < NELEM(MIDI_CC_MAP); i++)
         if (MIDI_CC_MAP[i][0] == cc)
@@ -396,8 +408,9 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     uint32_t i, mask;
     /* Until the dedicated command handler is installed, swallow reserved CCs
      * before REC capture, legacy MIDI LEARN, macros, and the standard map. */
-    if (midi_random_cc(cc)) {
-        random_command(ch, cc, value);
+    if (midi_command_cc(cc)) {
+        if (midi_random_cc(cc)) random_command(ch, cc, value);
+        else if (value >= 64u) midi_live_split = (uint8_t)(cc - 87u);
         return;
     }
 #if FELUCCA_NO_SEQUENCER
@@ -481,7 +494,8 @@ static uint32_t midi_route_setup;
 static void midi_route_update(void)
 {
     uint32_t i, ch, note, setup = (uint32_t)(song.g[G_ROUTE] == 1u) | (uint32_t)trk_live << 1;
-    if (song.g[G_ROUTE] != 1u)
+    if (midi_live_split) setup = (uint32_t)trk_live << 1 | (uint32_t)midi_live_split << 26;
+    if (!midi_live_split && song.g[G_ROUTE] != 1u)
         for (i = 0; i < (song.g[G_ROUTE] == 2u ? trk_live : 4u); i++)
             setup |= (midi_rx_channel(i) - 1u) << (5u + 4u * i);
     if (setup == midi_route_setup)
@@ -501,7 +515,9 @@ static void midi_route_update(void)
     }
     for (i = 0; i < NTRK; i++) {
         midi_bend_target[i] = 0;
-        if (song.g[G_ROUTE] != 1u && i < (song.g[G_ROUTE] == 2u ? trk_live : 4u))
+        if (midi_live_split && i < trk_live)
+            midi_expression(&trk[i], midi_channel(i < midi_live_split ? 0u : 1u));
+        else if (!midi_live_split && song.g[G_ROUTE] != 1u && i < (song.g[G_ROUTE] == 2u ? trk_live : 4u))
             midi_expression(&trk[i], midi_channel(midi_rx_channel(i) - 1u));
     }
 }
@@ -526,7 +542,7 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
     }
     /* Reserved live commands bypass normal note RX masks entirely. They must
      * also bypass mod_midi, MIDI Learn and REC macros on ALL 16 channels. */
-    if (st == 0xB0u && midi_random_cc(d1)) {
+    if (st == 0xB0u && midi_command_cc(d1)) {
         midi_control(ch, d1, d2);
         return;
     }
