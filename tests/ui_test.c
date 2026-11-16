@@ -5843,6 +5843,18 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= mx_same_state_redraw();
                 if (!pass && selected == 5u) {
+                    if (k == 1u) {
+                        printf("  T6 MIDI pixels x=90..140, y=174..197 (A accent, D dim, T text, . background):\n");
+                        for (int32_t yy = y1; yy < y2; yy++) {
+                            char r[52]; int pos = 0;
+                            for (int32_t xx = 90; xx < 141; xx++) {
+                                uint16_t px = host_screen[yy*240 + xx];
+                                r[pos++] = px == swap16(T_ACCENT) ? 'A' : px == swap16(T_DIM) ? 'D'
+                                         : px == swap16(T_TEXT) ? 'T' : px == swap16(T_BG) ? '.' : '?';
+                            }
+                            r[pos] = 0; printf("  %d %s\n", (int)yy, r);
+                        }
+                    }
                     printf("  T6 predicate trace k%u: mute=%d expected=%d, num=%d, M=%d, midi=%d vol=%d pan=%d, rx=%d/%d lvl=%d/%d panv=%d/%d rev=%d/%d\n",
                         k, TSEL->p[P_MUTE], k==0u,
                         mx_colour_count(4,y1,17,y2,T_ACCENT),
