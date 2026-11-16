@@ -1810,12 +1810,12 @@ static int test_tracks(void)
     open_family(FAM_TRK);
     before = trk[0];
     turn(EN_PRESET, 1);
-    bad += check("#94 MIXER: the PRESETS knob loads the next sound; the steps and the mix stay",
-                 trk[0].preset != before.preset && !memcmp(trk[0].step, before.step, sizeof before.step) &&
-                 trk[0].p[P_LEVEL] == before.p[P_LEVEL] && cur_page()->graph == GR_TRK);
+    bad += check("v0.6 MIXER: PRESETS controls DJ Filter, not sound selection",
+                 trk[0].preset == before.preset && !memcmp(trk[0].step, before.step, sizeof before.step) &&
+                 trk[0].p[P_LEVEL] == before.p[P_LEVEL] && song.g[G_DJF] == 1);
     turn(EN_K4, 1);
-    bad += check("(0.9.1) MIXER KNOB 4 right: the DJ FILTER a high-pass (MUTE stays: the GLO layer's, below)",
-                 song.g[G_DJF] == 1 && trk[0].p[P_MUTE] == 0 && song.sel == 0);
+    bad += check("v0.6 MIXER: K4 sets transpose without changing DJ Filter",
+                 midi_transpose[0] == 1 && song.g[G_DJF] == 1 && trk[0].p[P_MUTE] == 0);
     {
         uint32_t rx0 = midi_rx_channel(0);
         uint32_t rx1 = midi_rx_channel(1);
@@ -1845,8 +1845,8 @@ static int test_tracks(void)
                      midi_rx_channel(1) == rx1 &&
                      song.g[G_DJF] == 1);
     }
-    turn(EN_K4, -3);
-    bad += check("KNOB 4 left across the middle: it stops there once (OFF; djf_test.c: on from there)",
+    turn(EN_PRESET, -3);
+    bad += check("PRESETS left across DJ Filter centre stops at OFF",
                  song.g[G_DJF] == 0 && trk[0].p[P_MUTE] == 0);
     turn(EN_ALGO, 1);
     bad += check("ALGORITHM selects the track", song.sel == 1);
@@ -5696,8 +5696,8 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= trk[selected].p[P_MUTE] == mute_before;
 
-                pass &= mx_colour_count(120, 54 + 24 * selected,
-                                        150, 78 + 24 * selected,
+                pass &= mx_colour_count(101, 54 + 24 * selected,
+                                        129, 78 + 24 * selected,
                                         T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
@@ -5725,8 +5725,8 @@ static int test_mixer_highlight(void)
                        trk[selected].p[P_MUTE] == mute_before &&
                        midi_rx_channel(selected) == rx_before;
 
-                pass &= mx_colour_count(168, 54 + 24 * selected,
-                                        200, 78 + 24 * selected,
+                pass &= mx_colour_count(132, 54 + 24 * selected,
+                                        164, 78 + 24 * selected,
                                         T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
@@ -5754,8 +5754,8 @@ static int test_mixer_highlight(void)
                        trk[selected].p[P_MUTE] == mute_before &&
                        midi_rx_channel(selected) == rx_before;
 
-                pass &= mx_colour_count(204, 54 + 24 * selected,
-                                        240, 78 + 24 * selected,
+                pass &= mx_colour_count(168, 54 + 24 * selected,
+                                        201, 78 + 24 * selected,
                                         T_ACCENT) > 0;
 
                 pass &= mx_same_state_redraw();
@@ -5778,7 +5778,7 @@ static int test_mixer_highlight(void)
 
                 turn(EN_K4, 1);
 
-                pass = song.g[G_DJF] == djf_before + 1 &&
+                pass = song.g[G_DJF] == djf_before && midi_transpose[selected] == 1 &&
                        trk[selected].p[P_LEVEL] == level_before &&
                        trk[selected].p[P_PAN] == pan_before &&
                        trk[selected].p[P_REV] == rev_before &&
@@ -5788,7 +5788,7 @@ static int test_mixer_highlight(void)
                 pass &= mx_same_state_redraw();
 
                 if (!pass)
-                    printf("  MIXER new K4 DJ FILTER failed for T%u\n",
+                    printf("  MIXER new K4 TRANSPOSE failed for T%u\n",
                            selected + 1u);
 
                 ok &= pass;
@@ -5816,9 +5816,9 @@ static int test_mixer_highlight(void)
                 /* muted parameter values use T_DIM; unmuted selected values use T_ACCENT */
                 {
                     uint16_t val_col = k == 0u ? T_DIM : T_ACCENT;
-                    pass &= mx_colour_count(120, y1, 167, y2, val_col) > 0;
-                    pass &= mx_colour_count(168, y1, 203, y2, val_col) > 0;
-                    pass &= mx_colour_count(204, y1, 239, y2, val_col) > 0;
+                    pass &= mx_colour_count(101, y1, 131, y2, val_col) > 0;
+                    pass &= mx_colour_count(132, y1, 167, y2, val_col) > 0;
+                    pass &= mx_colour_count(168, y1, 204, y2, val_col) > 0;
                 }
                 pass &= midi_rx_channel(selected) == rx_before;
                 pass &= trk[selected].p[P_LEVEL] == level_before;
@@ -5830,10 +5830,10 @@ static int test_mixer_highlight(void)
                 }
             }
             ok &= pass;
-            turn(EN_K4, -1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
-            turn(EN_K4, -1); ok &= song.g[G_DJF] == -1 && TSEL->p[P_MUTE] == 0;
-            turn(EN_K4, 1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
-            turn(EN_K4, 1); ok &= song.g[G_DJF] == 1 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, -1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, -1); ok &= song.g[G_DJF] == -1 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, 1); ok &= song.g[G_DJF] == 0 && TSEL->p[P_MUTE] == 0;
+            turn(EN_PRESET, 1); ok &= song.g[G_DJF] == 1 && TSEL->p[P_MUTE] == 0;
             ok &= mx_colour_count(204, 198, 239, 221, T_TEXT) > 0;
             ok &= mx_same_state_redraw();
         }
