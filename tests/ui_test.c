@@ -207,6 +207,9 @@ static void ui_power_on(void)
     memset(midi_sel_on, 0, sizeof midi_sel_on);
     memset(midi_ch, 0, sizeof midi_ch);
     memset(midi_owners, 0, sizeof midi_owners);
+    memset(midi_pitch, 0, sizeof midi_pitch);
+    memset(midi_pitch_count, 0, sizeof midi_pitch_count);
+    memset(midi_transpose, 0, sizeof midi_transpose);
     memset(midi_bend_q8, 0, sizeof midi_bend_q8);
     memset(midi_bend_target, 0, sizeof midi_bend_target);
     memset(kb_on, 0, sizeof kb_on);                     /* no key held */
