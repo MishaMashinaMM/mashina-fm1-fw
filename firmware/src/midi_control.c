@@ -23,6 +23,9 @@ static uint8_t midi_sel_on[16][128];
 static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
 static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
+/* The pitch started for each (channel, incoming note, track). A transpose edit
+ * must not retarget Note Off or sustain release for an already held note. */
+static uint8_t midi_pitch[16][128][NTRK];
 /* Temporary per-track routing: CC88–90 select CH1/CH2 by value; 0 = saved RX. */
 static volatile uint8_t midi_live_rx[NTRK];
 static uint32_t midi_live_channel(uint32_t i)
@@ -92,8 +95,9 @@ static int midi_note_held(const track_t *t, uint32_t note)
 {
     uint32_t ch, bit = 1u << trk_index(t);
     for (ch = 0; ch < 16u; ch++)
-        if (mn_get(ch, note) & bit)
-            return 1;
+        for (uint32_t src = 0; src < 128u; src++)
+            if ((mn_get(ch, src) & bit) && midi_pitch[ch][src][trk_index(t)] == note)
+                return 1;
     return 0;
 }
 
@@ -121,12 +125,14 @@ static void midi_release_mask(uint32_t ch, uint32_t note, uint32_t mask)
         track_t *t = &trk[i];
         if (!(owners & (1u << i)))
             continue;
+        uint32_t pitch = midi_pitch[ch][note][i];
+        midi_pitch[ch][note][i] = 0;
         midi_owners[i]--;
         if (!--midi_ch[ch].owned[i])
             midi_ch[ch].targets &= (uint8_t)~(1u << i);
 #if FELUCCA_NO_SEQUENCER
-        if (!midi_local_held(t, note))
-            input_off(t, note);
+        if (!midi_note_held(t, pitch) && !midi_local_held(t, pitch))
+            input_off(t, pitch);
 #else
         if (drum_track(t) && drum_oct_of(note)) {
             dxo_off(t, DXO_MIDI + (ch << 7) + note);
@@ -167,12 +173,19 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
             midi_release(ch, note);
         for (i = 0; i < NTRK; i++) {
             track_t *t = &trk[i];
+            int32_t pitch;
             if (!(mask & (1u << i)))
                 continue;
+            pitch = (int32_t)note + (drum_track(t) ? 0 : midi_transpose[i]);
+            if (pitch < 0 || pitch > 127) {
+                mask &= ~(1u << i); /* out-of-range notes do not acquire ownership */
+                continue;
+            }
             midi_expression(t, c);
             if (t != TSEL)
                 midi_hint = (uint8_t)(i + 1u);
-            midi_play(t, ch, note, vel);
+            midi_play(t, ch, (uint32_t)pitch, vel);
+            midi_pitch[ch][note][i] = (uint8_t)pitch;
             midi_owners[i]++;
             c->owned[i]++;
         }
@@ -211,6 +224,7 @@ static void __attribute__((noinline)) midi_forget_track(uint32_t track)
             if (mn_get(ch, note) & (1u << track)) {
                 uint32_t v = mn_get(ch, note) & ~(1u << track);
                 mn_set(ch, note, (v & MIDI_TRACK_MASK) ? v : 0u);
+                midi_pitch[ch][note][track] = 0;
             }
         midi_ch[ch].targets &= (uint8_t)~(1u << track);
         midi_ch[ch].owned[track] = 0;
