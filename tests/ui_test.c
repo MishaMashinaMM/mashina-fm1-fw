@@ -5706,8 +5706,11 @@ static int test_mixer_highlight(void)
                 pass &= mx_same_state_redraw();
 
                 if (!pass)
-                    printf("  MIXER new K1 MIDI RX failed for T%u\n",
-                           selected + 1u);
+                    printf("  MIXER new K1 MIDI RX failed T%u: rx %u expected %d, level %d/%d, pan %d/%d, rev %d/%d, mute %d/%d, live %u, colour %d\n",
+                           selected + 1u, midi_rx_channel(selected), (int)(rx_before + step),
+                           trk[selected].p[P_LEVEL], level_before, trk[selected].p[P_PAN], pan_before,
+                           trk[selected].p[P_REV], rev_before, trk[selected].p[P_MUTE], mute_before,
+                           midi_live_rx[selected], mx_colour_count(101,54+24*selected,129,78+24*selected,T_ACCENT));
 
                 ok &= pass;
                 continue;
@@ -5829,7 +5832,14 @@ static int test_mixer_highlight(void)
                 pass &= trk[selected].p[P_REV] == rev_before;
                 pass &= mx_same_state_redraw();
                 if (!pass) {
-                    printf("  MIXER TABLE: mute visual failed for T%u\n", selected + 1u);
+                    printf("  MIXER TABLE: mute visual failed T%u cycle %u: mute %d, n %d M %d, midi %d vol %d pan %d, djf %d\n",
+                           selected+1u,k,TSEL->p[P_MUTE],
+                           mx_colour_count(4,y1,17,y2,T_ACCENT),
+                           mx_colour_count(18,y1,47,y2,T_ACCENT),
+                           mx_colour_count(101,y1,131,y2,k==0u?T_DIM:T_ACCENT),
+                           mx_colour_count(132,y1,167,y2,k==0u?T_DIM:T_ACCENT),
+                           mx_colour_count(168,y1,204,y2,k==0u?T_DIM:T_ACCENT),
+                           song.g[G_DJF]);
                 }
             }
             ok &= pass;
