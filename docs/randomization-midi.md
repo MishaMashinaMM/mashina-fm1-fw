@@ -58,3 +58,11 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 - Dedicated regression coverage now includes both USB and TRS MIDI queues, per-track persisted sound reset, hard/slight ranges, Live Recall, drum exclusions, source deletion and 8-engine parameter whitelist.
 - The workflow uploads a downloadable experimental emulator artifact named `randomization-midi-emulator`. It does not deploy to or alter the production GitHub Pages site.
 - Native firmware is compiled and packaged but deliberately not deployed or advertised as device-tested. Hardware pad behavior still needs verification before merge/release.
+
+## Temporary live routing (CC88–90)
+
+CC88 (value 64–127): T1 receives CH1, T2–T6 receive CH2.
+CC89 (value 64–127): T1–T2 receive CH1, T3–T6 receive CH2.
+CC90 (value 64–127): T1–T3 receive CH1, T4–T6 receive CH2.
+
+Commands are received on any MIDI channel and intercepted before MIDI Learn, macros and modulation. Values 0–63 do nothing. The split overrides the normal ROUTE setting and per-track RX assignments without modifying either saved value. All currently active tracks (up to six) follow the split; track-count setting is unchanged. Existing MIDI note ownership is released for destinations removed by a split change, while unrelated sounds and FX are preserved. Loading a project clears the temporary override and restores its saved routing. Power cycling also clears it. The three CCs are unavailable for new MIDI Learn and macro capture.
