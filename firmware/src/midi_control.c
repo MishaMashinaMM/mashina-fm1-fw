@@ -23,15 +23,12 @@ static uint8_t midi_sel_on[16][128];
 static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
 static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
-/* Live CC88–90 toggle independent CH1 bits for T1–T3; other tracks use CH2. */
+/* Live CC88–90 explicitly select CH1 (64–127) or CH2 (0–63) for T1–T3. */
 static volatile uint8_t midi_live_active, midi_live_ch1_mask;
-static uint8_t midi_live_held[3];
 static void midi_live_split_reset(void)
 {
     midi_live_active = midi_live_ch1_mask = 0;
-    memset(midi_live_held, 0, sizeof midi_live_held);
 }
-static int midi_live_cc(uint32_t cc) { return cc >= 88u && cc <= 90u; }
 static int midi_command_cc(uint32_t cc) { return (cc >= 85u && cc <= 90u); }
 
 
@@ -417,12 +414,10 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
         if (midi_random_cc(cc)) random_command(ch, cc, value);
         else {
             uint32_t k = cc - 88u;
-            if (value < 64u) midi_live_held[k] = 0u;
-            else if (!midi_live_held[k]) {
-                midi_live_held[k] = 1u;
-                midi_live_active = 1u;
-                midi_live_ch1_mask ^= (uint8_t)(1u << k);
-            }
+            uint8_t bit = (uint8_t)(1u << k);
+            midi_live_active = 1u;
+            if (value >= 64u) midi_live_ch1_mask |= bit;
+            else midi_live_ch1_mask &= (uint8_t)~bit;
         }
         return;
     }
