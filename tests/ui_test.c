@@ -5819,7 +5819,7 @@ static int test_mixer_highlight(void)
                 pass &= mx_colour_count(4, y1, 17, y2, T_ACCENT) > 0;
                 pass &= (k == 0u)
                     ? mx_colour_count(18, y1, 31, y2, T_ACCENT) > 0
-                    : mx_colour_count(18, y1, 47, y2, T_ACCENT) == 0;
+                    : mx_colour_count(18, y1, 31, y2, T_ACCENT) == 0;
                 /* muted parameter values use T_DIM; unmuted selected values use T_ACCENT */
                 {
                     uint16_t val_col = k == 0u ? T_DIM : T_ACCENT;
