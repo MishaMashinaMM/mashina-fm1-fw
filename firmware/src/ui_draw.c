@@ -2248,8 +2248,10 @@ static void draw_mixer_table(void)
         int32_t ry = 14 + (int32_t)i * 24;
         if (i == 5u) {
             cv_blit(0, 40);                    /* header and T1..T5: screen y 40..173 */
-            cv_begin(240, 24, T_BG);          /* T6: screen y 174..197 */
-            ry = 0;
+            /* Retain the 14px local top margin so CAP_IN text baselines
+             * match T1..T5; send only the final 24px screen row. */
+            cv_begin(240, 38, T_BG);
+            ry = 14;
         }
         uint16_t tc = (trk[i].p[P_MUTE]) ? T_DIM : ((i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT));
         uint16_t nc = (i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT);
@@ -2314,7 +2316,7 @@ static void draw_mixer_table(void)
                 cv_rect(196, ry + 1, 2, 2, T_ACCENT);
         }
     }
-    cv_blit(0, 174);
+    cv_blit_from(0, 160, 14);             /* canvas y14..37 -> screen y174..197 */
     {   /* global status line, screen y 198..221 */
         char rb[8], db[8];
         const char *rs = (song.g[G_ROUTE] == 0u) ? "1-4" : (song.g[G_ROUTE] == 1u) ? "SEL" : "1-6";
