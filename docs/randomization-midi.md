@@ -59,10 +59,8 @@ Never use a disallowed parameter to fill a two- or three-parameter quota.
 - The workflow uploads a downloadable experimental emulator artifact named `randomization-midi-emulator`. It does not deploy to or alter the production GitHub Pages site.
 - Native firmware is compiled and packaged but deliberately not deployed or advertised as device-tested. Hardware pad behavior still needs verification before merge/release.
 
-## Temporary live routing (CC88–90)
+## Temporary live routing toggles (CC88–90)
 
-CC88 (value 64–127): T1 receives CH1, T2–T6 receive CH2.
-CC89 (value 64–127): T1–T2 receive CH1, T3–T6 receive CH2.
-CC90 (value 64–127): T1–T3 receive CH1, T4–T6 receive CH2.
+CC88 toggles T1 between CH1 and CH2; CC89 toggles T2; CC90 toggles T3. Each toggle is independent, giving eight CH1/CH2 combinations for T1–T3. T4–T6 always use CH2 while the live override is active. Initially all three toggles are CH2; the first high trigger of each CC moves its track to CH1.
 
-Commands are received on any MIDI channel and intercepted before MIDI Learn, macros and modulation. Values 0–63 do nothing. The split overrides the normal ROUTE setting and per-track RX assignments without modifying either saved value. All currently active tracks (up to six) follow the split; track-count setting is unchanged. Existing MIDI note ownership is released for destinations removed by a split change, while unrelated sounds and FX are preserved. Loading a project clears the temporary override and restores its saved routing. Power cycling also clears it. The three CCs are unavailable for new MIDI Learn and macro capture.
+Commands are received on any MIDI channel and intercepted before MIDI Learn, macros and modulation. A rising edge (value 0–63 followed by 64–127) triggers one toggle; repeated high messages do not retrigger until rearmed by a low value. The first toggle activates temporary live routing across all currently active tracks (up to six), overriding normal ROUTE and saved per-track RX assignments without changing them. Note ownership is released for destinations removed by a routing change; unrelated sound and FX remain intact. Loading a project or power cycling clears the override and all toggle states. CC88–90 are unavailable for new MIDI Learn and macro capture.
