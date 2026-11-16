@@ -2928,6 +2928,7 @@ static void project_load(uint32_t slot)
     if (!proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t))) { ui_message("EMPTY SLOT"); return; }
     proj_bound(&proj_scratch);                          /* a retained RAM slot of an older format: as from flash */
     if (!project_restore_runtime(&proj_scratch)) {
+        midi_live_split_reset(); /* Project recall restores the saved RX/ROUTE setup. */
         random_saved_live(slot);
         proj_cur = (uint8_t)(slot & 3u);
         live.cur = (int8_t)(slot & 3u);                 /* (0.6.12: the section playing) */
