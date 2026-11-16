@@ -12246,9 +12246,11 @@ static int test_lz_glo(void)
     ok = pd_on() && lz_fam() == LZ_GLO && pd_level() == 0u &&
          str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
          lz_crumb_is("GLO \xB7 MIX \xB7 MIXER") && lz_count_is("1/4");
+    if (!ok) printf("  GLO NAV initial: page=%s count4=%d tabs=%d crumb=%d\n", cur_page()->title, lz_count_is("1/4"), lz_tab_lit(0), lz_crumb_is("GLO \xB7 MIX \xB7 MIXER"));
     {   /* MIX is first; LIVE's MANO/RIELES must not be navigable. */
         uint8_t pages[16];
         uint32_t n = nav_list(SEC_GLO, pages);
+        if (n != 4u) printf("  GLO NAV count: n=%u expected 4, groups=%u\n", n, nav_ch(SEC_GLO)->ng);
         ok &= n == 4u && nav_ch(SEC_GLO)->ng == 3u; /* EQ exists only as a retained table entry, not a visible page */
         for (uint32_t i = 0; i < n; i++)
             ok &= !str_eq(nav_ch(SEC_GLO)->e[pages[i]].t, "MANO") &&
@@ -12256,20 +12258,26 @@ static int test_lz_glo(void)
     }
     turn(EN_SELECT, 1); frame();
     ok &= str_eq(cur_page()->title, "SENDS") && lz_crumb_is("GLO \xB7 MIX \xB7 SENDS");
+    if (!str_eq(cur_page()->title,"SENDS")) printf("  GLO NAV SELECT 1 => %s\n",cur_page()->title);
     v = TSEL->p[P_DLY];
     turn(EN_K3, 4); frame();
     ok &= TSEL->p[P_DLY] > v;
     frames(320); press(B_GLO); frame();
+    if (!str_eq(cur_page()->title,"GLOBAL")) printf("  GLO NAV GLO1 => %s\n",cur_page()->title);
     ok &= pd_level() == 1u && str_eq(cur_page()->title, "GLOBAL") && lz_tab_lit(1);
     frames(320); press(B_GLO); frame();
+    if (!str_eq(cur_page()->title,"SYSTEM")) printf("  GLO NAV GLO2 => %s\n",cur_page()->title);
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(2) &&
           lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
     frames(320); press(B_GLO); frame();
+    if (!str_eq(cur_page()->title,"MIXER")) printf("  GLO NAV GLO3 => %s\n",cur_page()->title);
     ok &= pd_level() == 0u && str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0);
     turn(EN_SELECT, 3); frame();
+    if (!str_eq(cur_page()->title,"SYSTEM")) printf("  GLO NAV SELECT+3 => %s\n",cur_page()->title);
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM");
     open_family(FAM_ENV); frame();
     press(B_GLO); frame();
+    if (!str_eq(cur_page()->title,"MIXER")) printf("  GLO NAV REENTRY => %s\n",cur_page()->title);
     ok &= str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
           lz_crumb_is("GLO \xB7 MIX \xB7 MIXER");
     bad += check("v0.6 GLO navigation: MIXER first, no LIVE, three groups, reopen resets MIXER", ok);
