@@ -5823,13 +5823,13 @@ static int test_mixer_highlight(void)
             int32_t y1 = 54 + 24 * selected;
             int32_t y2 = 78 + 24 * selected;
             for (k = 0; k < 2u; k++) {
-                uint32_t marker_before = mx_pixel_hash(18, y1, 31, y2);
+                uint32_t marker_before = mx_pixel_hash(0, y1, 240, y2);
                 lay_combo(B_GLO, black(selected)); key_up(black(selected)); btn_up(B_GLO); frame(); frames(selected == 5u ? 1300u : 600u);
                 pass &= TSEL->p[P_MUTE] == (k == 0u);
                 /* selected track number stays accent; M indicator present iff muted */
                 pass &= mx_colour_count(4, y1, 17, y2, T_ACCENT) > 0;
                 if (selected == 5u)
-                    pass &= mx_pixel_hash(18, y1, 31, y2) != marker_before;
+                    pass &= mx_pixel_hash(0, y1, 240, y2) != marker_before; /* last row overlays the narrow marker */
                 else
                     pass &= (k == 0u)
                         ? mx_colour_count(18, y1, 31, y2, T_ACCENT) > 0
