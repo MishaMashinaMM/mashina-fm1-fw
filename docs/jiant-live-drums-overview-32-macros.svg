@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="575" viewBox="0 0 1080 575" role="img" aria-labelledby="title description">
 <title id="title">JIANT LIVE DRUMS v0.7 overview</title>
 <desc id="description">An overview of JIANT LIVE DRUMS with BRASS and INDUSTRIAL melodic synthesis engines and two independent twelve-pad drum engines, SEQ MIDI mapping, PLAY performance options, and REC control of up to 32 MIDI CC macros per project. Eight voices are shared across all tracks.</desc>
-<rect width="1080" height="486" rx="20" fill="#101218"/>
+<rect width="1080" height="575" rx="20" fill="#101218"/>
 <rect x="24" y="24" width="342" height="438" rx="20" fill="#050608" stroke="#505563" stroke-width="2"/>
 <text x="195" y="106" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="31" font-weight="bold" letter-spacing="1">JIANT LIVE</text>
 <text x="195" y="147" text-anchor="middle" fill="#79dbf5" font-family="sans-serif" font-size="39" font-weight="bold" letter-spacing="2">DRUMS</text>
