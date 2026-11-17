@@ -5,6 +5,23 @@
  * Feedback is bounded, and drive uses a pre-scaled 32-bit multiply.
  */
 static const char *const N_IND_WAVE[] = {"SAW", "PULSE", "SAW+SQR", "RING", "TRI", "SQR"};
+/* Extra controls share four existing DRUM-only parameter IDs, never used for
+ * industrial synthesis by other engines. No persistent data layout changes. */
+enum { IND_WAVE2 = P_LN8, IND_MIX = P_LN9, IND_SUB = P_LN10, IND_MODE = P_LN11 };
+static const char *const N_IND_WAVE2[] = {"FOLLOW", "SAW", "SQR", "TRI", "SIN", "PULSE"};
+static const char *const N_IND_MODE[] = {"LP", "HP", "BP"};
+static const param_desc_t INDUSTRIAL_EXTRA[4] = {
+    {"WAVE2", F_ENUM, 0, 5, 0, N_IND_WAVE2, 0},
+    {"MIX", F_PCT, 0, 127, 25, 0, 0},
+    {"SUB", F_PCT, 0, 127, 32, 0, 0},
+    {"MODE", F_ENUM, 0, 2, 0, N_IND_MODE, 0},
+};
+/* Corresponding factory preset defaults in unchanged preset index order. */
+static const uint8_t INDUSTRIAL_EXTRA_PRESETS[][4] = {
+    {0, 21, 32, 0}, {0, 17, 32, 0}, {0, 31, 32, 0},
+    {0, 28, 32, 0}, {0, 38, 32, 0}, {0, 10, 32, 0},
+};
+
 
 static void industrial_note_on(track_t *t, voice_t *v)
 {
@@ -27,48 +44,49 @@ static void industrial_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, 
     uint32_t ph0 = v->ph[0], ph1 = v->ph[1], subph = v->ph[2];
     int32_t ic1 = v->s[0], ic2 = v->s[1], prev = v->s[2];
     int32_t held = v->s[3], count = v->s[4];
-    int32_t fat = (int32_t)p[P_E1] * 180;             /* 0..22860 Q15 */
+    int32_t mix = (int32_t)p[IND_MIX] * 258;       /* oscillator 2 balance, 0..32766 Q15 */
     int32_t metal = (int32_t)p[P_E3] * 220;           /* 0..27940 Q15 */
     int32_t feed = (int32_t)p[P_E5] * 160;            /* 0..20320 Q15 */
     int32_t gain = 32768 + (int32_t)p[P_E2] * 700;   /* 1..3.7x, applied to half-scale */
     int32_t holdstep = 1 + (int32_t)p[P_E4] / 18;    /* 1..8 samples, bounded */
+    int32_t submix = (int32_t)p[IND_SUB] * 258;
+    uint32_t w2 = (uint32_t)clamp(p[IND_WAVE2], 0, 5);
+    uint32_t mode = (uint32_t)clamp(p[IND_MODE], 0, 2);
+    int32_t fk = 8192 - (int32_t)p[P_E7] * 7600 / 127;
     int32_t cut = ((int32_t)p[P_E6] << 8) + m->cutoff;
     tsvf_t flt;
     tsvf_coef(&flt, cut, p[P_E7]);
     for (i = 0; i < n; i++) {
         int32_t a, b, s, ring;
         switch (wave) {
-        case 1:
-            a = osc_pulse(ph0, inc, 0x50000000u);
-            b = osc_pulse(ph1, inc2, 0x50000000u);
-            break;
-        case 2:
-            a = osc_saw(ph0, inc);
-            b = osc_pulse(ph1, inc2, 0x80000000u);
-            break;
-        case 3:
-            a = osc_saw(ph0, inc);
-            b = osc_sine(ph1);
-            break;
-        case 4:
-            a = osc_tri(ph0);
-            b = osc_tri(ph1);
-            break;
-        case 5:
-            a = osc_pulse(ph0, inc, 0x80000000u);
-            b = osc_pulse(ph1, inc2, 0x80000000u);
-            break;
-        default:
-            a = osc_saw(ph0, inc);
-            b = osc_saw(ph1, inc2);
+        case 1: a = osc_pulse(ph0, inc, 0x50000000u); break;
+        case 2: a = osc_saw(ph0, inc); break;
+        case 3: a = osc_saw(ph0, inc); break;
+        case 4: a = osc_tri(ph0); break;
+        case 5: a = osc_pulse(ph0, inc, 0x80000000u); break;
+        default: a = osc_saw(ph0, inc); break;
+        }
+        switch (w2) {
+        case 1: b = osc_saw(ph1, inc2); break;
+        case 2: b = osc_pulse(ph1, inc2, 0x80000000u); break;
+        case 3: b = osc_tri(ph1); break;
+        case 4: b = osc_sine(ph1); break;
+        case 5: b = osc_pulse(ph1, inc2, 0x50000000u); break;
+        default: /* FOLLOW reproduces the previous engine's paired waveform. */
+            b = wave == 1 ? osc_pulse(ph1, inc2, 0x50000000u) :
+                wave == 2 ? osc_pulse(ph1, inc2, 0x80000000u) :
+                wave == 3 ? osc_sine(ph1) :
+                wave == 4 ? osc_tri(ph1) :
+                wave == 5 ? osc_pulse(ph1, inc2, 0x80000000u) :
+                osc_saw(ph1, inc2);
             break;
         }
         ph0 += inc;
         ph1 += inc2;
         subph += inc >> 1;
         /* Main oscillator stays dominant. A quiet sub keeps the low octave present. */
-        s = a + mulq15((b - a), fat);
-        s = (s * 3 + osc_sine(subph)) >> 2;
+        s = a + mulq15(b - a, mix);
+        s = mulq15(s, 32767 - submix) + mulq15(osc_sine(subph), submix);
         ring = mulq15(a, b);
         s += mulq15(ring - s, metal);
         /* Feedback is pre-filtered and limited so that it cannot grow unbounded. */
@@ -81,7 +99,7 @@ static void industrial_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, 
         }
         s = held;
         /* Existing trapezoidal SVF plus post-filter soft saturation. */
-        s = tsvf_lp(&flt, s >> 1, &ic1, &ic2) << 1;
+        s = svf_mode(&flt, s >> 1, &ic1, &ic2, mode, fk) << 1;
         s = softclip(s);
         out[i] += voice_amp(s, m, i) << 1;
     }
