@@ -142,6 +142,8 @@ typedef struct {
     uint8_t rx_on;                               /* JLD: RX channels included in this project */
     uint8_t rx[6];                              /* one-based channels, 1..16 */
     int8_t transpose[NTRK];                     /* v0.6: melodic MIDI transpose, -24..24 */
+    uint8_t zone_on;                            /* keyboard-zones optional 'Z''N' project block */
+    uint8_t zone[NTRK][Z_FIELDS];              /* MIN, MAX, V.MIN, V.MAX per track */
     uint8_t cm_count;                           /* optional REC CC macros, zero in older projects */
     uint8_t cm_rows[CM_N][CM_ROW_SIZE];         /* 32 independent seven-byte assignments */
     int8_t pad_pan[NPART][12];                   /* Stage 22B: optional per-track drum pan */
@@ -661,6 +663,14 @@ static int proj_import(project_t *q, const void *b, int n)
     proj_sl_found = 0;
     if (!proj_import_any(q, b, n) || !proj_engines_ok(q))
         return 0;
+    if (!q->zone_on) {
+        for (uint32_t zi = 0; zi < NTRK; zi++) {
+            q->zone[zi][Z_NOTE_MIN] = 0u;
+            q->zone[zi][Z_NOTE_MAX] = 127u;
+            q->zone[zi][Z_VEL_MIN] = 1u;
+            q->zone[zi][Z_VEL_MAX] = 127u;
+        }
+    }
     if (!proj_sl_found) {
         proj_sl_migrate(q);
         q->sum = proj_sum(q);
@@ -900,6 +910,14 @@ static uint32_t proj_packed_size(const project_t *q)
     if (q->rx_on) n += 8u;                       /* 'R' 'X' and six MIDI channels */
     for (i = 0; i < NTRK; i++)
         if (q->transpose[i]) { n += 8u; break; } /* 'T' 'R', six biased transpose values */
+    if (q->zone_on) {
+        for (i = 0; i < NTRK; i++)
+            if (q->zone[i][Z_NOTE_MIN] || q->zone[i][Z_NOTE_MAX] != 127u ||
+                q->zone[i][Z_VEL_MIN] != 1u || q->zone[i][Z_VEL_MAX] != 127u) {
+                n += 2u + NTRK * Z_FIELDS; /* 'Z' 'N' + 24 bytes, only nondefault */
+                break;
+            }
+    }
     n += 6u;                                    /* 'E' 'Q', 3 signed gains biased by 15, ON */
     if (q->cm_count) n += 3u + q->cm_count * CM_ROW_SIZE;
     if (proj_djf_events(&q->motion))                    /* (0.9.1) the DJ FILTER's records: their block's head */
@@ -1280,6 +1298,16 @@ static int proj_pack(project_store_t *out, const project_t *q)
     if (i < NTRK) {
         b[pos++] = 'T'; b[pos++] = 'R';
         for (i = 0; i < NTRK; i++) b[pos++] = (uint8_t)(q->transpose[i] + 24);
+    }
+    if (q->zone_on) {
+        for (i = 0; i < NTRK; i++)
+            if (q->zone[i][Z_NOTE_MIN] || q->zone[i][Z_NOTE_MAX] != 127u ||
+                q->zone[i][Z_VEL_MIN] != 1u || q->zone[i][Z_VEL_MAX] != 127u) break;
+        if (i < NTRK) {
+            b[pos++] = 'Z'; b[pos++] = 'N';
+            memcpy(b + pos, q->zone, sizeof q->zone);
+            pos += sizeof q->zone;
+        }
     }
     if (q->cm_count) {
         b[pos++] = 'C'; b[pos++] = 'M'; b[pos++] = q->cm_count;
@@ -1731,6 +1759,18 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         }
         pos += 8u;
     }
+    if (pos + 2u <= room && b[pos] == 'Z' && b[pos + 1u] == 'N') {
+        if (pos + 2u + sizeof q->zone > room) return 0;
+        memcpy(q->zone, b + pos + 2u, sizeof q->zone);
+        for (i = 0; i < NTRK; i++)
+            if (q->zone[i][Z_NOTE_MIN] > q->zone[i][Z_NOTE_MAX] ||
+                q->zone[i][Z_VEL_MIN] < 1u ||
+                q->zone[i][Z_VEL_MIN] > q->zone[i][Z_VEL_MAX] ||
+                q->zone[i][Z_VEL_MAX] > 127u)
+                return 0; /* corrupted project, never load invalid boundaries */
+        q->zone_on = 1u;
+        pos += 2u + sizeof q->zone;
+    }
     if (pos + 3u <= room && b[pos] == 'C' && b[pos + 1u] == 'M') {
         uint32_t count = b[pos + 2u];
         if (!count || count > CM_N || pos + 3u + count * CM_ROW_SIZE > room) return 0;
@@ -2035,6 +2075,8 @@ static void project_capture(project_t *p)
     p->rx_on = 1u;
     for (i = 0; i < 6u; i++) p->rx[i] = (uint8_t)midi_rx_channel(i);
     memcpy(p->transpose, midi_transpose, sizeof p->transpose);
+    p->zone_on = 1u;
+    memcpy(p->zone, midi_zone, sizeof p->zone);
     p->cm_count = cm_count;
     memcpy(p->cm_rows, cm_rows, sizeof cm_rows);
     p->motion = motion;
@@ -2440,6 +2482,8 @@ static int project_restore_runtime(const project_t *input)
     global_eq_on = p->eq_present ? p->eq_on : 1;
     if (p->rx_on) memcpy(midi_rx, p->rx, sizeof p->rx);
     memcpy(midi_transpose, p->transpose, sizeof midi_transpose);
+    if (p->zone_on) memcpy(midi_zone, p->zone, sizeof midi_zone);
+    else midi_zone_reset();
     cm_count = p->cm_count;
     memcpy(cm_rows, p->cm_rows, sizeof cm_rows);
     chain.ended = 0;                                    /* (a song stopped by this load: the load wins, song_poll keeps out) */
@@ -2579,6 +2623,7 @@ static void system_init(void)
     /* A new/initialized project must not inherit the previous project's EQ. */
     for (i = 0; i < 3u; i++) global_eq_gain[i] = 0;
     global_eq_on = 1;
+    midi_zone_reset();
     chain_defaults(&chain_config);
     memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
     memset(pfx_lane, 0, sizeof pfx_lane);
@@ -3113,6 +3158,7 @@ static uint32_t autosave_sig(void)
         uint8_t rx = (uint8_t)midi_rx_channel(i);
         h = as_mix(h, &rx, sizeof rx);
     }
+    h = as_mix(h, midi_zone, sizeof midi_zone);
     h = as_mix(h, &cm_count, sizeof cm_count);
     h = as_mix(h, cm_rows, sizeof cm_rows);
     for (i = 0; i < NTRK; i++) {
