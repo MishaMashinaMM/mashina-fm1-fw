@@ -43,8 +43,12 @@ int main(void)
     bad += check("VOICE resonators reused, 4-voice cap, six presets",
                  ENG_BRASS.poly == 4 && ENG_BRASS.npresets == 6u);
     a = digest(P_E0, 0, &ea);
-    b = digest(P_E0, 1, &eb);
-    bad += check("SAX/TRUMPET excite different timbres", a != b && ea > 100000 && eb > 100000);
+    b = digest(P_E0, 127, &eb);
+    bad += check("SAX/TRUMPET endpoints have distinct timbres", a != b && ea > 100000 && eb > 100000);
+    {
+        uint64_t mid = digest(P_E0, 64, &eb);
+        bad += check("TYPE midpoint is a genuinely distinct tone", mid != a && mid != b);
+    }
     a = digest(P_E1, 35, &ea);
     b = digest(P_E1, 115, &eb);
     bad += check("PRESS changes playing intensity", a != b && eb > ea);
@@ -66,6 +70,18 @@ int main(void)
     a = digest(P_E7, 0, &ea);
     b = digest(P_E7, 127, &eb);
     bad += check("ATTACK changes breath swell", a != b);
+    a = digest(BR_FAT, 0, &ea);
+    b = digest(BR_FAT, 100, &eb);
+    bad += check("EDIT 3 FAT changes oscillator weight", a != b);
+    a = digest(BR_GRIND, 0, &ea);
+    b = digest(BR_GRIND, 100, &eb);
+    bad += check("EDIT 3 GRIND changes saturated timbre", a != b);
+    a = digest(BR_METAL, 0, &ea);
+    b = digest(BR_METAL, 100, &eb);
+    bad += check("EDIT 3 METAL changes ring harmonics", a != b);
+    a = digest(BR_CRUSH, 0, &ea);
+    b = digest(BR_CRUSH, 100, &eb);
+    bad += check("EDIT 3 CRUSH changes quantized output", a != b);
     printf("BRASS ENGINE TESTS %s (%d failed)\n", bad ? "FAILED" : "PASSED", bad);
     return !!bad;
 }
