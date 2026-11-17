@@ -1,8 +1,10 @@
-# JIANT LIVE DRUMS v0.3 — User Manual (draft)
+# JIANT LIVE DRUMS v0.7 — User Manual
 
-This guide describes **JIANT LIVE DRUMS (JLD) v0.3**, the FM1 live-performance firmware derived from JIANT. It covers the controls in the **sequencer-disabled Drums build**, not the original JIANT sequencer. The source of truth is the firmware implementation; any annotated schematic is explicitly marked as such.
+This is the **JIANT LIVE DRUMS (JLD) v0.7** user manual for the M-VAVE FM1, covering live controls, MIDI performance, drum kits, sound engines, project management and the v0.7 **BRASS** and **INDUSTRIAL** synthesizers. This fork disables the original JIANT sequencer. The firmware and its [README](../README.md) are the authoritative implementation references; diagrams below are annotated schematics, not photographs of the physical screen.
 
-> **Safety:** Back up projects and sound banks before installing another firmware. JLD v0.3 was successfully flashed onto two FM1 units, one from official V15 and another from original JIANT. Other migration paths and recovery after a failed flash are not established by those tests.
+> **Filename note:** The original `JLD_MANUAL_V0.3.md` path is retained so existing bookmarks keep working. **This document describes v0.7**, not v0.3. The [web interactive manual](https://mishamashinamm.github.io/jiant-live-drums/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
+
+> **Safety and testing:** Back up projects, presets and sound banks before changing firmware. v0.7 was successfully flashed and tested on a physical FM1 on November 17, 2026, including three layered tracks on a shared MIDI channel, chords, melodies and shared EQ. These are owner-reported functional results, not exhaustive long-duration stress or recovery certification.
 
 ## 1. Physical controls and navigation
 
@@ -13,13 +15,13 @@ This guide describes **JIANT LIVE DRUMS (JLD) v0.3**, the FM1 live-performance f
 | Control | Ordinary operation | Important context |
 | --- | --- | --- |
 | **HOME** | Open HOME; a repeat tap moves to its next group | **Hold HOME** to open or close MENU; a tap also closes MENU. |
-| **EDIT** | Sound-engine editing | Pages differ for synthesizers, FM6, DRUM-X and DRUM-LAB. |
+| **EDIT** | Sound-engine editing | Pages differ for synthesizers (including BRASS/INDUSTRIAL EDIT 3), FM6, DRUM-X and DRUM-LAB. |
 | **ENV** | Envelopes, destination and stage pages | May expose track and individual envelope views. |
 | **LFO** | Modulation matrix, LFO and MSEQ | The original engine M1–M4 macros are separate from JLD REC macros. |
 | **FX** | Track sends/effects and global buses | Delay, reverb, chorus, slicer and master/punch groups follow. |
 | **SCL** | Scale and chord controls | Works on the selected track. |
 | **ARP** | Arpeggiator controls | ARP and ARP 2 pages. |
-| **GLO** | Mixer, sends, global and system pages | The normal entry page is MIXER; other LIVE pages exist in the source. |
+| **GLO** | Mixer, sends, global and system pages | Opens at MIX → MIXER; obsolete LIVE/MANO and LIVE/RIELES pages are removed from navigation. |
 | **SAVE** | Preset, project and tool pages | Store edited settings explicitly when you want to keep them. |
 | **SEQ** | **DRUM MIDI MAP** | Does not start the original sequencer. |
 | **PLAY** | **DRUM PERFORMANCE** | Does not start the original transport. |
@@ -27,10 +29,10 @@ This guide describes **JIANT LIVE DRUMS (JLD) v0.3**, the FM1 live-performance f
 | **OCT− / OCT+** | Lower/raise the playing octave | Both together reset the offset; the live screens repurpose them. |
 | **SELECT** | Move between visible pages | On SEQ/PLAY chooses a pad; on REC chooses a macro. |
 | **ALGORITHM** | Change active track | On REC it instead turns the highlighted macro off/on. |
-| **PRESETS** | Browse presets | Not a parameter knob. |
+| **PRESETS** | Browse presets | Browses presets on most pages; on GLO → MIXER it adjusts the master DJ Filter. |
 | **K1–K4** | Edit displayed parameters | Some columns may be unused or have special selection functions. |
 
-The normal octave offset is **−3 to +3**. Changing a parameter typically acts immediately, but project-specific changes are only retained across loading/reboot once the project is saved.
+The normal keyboard octave offset is **−3 to +3**; this is separate from the per-track ±24-semitone transpose. Changing a parameter typically acts immediately, but project-specific changes are only retained across loading/reboot once the project is saved.
 
 ### 1.2 Moving between pages
 
@@ -73,19 +75,70 @@ Turn **SELECT** to change the MENU page; **ALGORITHM** changes its higher-level 
 
 > Older JIANT screenshots may show other MENU arrangements. The table above comes from JLD's six-page layout.
 
-## 2. Tracks, GLO and MIDI routing
+## 2. Tracks, GLO, EQ and MIDI routing
 
-In **GLO → MIXER**, choose per-track levels, stereo positioning, effects and the six **MIDI RX channels**. RX channels are in the range **1–16** and are allowed to repeat. Tracks 5 and 6 can retain assignments while inactive. The current project stores these settings when saved.
+Press **GLO** from another section to open **MIX → MIXER**. The MIXER contains six track rows; select a row using **ALGORITHM**.
 
-Under **GLO → SYSTEM**, set **ROUTE**:
+| MIXER knob | Function | Details |
+| --- | --- | --- |
+| **K1** | Track MIDI RX channel | 1–16; duplicate assignments allowed. Shows **LIVE** when a temporary CC override is active. Turning K1 clears that track's override. |
+| **K2** | Track volume | Independent level for each track. |
+| **K3** | Track pan | Independent stereo position. |
+| **K4** | **TRN** (per-track transpose) | **−24 to +24 semitones** for melodic engines, saved with each project. DRUM-X and DRUM-LAB note mappings are **not transposed**. |
+| **PRESETS rotary** | Master **DJ Filter** | Acts as the master filter **only on MIXER**; elsewhere it retains preset-browsing behavior. |
+
+The GLO navigation is **MIXER → SENDS → EQ → GLOBAL → SYSTEM**, with MIXER as the entry point from other sections. Previous LIVE **MANO** and **RIELES** pages no longer appear. The **TRACKS 4/6** option is in **MENU → AUDIO**; track 5/6 RX assignments can be edited and saved while those tracks are inactive.
+
+**TRN affects incoming USB/TRS MIDI and the FM1 keyboard.** Changing transpose while a note is held affects *subsequent* notes, not the already sounding pitch; note-off/sustain release still matches the originally played note. Legacy projects without transpose information start with zero transpose.
+
+### 2.1 Routing mode
+
+In **GLO → SYSTEM**, select **ROUTE**:
 
 | ROUTE | Meaning |
 | --- | --- |
-| **1-4** | Matching assigned input channels route to active tracks 1–4. |
-| **1-6** | Matching assigned input channels route to active tracks 1–6. |
-| **SEL** | Incoming MIDI follows the selected track. |
+| **1-4** | Match assigned MIDI input channels to active tracks 1–4. |
+| **1-6** | Match assigned MIDI input channels to active tracks 1–6 (subject to the TRACKS setting). |
+| **SEL** | Incoming MIDI follows the currently selected track. |
 
-The separate **TRACKS 4/6** setting controls how many tracks are active. For example, to layer two synthesizers from one keyboard, assign tracks 1 and 2 the same RX channel and select assigned-channel routing. Note ownership follows the sounding tracks, even if you later change the selected track.
+To layer sounds, assign T1, T2 and optionally T3 the same RX channel (for example CH1) and choose **1-4** or **1-6**. Each track has its own patch, level, pan and transpose. Track and note ownership follows the sounding voices to prevent stuck notes after routing changes; effects tails may continue.
+
+### 2.2 Shared global EQ
+
+Open **GLO → MIX → EQ**:
+
+| Band | Center / shelf frequency | Gain |
+| --- | --- | --- |
+| **LOW** | 50 Hz low shelf | −15 to +15 dB |
+| **MID** | 700 Hz peaking EQ | −15 to +15 dB |
+| **HIGH** | 10 kHz high shelf | −15 to +15 dB |
+| **ON** | EQ bypass switch | On / Off |
+
+This is **one shared EQ for all tracks before effects**, not one EQ per track. It shapes the dry buses and effect sends but does not reprocess already-wet effect returns. All four EQ settings are saved per project; older projects without EQ settings load flat EQ.
+
+### 2.3 Temporary MIDI receive channel overrides (v0.5)
+
+**CC88, CC89 and CC90** control the effective RX channels for **T1, T2 and T3**, respectively. They are accepted from any MIDI input channel:
+
+| MIDI CC | Track | Value 0–63 | Value 64–127 |
+| --- | --- | --- | --- |
+| **88** | T1 | CH2 | CH1 |
+| **89** | T2 | CH2 | CH1 |
+| **90** | T3 | CH2 | CH1 |
+
+These commands **select**, rather than toggle, CH1/CH2. For example, CC88=0 always selects T1 CH2. The changes are temporary: they do not rewrite the project RX settings, and a project reload or restart restores saved routing. All three CCs are reserved from MIDI Learn and REC macros.
+
+### 2.4 Live melodic sound randomization (v0.4)
+
+**CC85** lightly randomizes eligible sound parameters, **CC86** randomizes them more strongly, and **CC87** restores the **last saved** sound parameters without stopping held notes.
+
+| Incoming MIDI channel (1-based) | Target track |
+| --- | --- |
+| **13** | T1 |
+| **14** | T2 |
+| **15** | T3 |
+
+Use a value **≥64** to trigger, then **0–63** to re-arm (a brief debounce also accepts repeated high-only presses). These CCs are reserved from normal routing, MIDI Learn and REC macros, but **only channels 13–15 execute them**. Save a melodic sound before experimenting; randomization does not replace the saved project unless you save again. DRUM-X and DRUM-LAB are excluded. CC87 restores parameters in-place, **not** an engine change, and does not cut active notes or effects.
 
 ## 3. JLD live drum screens
 
@@ -113,7 +166,7 @@ Press **PLAY**. Track, pad and bank selection work as on SEQ. Press PLAY again t
 | **K3** | Choke group | None / G1 / G2 / G3 / G4 |
 | **K4** | Retrigger policy | OVR (overlap) / RST (restart) |
 
-Both drum engines share **eight simultaneous synthesis voices total**. OVR may let a repeated hit overlap; RST restarts its pad. Pads in the same assigned choke group can cut one another.
+Both drum engines share the same **global synthesis voice budget** with melodic tracks (normally eight voices; configuration and load management can change the effective budget). OVR may let a repeated hit overlap; RST restarts its pad. Pads in the same assigned choke group can cut one another.
 
 ### 3.3 REC — Project MIDI CC Macros
 
@@ -172,22 +225,79 @@ DRUM-LAB provides **12 pads**, initially mapped to MIDI notes **36–47**, with 
 
 The ten per-pad sound parameters run **0–127**. The eight kit-wide STRIKE/BODY multipliers run **0–100%** and act on effective playback values without overwriting each pad's stored parameters. 100% leaves a pad unchanged; 50% halves the affected value; 0% reduces it to zero. They are saved with the project.
 
-## 6. Saving, loading and backups
+## 6. BRASS and INDUSTRIAL synthesizers (new in v0.7)
 
-Use **SAVE** to access user presets and project operations. A saved project preserves its eligible track settings, RX channel assignments and REC macro rows; edits made after a save are not a replacement for saving again. A deletion that has not been saved can reappear when the previous project is loaded.
+Both engines appear alongside the inherited melodic engines. Each has **three EDIT pages, with four parameters on each page**. Select the target track, choose the engine and its factory preset, press EDIT and use SELECT to reach **EDIT 1 → EDIT 2 → EDIT 3**. The four EDIT 3 controls are project-persistent, but **not direct destinations in the older eight-slot MOD matrix**.
+
+### 6.1 BRASS — morphing synthetic sax and trumpet
+
+BRASS provides deliberately synthetic but recognizable sax/trumpet-like leads, based on harmonic excitation and formant resonators. The continuous **TYPE 0–127** control interpolates their character: **0 = SAX**, **around 64 = hybrid**, **127 = TRUMPET**. It is **not a binary switch**.
+
+| Page | K1 | K2 | K3 | K4 |
+| --- | --- | --- | --- | --- |
+| **EDIT 1** | TYPE — SAX↔TRUMPET morph | PRESS — playing intensity | BUZZ — harmonic richness | BREATH — air noise |
+| **EDIT 2** | BODY — lower resonance | FORMNT — upper resonance | GROWL — rough/subharmonic tone | ATTACK — articulation |
+| **EDIT 3** | FAT — detuned oscillator layer | GRIND — saturation | METAL — ring-modulated overtones | CRUSH — digital bit-depth reduction |
+
+The four EDIT 3 controls **default to 0** on factory sounds, so they add no processing until enabled. Six presets: **TENOR SAX**, **BARITONE SAX**, **SAX GROWL**, **SOFT HORN**, **BRASS LEAD**, **TRUMPET**.
+
+**Polyphony:** BRASS has an explicit **four-voice maximum per track**. This was a conservative CPU choice inherited from VOICE, not a fundamental synthesis requirement. Different tracks may each play BRASS, but all still compete for the shared global voice budget; additional active voices, effects and system load can reduce the number simultaneously available.
+
+### 6.2 INDUSTRIAL — aggressive basses and leads
+
+INDUSTRIAL produces synthetic, saturated bass and lead sounds with dual oscillators, filtering and additional processing:
+
+| Page | K1 | K2 | K3 | K4 |
+| --- | --- | --- | --- | --- |
+| **EDIT 1** | WAVE — oscillator waveform | FAT — detuning | GRIND — saturation | METAL — metallic modulation |
+| **EDIT 2** | CRUSH — digital reduction | FEED — feedback character | CUT — cutoff | RES — resonance |
+| **EDIT 3** | WAVE2 — secondary waveform | MIX — oscillator balance | SUB — sub-octave level | MODE — LP / HP / BP filter |
+
+Six presets: **IRON BASS**, **STEEL LEAD**, **GRIND BASS**, **GEAR LEAD**, **BROKEN AMP**, **SUB MACHINE**. WAVE2 can follow the first oscillator or choose its own wave. MIX and SUB control independent layers; MODE selects low-pass, high-pass or band-pass response.
+
+**Saving and compatibility:** Project serialization retains all 12 controls for either new engine and restores drum levels when switching to drum engines. Factory **Favorites** for the added engine IDs are not supported by the original fixed Favorites storage layout. Save a working sound in a project; do not assume older firmware can correctly reload projects using these engine IDs.
+
+## 7. Saving, loading, live recall and backups
+
+Use **SAVE** for sound/project operations. Save the project to preserve eligible track settings, RX channels, **TRN values**, global EQ, BRASS/INDUSTRIAL controls, and REC macro assignments. Unsaved changes can be lost when another project is loaded.
+
+### 7.1 Live Recall (introduced in v0.4)
+
+**Long-press REC** to toggle **Live Recall mode**. While enabled, single presses of **FX**, **SEL**, **ENV**, and **LFO** recall saved project slots **1–4**, respectively. Long-press REC again to leave this mode. The older **hold SAVE + mapped keyboard key** recall/store shortcuts remain available.
+
+Switching projects stops active notes from the previous project, while existing delay/reverb tails can decay naturally. Newly selected sounds are playable immediately. A normal REC tap outside Live Recall opens the MIDI CC macro list.
+
+### 7.2 LIBRARY and TOOLS
+
+Navigate to **SAVE → LIBRARY → TOOLS**. The four actions are mapped directly to K1–K4:
+
+| Knob | Action |
+| --- | --- |
+| **K1** | INIT SOUND |
+| **K2** | CLEAR SLOT — permanently delete the selected saved project slot, with confirmation |
+| **K3** | NEW PROJECT |
+| **K4** | CPU TEST |
+
+**CLEAR SLOT is destructive** once confirmed. The LIBRARY overview indicates saved/empty slots; it was corrected in v0.4 to use the same saved-project validation as loading.
 
 The [JLD web editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/) offers device backup and restore. **Make a full backup before flashing**; do not confuse exporting a sound preset with backing up all device data. The [dedicated installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/) is separate from the editor.
 
-## 7. Useful live setups
+## 8. Useful live setups
 
-**Two layered voices:** set T1 and T2 to the same RX channel, then select ROUTE 1-4 or 1-6 and adjust their pan and levels individually. One keyboard can play both.
+**Three layered synth parts:** assign T1, T2 and T3 the same RX channel, choose ROUTE=1-4 or 1-6, and assign BRASS, INDUSTRIAL or other melodic engines to different tracks. Adjust level, pan and TRN independently on MIXER. Three layered tracks with EQ and chords/melodies were reported successful on the physical FM1 in v0.7 testing.
+
+**Sax/trumpet hybrid:** start with BRASS → TENOR SAX and gradually raise TYPE from 0 through 64 to 127. Increase PRESS and BUZZ for harder articulation; use FAT/GRIND/METAL/CRUSH on EDIT 3 only if you want to depart from the clean instrument character.
+
+**Bass and lead split:** layer INDUSTRIAL on one track with BRASS on another, using different pan and/or transpose settings. Keep the shared voice budget in mind for dense chords.
 
 **A single foot controller shaping several sounds:** create multiple REC rows that share the same CC and channel but target different parameters, then assign different RNG/TGL values to each. Individual rows can be bypassed without deletion.
 
 **12-pad drum kit from an external controller:** choose DRUM-X or DRUM-LAB on the desired track, set its RX channel in GLO, then customize note/pan/pitch per pad in SEQ and its velocity/choke/retrigger response in PLAY.
 
-## 8. Scope and verification
+## 9. Scope and verification
 
-This draft is based on the current JLD input/navigation code, the code-backed v0.3 feature descriptions and existing interface illustrations. **Inherited screenshots are illustrations, not proof of pixel-identical current v0.3 layouts**. No screenshot of REC, SEQ or PLAY is presented here as a captured physical display; their exact controls are documented from the dedicated source paths. The initial two-unit v0.3 flashing tests and REC partial-redraw behavior were confirmed by the device owner; exhaustive long-duration hardware stress testing has not been reported.
+This manual incorporates the device-tested JLD v0.7 features and the original code-backed DRUM-X / DRUM-LAB / REC / SEQ / PLAY layouts. **Schematic diagrams are illustrative**, not screenshots of the actual v0.7 display. The November 17, 2026 v0.7 FM1 test used three same-channel MIDI tracks, shared EQ, chords and melodies. Earlier v0.3 tests were performed on two FM1 units, starting from official V15 and original JIANT respectively. Neither test campaign establishes exhaustive endurance, every possible CPU load or a guaranteed recovery path.
+
+The **interactive web manual** remains inherited from original JIANT; for Drums-specific controls use this manual and the [current README](../README.md).
 
 Original project and firmware authorship, licenses and upstream credits remain in the repository README and license files.
