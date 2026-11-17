@@ -584,6 +584,10 @@ static int page_visible(uint32_t i)
                (trk_eng(TSEL) == ENGI_DRUMLAB && PAGES[i].title[0] != 'X');
     if (PAGES[i].graph == GR_DXIMG) /* DRUM-X-specific KIT 3 / IMAGE */
         return trk_eng(TSEL) == ENGI_DRUM;
+    if (PAGES[i].fam == FAM_EDIT && PAGES[i].scope == SC_TRACK &&
+        PAGES[i].title[0] == 'E' && /* EDIT 3, not DRUM-LAB's LEVELS 3 */
+        PAGES[i].id[0] == P_LN8 && PAGES[i].id[1] == P_LN9)
+        return trk_eng(TSEL) == ENGI_INDUSTRIAL || trk_eng(TSEL) == ENGI_BRASS;
     if (PAGES[i].scope == SC_TRACK && ((PAGES[i].id[0] >= P_LN0 && PAGES[i].id[0] <= P_LN7) ||
         (PAGES[i].id[0] >= P_LN8 && PAGES[i].id[0] <= P_LN11)))
         return trk_eng(TSEL) == ENGI_DRUM || trk_eng(TSEL) == ENGI_DRUMLAB;
@@ -1388,6 +1392,13 @@ static void apply_preset_to(track_t *t, uint32_t pi)
     t->p[P_DEC] = e->presets[pi].env[1];
     t->p[P_SUS] = e->presets[pi].env[2];
     t->p[P_REL] = e->presets[pi].env[3];
+    if (trk_eng(t) == ENGI_INDUSTRIAL || trk_eng(t) == ENGI_BRASS) {
+        /* Both extended engines use four existing persisted slots. */
+        const uint8_t *extra = trk_eng(t) == ENGI_BRASS ?
+                               BRASS_EXTRA_PRESETS[pi] : INDUSTRIAL_EXTRA_PRESETS[pi];
+        for (i = 0; i < 4u; i++)
+            t->p[P_LN8 + i] = extra[i];
+    }
     t->p[P_ED_FLT] = e->presets[pi].fenv;
     t->p[P_VOICE] = PR_MONO(&e->presets[pi]) ? V_LEGATO : V_POLY;   /* mono presets keep the legato feel */
     if (e == &ENG_FORMANT) {                          /* (0.8.5) VOICE's words: LANG, LYRIC (0: its vowels) */
@@ -1421,6 +1432,12 @@ static void set_engine_of(track_t *t, uint32_t ei)
 #endif
     load_begin(t, LOAD_SOUND);
     fm1_irq_off();
+    /* P_LN8..11 are independent INDUSTRIAL controls, but drum pad levels on
+     * DRUM/DRUM-LAB. Restore drum defaults when leaving INDUSTRIAL. */
+    if ((t->eng_req == ENGI_INDUSTRIAL || t->eng_req == ENGI_BRASS) &&
+        ei % NENGINES != ENGI_INDUSTRIAL && ei % NENGINES != ENGI_BRASS)
+        for (i = P_LN8; i <= P_LN11; i++)
+            t->p[i] = TP[i].def;
     t->eng_req = (uint8_t)(ei % NENGINES);
     for (i = 0; i < 8u; i++)
         t->p[P_E0 + i] = e->edit[i].def;

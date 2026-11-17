@@ -1,11 +1,11 @@
-# JIANT LIVE DRUMS v0.6
+# JIANT LIVE DRUMS v0.7
 
 **Performance-focused firmware for the M-VAVE FM1**, modified by **Misha Mashina** from **JIANT by Juan Jiant** (based on Felucca).
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
-[![Status: v0.6 device tested](https://img.shields.io/badge/v0.6-flashed%20and%20tested-green.svg)](#status-and-safety)
+[![Status: v0.7 device tested](https://img.shields.io/badge/v0.7-flashed%20and%20tested-green.svg)](#status-and-safety)
 
-![JIANT LIVE DRUMS: two 12-pad drum engines, SEQ MIDI mapping, PLAY performance controls, REC 32 MIDI CC macros, and eight shared voices](docs/jiant-live-drums-overview-32-macros.svg?v=0.6)
+![JIANT LIVE DRUMS v0.7: BRASS and INDUSTRIAL synthesis engines, two twelve-pad drum engines, 32 MIDI macros and eight shared voices](docs/jiant-live-drums-overview-32-macros.svg?v=0.7)
 
 **[Project homepage](https://mishamashinamm.github.io/jiant-live-drums/)** · **[Emulator](https://mishamashinamm.github.io/jiant-live-drums/emu/)** · **[Drums installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/)** · **[Drums editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/)** · **[Interactive manual (inherited)](https://mishamashinamm.github.io/jiant-live-drums/manual/)**
 
@@ -13,14 +13,17 @@
 
 The links above are the GitHub Pages routes for this separate Drums repository. The repository includes the Drums-specific browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated Drums control reference**.
 
-JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbral drum sound module**. It extends DRUM-X, adds DRUM-LAB, expands MIDI routing and CC control, and keeps the eight-voice shared pool. The v0.6 update adds **per-track ±24-semitone MIDI and keyboard transpose**, a six-track MIXER with K4 transpose and the PRESETS rotary controlling the master DJ Filter, and a simplified GLO section that opens directly at MIXER (without the obsolete MANO/RIELES pages). It retains the v0.5 **independent live MIDI channel selection via CC88–90** and the v0.4 additions of **live project sound recall**, persistent **CLEAR SLOT**, a clearer four-knob TOOLS page, and **device-tested MIDI sound randomization with uninterrupted CC87 reset**. The shared global three-band EQ from v0.3 remains available before effects, with project save/load. The **sequencer is disabled by default** in this edition (no extra build flag required); its SEQ, PLAY, and REC buttons open dedicated live-MIDI pages. Original Jiant Live remains a separate project.
+JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six independently routed MIDI tracks**, eight shared synthesis voices, expressive sound engines, twelve-pad DRUM-X and DRUM-LAB kits, live recall and 32 project MIDI CC macros. **v0.7 adds two playable melodic engines: BRASS and INDUSTRIAL**, each with 12 sound controls across three EDIT pages. The existing v0.6 per-track ±24-semitone transpose, simplified GLO → MIXER, v0.5 CC88–90 channel overrides, live project recall, and global pre-effects 50 Hz / 700 Hz / 10 kHz three-band EQ remain available. The original sequencer is disabled; SEQ, PLAY and REC provide live drum/control pages.
 
-> **Current status:** **JIANT LIVE DRUMS v0.6 successfully flashed and functionally tested on a physical FM1 (owner-confirmed, November 16, 2026).** The owner confirmed that per-track transpose now changes audible pitch on both external MIDI and the local FM1 keyboard, the GLO page opens directly to MIXER, and the remaining MIXER controls operate correctly. The preceding v0.5 CC88–90 live MIDI channel-selection feature and GLO → MIXER K1 interaction had already been confirmed after flashing. The preceding v0.4 release was also successfully flashed, tested and approved on November 15, 2026. Live Recall (long-press REC; FX/SEL/ENV/LFO recall slots 1–4), CLEAR SLOT, the updated TOOLS controls, and MIDI CC85/86/87 live sound randomization (including non-interrupting CC87 reset) were tested on hardware. This remains an independent, experimental fork, **not an official Juan Jiant release**. Dedicated live-drum host tests and update-package simulations pass. **The earlier published v0.3 firmware (`v0.3-1956d21`) was successfully installed and booted on two physical FM1 units through two different starting-firmware paths: one directly from official FM1 V15 firmware, and the other from original JIANT firmware. Both upgrade paths worked**, and the owner reports that all tested functions work as expected. The REC macro screen's partial-redraw fix was **verified on physical hardware**: editing macro values updates the affected cells without full-screen flicker. The owner confirms that the full current feature set—including 32-macro REC paging, project save/load, DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-MIDI CC macro control—has now been tested and approved on a physical FM1. The newer Global EQ preview was also flashed successfully on November 14, 2026, with normal operation reported; all current features have been device-tested and approved by the owner; exhaustive long-duration stress and recovery qualification are separate from feature testing. These are successful owner-reported device tests, not an exhaustive hardware qualification. Back up your data and prepare a recovery method before installing. Do not use the original JIANT web installer to install Drums.
+> **Current status (November 17, 2026): v0.7 successfully flashed and extensively auditioned on a physical FM1 (owner-confirmed).** BRASS and INDUSTRIAL were tested using three tracks on the same MIDI channel, with global EQ on, simultaneous chords and melodies. The owner reports very good performance, with no issue reported in that session. Automated firmware, browser-emulator, polyphony-stress, project-compatibility and memory-budget tests also passed. This is meaningful functional testing, **not** a guarantee of exhaustive long-duration load, all-device compatibility, or recovery from a failed update. Back up projects and presets before installation; use the dedicated Drums installer rather than the original JIANT installer. The project remains an independent GPL-3.0-only fork based on JIANT by Juan Jiant.
+
 
 ## What's different from JIANT / Jiant Live
 
-| Feature | JIANT LIVE DRUMS v0.6 |
+| Feature | JIANT LIVE DRUMS v0.7 |
 | --- | --- |
+| **BRASS engine (new in v0.7)** | Dedicated synth for synthetic saxophone and trumpet leads, with **continuous TYPE morph (0–127)** and PRESS, BUZZ, BREATH, BODY, FORMNT, GROWL, ATTACK. **EDIT 3** adds neutral-by-default FAT, GRIND, METAL and CRUSH. Six factory presets; up to four voices for this engine. |
+| **INDUSTRIAL engine (new in v0.7)** | Heavy playable synth basses and leads. **EDIT 1** WAVE/FAT/GRIND/METAL, **EDIT 2** CRUSH/FEED/CUT/RES, **EDIT 3** WAVE2/MIX/SUB/MODE; six factory presets. Both engines share the existing global voice budget and effect routing. |
 | **Per-track transpose (v0.6)** | **GLO → MIX → MIXER → K4** adjusts the selected track from **−24 to +24 semitones**. Both external MIDI and the FM1 keyboard transpose; **DRUM-X and DRUM-LAB remain untransposed**. Values are saved per project; older project files default to zero. Existing held notes release at their original sounded pitch if K4 changes, including sustained notes. Device-tested November 16, 2026. |
 | **MIXER and GLO navigation (v0.6)** | Pressing GLO from elsewhere opens **MIX → MIXER**, with **K1 MIDI RX, K2 volume, K3 pan, K4 transpose**. The PRESETS rotary adjusts the master **DJ Filter on MIXER only**; it keeps its normal preset function on other pages. GLO has MIX (MIXER, SENDS, EQ), GLOBAL and SYSTEM groups; unused MANO/RIELES pages are absent from navigation. |
 | Live MIDI channel selection (v0.5) | **CC88 / CC89 / CC90** select MIDI **CH1** (value 64–127) or **CH2** (value 0–63) for **T1 / T2 / T3** respectively, independently and from any incoming MIDI channel. Other tracks retain their existing RX assignments. **GLO → MIXER → K1** remains editable and clears only the selected track's temporary override. Tested in emulator and on physical FM1 (November 16, 2026). |
@@ -41,6 +44,16 @@ JIANT LIVE DRUMS is designed for musicians using the FM1 as a **live multitimbra
 | ABOUT | JIANT LIVE DRUMS identification and purpose, while retaining original author and license credits. |
 | Browser emulator | Can load an existing JIANT **backup JSON** into an isolated session to audition saved sounds/projects without changing the physical FM1. |
 | Sequencer / sound engines | **Sequencer disabled** for live use; the inherited melodic engines and effects remain. |
+
+### BRASS and INDUSTRIAL synthesizers (v0.7 — device-tested)
+
+The **BRASS** engine is a playable, intentionally synthetic wind-instrument approximation built from existing VOICE-style formant resonators and band-limited oscillators. Its **TYPE** control morphs continuously from saxophone character at **0** through hybrid sounds around **64** to trumpet character at **127**. EDIT 1 holds TYPE, PRESS, BUZZ and BREATH; EDIT 2 holds BODY, FORMNT, GROWL and ATTACK; EDIT 3 adds FAT (detuned oscillator), GRIND (saturation), METAL (ring-modulated harmonics) and CRUSH (bit-depth reduction). All four EDIT 3 effects start at **0 on factory presets**, preserving the clean wind character until edited. Six factory sounds: **TENOR SAX, BARITONE SAX, SAX GROWL, SOFT HORN, BRASS LEAD, TRUMPET**. BRASS is capped at **four simultaneous voices**, within the existing pool of eight shared across all tracks.
+
+The **INDUSTRIAL** engine is intended for heavy, saturated, playable bass and lead sounds. EDIT 1: WAVE, FAT, GRIND, METAL. EDIT 2: CRUSH, FEED, CUT, RES. EDIT 3: WAVE2 (independent secondary oscillator waveform), MIX (oscillator balance), SUB (low octave) and MODE (low/high/band-pass). Factory sounds: **IRON BASS, STEEL LEAD, GRIND BASS, GEAR LEAD, BROKEN AMP, SUB MACHINE**.
+
+For either engine, press **EDIT** and navigate through **EDIT 1 → EDIT 2 → EDIT 3**; the third page is available on the actual FM1 navigation chain. Its four controls use existing saved parameter slots, so sound and project data persist without a project-format expansion. The third page's parameters are **not yet direct MOD-matrix destinations**. Factory Favorites for engines added after the original 16 engine slots are unavailable in the existing fixed Favorites format; save your customized sound in a project/user preset instead.
+
+**Physical testing (November 17, 2026):** v0.7 was tested on the FM1 with **three melodic tracks receiving the same MIDI channel**, EQ enabled, and chords and melodies together. The owner reported very good performance. Automated tests also covered high control settings, rapid retriggers, the four-voice cap and BRASS/INDUSTRIAL/DRUM-LAB project serialization. Physical testing does not constitute exhaustive worst-case CPU qualification.
 
 ### Per-track MIDI transpose and the new GLO opening page (v0.6 — device-tested)
 
@@ -210,11 +223,11 @@ On the tested FM1, these pages open with a single press and remain stable while 
 
 ### Display and startup
 
-The startup screen uses a black background with **JIANT LIVE DRUMS**, author attribution and **v0.6**. Decorative display animations and the startup LED sweep are disabled; informative UI and sound feedback remain.
+The startup screen uses a black background with **JIANT LIVE DRUMS**, author attribution and **v0.7**. Decorative display animations and the startup LED sweep are disabled; informative UI and sound feedback remain.
 
 ## Try JIANT LIVE DRUMS on your computer
 
-**[▶ Launch JIANT LIVE DRUMS in your browser](https://mishamashinamm.github.io/jiant-live-drums/emu/)** — no installation or FM1 hardware is required to use the emulator. The current v0.6 firmware has also been flashed and tested on a physical FM1.
+**[▶ Launch JIANT LIVE DRUMS in your browser](https://mishamashinamm.github.io/jiant-live-drums/emu/)** — no installation or FM1 hardware is required to use the emulator. The current v0.7 firmware has also been flashed and tested on a physical FM1.
 
 The browser tab is titled **JIANT LIVE DRUMS**. It includes the virtual FM1, computer-keyboard controls, MIDI CC testing, and an optional JIANT backup importer. Credits and licenses remain in the repository.
 
@@ -262,17 +275,19 @@ The Drums emulator does not load a sample bank or offer sample-kit playback. It 
 
 ## Status and safety
 
-**Current hardware validation:** The owner confirms that **all current JLD v0.6 firmware features have been functionally checked and approved on a physical FM1**. Emulator and host test results below are additional development evidence, **not indications that a feature has only been tested in software**. Historical v0.3 milestones are retained for provenance. Browser-only functions (such as browser backup import) are separate from device firmware functionality. The LIBRARY occupancy overview correction was merged in PR #21 and successfully tested on a physical FM1.
+**Current hardware validation:** The owner confirms that **JLD v0.7 with BRASS and INDUSTRIAL has been flashed and tested on a physical FM1**, including layered MIDI tracks and shared EQ. Emulator and host test results below are additional development evidence, **not indications that a feature has only been tested in software**. Historical v0.3 milestones are retained for provenance. Browser-only functions (such as browser backup import) are separate from device firmware functionality. The LIBRARY occupancy overview correction was merged in PR #21 and successfully tested on a physical FM1.
 
 - **v0.4 device-tested release:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18). The project LIBRARY occupancy discrepancy was corrected in [PR #21](https://github.com/MishaMashinaMM/jiant-live-drums/pull/21). **The owner successfully flashed v0.4 on a physical FM1 and confirmed live recall, slot management, LIBRARY indicators, startup/About version display and the current feature set work on the device (November 15, 2026).** Firmware, host regression and emulator checks also passed. Device approval does not imply exhaustive long-duration stress qualification.
 
-- **Previous v0.3 release (historical):** [GitHub Actions build and deployment](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42855710544) completed successfully for `v0.3-1956d21`. Both physical FM1 units were flashed and checked successfully on November 10, 2026: **official V15 → JLD v0.3** and **original JIANT → JLD v0.3**. The [public installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/) now serves **v0.4**, not this historical package.
+- **Previous v0.3 release (historical):** [GitHub Actions build and deployment](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42855710544) completed successfully for `v0.3-1956d21`. Both physical FM1 units were flashed and checked successfully on November 10, 2026: **official V15 → JLD v0.3** and **original JIANT → JLD v0.3**. The [public installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/) serves the current v0.7 release, not this historical package.
 - **Host regression:** the live-drum host regression suite covers drum engines, MIDI routing, project serialization, macro control, and Stage 27B stress. The `macro-32` firmware and emulator build jobs, including all 11 live-drum host regression suites, passed on November 10, 2026.
 - **Historical 32-macro build:** source commit [`5c79b3b`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/5c79b3b7b394c9d2a6ac75d4847aef9ef81e44da) produced [successful firmware and emulator preview artifacts](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42836474817). The earlier Stage 29C package `felucca-v0.2-b9654ee.fwsc` is also historical; neither package is the current v0.4 release.
 - **REC partial redraw:** the [firmware and emulator CI run](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42849592862) passed all 11 live-drum host regression suites. The new installer was successfully flashed to an FM1 on November 10, 2026; K-knob macro edits no longer cause full-screen flickering on the device.
 - **Update simulation:** Stage 29C OTA staging, CRC validation, allowed flash boundaries and the Stage 29B → 29C loader update passed host tests. These checks do **not** guarantee recovery from a failed physical update.
 - **Physical FM1 testing (November 9–10, 2026):** **v0.3 (`1956d21`) was successfully flashed and booted on two FM1 units**—one starting from **official V15** and one from **original JIANT**—and the owner reported **all performed device checks passed**. The first device confirmed ABOUT v0.3 and smooth REC partial updates without flicker; the second also functioned as expected. Earlier physical tests confirmed DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-controller MIDI CC macros. Physical FM1 testing now covers the current macro feature set, including paging, editing, deletion and save/reload (owner-confirmed for v0.4). Emulator tests also exercised ten macros over three pages, and host tests exercised all 32. Exhaustive long-duration reliability qualification is not claimed.
 - **Safety:** user projects/sound banks/settings were backed up externally before installation. A fully verified physical recovery procedure is still needed. The dedicated GitHub Pages installer is deployed. **Official V15 → JLD v0.3** and **original JIANT → JLD v0.3** were tested successfully, but other firmware variants, devices, and recovery paths are not thereby verified.
+
+**v0.7 verification:** The user-approved BRASS/INDUSTRIAL device-test package passed [hardware firmware and complete CI regression checks](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/44168705612) and was flashed to an FM1. The measured firmware image was 574,196 / 584,336 bytes (10,140 bytes free), with unchanged static RAM. The final public installer rebuilds the same source as v0.7 and should be verified independently after deployment.
 
 For regression testing in the development environment:
 
@@ -290,7 +305,7 @@ JIANT LIVE DRUMS retains many JIANT synthesis engines, interfaces, effects and e
 - [Felucca](https://github.com/hugelton/Felucca), the firmware on which JIANT is based
 - [SLOOP](https://github.com/isod89/sloop-fm1), source of JIANT's song-system lineage
 
-**Important:** the inherited manual, navigation map, screenshots and cheat sheets describe upstream JIANT revisions; they are **not exact Jiant Live Drums v0.6 control maps**. Original illustrations under [`docs/`](docs/) are historical upstream assets.
+**Important:** the inherited manual, navigation map, screenshots and cheat sheets describe upstream JIANT revisions; they are **not exact Jiant Live Drums v0.7 control maps**. Original illustrations under [`docs/`](docs/) are historical upstream assets.
 
 ## Authors, credits and license
 

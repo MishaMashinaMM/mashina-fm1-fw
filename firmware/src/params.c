@@ -74,7 +74,7 @@ static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN",
                                                          * globals (DELAY TIME FDBK TONE MIX, REVERB SIZE DAMP, CHORUS RATE
                                                          * DEPTH): mod.c macro_master, fx.c GFX() */
 static const char *const N_ENGNAME[] = {"ANALOG", FELUCCA_FM4 ? "DIGITAL" : "-", "PHASE", "LOFI", "-", "VOICE", "-", "WHEEL", "-", "-",
-                                             "DRUM", "NOISE", "FM6", "-", "ANIMAL", "DRUM-LAB"};   /* Stage 20B: keep G_ENGSEL's enum aligned with ENGINES[15]. */
+                                             "DRUM", "NOISE", "FM6", "-", "ANIMAL", "DRUM-LAB", "INDUSTRIAL", "BRASS"};   /* Stage 20B: keep G_ENGSEL's enum aligned with ENGINES[15]. */
 
 #define PD(l, f, mn, mx, df) {l, f, mn, mx, df, 0, 0}
 #define PE(l, n, df) {l, F_ENUM, 0, (int16_t)(sizeof(n) / sizeof(n[0]) - 1), df, n, 0}
@@ -266,6 +266,10 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
         return &GP[G_DJF];
     if ((id == P_VLANG || id == P_VLYR) && ENGINES[eng_idx(t->eng_req)] == &ENG_FORMANT)
         return id == P_VLANG ? &VLANG_DESC : &VLYR_DESC;
+    if (t->eng_req == ENGI_INDUSTRIAL && id >= P_LN8 && id <= P_LN11)
+        return &INDUSTRIAL_EXTRA[id - P_LN8];
+    if (t->eng_req == ENGI_BRASS && id >= P_LN8 && id <= P_LN11)
+        return &BRASS_EXTRA[id - P_LN8];
     if (id >= P_E0 && id <= P_E7) {                   /* the engine asked for (t->engine follows after a fade) */
         const engine_t *e = ENGINES[eng_idx(t->eng_req)];
         const param_desc_t *d = e->desc ? e->desc(t, id - P_E0) : 0;   /* a mode-dependent label / names */
@@ -302,6 +306,10 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
  * only; range and default are the same): what the editor protocol, user presets and projects use */
 static const param_desc_t *param_desc_of(uint32_t e, uint32_t id)
 {
+    if (e == ENGI_INDUSTRIAL && id >= P_LN8 && id <= P_LN11)
+        return &INDUSTRIAL_EXTRA[id - P_LN8];
+    if (e == ENGI_BRASS && id >= P_LN8 && id <= P_LN11)
+        return &BRASS_EXTRA[id - P_LN8];
     return id >= P_E0 && id <= P_E7 ? &ENGINES[e]->edit[id - P_E0] : &TP[id];
 }
 
@@ -599,6 +607,7 @@ static const page_t PAGES[] = {
     {"CHORD", FAM_SCL, SC_TRACK, GR_NONE, {P_CHRD, P_CVOI, P_CSTR, 0xFF}},   /* (0.6.81) a key plays a chord (seq.c) */
     {"EDIT 1", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E0, P_E1, P_E2, P_E3}},
     {"EDIT 2", FAM_EDIT, SC_ENGINE, GR_NONE, {P_E4, P_E5, P_E6, P_E7}},
+    {"EDIT 3", FAM_EDIT, SC_TRACK, GR_NONE, {P_LN8, P_LN9, P_LN10, P_LN11}},   /* INDUSTRIAL only: extra oscillator/filter controls */
     {"WORDS", FAM_EDIT, SC_TRACK, GR_LYRIC, {P_VLANG, P_VLYR, P_E0, 0xFF}},   /* (0.8.5) VOICE: LANG LYRIC POS, OCT+ TYPE
                                                          * (the lyric on the NAME screen, ui_name.c) */
     {"RETRIG", FAM_EDIT, SC_TRACK, GR_NONE, {P_LRTRG, 0xFF, 0xFF, 0xFF}},

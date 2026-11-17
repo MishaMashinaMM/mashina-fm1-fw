@@ -4,9 +4,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JIANT LIVE DRUMS v0.6 — Firmware for M-VAVE FM1</title>
-<meta name="description" content="JIANT LIVE DRUMS v0.6 for M-VAVE FM1. Device-tested live firmware with two 12-pad drum engines, six MIDI-routed tracks, per-track ±24-semitone transpose, live project recall, 32 CC macros and shared 3-band EQ.">
-<meta property="og:title" content="JIANT LIVE DRUMS v0.6">
+<title>JIANT LIVE DRUMS v0.7 — Firmware for M-VAVE FM1</title>
+<meta name="description" content="JIANT LIVE DRUMS v0.7 for M-VAVE FM1. Device-tested live firmware with two 12-pad drum engines, six MIDI-routed tracks, per-track ±24-semitone transpose, live project recall, 32 CC macros, shared 3-band EQ and BRASS/INDUSTRIAL sound engines.">
+<meta property="og:title" content="JIANT LIVE DRUMS v0.7">
 <meta property="og:description" content="Device-tested M-VAVE FM1 firmware: per-track MIDI and keyboard transpose, DRUM-X, DRUM-LAB, live recall, 32 macros and global EQ.">
 <style>
   :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #0e0e10; color: #f1f1ed; }
@@ -36,21 +36,23 @@
 <body>
 <header>
   <div class="eyebrow">M-VAVE FM1 · independent GPL-3.0-only firmware fork</div>
-  <h1>JIANT LIVE DRUMS v0.6</h1>
-  <p class="intro">Live-performance firmware for the FM1, with two 12-pad synthesis drum engines, six independently routed MIDI tracks, per-track MIDI transpose, expressive CC control and fast project sound recall.</p>
-  <p class="status"><strong>v0.6 successfully flashed and tested on a physical FM1</strong> · owner-confirmed November 16, 2026 · emulator and firmware regression tests also passed.</p>
+  <h1>JIANT LIVE DRUMS v0.7</h1>
+  <p class="intro">Live-performance firmware for the FM1 with new BRASS (morphing SAX–TRUMPET) and INDUSTRIAL bass/lead engines, two 12-pad synthesis drum engines, six MIDI-routed tracks, transpose and 32 CC macros.</p>
+  <p class="status"><strong>v0.7 successfully flashed and tested on a physical FM1</strong> · owner-confirmed November 17, 2026 · emulator and firmware regression tests also passed.</p>
 </header>
 
 <nav class="cards" aria-label="JIANT LIVE DRUMS tools">
   <div class="card"><a href="emu/">Try the emulator</a><p>Play the current firmware in a browser, test MIDI controls and optionally import a JIANT backup into an isolated session.</p></div>
-  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the current v0.6 firmware using the dedicated browser-based device updater. Check the displayed build version before flashing.</p></div>
+  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the current v0.7 firmware using the dedicated browser-based device updater. Check the displayed build version before flashing.</p></div>
   <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1 to manage compatible sounds, settings and backups. Some newer Drums controls, including global EQ, are not yet exposed here.</p></div>
   <div class="card"><a href="manual/">Interactive manual</a><p>Inherited from original JIANT; useful for unchanged controls but not yet an exact reference for Drums' live pages.</p></div>
 </nav>
 
 <main>
-  <h2>What’s in v0.6</h2>
+  <h2>What’s in v0.7</h2>
   <div class="features">
+    <section class="feature"><h3>NEW: BRASS — SAX to TRUMPET</h3><p>Expressive, synthetic wind-instrument engine with a continuous 0–127 SAX/TRUMPET morph, pressure, buzz, breath, formant/body shaping and growl. EDIT 3 offers optional FAT, GRIND, METAL and CRUSH. Six factory presets; four-voice engine cap.</p></section>
+    <section class="feature"><h3>NEW: INDUSTRIAL — heavy bass and leads</h3><p>Six aggressive presets, dual oscillators, FAT detune, GRIND, METAL, CRUSH and FEED, plus independent WAVE2/MIX/SUB/MODE on EDIT 3. Synth sounds can be combined across MIDI-routed tracks.</p></section>
     <section class="feature"><h3>Two independent 12-pad drum engines</h3><p>DRUM-X retains the original eight sounds and adds independent B2, S2, O2 and T2 instances. DRUM-LAB provides 12 editable synthesized pads and kit-wide shaping controls.</p></section>
     <section class="feature"><h3>Live Recall and project management</h3><p>Long-press REC to toggle Live Recall. Then tap FX, SEL, ENV or LFO to recall project slots 1–4. SAVE → LIBRARY includes CLEAR SLOT and NEW PROJECT; saved-section indicators were corrected and device-tested.</p></section>
     <section class="feature"><h3>Six-track MIDI routing and transpose</h3><p>GLO opens directly to MIX → MIXER. Set each track's RX channel (K1), level (K2), pan (K3) and ±24-semitone transpose (K4). Transpose affects melodic engines from external MIDI and the FM1 keyboard, but not DRUM-X or DRUM-LAB. Settings persist per project; PRESETS adjusts the master DJ Filter on MIXER. CC88–90 select live RX channels for T1–T3.</p></section>
@@ -60,7 +62,7 @@
   </div>
   <section class="notice">
     <strong>Device-tested experimental firmware.</strong>
-    <p>JIANT LIVE DRUMS v0.6 has been flashed and functionally tested on physical FM1 hardware. This is owner-reported validation, not exhaustive long-duration stress or recovery certification. Back up your projects and settings and prepare a recovery path before updating. Use this fork’s installer, not the original JIANT installer.</p>
+    <p>JIANT LIVE DRUMS v0.7 has been flashed and tested on physical FM1 hardware, including BRASS and INDUSTRIAL with three layered MIDI tracks, chords, melodies and global EQ. This is owner-reported validation, not exhaustive long-duration stress or recovery certification. Back up your projects and settings and prepare a recovery path before updating. Use this fork’s installer, not the original JIANT installer.</p>
     <p>For detailed controls, change history and validation, read the <a href="https://github.com/MishaMashinaMM/jiant-live-drums#readme">project README</a>.</p>
   </section>
 </main>
