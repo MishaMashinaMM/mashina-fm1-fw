@@ -268,6 +268,8 @@ static const param_desc_t *track_desc(const track_t *t, uint32_t id)
         return id == P_VLANG ? &VLANG_DESC : &VLYR_DESC;
     if (t->eng_req == ENGI_INDUSTRIAL && id >= P_LN8 && id <= P_LN11)
         return &INDUSTRIAL_EXTRA[id - P_LN8];
+    if (t->eng_req == ENGI_BRASS && id >= P_LN8 && id <= P_LN11)
+        return &BRASS_EXTRA[id - P_LN8];
     if (id >= P_E0 && id <= P_E7) {                   /* the engine asked for (t->engine follows after a fade) */
         const engine_t *e = ENGINES[eng_idx(t->eng_req)];
         const param_desc_t *d = e->desc ? e->desc(t, id - P_E0) : 0;   /* a mode-dependent label / names */
@@ -306,6 +308,8 @@ static const param_desc_t *param_desc_of(uint32_t e, uint32_t id)
 {
     if (e == ENGI_INDUSTRIAL && id >= P_LN8 && id <= P_LN11)
         return &INDUSTRIAL_EXTRA[id - P_LN8];
+    if (e == ENGI_BRASS && id >= P_LN8 && id <= P_LN11)
+        return &BRASS_EXTRA[id - P_LN8];
     return id >= P_E0 && id <= P_E7 ? &ENGINES[e]->edit[id - P_E0] : &TP[id];
 }
 
