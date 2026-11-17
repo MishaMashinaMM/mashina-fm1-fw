@@ -21,6 +21,16 @@ int main(void)
     bad += check("factory IRON BASS extra values recalled",
                  TSEL->p[P_LN8] == 0 && TSEL->p[P_LN9] == 21 &&
                  TSEL->p[P_LN10] == 32 && TSEL->p[P_LN11] == 0);
+    {
+        uint8_t entries[32];
+        uint32_t n = nav_list(SEC_EDIT, entries), found = 0, k;
+        for (k = 0; k < n; k++)
+            found += nv_page(SEC_EDIT, entries[k]) == edit3;
+        bad += check("actual EDIT navigation includes third page", found == 1u);
+        nav_go(SEC_EDIT, 2u, 0); frame();
+        bad += check("navigating to third EDIT entry opens its controls",
+                     !ui.home && ui.page == edit3);
+    }
     go_title("EDIT 3"); frame();
     uint32_t before = (uint32_t)TSEL->p[P_LN9];
     turn(EN_K2, 1); frame();
