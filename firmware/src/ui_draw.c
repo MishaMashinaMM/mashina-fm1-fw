@@ -2288,7 +2288,10 @@ static void draw_mixer_table(void)
             static const int16_t zx[4] = {101, 132, 168, 207};
             for (uint32_t k = 0; k < Z_FIELDS; k++) {
                 char m[8];
-                fmt_int(m, midi_zone[i][k]);
+                /* Note boundaries use the firmware's own octave names
+                 * (MIDI 48 = C3, 60 = C4); velocities stay numeric. */
+                if (k <= Z_NOTE_MAX) note_name(m, midi_zone[i][k]);
+                else fmt_int(m, midi_zone[i][k]);
                 cv_text(zx[k], ry + CAP_IN(S, 20), &AF_S, m, tc);
             }
         } else {
