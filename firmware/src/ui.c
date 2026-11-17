@@ -585,6 +585,7 @@ static int page_visible(uint32_t i)
     if (PAGES[i].graph == GR_DXIMG) /* DRUM-X-specific KIT 3 / IMAGE */
         return trk_eng(TSEL) == ENGI_DRUM;
     if (PAGES[i].fam == FAM_EDIT && PAGES[i].scope == SC_TRACK &&
+        PAGES[i].title[0] == 'E' && /* EDIT 3, not DRUM-LAB's LEVELS 3 */
         PAGES[i].id[0] == P_LN8 && PAGES[i].id[1] == P_LN9)
         return trk_eng(TSEL) == ENGI_INDUSTRIAL;
     if (PAGES[i].scope == SC_TRACK && ((PAGES[i].id[0] >= P_LN0 && PAGES[i].id[0] <= P_LN7) ||
