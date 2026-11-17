@@ -1763,7 +1763,9 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         if (pos + 2u + sizeof q->zone > room) return 0;
         memcpy(q->zone, b + pos + 2u, sizeof q->zone);
         for (i = 0; i < NTRK; i++)
-            if (q->zone[i][Z_NOTE_MIN] > q->zone[i][Z_NOTE_MAX] ||
+            if (q->zone[i][Z_NOTE_MIN] > 127u ||
+                q->zone[i][Z_NOTE_MAX] > 127u ||
+                q->zone[i][Z_NOTE_MIN] > q->zone[i][Z_NOTE_MAX] ||
                 q->zone[i][Z_VEL_MIN] < 1u ||
                 q->zone[i][Z_VEL_MIN] > q->zone[i][Z_VEL_MAX] ||
                 q->zone[i][Z_VEL_MAX] > 127u)
