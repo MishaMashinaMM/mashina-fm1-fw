@@ -1430,6 +1430,11 @@ static void set_engine_of(track_t *t, uint32_t ei)
 #endif
     load_begin(t, LOAD_SOUND);
     fm1_irq_off();
+    /* P_LN8..11 are independent INDUSTRIAL controls, but drum pad levels on
+     * DRUM/DRUM-LAB. Restore drum defaults when leaving INDUSTRIAL. */
+    if (t->eng_req == ENGI_INDUSTRIAL && ei % NENGINES != ENGI_INDUSTRIAL)
+        for (i = P_LN8; i <= P_LN11; i++)
+            t->p[i] = TP[i].def;
     t->eng_req = (uint8_t)(ei % NENGINES);
     for (i = 0; i < 8u; i++)
         t->p[P_E0 + i] = e->edit[i].def;
