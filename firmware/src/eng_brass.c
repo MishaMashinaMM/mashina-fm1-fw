@@ -25,7 +25,7 @@ static const uint8_t BRASS_EXTRA_PRESETS[][4] = {
 };
 static int32_t brass_lerp(int32_t sax, int32_t trumpet, int32_t morph)
 {
-    return sax + ((trumpet - sax) * morph + 63) / 127;
+    return sax + (int32_t)(((int64_t)(trumpet - sax) * morph + 63) / 127);
 }
 
 static void brass_note_on(track_t *t, voice_t *v)
