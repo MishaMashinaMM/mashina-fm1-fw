@@ -2021,7 +2021,13 @@ function makeMockDevice(opt = {}) {
   }
   const watchMs = opt.watchMs || 3000;
   const LN_EXTRA = ["B2", "S2", "O2", "T2"].map((x) => D(x, F.PCT, 0, 127, 100));
-  const trackDesc = (id, engine) => id >= P_E0 && id < P_E0 + 8 ? ENG[engine].edit[id - P_E0] : id >= P_E0 + 8 ? LN_EXTRA[id - P_E0 - 8] : TP[id];
+  const IND_EXTRA = [E("WAVE2", ["FOLLOW", "SAW", "SQR", "TRI", "SIN", "PULSE"], 0),
+    D("MIX", F.PCT, 0, 127, 25), D("SUB", F.PCT, 0, 127, 32),
+    E("MODE", ["LP", "HP", "BP"], 0)];
+  const IND_PRESET_EXTRA = [[0,21,32,0], [0,17,32,0], [0,31,32,0],
+    [0,28,32,0], [0,38,32,0], [0,10,32,0]];
+  const trackDesc = (id, engine) => engine === 16 && id >= 123 && id <= 126 ? IND_EXTRA[id - 123]
+    : id >= P_E0 && id < P_E0 + 8 ? ENG[engine].edit[id - P_E0] : id >= P_E0 + 8 ? LN_EXTRA[id - P_E0 - 8] : TP[id];
   const desc = (scope, id) => (scope === 0 && id < P_COUNT ? trackDesc(id, st.engine)
     : scope === 1 && id < G_COUNT ? GP[id] : null);
   const EMPTY = { n: 0, notes: [0, 0, 0, 0], time: 2, flags: 0, vel: 0, hit: 0, acc: 0, chance: 100, ratchet: 1 };
@@ -2051,6 +2057,7 @@ function makeMockDevice(opt = {}) {
     const pr = e.presets[pi];
     st.preset = pi;
     for (let i = 0; i < 8; i++) st.p[P_E0 + i] = pr.e[i];
+    if (st.engine === 16) IND_PRESET_EXTRA[pi].forEach((value, k) => { st.p[123 + k] = value; });
     [1, 2, 3, 4].forEach((id, k) => { st.p[id] = pr.env[k]; });
     if (e.name === "VOICE") { st.p[61] = (pr.xp || 0) & 3; st.p[74] = (pr.xp || 0) >> 2; }   /* (0.8.5) LANG, LYRIC (P_VLANG
                                                      = P_FM1_ATK 61, P_VLYR = P_FM3_REL 74; ui.c apply_preset_to) */
