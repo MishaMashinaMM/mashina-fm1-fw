@@ -74,7 +74,7 @@ static const char *const N_MDST[] = {"OFF", "PITCH", "CUT", "SHP", "AMP", "PAN",
                                                          * globals (DELAY TIME FDBK TONE MIX, REVERB SIZE DAMP, CHORUS RATE
                                                          * DEPTH): mod.c macro_master, fx.c GFX() */
 static const char *const N_ENGNAME[] = {"ANALOG", FELUCCA_FM4 ? "DIGITAL" : "-", "PHASE", "LOFI", "-", "VOICE", "-", "WHEEL", "-", "-",
-                                             "DRUM", "NOISE", "FM6", "-", "ANIMAL", "DRUM-LAB", "INDUSTRIAL"};   /* Stage 20B: keep G_ENGSEL's enum aligned with ENGINES[15]. */
+                                             "DRUM", "NOISE", "FM6", "-", "ANIMAL", "DRUM-LAB", "INDUSTRIAL", "BRASS"};   /* Stage 20B: keep G_ENGSEL's enum aligned with ENGINES[15]. */
 
 #define PD(l, f, mn, mx, df) {l, f, mn, mx, df, 0, 0}
 #define PE(l, n, df) {l, F_ENUM, 0, (int16_t)(sizeof(n) / sizeof(n[0]) - 1), df, n, 0}
