@@ -1286,6 +1286,49 @@ int main(void)
                       s2.t[k].p[P_APWAVE] == TP[P_APWAVE].def && s2.t[k].p[P_APSYNC] == TP[P_APSYNC].def;
             bad += check("  .. and AUTO PAN, in the old SLICER's slots, off on every track (its defaults)", ok);
         }
+        {   /* BRASS/INDUSTRIAL compatibility: append-only IDs and EDIT 3 slots survive a SECTION save/load.
+             * Existing DRUM values in the same four numeric slots must not be changed by their presence. */
+            static project_t extended, loaded;
+            static project_store_t wire;
+            extended = f;
+            extended.t[0].engine = ENGI_BRASS;
+            extended.t[0].preset = 4;
+            extended.t[0].p[P_E0] = 64;       /* TYPE midpoint */
+            extended.t[0].p[P_LN8] = 41;      /* FAT */
+            extended.t[0].p[P_LN9] = 92;      /* GRIND */
+            extended.t[0].p[P_LN10] = 38;     /* METAL */
+            extended.t[0].p[P_LN11] = 115;    /* CRUSH */
+            extended.t[1].engine = ENGI_INDUSTRIAL;
+            extended.t[1].p[P_LN8] = 2;       /* WAVE2 */
+            extended.t[1].p[P_LN9] = 64;      /* MIX */
+            extended.t[1].p[P_LN10] = 127;    /* SUB */
+            extended.t[1].p[P_LN11] = 2;      /* MODE */
+            extended.t[2].engine = ENGI_DRUMLAB;
+            extended.t[2].p[P_LN8] = 100;
+            extended.t[2].p[P_LN9] = 79;
+            extended.t[2].p[P_LN10] = 120;
+            extended.t[2].p[P_LN11] = 70;
+            extended.sum = proj_sum(&extended);
+            ok = proj_pack(&wire, &extended) &&
+                 proj_import(&loaded, &wire, sizeof wire) &&
+                 loaded.t[0].engine == ENGI_BRASS &&
+                 loaded.t[0].p[P_E0] == 64 &&
+                 loaded.t[0].p[P_LN8] == 41 &&
+                 loaded.t[0].p[P_LN9] == 92 &&
+                 loaded.t[0].p[P_LN10] == 38 &&
+                 loaded.t[0].p[P_LN11] == 115 &&
+                 loaded.t[1].engine == ENGI_INDUSTRIAL &&
+                 loaded.t[1].p[P_LN8] == 2 &&
+                 loaded.t[1].p[P_LN9] == 64 &&
+                 loaded.t[1].p[P_LN10] == 127 &&
+                 loaded.t[1].p[P_LN11] == 2 &&
+                 loaded.t[2].engine == ENGI_DRUMLAB &&
+                 loaded.t[2].p[P_LN8] == 100 &&
+                 loaded.t[2].p[P_LN9] == 79 &&
+                 loaded.t[2].p[P_LN10] == 120 &&
+                 loaded.t[2].p[P_LN11] == 70;
+            bad += check("FUNC: BRASS + INDUSTRIAL EDIT 3 and DRUM-LAB levels round trip", ok);
+        }
         {   /* damaged on purpose with the hash made right: refused or loaded, never read past the room (ASan) */
             static project_store_t z;
             uint32_t r = 12345u, it, okz = 1, loaded = 0;
