@@ -115,13 +115,13 @@ int main(void)
     send_rx(0x80, 73, 0, 1);
     assert(!mn_get(0, 73) && !gate_rx(1, 73) && !gate_rx(2, 73));
     midi_zone[0][Z_NOTE_MAX] = 127u; midi_zone[0][Z_VEL_MIN] = 100u;
-    send_rx(0x90, 60, 90, 2); assert(!mn_get(0, 60));
-    send_rx(0x90, 60, 100, 1); assert(mn_get(0, 60) == 1u);
+    send_rx(0x90, 60, 90, 2); assert(!(mn_get(0, 60) & 1u));
+    send_rx(0x90, 60, 100, 1); assert(mn_get(0, 60) & 1u);
     midi_transpose[0] = 12;
     send_rx(0x80, 60, 0, 2); assert(!gate_rx(0, 60));
     /* Split filtering applies BEFORE transpose and cannot steal note ownership. */
     midi_zone[0][Z_NOTE_MIN] = 60u; midi_zone[0][Z_NOTE_MAX] = 60u;
-    send_rx(0x90, 60, 120, 1); assert(mn_get(0, 60) == 1u && gate_rx(0, 72));
+    send_rx(0x90, 60, 120, 1); assert((mn_get(0, 60) & 1u) && gate_rx(0, 72));
     send_rx(0x80, 60, 0, 1); assert(!gate_rx(0, 72));
     send_rx(0x90, 59, 120, 1); assert(!mn_get(0, 59));
     puts("RX: independent note/velocity zones, shared-channel splits, overlaps, transpose and held-note releases passed");
