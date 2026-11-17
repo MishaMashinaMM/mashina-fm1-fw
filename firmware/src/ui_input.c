@@ -529,8 +529,26 @@ static void mixer_djf_turn(int32_t steps)
         to = 0;
     motion_djf_set(TSEL, (int16_t)to);
 }
+/* ZONES is a sibling of MIXER with the same six-row track selector.
+ * Clamp one side against the other to avoid inverted ranges. */
+static void zones_edit(uint32_t slot, int32_t steps)
+{
+    uint8_t *z = midi_zone[song.sel];
+    const int32_t lo = (slot == Z_VEL_MIN || slot == Z_VEL_MAX) ? 1 : 0;
+    const int32_t hi = 127;
+    int32_t v = clamp((int32_t)z[slot] + accel(EN_K1 + slot, steps, 127), lo, hi);
+    if (slot == Z_NOTE_MIN && v > z[Z_NOTE_MAX]) v = z[Z_NOTE_MAX];
+    if (slot == Z_NOTE_MAX && v < z[Z_NOTE_MIN]) v = z[Z_NOTE_MIN];
+    if (slot == Z_VEL_MIN && v > z[Z_VEL_MAX]) v = z[Z_VEL_MAX];
+    if (slot == Z_VEL_MAX && v < z[Z_VEL_MIN]) v = z[Z_VEL_MIN];
+    z[slot] = (uint8_t)v;
+}
 static void tracks_edit(uint32_t slot, int32_t steps)
 {
+    if (str_eq(cur_page()->title, "ZONES")) {
+        zones_edit(slot, steps);
+        return;
+    }
     track_t *t = TSEL;
     int16_t *vp;
     const param_desc_t *d;
@@ -2880,7 +2898,7 @@ static void ui_input_frame(void)
         if (gen_on())
             gen_knob(0, s);                             /* (GEN: its GENRE, the generator's preset) */
         else if (!ui.home && !ui.menu && !dlg_on() && cur_page()->graph == GR_TRK &&
-                 cur_page()->scope == SC_TRK)
+                 cur_page()->scope == SC_TRK && str_eq(cur_page()->title, "MIXER"))
             mixer_djf_turn(s);
         else
             presets_turn(s);
