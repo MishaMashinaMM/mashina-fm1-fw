@@ -44,7 +44,7 @@ typedef struct { const nv_t *e; const ng_t *g; uint8_t n, ng; } ch_t;
 static const nv_t CE_HOME[] = {NV(0, "ECO", 0, 0), NV(0, "MACROS", 0, 0), NV(0, "BEING", 1, 1), NV(0, "ROUTES", 1, 1),
                                NV(0, "GEN 1", 2, 2), NV(0, "GEN 2", 2, 2), NV(0, "GEN 3", 2, 2)};
 static const ng_t CG_HOME[] = {{"ECO", 0}, {"BEING", 0}, {"GEN", 0}};
-static const nv_t CE_SYN[] = {NV("EDIT 1", 0, 0, 0), NV("EDIT 2", 0, 0, 0), NV("FILTER", 0, 1, 1), NV("MORPH", 0, 1, 1),
+static const nv_t CE_SYN[] = {NV("EDIT 1", 0, 0, 0), NV("EDIT 2", 0, 0, 0), NV("EDIT 3", 0, 0, 0), NV("FILTER", 0, 1, 1), NV("MORPH", 0, 1, 1),
                               NV("RETRIG", 0, 1, 1), NV("ROTOR", 0, 1, 1), NV("VOICE", 0, 1, 1), NV("VOICE 2", 0, 1, 1),
                               NV("WORDS", 0, 1, 1), NV("FOCUS", 0, 2, 2)};
 static const ng_t CG_SYN[] = {{"SOUND", 0}, {"TONE", 0}, {"FOCUS", 0}};
