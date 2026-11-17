@@ -9,7 +9,7 @@
 
 **[Project homepage](https://mishamashinamm.github.io/jiant-live-drums/)** · **[Emulator](https://mishamashinamm.github.io/jiant-live-drums/emu/)** · **[Drums installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/)** · **[Drums editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/)** · **[Interactive manual (inherited)](https://mishamashinamm.github.io/jiant-live-drums/manual/)**
 
-**[JLD illustrated manual (historical v0.3 draft)](docs/JLD_MANUAL_V0.3.md)** — source-derived controls, live MIDI workflows, drum engines, and annotated schematics. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
+**[JIANT LIVE DRUMS v0.7 user manual](docs/JLD_MANUAL_V0.3.md)** — current controls for BRASS, INDUSTRIAL, the mixer, MIDI routing and randomization, global EQ, live recall, both drum engines and REC macros. The filename is retained for existing links. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
 
 The links above are the GitHub Pages routes for this separate Drums repository. The repository includes the Drums-specific browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated Drums control reference**.
 
