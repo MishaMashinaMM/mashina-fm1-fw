@@ -213,6 +213,12 @@ static void midi_note_event(uint32_t ch, uint32_t note, uint32_t vel)
             int32_t pitch;
             if (!(mask & (1u << i)))
                 continue;
+            /* Zone applies to source pitch and velocity before transpose.
+             * Rejected notes never acquire an owner; Note Off follows old owners. */
+            if (!midi_zone_accept(i, note, vel)) {
+                mask &= ~(1u << i);
+                continue;
+            }
             pitch = (int32_t)note + ((drum_track(t) || t->eng_req == ENGI_DRUMLAB) ? 0 : midi_transpose[i]);
             if (pitch < 0 || pitch > 127) {
                 mask &= ~(1u << i); /* out-of-range notes do not acquire ownership */
