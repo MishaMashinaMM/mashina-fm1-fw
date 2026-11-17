@@ -136,7 +136,7 @@ static void brass_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
             s = softclip(((clamp(s, -32767, 32767) >> 2) * (drive >> 2)) >> 11);
         }
         if (crushbits)
-            s = (s >> crushbits) << crushbits; /* bit-depth reduction, no extra voice RAM */
+            s &= ~((1 << crushbits) - 1); /* signed-safe quantization, no extra RAM */
         s = softclip(s);
         out[i] += voice_amp(s, m, i) << 1;
     }
