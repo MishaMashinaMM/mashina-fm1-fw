@@ -150,7 +150,7 @@ static void phase_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     dcw = (uint32_t)depth * 65535u / (127u << 8);
     dcw = (dcw * 56000u) >> 16;                              /* the classic range of the bend */
     inc2 = pitch_inc(clamp(m->pitch16 + d16, 0, 2047));
-    inc2 += (uint32_t)((int32_t)(inc2 >> 12) * (rem * 2367 / 16000));
+    inc2 = fine_pitch_inc(inc2, (rem * 2367 / 16000) + m->fine);
     if (t->mo_cur || t->mo_prev) {
         int32_t pos = (int32_t)w1 * 256 + t->mo_cur * 3 / 127, p0 = (int32_t)w1 * 256 + t->mo_prev * 3 / 127;   /* (x 768 / (127 << 8)) */
         w1 = ((uint32_t)pos >> 8) & 7u;

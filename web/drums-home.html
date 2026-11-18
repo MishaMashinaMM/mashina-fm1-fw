@@ -4,9 +4,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JIANT LIVE DRUMS v0.7 — Firmware for M-VAVE FM1</title>
-<meta name="description" content="JIANT LIVE DRUMS v0.7 for M-VAVE FM1. Device-tested live firmware with two 12-pad drum engines, six MIDI-routed tracks, per-track ±24-semitone transpose, live project recall, 32 CC macros, shared 3-band EQ and BRASS/INDUSTRIAL sound engines.">
-<meta property="og:title" content="JIANT LIVE DRUMS v0.7">
+<title>JIANT LIVE DRUMS v0.9 — Firmware for M-VAVE FM1</title>
+<meta name="description" content="JIANT LIVE DRUMS v0.9 for M-VAVE FM1. Keyboard Zones and TUNING firmware with two 12-pad drum engines, six MIDI-routed tracks, per-track ±36-semitone transpose and ±50-cent fine tuning, live project recall, 32 CC macros, shared 3-band EQ and BRASS/INDUSTRIAL sound engines.">
+<meta property="og:title" content="JIANT LIVE DRUMS v0.9">
 <meta property="og:description" content="Device-tested M-VAVE FM1 firmware: per-track MIDI and keyboard transpose, DRUM-X, DRUM-LAB, live recall, 32 macros and global EQ.">
 <style>
   :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #0e0e10; color: #f1f1ed; }
@@ -36,34 +36,36 @@
 <body>
 <header>
   <div class="eyebrow">M-VAVE FM1 · independent GPL-3.0-only firmware fork</div>
-  <h1>JIANT LIVE DRUMS v0.7</h1>
-  <p class="intro">Live-performance firmware for the FM1 with new BRASS (morphing SAX–TRUMPET) and INDUSTRIAL bass/lead engines, two 12-pad synthesis drum engines, six MIDI-routed tracks, transpose and 32 CC macros.</p>
-  <p class="status"><strong>v0.7 successfully flashed and tested on a physical FM1</strong> · owner-confirmed November 17, 2026 · emulator and firmware regression tests also passed.</p>
+  <h1>JIANT LIVE DRUMS v0.9</h1>
+  <p class="intro">Live-performance firmware for the FM1 with per-track Keyboard Zones and ±50-cent FINE tuning, BRASS (morphing SAX–TRUMPET), INDUSTRIAL bass/lead sounds, two 12-pad drum engines, six MIDI-routed tracks and 32 CC macros.</p>
+  <p class="status"><strong>v0.9 tested successfully on an FM1 with a Korg X5D keyboard</strong> · MIDI note/velocity zones and six-track TUNING verified · firmware and emulator regression tests passed.</p>
 </header>
 
 <nav class="cards" aria-label="JIANT LIVE DRUMS tools">
   <div class="card"><a href="emu/">Try the emulator</a><p>Play the current firmware in a browser, test MIDI controls and optionally import a JIANT backup into an isolated session.</p></div>
-  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the current v0.7 firmware using the dedicated browser-based device updater. Check the displayed build version before flashing.</p></div>
+  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the approved v0.9 using the dedicated browser-based FM1 updater. Back up projects before upgrading or downgrading and verify the displayed build version.</p></div>
   <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1 to manage compatible sounds, settings and backups. Some newer Drums controls, including global EQ, are not yet exposed here.</p></div>
   <div class="card"><a href="manual/">Interactive manual</a><p>Inherited from original JIANT; useful for unchanged controls but not yet an exact reference for Drums' live pages.</p></div>
 </nav>
 
 <main>
-  <h2>What’s in v0.7</h2>
+  <h2>What’s in v0.9</h2>
   <div class="features">
+    <section class="feature"><h3>v0.8: KEYBOARD ZONES</h3><p>GLO → MIX → ZONES is a second six-row mixer-style screen. K1 MIN and K2 MAX define note range; K3 V.MIN and K4 V.MAX define velocity range. Each of six tracks stores its own settings in projects. Same-channel instruments can split or overlap across note and velocity zones with external MIDI. The FM1 built-in keybed still targets the selected track.</p></section>
     <section class="feature"><h3>NEW: BRASS — SAX to TRUMPET</h3><p>Expressive, synthetic wind-instrument engine with a continuous 0–127 SAX/TRUMPET morph, pressure, buzz, breath, formant/body shaping and growl. EDIT 3 offers optional FAT, GRIND, METAL and CRUSH. Six factory presets; four-voice engine cap.</p></section>
     <section class="feature"><h3>NEW: INDUSTRIAL — heavy bass and leads</h3><p>Six aggressive presets, dual oscillators, FAT detune, GRIND, METAL, CRUSH and FEED, plus independent WAVE2/MIX/SUB/MODE on EDIT 3. Synth sounds can be combined across MIDI-routed tracks.</p></section>
     <section class="feature"><h3>Two independent 12-pad drum engines</h3><p>DRUM-X retains the original eight sounds and adds independent B2, S2, O2 and T2 instances. DRUM-LAB provides 12 editable synthesized pads and kit-wide shaping controls.</p></section>
     <section class="feature"><h3>Live Recall and project management</h3><p>Long-press REC to toggle Live Recall. Then tap FX, SEL, ENV or LFO to recall project slots 1–4. SAVE → LIBRARY includes CLEAR SLOT and NEW PROJECT; saved-section indicators were corrected and device-tested.</p></section>
-    <section class="feature"><h3>Six-track MIDI routing and transpose</h3><p>GLO opens directly to MIX → MIXER. Set each track's RX channel (K1), level (K2), pan (K3) and ±24-semitone transpose (K4). Transpose affects melodic engines from external MIDI and the FM1 keyboard, but not DRUM-X or DRUM-LAB. Settings persist per project; PRESETS adjusts the master DJ Filter on MIXER. CC88–90 select live RX channels for T1–T3.</p></section>
+    <section class="feature"><h3>NEW v0.9: TUNING — per-track pitch and fine detune</h3><p>GLO → MIX → TUNING is the third six-row page, after MIXER and ZONES. K1 sets TRN −36…+36 semitones (three octaves); K2 sets FINE −50…+50 cents for fuller, slightly detuned layers. K3/K4 are reserved. Synth pitch changes without changing MIDI note ownership; drums keep their mapped pitches. The Korg X5D was used to verify the feature on FM1 hardware.</p></section>
+    <section class="feature"><h3>Six-track MIDI routing and mixer</h3><p>GLO opens directly to MIX → MIXER. Set each track's RX channel (K1), level (K2), pan (K3); K4 is now unused. Per-track transpose moved to TUNING. Settings persist per project; PRESETS adjusts the master DJ Filter only on MIXER. CC88–90 can select temporary live RX channels for T1–T3.</p></section>
     <section class="feature"><h3>32 CC macros and MIDI Learn</h3><p>Up to 32 saved CC macros per project, with range/toggle, reverse and independent enable settings. MIDI Learn provides 32 additional parameter destinations and CC fan-out across tracks.</p></section>
     <section class="feature"><h3>Shared three-band EQ</h3><p>Global EQ before effects: LOW 50 Hz, MID 700 Hz and HIGH 10 kHz, each adjustable ±15 dB. Its settings are saved with each project.</p></section>
     <section class="feature"><h3>Built for live performance</h3><p>Eight shared synthesis voices, the original melodic engines and effects, and a live-only layout: SEQ opens DRUM MIDI MAP, PLAY opens DRUM PERFORMANCE, and REC opens MIDI CC MACROS. The sequencer is disabled.</p></section>
   </div>
   <section class="notice">
-    <strong>Device-tested experimental firmware.</strong>
-    <p>JIANT LIVE DRUMS v0.7 has been flashed and tested on physical FM1 hardware, including BRASS and INDUSTRIAL with three layered MIDI tracks, chords, melodies and global EQ. This is owner-reported validation, not exhaustive long-duration stress or recovery certification. Back up your projects and settings and prepare a recovery path before updating. Use this fork’s installer, not the original JIANT installer.</p>
-    <p>For detailed controls, change history and validation, read the <a href="https://github.com/MishaMashinaMM/jiant-live-drums#readme">project README</a>.</p>
+    <strong>v0.9 FM1 device-tested with Korg X5D (November 18, 2026).</strong>
+    <p>Keyboard Zones and the new per-track TUNING page (TRN ±36 semitones, FINE ±50 cents) were tested successfully on a physical FM1. This is owner-reported functional testing, not exhaustive endurance or recovery certification. Back up projects/presets before flashing and keep a working recovery installer. Older firmware may not understand projects saved with nonzero fine tuning.</p>
+    <p>For precise Drums controls, see the <a href="https://github.com/MishaMashinaMM/jiant-live-drums/blob/main/docs/JLD_MANUAL_V0.9.md">v0.9 User Manual</a> and <a href="https://github.com/MishaMashinaMM/jiant-live-drums">current README</a>. The interactive upstream JIANT manual is inherited.</p>
   </section>
 </main>
 <footer>

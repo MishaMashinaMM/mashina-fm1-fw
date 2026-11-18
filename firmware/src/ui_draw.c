@@ -1473,8 +1473,7 @@ static void draw_columns(void)
         djf_format(song.g[G_DJF], val, &unit);          /* (0.9.1) KNOB 4: the master DJ FILTER (was the track's MUTE) */
         card_mot_next = (uint8_t)motion_djf_any();
         card_curve_next = (int16_t)(song.g[G_DJF] + 256);
-        fmt_int(val, (int32_t)midi_transpose[song.sel]);
-        draw_column(3, "TRANSPOSE", val, "ST", VAL(3u), ((int32_t)midi_transpose[song.sel] + 24) * 1000 / 48, ICON_AUTO);
+        draw_column(3, "", "", "", T_DIM, -1, ICON_AUTO);
         return;
     }
     if (cur_page()->graph == GR_BROWSE) {
@@ -1745,7 +1744,7 @@ static void draw_splash(void)
     draw_text_box(0, 82, 240, &AF_L, "DRUMS", T_THEME, 1);
     draw_text_box(0, 122, 240, &AF_M, "FM1 DRUM PERFORMANCE", T_TEXT, 1);
     draw_text_box(0, 150, 240, &AF_X, "orig: Juan Jiant | mod: Misha Mashina", T_MID, 1);
-    draw_text_box(0, 191, 240, &AF_X, "v0.5", T_DIM, 1);
+    draw_text_box(0, 191, 240, &AF_X, FELUCCA_VERSION, T_DIM, 1);
     lcd_sync();
 }
 
@@ -2232,6 +2231,8 @@ static void draw_cc_macros(void)
 
 static void draw_mixer_table(void)
 {
+    const int zones = str_eq(cur_page()->title, "ZONES");
+    const int tuning = str_eq(cur_page()->title, "TUNING");
     /* cv_begin is capped at CV_MAX = 240*150 pixels. The old 158px
      * canvas silently clipped the bottom of T6. Split the six rows
      * into a 134px upper panel and a 24px final row, with no extra RAM. */
@@ -2239,10 +2240,19 @@ static void draw_mixer_table(void)
     {   /* column headings */
         cv_text(4, CAP_IN(S, 14), &AF_S, "TRK", T_TEXT);
         cv_text(32, CAP_IN(S, 14), &AF_S, "VOICE", T_TEXT);
+        if (zones) {
+            cv_text(101, CAP_IN(S, 14), &AF_S, "MIN", T_TEXT);
+            cv_text(132, CAP_IN(S, 14), &AF_S, "MAX", T_TEXT);
+            cv_text(168, CAP_IN(S, 14), &AF_S, "V.MIN", T_TEXT);
+            cv_text(207, CAP_IN(S, 14), &AF_S, "V.MAX", T_TEXT);
+        } else if (tuning) {
+            cv_text(101, CAP_IN(S, 14), &AF_S, "TRN", T_TEXT);
+            cv_text(132, CAP_IN(S, 14), &AF_S, "FINE", T_TEXT);
+        } else {
         cv_text(101, CAP_IN(S, 14), &AF_S, (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? "LIVE" : "MIDI", (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? T_ACCENT : T_TEXT);
         cv_text(132, CAP_IN(S, 14), &AF_S, "VOL", T_TEXT);
         cv_text(168, CAP_IN(S, 14), &AF_S, "PAN", T_TEXT);
-        cv_text(207, CAP_IN(S, 14), &AF_S, "TRN", T_TEXT);
+        }
     }
     for (uint32_t i = 0; i < 6u; i++) {
         int32_t ry = 14 + (int32_t)i * 24;
@@ -2274,6 +2284,28 @@ static void draw_mixer_table(void)
         }
         /* voice (clipped to column) */
         cv_text_in(32, ry + CAP_IN(S, 20), 66, &AF_S, vname, tc, T_BG);
+        if (zones) {
+            /* Same 6-row geometry as MIXER; each of K1-K4 maps to
+             * one inclusive boundary in the selected track's row. */
+            static const int16_t zx[4] = {101, 132, 168, 207};
+            for (uint32_t k = 0; k < Z_FIELDS; k++) {
+                char m[8];
+                /* Note boundaries use the firmware's own octave names
+                 * (MIDI 48 = C3, 60 = C4); velocities stay numeric. */
+                if (k <= Z_NOTE_MAX) note_name(m, midi_zone[i][k]);
+                else fmt_int(m, midi_zone[i][k]);
+                cv_text(zx[k], ry + CAP_IN(S, 20), &AF_S, m, tc);
+            }
+        } else if (tuning) {
+            char a[8], b[8];
+            int32_t tr = midi_transpose[i], fine = midi_fine[i];
+            if (tr > 0) { a[0] = '+'; fmt_int(a + 1, tr); }
+            else fmt_int(a, tr);
+            if (fine > 0) { b[0] = '+'; fmt_int(b + 1, fine); }
+            else fmt_int(b, fine);
+            cv_text(101, ry + CAP_IN(S, 20), &AF_S, a, tc);
+            cv_text(132, ry + CAP_IN(S, 20), &AF_S, b, tc);
+        } else {
         /* midi rx */
         { char m[8]; m[0]=0; /* format */
           /* simple itoa */
@@ -2300,14 +2332,6 @@ static void draw_mixer_table(void)
           } else str_cpy(m,tmp,8);
           cv_text(168, ry + CAP_IN(S, 20), &AF_S, m, tc);
         }
-        /* Signed semitone transpose of incoming melodic MIDI only. */
-        {
-            char m[8];
-            int32_t v = midi_transpose[i];
-            if (v > 0) { m[0] = '+'; fmt_int(m + 1, v); }
-            else fmt_int(m, v);
-            cv_text(207, ry + CAP_IN(S, 20), &AF_S, m, tc);
-        }
         /* pan motion indicator: a small filled square in the PAN cell's upper-right corner */
         {
             uint32_t mm[(P_COUNT + 31u) / 32u];
@@ -2315,8 +2339,21 @@ static void draw_mixer_table(void)
             if ((mm[P_PAN / 32u] >> (P_PAN % 32u)) & 1u)
                 cv_rect(196, ry + 1, 2, 2, T_ACCENT);
         }
+        } /* MIXER cells */
     }
     cv_blit_from(0, 160, 14);             /* canvas y14..37 -> screen y174..197 */
+    if (zones || tuning) {
+        cv_begin(240, 24, T_BG);
+        if (zones) {
+            cv_text(4, CAP_IN(S, 14), &AF_S, "K1 MIN  K2 MAX", T_DIM);
+            cv_text(127, CAP_IN(S, 14), &AF_S, "K3 V.MIN K4 V.MAX", T_DIM);
+        } else {
+            cv_text(4, CAP_IN(S, 14), &AF_S, "K1 TRN: +/-36 ST", T_DIM);
+            cv_text(127, CAP_IN(S, 14), &AF_S, "K2 FINE: +/-50 CT", T_DIM);
+        }
+        cv_blit(0, 198);
+        return;
+    }
     {   /* global status line, screen y 198..221 */
         char rb[8], db[8];
         const char *rs = (song.g[G_ROUTE] == 0u) ? "1-4" : (song.g[G_ROUTE] == 1u) ? "SEL" : "1-6";

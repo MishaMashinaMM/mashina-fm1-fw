@@ -44,6 +44,14 @@ static uint8_t mc_host, mc_host_cpu;     /* tests: 1 = jobs handed over (run at 
 #endif
 #define UP_SLOTS 32u             /* user presets (upreset.c) */
 #define NELEM(a) (sizeof(a) / sizeof((a)[0]))
+/* Existing m.fine is a signed 1/4096 frequency correction (TUNE, bend,
+ * unison, drift and per-track FINE). Apply it to separately derived secondary
+ * oscillator frequencies as well as m.inc; otherwise a track's FINE shifts
+ * only osc 1 and changes the intended internal detune. */
+static inline uint32_t fine_pitch_inc(uint32_t inc, int32_t fine)
+{
+    return inc + (uint32_t)((int32_t)(inc >> 12) * fine);
+}
 
 /* ------------------------------------------------------- parameters --- */
 enum {

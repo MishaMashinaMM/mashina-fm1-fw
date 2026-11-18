@@ -56,7 +56,7 @@ static void brass_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     const int32_t attack = clamp(p[P_E7], 0, 127);
     const uint32_t inc = m->inc;
     uint32_t ph = v->ph[0], subph = v->ph[1], fatph = v->ph[2], i;
-    const uint32_t fatinc = fat ? cents_inc(m->pitch16, fat, 0) : inc;
+    const uint32_t fatinc = fat ? fine_pitch_inc(cents_inc(m->pitch16, fat, 0), m->fine) : inc;
     const int32_t fatmix = fat * 105;  /* up to 40% detuned layer */
     const int32_t metalmix = metal * 192;
     const int32_t crushbits = crush ? 1 + crush / 20 : 0;

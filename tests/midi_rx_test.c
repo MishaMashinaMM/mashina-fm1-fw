@@ -12,6 +12,7 @@ static void reset_rx(void)
     memset(midi_owners, 0, sizeof midi_owners); memset(kb_on, 0, sizeof kb_on);
     memset(midi_pitch, 0, sizeof midi_pitch); memset(midi_pitch_count, 0, sizeof midi_pitch_count);
     memset(midi_transpose, 0, sizeof midi_transpose);
+    midi_zone_reset();
     memset(dxo_n, 0, sizeof dxo_n);
     memset(ml_table, 0, sizeof ml_table);
     cm_count = 0; memset(cm_rows, 0, sizeof cm_rows);
@@ -91,6 +92,66 @@ int main(void)
     send_rx(0xB0, 43, 90, 1);
     assert(trk[0].p[P_LEVEL] == CM_N - 1u);
     puts("RX: 32 matching macros processed in row order");
+
+    /* Three instruments on CH1: two note splits and a velocity layer.
+     * Note Off uses the owners captured at Note On even if a zone is edited. */
+    reset_rx();
+    midi_rx[1] = midi_rx[2] = 1u;
+    midi_zone[0][Z_NOTE_MAX] = 59u;
+    midi_zone[1][Z_NOTE_MIN] = 60u;
+    midi_zone[1][Z_NOTE_MAX] = 83u;
+    midi_zone[2][Z_NOTE_MIN] = 72u;
+    midi_zone[2][Z_VEL_MIN] = 90u;
+    send_rx(0x90, 48, 80, 1);
+    assert(mn_get(0, 48) == 1u && gate_rx(0, 48) && !gate_rx(1, 48));
+    send_rx(0x80, 48, 0, 2); assert(!mn_get(0, 48));
+    send_rx(0x90, 72, 80, 1);
+    assert(mn_get(0, 72) == 2u && gate_rx(1, 72) && !gate_rx(2, 72));
+    send_rx(0x90, 73, 110, 2);
+    assert(mn_get(0, 73) == 6u && gate_rx(1, 73) && gate_rx(2, 73));
+    /* Existing sounding notes survive changing the range until their Note Off. */
+    midi_zone[1][Z_NOTE_MAX] = 70u;
+    midi_zone[2][Z_NOTE_MIN] = 80u;
+    send_rx(0x80, 73, 0, 1);
+    assert(!mn_get(0, 73) && !gate_rx(1, 73) && !gate_rx(2, 73));
+    midi_zone[0][Z_NOTE_MAX] = 127u; midi_zone[0][Z_VEL_MIN] = 100u;
+    send_rx(0x90, 60, 90, 2); assert(!(mn_get(0, 60) & 1u));
+    send_rx(0x90, 60, 100, 1); assert(mn_get(0, 60) & 1u);
+    midi_transpose[0] = 12;
+    send_rx(0x80, 60, 0, 2); assert(!gate_rx(0, 60));
+    /* Split filtering applies BEFORE transpose and cannot steal note ownership. */
+    midi_zone[0][Z_NOTE_MIN] = 60u; midi_zone[0][Z_NOTE_MAX] = 60u;
+    send_rx(0x90, 60, 120, 1); assert((mn_get(0, 60) & 1u) && gate_rx(0, 72));
+    send_rx(0x80, 60, 0, 1); assert(!gate_rx(0, 72));
+    send_rx(0x90, 59, 120, 1); assert(!mn_get(0, 59));
+    puts("RX: independent note/velocity zones, shared-channel splits, overlaps, transpose and held-note releases passed");
+    /* TUNING: extended ±36 semitones, out-of-MIDI-range suppression, and
+     * fractional FINE never change MIDI Note Off ownership. */
+    reset_rx();
+    midi_transpose[0] = -36;
+    send_rx(0x90, 36, 100, 1);
+    assert(mn_get(0, 36) == 1u && gate_rx(0, 0));
+    send_rx(0x80, 36, 0, 1);
+    assert(!mn_get(0, 36) && !gate_rx(0, 0));
+    send_rx(0x90, 35, 100, 1);
+    assert(!mn_get(0, 35));
+    midi_transpose[0] = 36;
+    send_rx(0x90, 91, 100, 1);
+    assert(mn_get(0, 91) == 1u && gate_rx(0, 127));
+    send_rx(0x80, 91, 0, 1);
+    assert(!mn_get(0, 91) && !gate_rx(0, 127));
+    send_rx(0x90, 92, 100, 1);
+    assert(!mn_get(0, 92));
+    reset_rx();
+    midi_rx[1] = 1u;
+    midi_fine[0] = -50; midi_fine[1] = 50;
+    send_rx(0x90, 60, 100, 1);
+    assert(mn_get(0, 60) == 3u && gate_rx(0, 60) && gate_rx(1, 60));
+    midi_fine[0] = 50; midi_fine[1] = -50;
+    send_rx(0x80, 60, 0, 1);
+    assert(!mn_get(0, 60) && !gate_rx(0, 60) && !gate_rx(1, 60));
+    puts("RX: ±36 semitone MIDI boundaries and fractional FINE note ownership passed");
+
 
     reset_rx();
     for (uint32_t ch = 1; ch <= 16; ch++) {

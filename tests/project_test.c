@@ -945,6 +945,36 @@ int main(void)
             for (k = 0; k < NTRK; k++) ok &= dst.transpose[k] == 0;
             bad += check("v0.6: project without transpose block defaults all tracks to zero", ok);
         }
+        {   /* TUNING: preserve old TR, extend to ±36 with T2, and signed ±50 cents FN. */
+            static project_t src, dst;
+            static project_store_t wire;
+            src = f;
+            src.transpose[0] = -36;
+            src.transpose[1] = 36;
+            src.transpose[2] = -24;
+            src.transpose[3] = 24;
+            src.fine[0] = -50;
+            src.fine[1] = 50;
+            src.fine[4] = -7;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire) &&
+                 !memcmp(dst.transpose, src.transpose, sizeof src.transpose) &&
+                 !memcmp(dst.fine, src.fine, sizeof src.fine);
+            bad += check("TUNING: ±36 TRN and ±50 FINE round trip across six tracks", ok);
+            src = f;
+            src.transpose[0] = -24;
+            src.transpose[1] = 24;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire) &&
+                 dst.transpose[0] == -24 && dst.transpose[1] == 24;
+            for (k = 0; k < NTRK; k++) ok &= dst.fine[k] == 0;
+            bad += check("TUNING: legacy TR encoding remains supported", ok);
+            src = f;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire);
+            for (k = 0; k < NTRK; k++) ok &= dst.fine[k] == 0 && dst.transpose[k] == 0;
+            bad += check("TUNING: old project defaults fine and transpose to zero", ok);
+        }
         {   /* Global EQ: optional six-byte block, legacy default, and corrupt-value rejection. */
             static project_t eq_src, eq_dst;
             static project_store_t eq_wire;
@@ -1328,6 +1358,44 @@ int main(void)
                  loaded.t[2].p[P_LN10] == 120 &&
                  loaded.t[2].p[P_LN11] == 70;
             bad += check("FUNC: BRASS + INDUSTRIAL EDIT 3 and DRUM-LAB levels round trip", ok);
+        }
+        {   /* New note and velocity zones are optional on disk, included per
+             * project, and absent in every older release's FUNC sections. */
+            static project_t zones, restored;
+            static project_store_t encoded;
+            zones = f;
+            zones.zone_on = 1u;
+            for (uint32_t zi = 0; zi < NTRK; zi++) {
+                zones.zone[zi][Z_NOTE_MIN] = 0;
+                zones.zone[zi][Z_NOTE_MAX] = 127;
+                zones.zone[zi][Z_VEL_MIN] = 1;
+                zones.zone[zi][Z_VEL_MAX] = 127;
+            }
+            zones.zone[0][Z_NOTE_MAX] = 59;
+            zones.zone[1][Z_NOTE_MIN] = 60;
+            zones.zone[1][Z_NOTE_MAX] = 83;
+            zones.zone[2][Z_NOTE_MIN] = 72;
+            zones.zone[2][Z_VEL_MIN] = 91;
+            zones.zone[4][Z_NOTE_MIN] = 100; /* T5/T6 also persist while sleeping */
+            zones.zone[5][Z_VEL_MAX] = 55;
+            zones.sum = proj_sum(&zones);
+            ok = proj_pack(&encoded, &zones) &&
+                 proj_import(&restored, &encoded, sizeof encoded) &&
+                 restored.zone_on &&
+                 !memcmp(zones.zone, restored.zone, sizeof zones.zone);
+            bad += check("FUNC: all six independent note/velocity zones survive section save/load", ok);
+            zones = f;
+            zones.zone_on = 0; /* simulate older v0.7 without the 'Z''N' block */
+            memset(zones.zone, 0, sizeof zones.zone);
+            zones.sum = proj_sum(&zones);
+            ok = proj_pack(&encoded, &zones) &&
+                 proj_import(&restored, &encoded, sizeof encoded);
+            for (uint32_t zi = 0; zi < NTRK && ok; zi++)
+                ok &= restored.zone[zi][Z_NOTE_MIN] == 0 &&
+                      restored.zone[zi][Z_NOTE_MAX] == 127 &&
+                      restored.zone[zi][Z_VEL_MIN] == 1 &&
+                      restored.zone[zi][Z_VEL_MAX] == 127;
+            bad += check("FUNC: old projects restore neutral full-note and full-velocity ranges", ok);
         }
         {   /* damaged on purpose with the hash made right: refused or loaded, never read past the room (ASan) */
             static project_store_t z;

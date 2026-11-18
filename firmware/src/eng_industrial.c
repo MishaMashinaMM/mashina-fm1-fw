@@ -40,7 +40,7 @@ static void industrial_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, 
     uint32_t wave = (uint32_t)p[P_E0], inc = m->inc, i;
     /* FAT is 0..127 cents. A nonzero FAT adds a second band-limited oscillator.
      * METAL progressively adds a pitch-related ring component rather than noise. */
-    uint32_t inc2 = p[P_E1] ? cents_inc(m->pitch16, p[P_E1], 0) : inc;
+    uint32_t inc2 = p[P_E1] ? fine_pitch_inc(cents_inc(m->pitch16, p[P_E1], 0), m->fine) : inc;
     uint32_t ph0 = v->ph[0], ph1 = v->ph[1], subph = v->ph[2];
     int32_t ic1 = v->s[0], ic2 = v->s[1], prev = v->s[2];
     int32_t held = v->s[3], count = v->s[4];

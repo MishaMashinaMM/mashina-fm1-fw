@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="575" viewBox="0 0 1080 575" role="img" aria-labelledby="title description">
-<title id="title">JIANT LIVE DRUMS v0.7 overview</title>
-<desc id="description">An overview of JIANT LIVE DRUMS with BRASS and INDUSTRIAL melodic synthesis engines and two independent twelve-pad drum engines, SEQ MIDI mapping, PLAY performance options, and REC control of up to 32 MIDI CC macros per project. Eight voices are shared across all tracks.</desc>
-<rect width="1080" height="575" rx="20" fill="#101218"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="756" viewBox="0 0 1080 756" role="img" aria-labelledby="title description">
+<title id="title">JIANT LIVE DRUMS v0.9 overview</title>
+<desc id="description">An overview of JIANT LIVE DRUMS with BRASS and INDUSTRIAL melodic synthesis engines and two independent twelve-pad drum engines, SEQ MIDI mapping, PLAY performance options, and REC control of up to 32 MIDI CC macros per project. Eight voices are shared across all tracks. v0.8: independent note and velocity zones for six MIDI tracks. New in v0.9: dedicated six-row TUNING with per-track transpose ±36 semitones and FINE ±50 cents, separate from MIXER.</desc>
+<rect width="1080" height="667" rx="20" fill="#101218"/>
 <rect x="24" y="24" width="342" height="438" rx="20" fill="#050608" stroke="#505563" stroke-width="2"/>
 <text x="195" y="106" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="31" font-weight="bold" letter-spacing="1">JIANT LIVE</text>
 <text x="195" y="147" text-anchor="middle" fill="#79dbf5" font-family="sans-serif" font-size="39" font-weight="bold" letter-spacing="2">DRUMS</text>
@@ -9,7 +9,7 @@
 <path d="M65 208 H325" stroke="#353d48"/>
 <text x="195" y="241" text-anchor="middle" fill="#d1d6df" font-family="monospace" font-size="13">orig: Juan Jiant</text>
 <text x="195" y="264" text-anchor="middle" fill="#d1d6df" font-family="monospace" font-size="13">mod: Misha Mashina</text>
-<text x="195" y="313" text-anchor="middle" fill="#aab5c5" font-family="monospace" font-size="17">v0.7</text>
+<text x="195" y="313" text-anchor="middle" fill="#aab5c5" font-family="monospace" font-size="17">v0.9</text>
 <rect x="53" y="339" width="284" height="68" rx="12" fill="#171c29" stroke="#d4a6fa" stroke-width="1.5"/>
 <text x="195" y="368" text-anchor="middle" fill="#f1d9ff" font-family="sans-serif" font-size="21" font-weight="bold">32 MIDI MACROS</text>
 <text x="195" y="390" text-anchor="middle" fill="#c1b0d6" font-family="sans-serif" font-size="12">PER PROJECT · LIVE CC CONTROL</text>
@@ -40,11 +40,19 @@
 <text x="502" y="392" fill="#eeddfb" font-family="sans-serif" font-size="14">Range / toggle · min–max · reverse · bypass</text>
 <text x="725" y="458" text-anchor="middle" fill="#e9edf4" font-family="sans-serif" font-size="17" font-weight="bold">8 voices shared across all tracks</text>
 <rect x="398" y="479" width="320" height="75" rx="12" fill="#3a2e23" stroke="#e3a66b" stroke-width="2"/>
-<text x="414" y="504" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">BRASS · NEW v0.7</text>
+<text x="414" y="504" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">BRASS · v0.7</text>
 <text x="414" y="526" fill="#ffe6c9" font-family="sans-serif" font-size="13">SAX ↔ TRUMPET morph · 12 controls</text>
 <text x="414" y="545" fill="#ffe6c9" font-family="sans-serif" font-size="12">6 presets · FAT / GRIND / METAL / CRUSH</text>
 <rect x="736" y="479" width="318" height="75" rx="12" fill="#28362f" stroke="#8bd6a6" stroke-width="2"/>
-<text x="752" y="504" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">INDUSTRIAL · NEW v0.7</text>
+<text x="752" y="504" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">INDUSTRIAL · v0.7</text>
 <text x="752" y="526" fill="#cbefda" font-family="sans-serif" font-size="13">Heavy bass &amp; leads · 12 controls</text>
 <text x="752" y="545" fill="#cbefda" font-family="sans-serif" font-size="12">6 presets · WAVE2 / MIX / SUB / MODE</text>
+<rect x="398" y="568" width="656" height="77" rx="12" fill="#192e44" stroke="#67c8f5" stroke-width="2"/>
+<text x="416" y="594" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">v0.8 · KEYBOARD ZONES</text>
+<text x="416" y="616" fill="#c2ecff" font-family="sans-serif" font-size="14">6 tracks · NOTE MIN/MAX · VELOCITY MIN/MAX</text>
+<text x="416" y="635" fill="#a7d4ed" font-family="sans-serif" font-size="12">GLO → MIX → ZONES · splits, overlaps &amp; velocity layers</text>
+<rect x="398" y="657" width="656" height="77" rx="12" fill="#252c43" stroke="#a7afff" stroke-width="2"/>
+<text x="416" y="683" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">NEW v0.9 · PER-TRACK TUNING</text>
+<text x="416" y="705" fill="#e0dfff" font-family="sans-serif" font-size="14">TRN −36 to +36 semitones · FINE −50 to +50 cents</text>
+<text x="416" y="724" fill="#b3bdf1" font-family="sans-serif" font-size="12">GLO → MIX → TUNING · six-track pitch layers &amp; subtle detune</text>
 </svg>
