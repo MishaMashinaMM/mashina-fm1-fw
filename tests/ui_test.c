@@ -13677,7 +13677,7 @@ static int test_engine_order_099(void)
     return bad;
 }
 
-/* Canonical section colors: independent RGB565 expectations and actual chip pixels. */
+/* SAVE accent regression: occupied orange / empty gray, with distinct selection frames. */
 static int test_section_colors(void)
 {
     static const uint16_t expected[4] = {0x3955u, 0xFA09u, 0xFDEBu, 0xFF99u};
@@ -13688,10 +13688,14 @@ static int test_section_colors(void)
     ui_power_on(); settings.palette = UI_JIANT_INDEX; palette_set(UI_JIANT_INDEX); frame();
     for (s = 0; s < 16u; s++) {
         uint16_t c = expected[s & 3u];
-        ok &= sec_col(s) == c && lz_sec(s, 1, 0) == c && lz_sec(s, 1, 1) == ux_mix(T_BG, c, 50);
-        ok &= lz_sec(s, 0, 0) == T_BG && lz_sec(s, 0, -1) == ux_mix(T_BG, T_RAISE, 50);
+        ok &= sec_col(s) == c && lz_sec(s, 1, 0) == T_VALUE && lz_sec(s, 1, 1) == T_VALUE;
+        ok &= lz_sec(s, 0, 0) == T_RAISE && lz_sec(s, 0, -1) == T_RAISE;
     }
     song.playing = 0;
+    /* Empty sections are visibly gray, not black; their frames remain distinct. */
+    cv_begin(240, 140, T_SURF); graph_proj(0);
+    for (s = 0; s < 4u; s++)
+        ok &= swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]) == T_RAISE;
     for (s = 0; s < 4u; s++) ok &= project_save(s) == 0;
     fm1_ms += 501u; ui.frame++; ui.force = 1;
     for (s = 0; s < 4u; s++) ok &= graph_project_used(s) != 0;
@@ -13703,8 +13707,8 @@ static int test_section_colors(void)
         for (ar = 0; ar < 2u; ar++) {
             cv_begin(240, 140, T_SURF); graph_proj((int)ar);
             for (s = 0; s < 4u; s++) {
-                uint16_t top = !ar && s == selected ? expected[s] : ux_mix(T_BG, expected[s], 50);
-                uint16_t row = ar && s == selected ? expected[s] : ux_mix(T_BG, expected[s], 50);
+                uint16_t top = T_VALUE;
+                uint16_t row = T_VALUE;
                 ok &= swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]) == top;
                 ok &= swap16(cv_px[73u * 240u + 5u + s * 293u / 10u]) == row;
             }
@@ -13714,7 +13718,15 @@ static int test_section_colors(void)
     for (s = 0; s < 4u; s++) {
         uint32_t x = (uint32_t)LZ_TX(song_cur % 4u) + 5u + (s % 2u) * 25u;
         uint32_t y = (song_cur / 4u) * 70u + 29u + (s / 2u) * 18u;
-        ok &= swap16(cv_px[y * 240u + x]) == expected[s];
+        ok &= swap16(cv_px[y * 240u + x]) == T_VALUE;
+    }
+    /* Library: project occupancy frames are orange/gray except current white. */
+    for (s = 0; s < NSONG; s++) {
+        int32_t x = LZ_TX(s % 4u), y = (int32_t)(s / 4u) * 70;
+        int occupied = s == song_cur ? (graph_project_used(0) || graph_project_used(1) ||
+                                       graph_project_used(2) || graph_project_used(3)) : lib.mask[s] != 0u;
+        uint16_t border = s == song_cur ? T_TEXT : occupied ? T_VALUE : T_MID;
+        ok &= swap16(cv_px[(y + 1) * 240u + x]) == border;
     }
     for (genre = 0; genre <= NGENRE; genre++)
         for (form = 0; form < 3u; form++) {
@@ -13731,7 +13743,7 @@ static int test_section_colors(void)
         }
     memcpy(&gp, saved_gp, sizeof gp);
     ui_power_on(); frame();
-    return check("JIANT sections: exact A-D colors, full/half/empty chips, project/arrangement/library pixels and GEN previews", ok);
+    return check("SAVE: filled orange, empty gray, project/arrangement/library chips; GEN unchanged", ok);
 }
 
 #ifndef UI_TEST_CUSTOM_MAIN
@@ -13767,6 +13779,9 @@ int main(void)
 #endif
 #ifdef UI_TEST_HUD_AIR_ONLY
     return test_skin() ? 1 : 0;
+#endif
+#ifdef UI_TEST_SAVE_COLORS_ONLY
+    return test_section_colors() ? 1 : 0;
 #endif
 #ifdef UI_TEST_ORANGE_VALUES_ONLY
     return test_orange_values() ? 1 : 0;
