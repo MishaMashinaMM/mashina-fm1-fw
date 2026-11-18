@@ -17,6 +17,8 @@ JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six indepen
 
 > **Current status (November 18, 2026): v0.8-rc1 successfully flashed to a physical FM1 (owner-confirmed); hardware testing with an external MIDI keyboard is still in progress.** The user has already tested same-channel splits, note overlaps, velocity filtering and project save/load in the browser emulator, all successfully. The predecessor **v0.7** was extensively tested on a physical FM1, including BRASS and INDUSTRIAL with three layered sounds and global EQ. All v0.8-rc1 firmware, host, UI, MIDI routing and emulator checks passed in CI. Back up projects/presets and retain a known-good recovery version before flashing. **The public site and installer still serve v0.7 until v0.8 is approved and merged.** This is an independent GPL-3.0-only fork based on JIANT by Juan Jiant.
 
+> **Experimental branch only (`tuning-trn-fine`):** [TUNING page — TRN ±36 semitones and FINE ±50 cents](docs/TUNING_EXPERIMENT.md). MIXER K4 is now unused; TUNING is immediately after ZONES and its K1/K2 adjust transpose/fine for all six tracks. This is an unmerged development feature, not part of the publicly released v0.7 or the separate v0.8 Keyboard Zones branch. Testing in progress.
+
 ## What's different from JIANT / Jiant Live
 
 | Feature | JIANT LIVE DRUMS v0.8 |
