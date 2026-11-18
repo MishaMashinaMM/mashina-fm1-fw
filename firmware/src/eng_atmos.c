@@ -57,7 +57,7 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
         int32_t b = atmos_osc((wave + 1u) & 3u, ph2, inc2);
         /* Cheap triangle movement, no per-sample trigonometry or extra LFO buffers. */
         int32_t lfo = (int32_t)(slow >> 16) - 32768;
-        lfo = lfo < 0 ? -32767 - lfo * 2 : 32767 - lfo * 2;
+        lfo = 32767 - (lfo < 0 ? -lfo : lfo) * 2;
         int32_t moving = (int32_t)(((int64_t)lfo * flow) >> 15);
         int32_t mix = clamp(morph + moving, 0, 32767);
         int32_t s = mulq15(a, 32767 - mix) + mulq15(b, mix);
