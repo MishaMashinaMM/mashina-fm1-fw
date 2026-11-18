@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * ATMOS: lightweight, polyphonic harmonic-pad engine.
  * Two oscillators, one existing SVF per note, no buffers or dedicated effects.
- * Initial DSP implementation; modulation refinements and performance tests follow.
+ * First DSP implementation; performance verification is required before flashing.
  */
 static const char *const N_ATMOS_WAVE[] = {"SINE", "TRI", "SAW", "PULSE"};
 enum { AT_BREATH = P_LN8, AT_MOTION = P_LN9, AT_FLOW = P_LN10, AT_SPREAD = P_LN11 };
@@ -37,7 +37,10 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     const int16_t *p = t->p;
     uint32_t ph = v->ph[0], ph2 = v->ph[1], slow = v->ph[2], i;
     uint32_t inc = m->inc;
-    uint32_t inc2 = fine_pitch_inc(cents_inc(m->pitch16, 1 + p[P_E3] / 4, 0), m->fine);
+    /* SPREAD adds a controlled stereo-like beating/dispersion without extra voices.
+     * Actual left/right positioning remains under the track PAN and shared FX. */
+    uint32_t inc2 = fine_pitch_inc(cents_inc(m->pitch16,
+                                             1 + p[P_E3] / 4 + p[AT_SPREAD] / 6, 0), m->fine);
     uint32_t wave = (uint32_t)clamp(p[P_E0], 0, 3);
     int32_t ic1 = v->s[0], ic2 = v->s[1], seed = v->s[2];
     int32_t density = p[P_E2] * 258;
@@ -52,7 +55,9 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     for (i = 0; i < n; i++) {
         int32_t a = atmos_osc(wave, ph, inc);
         int32_t b = atmos_osc((wave + 1u) & 3u, ph2, inc2);
-        int32_t lfo = osc_sine(slow);
+        /* Cheap triangle movement, no per-sample trigonometry or extra LFO buffers. */
+        int32_t lfo = (int32_t)(slow >> 16) - 32768;
+        lfo = lfo < 0 ? -32767 - lfo * 2 : 32767 - lfo * 2;
         int32_t moving = (int32_t)(((int64_t)lfo * flow) >> 15);
         int32_t mix = clamp(morph + moving, 0, 32767);
         int32_t s = mulq15(a, 32767 - mix) + mulq15(b, mix);
