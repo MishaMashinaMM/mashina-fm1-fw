@@ -7,7 +7,7 @@
 <title>JIANT LIVE DRUMS v0.9 — Firmware for M-VAVE FM1</title>
 <meta name="description" content="JIANT LIVE DRUMS v0.9 for M-VAVE FM1. Keyboard Zones and TUNING firmware with two 12-pad drum engines, six MIDI-routed tracks, per-track ±36-semitone transpose and ±50-cent fine tuning, live project recall, 32 CC macros, shared 3-band EQ and BRASS/INDUSTRIAL sound engines.">
 <meta property="og:title" content="JIANT LIVE DRUMS v0.9">
-<meta property="og:description" content="Earlier v0.9 features device-tested; new orange UI awaits FM1 validation: per-track MIDI and keyboard transpose, DRUM-X, DRUM-LAB, live recall, 32 macros and global EQ.">
+<meta property="og:description" content="v0.9 features and orange UI device-tested on FM1 November 18, 2026: per-track MIDI and keyboard transpose, DRUM-X, DRUM-LAB, live recall, 32 macros and global EQ.">
 <style>
   :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #000000; color: #ffffff; }
   * { box-sizing: border-box; }
@@ -38,12 +38,12 @@
   <div class="eyebrow">M-VAVE FM1 · independent GPL-3.0-only firmware fork</div>
   <h1>JIANT LIVE DRUMS <span style="color:#ff9900">v0.9</span></h1>
   <p class="intro">Live-performance firmware for the FM1 with per-track Keyboard Zones and ±50-cent FINE tuning, BRASS (morphing SAX–TRUMPET), INDUSTRIAL bass/lead sounds, two 12-pad drum engines, six MIDI-routed tracks and 32 CC macros.</p>
-  <p class="status"><strong>New orange-accent UI candidate: awaiting physical FM1 test. Previous v0.9 feature firmware passed Korg X5D testing.</strong> · MIDI note/velocity zones and six-track TUNING verified · firmware and emulator regression tests passed.</p>
+  <p class="status"><strong>v0.9 orange-accent UI flashed successfully and device-tested on FM1 November 18, 2026. Earlier TUNING and zones features were verified with Korg X5D.</strong> · MIDI note/velocity zones and six-track TUNING verified · firmware and emulator regression tests passed.</p>
 </header>
 
 <nav class="cards" aria-label="JIANT LIVE DRUMS tools">
   <div class="card"><a href="emu/">Try the emulator</a><p>Play the current firmware in a browser, test MIDI controls and optionally import a JIANT backup into an isolated session.</p></div>
-  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the previously device-tested v0.9 using the public browser updater. The new orange-accent UI has a separate branch-only test installer. Back up projects before upgrading or downgrading and verify the displayed build version.</p></div>
+  <div class="card"><a href="webapp/installer-orange-v09/">FM1 installer · ORANGE v0.9</a><p>Install the FM1 device-tested orange UI using the fresh official v0.9 installer URL. Confirm the page says ORANGE UI and displays a build ID before flashing. Back up projects before upgrading or downgrading.</p></div>
   <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1 to manage compatible sounds, settings and backups. Some newer Drums controls, including global EQ, are not yet exposed here.</p></div>
   <div class="card"><a href="manual/">Interactive manual</a><p>Inherited from original JIANT; useful for unchanged controls but not yet an exact reference for Drums' live pages.</p></div>
 </nav>
@@ -63,8 +63,8 @@
     <section class="feature"><h3>Built for live performance</h3><p>Eight shared synthesis voices, the original melodic engines and effects, and a live-only layout: SEQ opens DRUM MIDI MAP, PLAY opens DRUM PERFORMANCE, and REC opens MIDI CC MACROS. The sequencer is disabled.</p></section>
   </div>
   <section class="notice">
-    <strong>v0.9 FM1 device-tested with Korg X5D (November 18, 2026).</strong>
-    <p>Keyboard Zones and the new per-track TUNING page (TRN ±36 semitones, FINE ±50 cents) were tested successfully on a physical FM1. This is owner-reported functional testing, not exhaustive endurance or recovery certification. Back up projects/presets before flashing and keep a working recovery installer. Older firmware may not understand projects saved with nonzero fine tuning.</p>
+    <strong>v0.9 orange UI successfully flashed and device-tested on FM1 (November 18, 2026).</strong>
+    <p>Keyboard Zones and TUNING (TRN ±36 semitones, FINE ±50 cents) were tested with a Korg X5D, and the new orange/gray live interface was subsequently flashed to a physical FM1 and reported working correctly. This is owner-reported functional testing, not exhaustive endurance or recovery certification. Back up projects/presets before flashing and keep a working recovery installer. Older firmware may not understand projects saved with nonzero fine tuning.</p>
     <p>For precise Drums controls, see the <a href="https://github.com/MishaMashinaMM/jiant-live-drums/blob/main/docs/JLD_MANUAL_V0.9.md">v0.9 User Manual</a> and <a href="https://github.com/MishaMashinaMM/jiant-live-drums">current README</a>. The interactive upstream JIANT manual is inherited.</p>
   </section>
 </main>
