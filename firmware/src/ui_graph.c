@@ -965,7 +965,7 @@ static void graph_title(void)
         f = &AF_M;
     y = f == &AF_L ? CAP_IN(L, LG_H_GRAPH) : CAP_IN(M, LG_H_GRAPH);
     GFX_HOOK_ALIGN(0, 0, 240, LG_H_GRAPH, AL_HV, "large strip title centred");
-    cv_text_in(0, y, 240, f, ti, T_THEME, T_SURF);
+    cv_text_in(0, y, 240, f, ti, T_VALUE, T_SURF);
 }
 
 /* (0.9.17) every SEQ page (LENTE) draws the same picture, the owner's "all the sequencer pages the same piano roll, each
