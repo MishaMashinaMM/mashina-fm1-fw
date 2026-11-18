@@ -45,6 +45,7 @@
 <main>
   <nav class="lang" id="lang" aria-label="Language"><button data-lang="es" lang="es">Español</button><button data-lang="en" lang="en">English</button><button data-lang="ja" lang="ja">日本語</button></nav>
   <h1 class="jiant-wordmark"><a href="https://github.com/MishaMashinaMM/jiant-live-drums" aria-label="JIANT LIVE DRUMS home">JIANT<span class="fm"> LIVE DRUMS</span></a><span class="jiant-tool">INSTALLER</span></h1>
+  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.9 · ORANGE UI · BUILD /*BUILD_TAG*/</p>
   <p data-t="intro"></p>
   <p data-t="warn"></p>
   <p data-t="samples" style="color:var(--orange)"></p>
@@ -356,7 +357,7 @@ TEXT.es = {
   verLabel: "Versión:", verOld: "También podés volver a una versión anterior (la más nueva arriba). Un proyecto guardado por una versión más nueva puede no abrir bien en una anterior: hacé backup con el editor antes.", latest: "la última", manual: "Manual:",
   direct: "Conectá el cable USB directo a la computadora. No hace falta probe ni Transporter.",
   brick: "Si una instalación falla y el FM-1 ya no arranca, recuperarlo necesita un Transporter:",
-  beta: "Las funciones de la versión anterior v0.9 se probaron en un FM1 con un Korg X5D; esta nueva interfaz naranja todavía NO se ha probado en hardware. No se garantizan las pruebas de larga duración ni la recuperación. Guardá un respaldo de tus proyectos y presets antes de actualizar o volver a una versión anterior.",
+  beta: "Las funciones v0.9 se probaron en un FM1 con Korg X5D; la interfaz naranja también se instaló y verificó en un FM1 el 18 de noviembre de 2026. No se garantizan las pruebas de larga duración ni la recuperación. Guardá un respaldo de tus proyectos y presets antes de actualizar o volver a una versión anterior.",
   back: "Conseguí el FM-1 V15 oficial de M-VAVE y elegí el FM-1.fwsc sin modificar. El navegador lo verifica localmente; no se envía a ningún servidor.",
   stockWhere: "En la página de descargas de M-VAVE buscá el FM-1, bajá el firmware V15, descomprimilo y elegí el archivo FM-1.fwsc (699.956 bytes). Esta página no puede bajarlo por vos: el firmware oficial es de M-VAVE y no podemos redistribuirlo.",
   stockTitle: "Volver al V15 oficial", stockFile: "FM-1.fwsc oficial", stockGo: "Hacer backup y volver al V15 oficial",
@@ -487,7 +488,7 @@ const env = envOf(navigator);
 const state = { flow: "", step: "", fw: null };
 let lastError = null, lastUp = null, permission = "";
 log(`page ${location.href}`);
-log(`installer ${meta.version} ${meta.product} | ${env.browser} ${env.os} | webmidi ${env.webmidi ? "yes" : "NO"}`);
+log(`installer ${meta.version} ${meta.product} | build ${meta.source_commit || "unknown"} | binary ${meta.release_hash || "unknown"} | ${env.browser} ${env.os} | webmidi ${env.webmidi ? "yes" : "NO"}`);
 
 /* (0.9.11) the channel: web/STABLE's approved version (webapp/installer) or main's preview (preview/webapp/installer) */
 const preview = meta.channel ? meta.channel === "preview" : /-preview$/.test(meta.version);
@@ -545,7 +546,7 @@ async function loadVersion(i) {
   image = null; $("go").disabled = true;
   for (let k = 0; k < 3; k++) {                 // (0.9.11) a dropped download is tried again
     try {
-      const r = await fetch(v.pkg, k ? { cache: "reload" } : {});
+      const r = await fetch(v.pkg, { cache: "no-store" });
       if (!r.ok) throw new Error(`${v.pkg}: HTTP ${r.status}`);
       const pkg = new Uint8Array(await r.arrayBuffer());
       if (epoch !== loadEpoch) return;
