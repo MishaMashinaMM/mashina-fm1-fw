@@ -2147,7 +2147,7 @@ static void draw_cc_macro_cell(uint32_t i, uint32_t row, uint32_t col)
     const uint8_t *r = cm_rows[i];
     uint32_t ti = r[1] >> 4, id = r[3], engine = r[2];
     uint16_t bg = i == cm_pick && cm_count ? T_RAISE : T_BG;
-    uint16_t ink = i == cm_pick ? T_THEME : T_TEXT;
+    uint16_t ink = col >= 3u && i < cm_count ? T_VALUE : i == cm_pick ? T_THEME : T_TEXT;  /* type/range/reverse/on are editable */
     char b[16];
     const char *value = b;
     b[0] = 0;
