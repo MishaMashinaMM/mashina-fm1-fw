@@ -1,7 +1,6 @@
-# Experimental TUNING page — TRN ±36 / FINE ±50
+# v0.9 TUNING technical notes — TRN ±36 / FINE ±50
 
-This document describes the `tuning-trn-fine` development branch, built on
-`keyboard-zones`. It is **not released** and is **not merged into v0.8 or main**.
+This document describes TUNING as shipped in **JIANT LIVE DRUMS v0.9**, built on the v0.8 Keyboard Zones feature. The release candidate was successfully tested on FM1 hardware using a Korg X5D MIDI keyboard on November 18, 2026.
 
 ## GLO navigation
 
@@ -53,13 +52,8 @@ serialization block; nonzero fine tuning uses an optional `FN` block
 (biased signed cents). Autosave signatures include both arrays.
 
 Because old firmware does not understand new `T2`/`FN` blocks,
-**back up projects before downgrading**. The experimental branch must not
-be merged or released before emulator and physical device approval.
+**back up projects before downgrading**. v0.9 was approved after physical FM1 testing with a Korg X5D.
 
 ## Testing
 
-The branch's GitHub Actions run builds a standalone
-`jld-tuning-trn36-fine50-browser-emulator` artifact, which can be
-extracted and served locally with `py -m http.server 8000`.
-Use its MIDI input controls to evaluate same-channel layered instruments.
-The device firmware must be separately tested after emulator approval.
+The v0.9 release build serves the main browser emulator and public FM1 installer through GitHub Pages. The dedicated live regression suite includes pitch audio comparisons, MIDI routing boundaries, navigation tests and project-format compatibility. Physical testing with a Korg X5D was completed successfully.
