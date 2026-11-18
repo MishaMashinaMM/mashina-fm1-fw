@@ -8,26 +8,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JIANT LIVE DRUMS — Installer</title>
 <style>
-  :root { --bg: #fff; --fg: #000; --dim: #777; }
+  :root { --bg: #000; --fg: #fff; --dim: #b8b8b8; --orange:#ff9900; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) { --bg: #000; --fg: #fff; --dim: #888; }
   }
-  :root[data-theme="dark"] { --bg: #000; --fg: #fff; --dim: #888; }
+  :root[data-theme="dark"] { --bg: #000; --fg: #fff; --dim: #b8b8b8; }
+  :root[data-theme="light"] { --bg: #fff; --fg: #000; --dim: #666; --orange:#a86100; }
   body { margin: 0; background: var(--bg); color: var(--fg);
          font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; }
   main { max-width: 520px; margin: 0 auto; padding: 48px 16px; }
-  h1 { font-size: 24px; font-weight: 600; margin: 0 0 24px; }
+  h1 { font-size: 24px; font-weight: 600; margin: 0 0 24px; color:var(--orange); }
   .lang { float: right; font-size: 13px; }
   .lang button { font-size: 13px; background: none; color: var(--dim); padding: 0 0 0 8px; text-decoration: underline; }
   .lang button[aria-pressed="true"] { color: var(--fg); text-decoration: none; font-weight: 600; }
   p { margin: 0 0 16px; }
-  button { font: inherit; background: var(--fg); color: var(--bg); border: 0; padding: 8px 20px; cursor: pointer; }
+  button { font: inherit; background: var(--fg); color: var(--bg); border: 0; padding: 8px 20px; cursor: pointer; }\n  #go { background:var(--orange); color:#000; }\n  a:focus-visible,button:focus-visible {outline:2px solid var(--orange);outline-offset:2px}
   button:disabled { opacity: .3; cursor: default; }
   #status { margin-top: 16px; min-height: 1.6em; }
   .small { color: var(--dim); font-size: 13px; }
   progress { width: 100%; height: 4px; margin-top: 16px; }
   pre { color: var(--dim); font-size: 12px; white-space: pre-wrap; margin-top: 16px; overflow-wrap: anywhere; }
-  .tip { border: 2px solid #ec6e50; padding: 10px 14px; margin: 12px 0 16px; }
+  .tip { border: 2px solid #ff9900; padding: 10px 14px; margin: 12px 0 16px; }
   .tip p { margin: 0 0 6px; }
   .tip ol { margin: 0; padding-left: 20px; font-size: 14px; }
   .diag { border: 1px solid var(--dim); padding: 8px 12px; margin: 16px 0; }
@@ -46,8 +47,8 @@
   <h1 class="jiant-wordmark"><a href="https://github.com/MishaMashinaMM/jiant-live-drums" aria-label="JIANT LIVE DRUMS home">JIANT<span class="fm"> LIVE DRUMS</span></a><span class="jiant-tool">INSTALLER</span></h1>
   <p data-t="intro"></p>
   <p data-t="warn"></p>
-  <p data-t="samples" style="color:#ec6e50"></p>
-  <p data-t="dual" style="border-left:3px solid #ec6e50;padding:4px 0 4px 12px"></p>
+  <p data-t="samples" style="color:var(--orange)"></p>
+  <p data-t="dual" style="border-left:3px solid var(--orange);padding:4px 0 4px 12px"></p>
   <p class="small" data-t="direct"></p>
   <p class="small" data-t="beta"></p>
   <p class="small"><span data-t="brick"></span>
@@ -94,7 +95,7 @@
     <a href="https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.md" target="_blank" rel="noopener" style="color:inherit">English</a> ·
     <a href="https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.es.md" target="_blank" rel="noopener" style="color:inherit">Español</a></p>
   
-  <p class="small">JIANT LIVE DRUMS v0.9 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
+  <p class="small">This is the v0.9 UI device-test candidate. The earlier v0.9 feature release was tested on hardware; this new orange display build has not yet been verified on FM1.</p>\n  <p class="small">JIANT LIVE DRUMS v0.9 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
     Credits: Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT); the song system after SLOOP by isod89.<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1).<br>
     FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
