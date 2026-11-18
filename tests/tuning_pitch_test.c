@@ -19,6 +19,7 @@ static uint64_t fine_digest(uint32_t eng, int8_t cents, uint64_t *energy)
     memset(trk, 0, sizeof trk);
     memset(&song, 0, sizeof song);
     memset(midi_fine, 0, sizeof midi_fine);
+    vage = 0; /* DRUM-LAB's deterministic noise seed includes voice age. */
     /* DRUM-LAB's voice/patch caches persist outside track_t; reset so
      * two renders differ only in FINE, never in a previous pad tail. */
     memset(drumlab_state, 0, sizeof drumlab_state);
