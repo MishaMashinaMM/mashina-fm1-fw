@@ -2498,6 +2498,17 @@ static void ui_input_frame(void)
         ui.rec_t0 |= 2u;                                /* (REC is its layer's button now: its tap is layer_tap's) */
     if (((pressed >> panel.btn[B_SAVE]) & 1u) && ui.ly == LAYER_SAVE)
         ui.save_t0 |= 2u;                               /* (SAVE too: layer_tap opens its pages) */
+    /* Panic is GLO first, then OCT-. No hold timer and no octave change. */
+    if (panic_mode_screen && !((fm1_in.buttons >> panel.btn[B_GLO]) & 1u)) {
+        panic_mode_screen = 0;
+        ui.force = 1;
+    }
+    if (!panic_mode_screen && (pressed & (1u << panel.btn[B_OCTDN])) &&
+        ui.ly == LAYER_GLO && layer_held() && !ui.menu && !dlg_on() && !name_on()) {
+        panic_all_req = 1;
+        panic_mode_screen = 1;
+        ui.force = 1;
+    }
     layer_oct_open(pressed);                            /* (OCT± with a SET layer's button down: it opens now) */
     oct = oct_taps(pressed, ui.menu || ui.confirm || act_cols() || name_on() || layer_set_open());
     oct = layer_oct(pressed, oct);                      /* (a SET layer's OCT-: put back) */

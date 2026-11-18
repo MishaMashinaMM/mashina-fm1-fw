@@ -44,6 +44,8 @@ static volatile uint8_t kb_asleep;       /* MENU > SCREEN OFF (ui.c): the screen
 static uint8_t last_note = 60;
 static volatile uint8_t transport_req;   /* 1 start, 2 stop, 3 restart (from the UI) */
 static volatile uint8_t panic_req;       /* bit per track: release every sounding note (preset / engine change) */
+static volatile uint8_t panic_all_req;   /* GLO + OCT-: hard silence, including MIDI sustain and ownership */
+static uint8_t panic_mode_screen;         /* temporary monochrome UI overlay while GLO remains held */
 static volatile uint8_t midi_hint;       /* MIDI IN played track n - 1, which is not the selected one (the UI says so) */
 
 static uint32_t trk_index(const track_t *t) { return (uint32_t)(t - trk); }
@@ -2377,6 +2379,17 @@ static void events_block(uint32_t n)
     }
 #endif
     midi_route_update();                         /* receive setup only; no flash or UI work */
+    if (panic_all_req) {
+        panic_all_req = 0;
+        mo_flush_of((1u << NTRK) - 1u);
+        for (i = 0; i < NTRK; i++)
+            midi_silence_track(i);
+        for (i = 0; i < 16u; i++) {
+            midi_ch[i].pedal = 0;
+            midi_ch[i].targets = 0;
+        }
+        panic_req = 0;
+    }
     pr = panic_req;
     panic_req = 0;
     if (pr)

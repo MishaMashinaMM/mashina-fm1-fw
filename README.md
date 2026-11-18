@@ -9,6 +9,10 @@
 
 **[Project homepage](https://mishamashinamm.github.io/jiant-live-drums/)** · **[Emulator](https://mishamashinamm.github.io/jiant-live-drums/emu/)** · **[Drums installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/)** · **[Drums editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/)** · **[Interactive manual (inherited)](https://mishamashinamm.github.io/jiant-live-drums/manual/)**
 
+### Panic Mode — device-tested (v0.9)
+
+**Physical FM1 test passed on November 18, 2026.** Hold **GLO** to display the performance map, then tap **OCT−** while continuing to hold GLO. The screen shows **PANIC MODE** in white on black until GLO is released, then restores the previously displayed page. The action immediately silences all six tracks, including delay/reverb tails, and clears held-note and sustain state. It does not change the selected project, stored presets, MIDI macros or settings. **OCT− alone** retains its normal octave function. The owner installed and tested this feature successfully on a physical FM1 after emulator and automated regression checks. This is part of **v0.9**; there is no version bump.
+
 ### v0.9 orange UI — device-tested
 
 **Physical FM1 test passed on November 18, 2026.** The owner successfully installed this orange-accent UI build on an FM1 and reported that everything tested worked correctly, including the updated interface. This follows the separate v0.9 MIDI Zones/TUNING test with a Korg X5D earlier the same day. This release remains **v0.9**, firmware identity **`FM-1_909`**, with no `rc1` suffix. The owner’s report confirms a successful installation and functional check, not exhaustive endurance or recovery testing.
@@ -31,6 +35,7 @@ JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six indepen
 
 | Feature | JIANT LIVE DRUMS v0.9 |
 | --- | --- |
+| **Panic Mode (v0.9, device-tested)** | Hold **GLO**, tap **OCT−**: immediately silence all tracks and effects, show white **PANIC MODE** on black while GLO remains held, then return to the previous screen on release. Does not modify project data or macros. Tested on a physical FM1 on November 18, 2026. |
 | **Keyboard Zones (introduced in v0.8)** | **GLO → MIX → ZONES**, immediately after MIXER. Six identical track rows: static track number/name; **K1 MIN**, **K2 MAX** (note 0–127, shown as note names), **K3 V.MIN**, **K4 V.MAX** (velocity 1–127). Each track independently filters incoming USB/TRS MIDI after RX-channel selection and **before transpose**. Ranges are inclusive; overlapping note/velocity areas layer sounds. Saved **per project**; old projects default to full ranges. FM1 built-in keyboard still plays only the selected track. Confirmed on a physical FM1 with a Korg X5D in v0.9 hardware testing. |
 | **BRASS engine (new in v0.7)** | Dedicated synth for synthetic saxophone and trumpet leads, with **continuous TYPE morph (0–127)** and PRESS, BUZZ, BREATH, BODY, FORMNT, GROWL, ATTACK. **EDIT 3** adds neutral-by-default FAT, GRIND, METAL and CRUSH. Six factory presets; up to four voices for this engine. |
 | **INDUSTRIAL engine (new in v0.7)** | Heavy playable synth basses and leads. **EDIT 1** WAVE/FAT/GRIND/METAL, **EDIT 2** CRUSH/FEED/CUT/RES, **EDIT 3** WAVE2/MIX/SUB/MODE; six factory presets. Both engines share the existing global voice budget and effect routing. |
