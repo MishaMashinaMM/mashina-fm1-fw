@@ -3,21 +3,21 @@
 **Performance-focused firmware for the M-VAVE FM1**, modified by **Misha Mashina** from **JIANT by Juan Jiant** (based on Felucca).
 
 [![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-777777.svg)](LICENSE)
-[![UI v0.9: awaiting device test](https://img.shields.io/badge/v0.9_UI-awaiting_FM1_test-ff9900.svg)](#ui-changes-v09-device-test-candidate)
+[![UI v0.9: FM1 tested](https://img.shields.io/badge/v0.9_UI-FM1_device_tested-ff9900.svg)](#v09-orange-ui-device-tested)
 
 ![JIANT LIVE DRUMS v0.9: six-track zones, transpose ±36 semitones and fine tuning ±50 cents, BRASS and INDUSTRIAL, two 12-pad drum engines and 32 MIDI macros](docs/jiant-live-drums-overview-32-macros.svg?v=0.9-ui)
 
 **[Project homepage](https://mishamashinamm.github.io/jiant-live-drums/)** · **[Emulator](https://mishamashinamm.github.io/jiant-live-drums/emu/)** · **[Drums installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/)** · **[Drums editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/)** · **[Interactive manual (inherited)](https://mishamashinamm.github.io/jiant-live-drums/manual/)**
 
-### UI changes — v0.9 device-test candidate
+### v0.9 orange UI — device-tested
 
-**This `ui-changes` branch has NOT yet been flashed/tested on a physical FM1.** The previous v0.9 firmware release (MIDI Zones/TUNING, Korg X5D) was device-tested on November 18, 2026; that does **not** verify this new display build. Keep the existing `main` release until the new build passes hardware testing. This branch intentionally retains **v0.9** and firmware product ID **`FM-1_909`**, with **no `rc1`** suffix.
+**Physical FM1 test passed on November 18, 2026.** The owner successfully installed this orange-accent UI build on an FM1 and reported that everything tested worked correctly, including the updated interface. This follows the separate v0.9 MIDI Zones/TUNING test with a Korg X5D earlier the same day. This release remains **v0.9**, firmware identity **`FM-1_909`**, with no `rc1` suffix. The owner’s report confirms a successful installation and functional check, not exhaustive endurance or recovery testing.
 
 The display now uses a **black / white / grayscale palette with orange `#FF9900`**. Editable values, page titles and breadcrumbs are orange; labels, backgrounds and gauge/intensity ramps remain grayscale; selected mixer tracks are white with black lettering. Occupied SAVE section chips are orange, empty ones dark gray, and saved projects have orange borders (current project white). The HOME-over-GLO rendering bug is fixed. The original UI animations remain disabled.
 
-**Test installer:** the [UI v0.9 device-test installer workflow](https://github.com/MishaMashinaMM/jiant-live-drums/actions/workflows/ui-changes-installer.yml) on this branch produces a downloadable **standalone web installer** for flashing. This is **not** the public [main-branch installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/). Back up the FM1 projects, user presets and settings before flashing. The new screen theme and navigation are not marked hardware-tested until you report successful device testing.
+**Installer:** after the merged `main` firmware build and GitHub Pages deployment complete, use the [public Drums installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/). The [UI v0.9 test installer workflow](https://github.com/MishaMashinaMM/jiant-live-drums/actions/workflows/ui-changes-installer.yml) remains as the historical pre-merge build used for hardware verification. Back up FM1 projects, user presets and settings before updating.
 
-**Recommended checks after flashing:** startup title and version; HOME ↔ GLO; track selection highlighting and value updates on MIXER/ZONES/TUNING; SAVE → PROJECT → SECTIONS and SAVE → LIBRARY → PROJECTS (filled/empty colors); menu, EDIT and REC macro editing; sound, MIDI note-offs, project loading and persistence. Check brightness and legibility on the physical 240×240 screen.
+**Physical test report:** the orange-accent v0.9 firmware flashed successfully to an FM1 on November 18, 2026, and the owner reported everything working properly. The release changes include the splash title, HOME ↔ GLO redraw fix, mixer selection contrast, editable-value/breadcrumb coloring, and occupied/empty SAVE slot colors. For a future update, continue checking audio, MIDI, recalls, persistence and display readability.
 
 **[JIANT LIVE DRUMS v0.9 user manual](docs/JLD_MANUAL_V0.9.md)** — covers MIXER, ZONES and TUNING, independent per-track ±36-semitone transpose and ±50-cent fine tuning, splits/layers, MIDI routing, BRASS, INDUSTRIAL, EQ, live recall, both drum engines and REC macros. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
 
@@ -25,7 +25,7 @@ The links above are the GitHub Pages routes for this separate Drums repository. 
 
 JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six independently routed MIDI tracks**, expressive melodic engines, two 12-pad drum kits, live project recall and 32 project MIDI CC macros. **v0.9 adds a dedicated six-track TUNING page** with **TRN −36…+36 semitones** and **FINE −50…+50 cents**, moving TRN out of MIXER. **v0.8 introduced Keyboard Zones** for per-track note/velocity splits and overlaps; **v0.7 introduced BRASS and INDUSTRIAL**. Existing live channel overrides, global pre-effects 50 Hz / 700 Hz / 10 kHz three-band EQ and the 12-pad drum engines remain available. The sequencer is disabled; SEQ, PLAY and REC serve live controls instead.
 
-> **Previous v0.9 feature firmware device-tested (November 18, 2026), NOT the new UI candidate:** The owner successfully flashed the v0.9 candidate to a physical FM1 and tested it with a **Korg X5D MIDI keyboard**, confirming that the new TUNING controls and existing features worked as expected. The official v0.9 release preserves the device-tested feature code. Automated firmware, MIDI, UI, project and WebAssembly regression checks passed. This does not constitute exhaustive stress/recovery certification; back up projects and user presets before updating. The public installer is updated automatically after the `main` GitHub Pages deployment succeeds.
+> **v0.9 hardware testing (November 18, 2026):** The prior feature build was flashed and tested with a Korg X5D MIDI keyboard, including TUNING and existing features. Later the same day, the new black/gray/orange v0.9 UI build was flashed successfully to a physical FM1, and the owner reported all tested functions working. Automated firmware, MIDI, UI, project and WebAssembly checks also passed. Hardware validation is a functional test, not comprehensive stress, upgrade-path or recovery certification.
 
 ## What's different from JIANT / Jiant Live
 
@@ -50,7 +50,7 @@ JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six indepen
 | DRUM-LAB | **12 independent synthesized pads** with selectable sound types, ten per-pad sound parameters, three LEVELS pages, and eight kit-wide proportional controls. |
 | Repurposed SEQ, PLAY and REC buttons | **SEQ** opens **DRUM MIDI MAP**, **PLAY** opens **DRUM PERFORMANCE**, and **REC** opens **MIDI CC MACROS**. The three buttons illuminate with their active live pages; none starts the removed sequencer/transport. |
 | Polyphony | **Eight shared voices** across all tracks and both drum engines. |
-| Display (UI candidate awaiting FM1 test) | Static **JIANT LIVE DRUMS v0.9** startup splash; black/white/gray UI with **orange #FF9900** values and breadcrumbs, solid-white selected mixer rows, orange occupied SAVE slots and gray empty slots. Decorative animations remain disabled. |
+| Display (v0.9 UI, device-tested) | Static **JIANT LIVE DRUMS v0.9** startup splash; black/white/gray UI with **orange #FF9900** values and breadcrumbs, solid-white selected mixer rows, orange occupied SAVE slots and gray empty slots. Decorative animations remain disabled. |
 | ABOUT | JIANT LIVE DRUMS identification and purpose, while retaining original author and license credits. |
 | Browser emulator | Can load an existing JIANT **backup JSON** into an isolated session to audition saved sounds/projects without changing the physical FM1. |
 | Sequencer / sound engines | **Sequencer disabled** for live use; the inherited melodic engines and effects remain. |
@@ -312,7 +312,7 @@ The Drums emulator does not load a sample bank or offer sample-kit playback. It 
 
 ## Status and safety
 
-**Current hardware validation:** JLD **v0.9 was tested successfully on an FM1 using a Korg X5D MIDI keyboard** on November 18, 2026, including the extended transpose and Fine Tune controls. The official release retains that tested implementation. Prior v0.7 BRASS/INDUSTRIAL hardware tests covered three layered sounds and global EQ. These are owner-reported functional tests, not exhaustive stability or recovery certifications. Keep backups before downgrading or updating; the LIBRARY occupancy correction was independently tested in v0.4.
+**Current hardware validation:** On November 18, 2026, JLD v0.9 TUNING and zones were successfully tested on a physical FM1 with a Korg X5D. The orange-accent UI version was subsequently flashed successfully onto an FM1, and the owner confirmed everything was working properly. The updated UI is therefore **device-tested**, while long-duration stress and recovery behavior remain outside this report.
 
 - **v0.4 device-tested release:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18). The project LIBRARY occupancy discrepancy was corrected in [PR #21](https://github.com/MishaMashinaMM/jiant-live-drums/pull/21). **The owner successfully flashed v0.4 on a physical FM1 and confirmed live recall, slot management, LIBRARY indicators, startup/About version display and the current feature set work on the device (November 15, 2026).** Firmware, host regression and emulator checks also passed. Device approval does not imply exhaustive long-duration stress qualification.
 
