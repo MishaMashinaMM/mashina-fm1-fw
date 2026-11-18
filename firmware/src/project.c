@@ -141,7 +141,8 @@ typedef struct {
     uint8_t eq_on, eq_present;
     uint8_t rx_on;                               /* JLD: RX channels included in this project */
     uint8_t rx[6];                              /* one-based channels, 1..16 */
-    int8_t transpose[NTRK];                     /* v0.6: melodic MIDI transpose, -24..24 */
+    int8_t transpose[NTRK];                     /* melodic MIDI transpose, -36..36 */
+    int8_t fine[NTRK];                          /* per-track melodic fine cents, -50..50 */
     uint8_t zone_on;                            /* keyboard-zones optional 'Z''N' project block */
     uint8_t zone[NTRK][Z_FIELDS];              /* MIN, MAX, V.MIN, V.MAX per track */
     uint8_t cm_count;                           /* optional REC CC macros, zero in older projects */
@@ -909,7 +910,9 @@ static uint32_t proj_packed_size(const project_t *q)
     uint32_t n = 68u + sizeof q->chain + 4u + q->motion.count * sizeof q->motion.event[0] + 2u + G_SL_N, t, i;
     if (q->rx_on) n += 8u;                       /* 'R' 'X' and six MIDI channels */
     for (i = 0; i < NTRK; i++)
-        if (q->transpose[i]) { n += 8u; break; } /* 'T' 'R', six biased transpose values */
+        if (q->transpose[i]) { n += 8u; break; } /* 'TR' legacy ±24, or 'T2' ±36 */
+    for (i = 0; i < NTRK; i++)
+        if (q->fine[i]) { n += 8u; break; } /* 'FN' six signed cents biased by 50 */
     if (q->zone_on) {
         for (i = 0; i < NTRK; i++)
             if (q->zone[i][Z_NOTE_MIN] || q->zone[i][Z_NOTE_MAX] != 127u ||
@@ -1296,8 +1299,17 @@ static int proj_pack(project_store_t *out, const project_t *q)
     }
     for (i = 0; i < NTRK; i++) if (q->transpose[i]) break;
     if (i < NTRK) {
-        b[pos++] = 'T'; b[pos++] = 'R';
-        for (i = 0; i < NTRK; i++) b[pos++] = (uint8_t)(q->transpose[i] + 24);
+        uint32_t extended = 0;
+        for (i = 0; i < NTRK; i++)
+            if (q->transpose[i] < -24 || q->transpose[i] > 24) extended = 1;
+        b[pos++] = 'T'; b[pos++] = extended ? '2' : 'R';
+        for (i = 0; i < NTRK; i++)
+            b[pos++] = (uint8_t)(clamp(q->transpose[i], -36, 36) + (extended ? 36 : 24));
+    }
+    for (i = 0; i < NTRK; i++) if (q->fine[i]) break;
+    if (i < NTRK) {
+        b[pos++] = 'F'; b[pos++] = 'N';
+        for (i = 0; i < NTRK; i++) b[pos++] = (uint8_t)(clamp(q->fine[i], -50, 50) + 50);
     }
     if (q->zone_on) {
         for (i = 0; i < NTRK; i++)
@@ -1751,11 +1763,21 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         q->rx_on = 1u;
         pos += 8u;
     }
-    if (pos + 2u <= room && b[pos] == 'T' && b[pos + 1u] == 'R') {
+    if (pos + 2u <= room && b[pos] == 'T' &&
+        (b[pos + 1u] == 'R' || b[pos + 1u] == '2')) {
+        uint32_t extended = b[pos + 1u] == '2';
         if (pos + 8u > room) return 0;
         for (i = 0; i < NTRK; i++) {
-            if (b[pos + 2u + i] > 48u) return 0;
-            q->transpose[i] = (int8_t)((int32_t)b[pos + 2u + i] - 24);
+            if (b[pos + 2u + i] > (extended ? 72u : 48u)) return 0;
+            q->transpose[i] = (int8_t)((int32_t)b[pos + 2u + i] - (extended ? 36 : 24));
+        }
+        pos += 8u;
+    }
+    if (pos + 2u <= room && b[pos] == 'F' && b[pos + 1u] == 'N') {
+        if (pos + 8u > room) return 0;
+        for (i = 0; i < NTRK; i++) {
+            if (b[pos + 2u + i] > 100u) return 0;
+            q->fine[i] = (int8_t)((int32_t)b[pos + 2u + i] - 50);
         }
         pos += 8u;
     }
@@ -2077,6 +2099,7 @@ static void project_capture(project_t *p)
     p->rx_on = 1u;
     for (i = 0; i < 6u; i++) p->rx[i] = (uint8_t)midi_rx_channel(i);
     memcpy(p->transpose, midi_transpose, sizeof p->transpose);
+    memcpy(p->fine, midi_fine, sizeof p->fine);
     p->zone_on = 1u;
     memcpy(p->zone, midi_zone, sizeof p->zone);
     p->cm_count = cm_count;
@@ -2484,6 +2507,7 @@ static int project_restore_runtime(const project_t *input)
     global_eq_on = p->eq_present ? p->eq_on : 1;
     if (p->rx_on) memcpy(midi_rx, p->rx, sizeof p->rx);
     memcpy(midi_transpose, p->transpose, sizeof midi_transpose);
+    memcpy(midi_fine, p->fine, sizeof midi_fine);
     if (p->zone_on) memcpy(midi_zone, p->zone, sizeof midi_zone);
     else midi_zone_reset();
     cm_count = p->cm_count;
@@ -2626,6 +2650,8 @@ static void system_init(void)
     for (i = 0; i < 3u; i++) global_eq_gain[i] = 0;
     global_eq_on = 1;
     midi_zone_reset();
+    memset(midi_transpose, 0, sizeof midi_transpose);
+    memset(midi_fine, 0, sizeof midi_fine);
     chain_defaults(&chain_config);
     memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
     memset(pfx_lane, 0, sizeof pfx_lane);
@@ -3160,6 +3186,8 @@ static uint32_t autosave_sig(void)
         uint8_t rx = (uint8_t)midi_rx_channel(i);
         h = as_mix(h, &rx, sizeof rx);
     }
+    h = as_mix(h, midi_transpose, sizeof midi_transpose);
+    h = as_mix(h, midi_fine, sizeof midi_fine);
     h = as_mix(h, midi_zone, sizeof midi_zone);
     h = as_mix(h, &cm_count, sizeof cm_count);
     h = as_mix(h, cm_rows, sizeof cm_rows);
