@@ -1745,7 +1745,7 @@ static void draw_splash(void)
     draw_text_box(0, 82, 240, &AF_L, "DRUMS", T_THEME, 1);
     draw_text_box(0, 122, 240, &AF_M, "FM1 DRUM PERFORMANCE", T_TEXT, 1);
     draw_text_box(0, 150, 240, &AF_X, "orig: Juan Jiant | mod: Misha Mashina", T_MID, 1);
-    draw_text_box(0, 191, 240, &AF_X, "v0.5", T_DIM, 1);
+    draw_text_box(0, 191, 240, &AF_X, FELUCCA_VERSION, T_DIM, 1);
     lcd_sync();
 }
 
