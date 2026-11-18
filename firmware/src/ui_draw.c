@@ -2092,7 +2092,7 @@ static void lz_frame_end(void)
 static void ui_draw_page(uint32_t counting);
 static void ui_draw(void)
 {
-    static uint8_t counting;
+    static uint8_t counting, panic_drawn;
     style_apply();
     ui.frame++;
     if (counting != (uint8_t)seq_counting()) {          /* a count-in began or ended: the page drawn again after it */
@@ -2102,11 +2102,19 @@ static void ui_draw(void)
     if (!scr_frame())                                   /* MENU > SCREEN OFF: dark (or waking), nothing drawn */
         return;
     if (panic_mode_screen) {
-        /* Deliberately bypass the theme: full black, white lettering, no previous page. */
-        lcd_fill(0, 0, 240, 240, 0x0000);
-        draw_text_line(0, 110, 240, &AF_L, "PANIC MODE", 0xFFFF, 0x0000, 1);
+        /* Draw once, then leave the exact pixels in place until GLO is released. */
+        if (!panic_drawn) {
+            lcd_fill(0, 0, 240, 240, 0x0000);
+            draw_text_line(0, 110, 240, &AF_L, "PANIC MODE", 0xFFFF, 0x0000, 1);
+            panic_drawn = 1;
+        }
         scr_shown();
         return;
+    }
+    if (panic_drawn) {
+        panic_drawn = 0;
+        ui.force = 1;
+        lcd_fill(0, 0, 240, 240, T_BG);
     }
     ui_draw_page(counting);
     scr_shown();
