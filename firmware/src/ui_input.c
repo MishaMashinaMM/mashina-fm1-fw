@@ -520,7 +520,7 @@ static void knob_cap(track_t *t, uint32_t id)
     if (!cm_ui_open) ml_knob(t, id);
 }
 
-/* GLO > MIXER: K1 MIDI RX, K2 LEVEL, K3 PAN, K4 melodic MIDI transpose.
+/* GLO > MIXER: K1 MIDI RX, K2 LEVEL, K3 PAN. K4 is unassigned.
  * PRESETS controls the master DJ FILTER only here (otherwise it browses presets). */
 static void mixer_djf_turn(int32_t steps)
 {
@@ -549,12 +549,20 @@ static void tracks_edit(uint32_t slot, int32_t steps)
         zones_edit(slot, steps);
         return;
     }
+    if (str_eq(cur_page()->title, "TUNING")) {
+        if (slot == 0u)
+            midi_transpose[song.sel] = (int8_t)clamp((int32_t)midi_transpose[song.sel] +
+                accel(EN_K1, steps, 72), -36, 36);
+        else if (slot == 1u)
+            midi_fine[song.sel] = (int8_t)clamp((int32_t)midi_fine[song.sel] +
+                accel(EN_K2, steps, 100), -50, 50);
+        return;
+    }
     track_t *t = TSEL;
     int16_t *vp;
     const param_desc_t *d;
     switch (slot) {
     case 3:
-        midi_transpose[song.sel] = (int8_t)clamp((int32_t)midi_transpose[song.sel] + steps, -24, 24);
         return;
     case 0: {
         int32_t v = (int32_t)midi_rx_channel(song.sel);
