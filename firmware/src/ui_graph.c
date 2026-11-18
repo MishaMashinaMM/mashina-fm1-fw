@@ -1024,7 +1024,7 @@ static void page_flash_draw(void)
         int32_t fh = H_FOOT;
         cv_begin(240, (uint32_t)fh, T_BG);
         cv_bg = T_BG;
-        cv_text(8, (fh - (int32_t)AF_M.h) / 2, &AF_M, nm, dim ? T_MID : T_TEXT);
+        cv_text(8, (fh - (int32_t)AF_M.h) / 2, &AF_M, nm, T_VALUE);
         cv_text_r(232, (fh - (int32_t)AF_S.h) / 2, &AF_S, sub, dim ? T_DIM : T_ACCENT, T_BG);
         cv_blit(0, foot_y());
     }
