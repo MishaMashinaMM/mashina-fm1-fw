@@ -4,7 +4,7 @@ This is the **JIANT LIVE DRUMS (JLD) v0.9** user manual for the M-VAVE FM1, cove
 
 > **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/jiant-live-drums/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
 
-> **Safety and testing:** Back up projects, presets and sound banks before changing firmware. **v0.9-rc1 was flashed and tested successfully on a physical FM1 with a Korg X5D MIDI keyboard on November 18, 2026.** The final v0.9 build removes the RC suffix while preserving the tested feature implementation. Device validation is functional, not an exhaustive long-duration/recovery guarantee.
+> **Safety and testing:** Back up projects, presets and sound banks before changing firmware. **v0.9 was flashed and tested successfully on a physical FM1 with a Korg X5D MIDI keyboard on November 18, 2026.** The final v0.9 firmware preserves the tested feature implementation. Device validation is functional, not an exhaustive long-duration/recovery guarantee.
 
 ## 1. Physical controls and navigation
 
@@ -32,7 +32,7 @@ This is the **JIANT LIVE DRUMS (JLD) v0.9** user manual for the M-VAVE FM1, cove
 | **PRESETS** | Browse presets | Browses presets on most pages; on GLO → MIXER it adjusts the master DJ Filter. |
 | **K1–K4** | Edit displayed parameters | Some columns may be unused or have special selection functions. |
 
-The normal keyboard octave offset is **−3 to +3**; this is separate from the per-track ±24-semitone transpose. Changing a parameter typically acts immediately, but project-specific changes are only retained across loading/reboot once the project is saved.
+The normal keyboard octave offset is **−3 to +3**; this is separate from the per-track ±36-semitone transpose. Changing a parameter typically acts immediately, but project-specific changes are only retained across loading/reboot once the project is saved.
 
 ### 1.2 Moving between pages
 
