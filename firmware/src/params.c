@@ -669,7 +669,8 @@ static const page_t PAGES[] = {
     {"TRACK", FAM_SEQ, SC_TRACK, GR_STEPS, {P_POFS, P_TCHAN, P_HVEL, P_HRQ}},   /* (0.6.92) PITCH CHANCE HUMAN REC Q */
     {"PHRASES", FAM_SEQ, SC_GLOBAL, GR_PATS, {0xFF, 0xFF, 0xFF, 0xFF}},    /* pattern loader (ui.c pat_load); 0.6.37: hidden */
     {"ZONES", FAM_TRK, SC_TRK, GR_TRK, {0, 1, 2, 3}}, /* K1 NOTE MIN, K2 NOTE MAX, K3 V.MIN, K4 V.MAX */
-    {"MIXER", FAM_TRK, SC_TRK, GR_TRK, {0, 1, 2, 3}},   /* GLO button; LEVEL PAN REV, (0.9.1) the DJ FILTER (was MUTE) */
+    {"TUNING", FAM_TRK, SC_TRK, GR_TRK, {0, 1, 0xFF, 0xFF}}, /* K1 transpose ±36 semitones; K2 fine ±50 cents */
+    {"MIXER", FAM_TRK, SC_TRK, GR_TRK, {0, 1, 2, 0xFF}},   /* GLO button; LEVEL PAN REV, (0.9.1) the DJ FILTER (was MUTE) */
     {"SONG", FAM_SEQ, SC_GLOBAL, GR_SONG, {0xFF, 0xFF, 0xFF, 0xFF}},
     {"CHANCE", FAM_SEQ, SC_STEP, GR_CHANCE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* a step's CHANCE RATCH; 0.6.37: hidden */
     {"AUTOMATION", FAM_SEQ, SC_TRACK, GR_MOTION, {0xFF, 0xFF, 0xFF, 0xFF}},

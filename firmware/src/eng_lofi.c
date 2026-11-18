@@ -499,7 +499,7 @@ static void lofi_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const 
     mg.amp0 = mulq15(m->amp0, LOFI_GAIN[wave < 7u ? wave : 0u]);   /* block's amplitude ramp, nothing a sample */
     mg.amp1 = mulq15(m->amp1, LOFI_GAIN[wave < 7u ? wave : 0u]);
     m = &mg;
-    inc = pitch_inc(clamp(m->pitch16, 0, 2047));       /* (the vibrato below; the track's LFO in m->pitch16 already) */
+    inc = fine_pitch_inc(pitch_inc(clamp(m->pitch16, 0, 2047)), m->fine);       /* (the vibrato below; the track's LFO in m->pitch16 already) */
     {                                                   /* (JIANT 0.5) its RES the FILTER page's (or BYTE's, the more) */
         int32_t rs = 50;                                /* (0.5.4: BYTE's E5 is GRIT now, not a second RES) */
         if (p[P_FRES] > rs) rs = p[P_FRES];

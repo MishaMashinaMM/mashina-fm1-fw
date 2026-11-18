@@ -151,7 +151,7 @@ static void noise_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     }
     if (mode == NZ_LFSR) {
         uint32_t mask = taps;                         /* the register's own bits (MODE / LEN changes) */
-        inc = noise_inc(m->pitch16 + p[P_E7] * 16 + d16);
+        inc = fine_pitch_inc(noise_inc(m->pitch16 + p[P_E7] * 16 + d16), m->fine);
         mask |= mask >> 1;
         mask |= mask >> 2;
         mask |= mask >> 4;
@@ -161,7 +161,7 @@ static void noise_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
             reg = (uint32_t)rng | 1u;
         reg &= mask;
     } else if (mode == NZ_META) {
-        inc = p[P_E7] || d16 ? noise_inc(m->pitch16 + p[P_E7] * 16 + d16) : m->inc;
+        inc = p[P_E7] || d16 ? fine_pitch_inc(noise_inc(m->pitch16 + p[P_E7] * 16 + d16), m->fine) : m->inc;
     }
     for (i = 0; i < n; i++) {
         int32_t w, x, v1, v2, v3, y;

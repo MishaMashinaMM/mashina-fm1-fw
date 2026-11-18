@@ -27,6 +27,39 @@ int main(void)
         bad += check("ZONES is immediately after MIXER",
                      !ui.home && ui.page == zones_page);
     }
+    {
+        uint32_t tune_page = NPAGES;
+        for (uint32_t i = 0; i < NPAGES; i++)
+            if (str_eq(PAGES[i].title, "TUNING")) tune_page = i;
+        bad += check("TUNING is a six-row GLO page", tune_page < NPAGES &&
+                     page_visible(tune_page) && PAGES[tune_page].scope == SC_TRK);
+        bad += check("TUNING is third GLO page", tune_page == nv_page(SEC_GLO, 2u));
+        nav_go(SEC_GLO, 2u, 0);
+        song.sel = 0;
+        midi_transpose[0] = 35;
+        midi_fine[0] = 49;
+        turn(EN_K1, 1); turn(EN_K2, 1); frame();
+        bad += check("TUNING K1 and K2 reach +36 semitones, +50 cents",
+                     midi_transpose[0] == 36 && midi_fine[0] == 50);
+        turn(EN_K3, 1); turn(EN_K4, 1); frame();
+        bad += check("TUNING K3/K4 are reserved", midi_transpose[0] == 36 && midi_fine[0] == 50);
+        midi_transpose[0] = -35; midi_fine[0] = -49;
+        turn(EN_K1, -1); turn(EN_K2, -1); frame();
+        bad += check("TUNING K1/K2 reach -36 and -50",
+                     midi_transpose[0] == -36 && midi_fine[0] == -50);
+        nav_go(SEC_GLO, 0u, 0);
+        turn(EN_K4, 12); frame();
+        bad += check("MIXER K4 no longer edits TRN", midi_transpose[0] == -36);
+        nav_go(SEC_GLO, 1u, 0);
+        midi_transpose[4] = 21; midi_fine[4] = 8;
+        project_capture(&proj_scratch);
+        midi_transpose[0] = midi_transpose[4] = 0;
+        midi_fine[0] = midi_fine[4] = 0;
+        project_restore_runtime(&proj_scratch);
+        bad += check("project restore applies TRN and FINE",
+                     midi_transpose[0] == -36 && midi_fine[0] == -50 &&
+                     midi_transpose[4] == 21 && midi_fine[4] == 8);
+    }
     for (uint32_t i = 0; i < NTRK; i++)
         bad += check("every track defaults to full note/velocity range",
                      midi_zone[i][0] == 0 && midi_zone[i][1] == 127 &&
@@ -55,6 +88,9 @@ int main(void)
                  midi_zone[0][0] == 60 && midi_zone[0][2] == 100 &&
                  midi_zone[4][0] == 20 && midi_zone[5][3] == 90);
     system_init();
+    bad += check("NEW PROJECT resets per-track TRN and FINE",
+                 midi_transpose[0] == 0 && midi_fine[0] == 0 &&
+                 midi_transpose[4] == 0 && midi_fine[4] == 0);
     bad += check("NEW PROJECT resets all six zones", midi_zone[0][0] == 0 &&
                  midi_zone[0][1] == 127 && midi_zone[0][2] == 1 &&
                  midi_zone[0][3] == 127 && midi_zone[4][0] == 0 &&
