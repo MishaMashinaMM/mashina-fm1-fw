@@ -64,15 +64,15 @@ int main(int argc, char **argv)
         assert(palette_from_stored(v) == (v < 20u ? migrated[v] : v >= 64u && v <= 74u ? v - 64u : 0u));
     }
     assert(sizeof(UI_JIANT_COLORS) == 5u * sizeof(uint16_t));
-    assert(UI_JIANT_COLORS.bg == 0x0000 && UI_JIANT_COLORS.surf == 0x0841 &&
-           UI_JIANT_COLORS.text == 0xf79d && UI_JIANT_COLORS.theme == 0xbb9f && UI_JIANT_COLORS.accent == 0xfbc0);
-    static const uint16_t knobs[4] = {0x8b7f, 0xfe87, 0x5bbf, 0xfa49};
-    assert(!memcmp(knobs, UI_JIANT_KNOBS, sizeof knobs) && UI_JIANT_RAISE_PCT == 4);
+    assert(UI_JIANT_COLORS.bg == 0x0000 && UI_JIANT_COLORS.surf == 0x3186 &&
+           UI_JIANT_COLORS.text == 0xffff && UI_JIANT_COLORS.theme == 0xbdd7 && UI_JIANT_COLORS.accent == 0xffff);
+    static const uint16_t knobs[4] = {0xffff, 0xffff, 0xffff, 0xffff};
+    assert(!memcmp(knobs, UI_JIANT_KNOBS, sizeof knobs) && UI_JIANT_RAISE_PCT == 0);
     ux.style = ST_FLAT;
     for (unsigned p = 0; p < NPALETTES; p++) {
         uint16_t *tok = &ux.bg;
         palette_set(p);
-        assert(!ux.mono && !ux.light && ux.chamfer && T_BG == 0 && T_TEXT == 0xf79d && T_THEME == 0xbb9f);
+        assert(!ux.mono && !ux.light && ux.chamfer && T_BG == 0 && T_TEXT == 0xffff && T_THEME == 0xbdd7);
         /* text and the things read on the screen; the generator checks the same (tools/gen_ui_palettes.py) */
         struct { uint16_t fg, bg; double min; } c[] = {
             {T_TEXT, T_BG, 12.0}, {T_TEXT, T_SURF, 9.0}, {T_MID, T_BG, 5.0}, {T_MID, T_SURF, 4.0},
@@ -91,7 +91,9 @@ int main(int argc, char **argv)
         printf("%-7s text %.1f:1, labels %.1f:1, values %.1f:1, selection %.1f:1\n", UI_PALETTES[p].name,
                contrast(T_TEXT, T_BG), contrast(T_MID, T_BG), contrast(T_THEME, T_BG), contrast(T_INK, T_SEL));
         assert(!ux.light);                         /* PAPER is the light one */
-        assert(T_REC == 0xfa49);
+        assert(T_REC == 0xffff && T_SEL == 0xffff && T_K(0) == 0xffff);
+        /* Only neutral channel values may be emitted by the permanent Jiant palette. */
+        for (unsigned i = 0; i < 16; i++) assert(gray(tok[i]));
         /* the blend: transparent, solid and an edge between the two, on two backgrounds */
         for (unsigned b = 0; b < 2; b++) {
             uint16_t under = b ? T_SEL : T_BG, ink = b ? T_INK : T_THEME;
