@@ -28,6 +28,8 @@ Its identity (FM-1_9xx) is read from the package; the device must report it afte
 the install.
 """
 import json
+import hashlib
+import os
 import re
 import shutil
 import sys
@@ -127,10 +129,14 @@ def main(pkg, version, out, prev=None):
     # This fork publishes only its own Drums build, never an upstream edition
     # or an older firmware selected from an unrelated site.
     selected = versions[0]
+    release_hash = hashlib.sha256(raw).hexdigest()[:12]
+    source_commit = os.getenv("GITHUB_SHA", "")[:12] or "local"
+    release_tag = f"{source_commit}-{release_hash}"
     meta = json.dumps({"version": selected["version"], "product": selected["product"],
-                       "pkg": "../../firmware/" + selected["file"],
+                       "pkg": "../../firmware/" + selected["file"] + "?release=" + release_hash,
+                       "source_commit": source_commit, "release_hash": release_hash,
                        "channel": "preview" if version.endswith("-preview") else "public",
-                       "versions": [{"version": e["version"], "pkg": "../../firmware/" + e["file"], "product": e["product"],
+                       "versions": [{"version": e["version"], "pkg": "../../firmware/" + e["file"] + "?release=" + (release_hash if e == selected else "historic"), "product": e["product"],
                                      "edition": e.get("edition", ""), "status": e.get("status", "")}
                                     for e in versions]})
     for mark in ("/*LIB*/", "/*META*/"):
@@ -143,11 +149,17 @@ def main(pkg, version, out, prev=None):
     for f in fw.glob("felucca-*.fwsc"):            # the current package and the earlier ones kept, nothing else
         f.unlink()
     brand = (HERE / "jiant-ui.css").read_text(encoding="utf-8")
-    (inst / "index.html").write_text(html.replace("/*JIANT_UI*/", brand), encoding="utf-8")
+    installer_html = html.replace("/*JIANT_UI*/", brand).replace("/*BUILD_TAG*/", release_tag)
+    (inst / "index.html").write_text(installer_html, encoding="utf-8")
+    # New permanent URL gives browsers a fresh document even when the older installer URL was cached.
+    fresh = out / "webapp" / "installer-orange-v09"
+    fresh.mkdir(parents=True, exist_ok=True)
+    (fresh / "index.html").write_text(installer_html, encoding="utf-8")
     shutil.copy(pkg, fw / name)
     for e, src in old:
         shutil.copy(src, fw / e["file"])
     (fw / "versions.json").write_text(json.dumps(versions, indent=1) + "\n", encoding="utf-8")
+    (fw / "RELEASE_SHA256").write_text(hashlib.sha256(raw).hexdigest() + "\n", encoding="utf-8")
     lic = HERE.parent / "LICENSES"                  # the package holds JieLi SDK files (Apache-2.0): their
     (fw / "LICENSES").mkdir(exist_ok=True)          # licence travels next to it, with Felucca's own
     names = sorted(f.name for f in lic.glob("*.txt"))
