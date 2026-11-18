@@ -5665,6 +5665,23 @@ static uint32_t mx_pixel_hash(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
             h = (h ^ host_screen[y * 240 + x]) * 16777619u;
     return h;
 }
+/* Orange-accent experiment: editable values, but not the gray gauge colors. */
+static int test_orange_values(void)
+{
+    int ok;
+    ui_power_on(); frame();
+    ok = T_VALUE == RGB(255, 153, 0) && value_col(T_THEME, 500) == T_VALUE &&
+         value_col(T_DIM, 500) == T_DIM && T_ACCENT != T_VALUE;
+    go_title("ENV"); ui.force = 1; frame();
+    ok &= mx_colour_count(0, 40, 240, 220, T_VALUE) > 0;
+    go_page(GR_TRK); ui.force = 1; frame();
+    ok &= mx_colour_count(100, 78, 205, 196, T_VALUE) > 0;
+    draw_splash();
+    ok &= mx_colour_count(0, 40, 240, 120, T_VALUE) > 0;
+    ui_power_on();
+    return check("orange values, grayscale controls, mixer values and startup title", ok);
+}
+
 static int test_mixer_highlight(void)
 {
     uint32_t selected, k, c;
@@ -13750,6 +13767,9 @@ int main(void)
 #endif
 #ifdef UI_TEST_HUD_AIR_ONLY
     return test_skin() ? 1 : 0;
+#endif
+#ifdef UI_TEST_ORANGE_VALUES_ONLY
+    return test_orange_values() ? 1 : 0;
 #endif
 #ifdef UI_TEST_HOME_FROM_GLO_ONLY
     return test_home_from_glo() ? 1 : 0;
