@@ -125,6 +125,33 @@ int main(void)
     send_rx(0x80, 60, 0, 1); assert(!gate_rx(0, 72));
     send_rx(0x90, 59, 120, 1); assert(!mn_get(0, 59));
     puts("RX: independent note/velocity zones, shared-channel splits, overlaps, transpose and held-note releases passed");
+    /* TUNING: extended ±36 semitones, out-of-MIDI-range suppression, and
+     * fractional FINE never change MIDI Note Off ownership. */
+    reset_rx();
+    midi_transpose[0] = -36;
+    send_rx(0x90, 36, 100, 1);
+    assert(mn_get(0, 36) == 1u && gate_rx(0, 0));
+    send_rx(0x80, 36, 0, 1);
+    assert(!mn_get(0, 36) && !gate_rx(0, 0));
+    send_rx(0x90, 35, 100, 1);
+    assert(!mn_get(0, 35));
+    midi_transpose[0] = 36;
+    send_rx(0x90, 91, 100, 1);
+    assert(mn_get(0, 91) == 1u && gate_rx(0, 127));
+    send_rx(0x80, 91, 0, 1);
+    assert(!mn_get(0, 91) && !gate_rx(0, 127));
+    send_rx(0x90, 92, 100, 1);
+    assert(!mn_get(0, 92));
+    reset_rx();
+    midi_rx[1] = 1u;
+    midi_fine[0] = -50; midi_fine[1] = 50;
+    send_rx(0x90, 60, 100, 1);
+    assert(mn_get(0, 60) == 3u && gate_rx(0, 60) && gate_rx(1, 60));
+    midi_fine[0] = 50; midi_fine[1] = -50;
+    send_rx(0x80, 60, 0, 1);
+    assert(!mn_get(0, 60) && !gate_rx(0, 60) && !gate_rx(1, 60));
+    puts("RX: ±36 semitone MIDI boundaries and fractional FINE note ownership passed");
+
 
     reset_rx();
     for (uint32_t ch = 1; ch <= 16; ch++) {
