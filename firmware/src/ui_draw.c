@@ -2103,8 +2103,8 @@ static void ui_draw(void)
         return;
     if (panic_mode_screen) {
         /* Deliberately bypass the theme: full black, white lettering, no previous page. */
-        cv_begin(240, 240, 0x0000);
-        cv_text(48, 126, &AF_L, "PANIC MODE", 0xFFFF);
+        lcd_fill(0, 0, 240, 240, 0x0000);
+        draw_text_line(0, 110, 240, &AF_L, "PANIC MODE", 0xFFFF, 0x0000, 1);
         scr_shown();
         return;
     }
