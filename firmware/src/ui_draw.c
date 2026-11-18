@@ -2243,6 +2243,20 @@ static void draw_cc_macros(void)
 }
 #endif
 
+/* MIDI ownership indicator: solid #FF9900 while held; otherwise a
+ * thin, subdued gray ring with a black center, including selected rows. */
+static void mixer_midi_activity_dot(int32_t cx, int32_t cy, uint32_t active)
+{
+    int32_t x, y;
+    for (y = -5; y <= 5; y++)
+        for (x = -5; x <= 5; x++) {
+            int32_t r2 = x * x + y * y;
+            if (r2 <= 25)
+                cv_pset(cx + x, cy + y, active ? T_VALUE :
+                        r2 >= 17 ? RGB(70, 70, 70) : RGB(0, 0, 0));
+        }
+}
+
 static void draw_mixer_table(void)
 {
     const int zones = str_eq(cur_page()->title, "ZONES");
@@ -2266,6 +2280,7 @@ static void draw_mixer_table(void)
         cv_text(101, CAP_IN(S, 14), &AF_S, (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? "LIVE" : "MIDI", (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? T_ACCENT : T_TEXT);
         cv_text(132, CAP_IN(S, 14), &AF_S, "VOL", T_TEXT);
         cv_text(168, CAP_IN(S, 14), &AF_S, "PAN", T_TEXT);
+        cv_text(209, CAP_IN(S, 14), &AF_S, "ACT", T_TEXT);
         }
     }
     for (uint32_t i = 0; i < 6u; i++) {
@@ -2360,6 +2375,9 @@ static void draw_mixer_table(void)
             if ((mm[P_PAN / 32u] >> (P_PAN % 32u)) & 1u)
                 cv_rect(196, ry + 1, 2, 2, selected ? T_INK : T_ACCENT);
         }
+        /* Track activity follows existing MIDI ownership and FM1 keybed routing.
+         * Draw within the unused former TRN column. */
+        mixer_midi_activity_dot(221, ry + 12, midi_track_held(i) && i < trk_live);
         } /* MIXER cells */
     }
     cv_blit_from(0, 160, 14);             /* canvas y14..37 -> screen y174..197 */
