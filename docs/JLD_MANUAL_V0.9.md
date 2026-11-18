@@ -4,7 +4,13 @@ This is the **JIANT LIVE DRUMS (JLD) v0.9** user manual for the M-VAVE FM1, cove
 
 > **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/jiant-live-drums/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
 
-> **Safety and testing:** Back up projects, presets and sound banks before changing firmware. **v0.9 was flashed and tested successfully on a physical FM1 with a Korg X5D MIDI keyboard on November 18, 2026.** The final v0.9 firmware preserves the tested feature implementation. Device validation is functional, not an exhaustive long-duration/recovery guarantee.
+> **v0.9 orange UI — FM1 device-tested (November 18, 2026):** The updated black/white/gray/orange interface was successfully flashed to an FM1, and the owner reported everything working correctly. Earlier on the same date, the v0.9 MIDI Zones/TUNING feature build was tested with a Korg X5D. Firmware identity remains `FM-1_909`. Physical validation confirms the installation and tested functions, not an exhaustive endurance/recovery guarantee. Back up projects and presets before firmware changes.
+
+## Visual language — v0.9 orange-accent UI (FM1 device-tested)
+
+The performance-oriented UI uses a **black background, white primary text and neutral gray labels/panels** with a single **orange `#FF9900` accent**. Numbers and other editable knob values are orange. Page titles, breadcrumbs and the JIANT LIVE DRUMS boot wordmark are orange; value gauges still use a gray-to-white intensity scale. A **selected MIXER/ZONES/TUNING row is solid white with black text** for high contrast. In **SAVE → PROJECT → SECTIONS** and **SAVE → LIBRARY → PROJECTS**, **occupied slots/section chips are orange, empty slots gray** and the selected project retains a white border. Animations remain disabled.
+
+**Navigation fix:** pressing HOME while viewing GLO now redraws HOME instead of leaving the GLO mixer over it. Knobs continue to edit HOME parameters. The UI change does not alter the audio engine, project format, MIDI routing, or any menu/knob mapping. This is an **emulator-verified change awaiting physical display testing**.
 
 ## 1. Physical controls and navigation
 

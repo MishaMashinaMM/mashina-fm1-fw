@@ -5665,6 +5665,23 @@ static uint32_t mx_pixel_hash(int32_t x0, int32_t y0, int32_t x1, int32_t y1)
             h = (h ^ host_screen[y * 240 + x]) * 16777619u;
     return h;
 }
+/* Orange-accent experiment: editable values, but not the gray gauge colors. */
+static int test_orange_values(void)
+{
+    int ok;
+    ui_power_on(); frame();
+    ok = T_VALUE == RGB(255, 153, 0) && value_col(T_THEME, 500) == T_VALUE &&
+         value_col(T_DIM, 500) == T_DIM && T_ACCENT != T_VALUE;
+    go_title("ENV"); ui.force = 1; frame();
+    ok &= mx_colour_count(0, 40, 240, 220, T_VALUE) > 0;
+    go_page(GR_TRK); ui.force = 1; frame();
+    ok &= mx_colour_count(100, 78, 205, 196, T_VALUE) > 0;
+    draw_splash();
+    ok &= mx_colour_count(0, 40, 240, 120, T_VALUE) > 0;
+    ui_power_on();
+    return check("orange values, grayscale controls, mixer values and startup title", ok);
+}
+
 static int test_mixer_highlight(void)
 {
     uint32_t selected, k, c;
@@ -12285,6 +12302,30 @@ static int test_lz_glo(void)
     return bad;
 }
 
+/* Regression independent of the older five-page GLO fixture: the current v0.9
+ * has MIXER, SENDS, EQ, ZONES, TUNING, GLOBAL and SYSTEM. */
+static int test_home_from_glo(void)
+{
+    uint32_t mixer_home, edit_home;
+    int ok;
+    ui_power_on(); frame();
+    press(B_GLO); frame();
+    ok = !ui.home && str_eq(cur_page()->title, "MIXER");
+    press(B_HOME); frames(160);
+    ok &= ui.home && !ui.menu && !ui.layer;
+    /* HOME must not depend on the last page remembered in ui.page. */
+    ui.force = 1; ui_draw_page(0);
+    mixer_home = mx_pixel_hash(4, 48, 236, 190);
+    ui.page = (uint8_t)page_first(FAM_EDIT);
+    ui.force = 1; ui_draw_page(0);
+    edit_home = mx_pixel_hash(4, 48, 236, 190);
+    ok &= mixer_home == edit_home;
+    if (!ok) printf("  GLO->HOME stale page: remembered MIXER %08x, EDIT %08x, home %u\\n",
+                    mixer_home, edit_home, ui.home);
+    ui_power_on();
+    return check("GLO -> HOME draws the HOME body, not the remembered mixer", ok);
+}
+
 /* a held layer (ui_layer.c) as a lens: MAP . KNOBS . STATE by ALGORITHM while it is held (no wrap; the track stays),
  * the tabs and the breadcrumb; SELECT still the layer's combos (GLO: the tempo) */
 static int test_lz_layer(void)
@@ -13636,21 +13677,23 @@ static int test_engine_order_099(void)
     return bad;
 }
 
-/* Canonical section colors: independent RGB565 expectations and actual chip pixels. */
+/* SAVE accent regression: occupied orange / empty gray, with distinct selection frames. */
 static int test_section_colors(void)
 {
-    static const uint16_t expected[4] = {0x3955u, 0xFA09u, 0xFDEBu, 0xFF99u};
     uint8_t saved_gp[sizeof gp];
     uint32_t s, selected, ar, form, genre;
     int ok = 1;
     memcpy(saved_gp, &gp, sizeof gp);
     ui_power_on(); settings.palette = UI_JIANT_INDEX; palette_set(UI_JIANT_INDEX); frame();
     for (s = 0; s < 16u; s++) {
-        uint16_t c = expected[s & 3u];
-        ok &= sec_col(s) == c && lz_sec(s, 1, 0) == c && lz_sec(s, 1, 1) == ux_mix(T_BG, c, 50);
-        ok &= lz_sec(s, 0, 0) == T_BG && lz_sec(s, 0, -1) == ux_mix(T_BG, T_RAISE, 50);
+        ok &= lz_sec(s, 1, 0) == T_VALUE && lz_sec(s, 1, 1) == T_VALUE;
+        ok &= lz_sec(s, 0, 0) == T_RAISE && lz_sec(s, 0, -1) == T_RAISE;
     }
     song.playing = 0;
+    /* Empty sections are visibly gray, not black; their frames remain distinct. */
+    cv_begin(240, 140, T_SURF); graph_proj(0);
+    for (s = 0; s < 4u; s++)
+        { uint16_t got = swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]); if (got != T_RAISE) printf("EMPTY section %u expected %04x got %04x used %d\n",s,T_RAISE,got,graph_project_used(s)); ok &= got == T_RAISE; }
     for (s = 0; s < 4u; s++) ok &= project_save(s) == 0;
     fm1_ms += 501u; ui.frame++; ui.force = 1;
     for (s = 0; s < 4u; s++) ok &= graph_project_used(s) != 0;
@@ -13662,10 +13705,10 @@ static int test_section_colors(void)
         for (ar = 0; ar < 2u; ar++) {
             cv_begin(240, 140, T_SURF); graph_proj((int)ar);
             for (s = 0; s < 4u; s++) {
-                uint16_t top = !ar && s == selected ? expected[s] : ux_mix(T_BG, expected[s], 50);
-                uint16_t row = ar && s == selected ? expected[s] : ux_mix(T_BG, expected[s], 50);
-                ok &= swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]) == top;
-                ok &= swap16(cv_px[73u * 240u + 5u + s * 293u / 10u]) == row;
+                uint16_t top = T_VALUE;
+                uint16_t row = T_VALUE;
+                { uint16_t got = swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]); if (got != top) printf("SECTION top %u sel %u ar %u expected %04x got %04x\n",s,selected,ar,top,got); ok &= got == top; }
+                { uint16_t got = swap16(cv_px[73u * 240u + 5u + s * 293u / 10u]); if (got != row) printf("ARRANGE %u sel %u ar %u expected %04x got %04x\n",s,selected,ar,row,got); ok &= got == row; }
             }
         }
     }
@@ -13673,7 +13716,15 @@ static int test_section_colors(void)
     for (s = 0; s < 4u; s++) {
         uint32_t x = (uint32_t)LZ_TX(song_cur % 4u) + 5u + (s % 2u) * 25u;
         uint32_t y = (song_cur / 4u) * 70u + 29u + (s / 2u) * 18u;
-        ok &= swap16(cv_px[y * 240u + x]) == expected[s];
+        { uint16_t got = swap16(cv_px[y * 240u + x]); if (got != T_VALUE) printf("LIB CHIP %u expected %04x got %04x\n",s,T_VALUE,got); ok &= got == T_VALUE; }
+    }
+    /* Library: project occupancy frames are orange/gray except current white. */
+    for (s = 0; s < NSONG; s++) {
+        int32_t x = LZ_TX(s % 4u), y = (int32_t)(s / 4u) * 70;
+        int occupied = s == song_cur ? (graph_project_used(0) || graph_project_used(1) ||
+                                       graph_project_used(2) || graph_project_used(3)) : lib.mask[s] != 0u;
+        uint16_t border = s == song_cur ? T_TEXT : occupied ? T_VALUE : T_MID;
+        { uint16_t got = swap16(cv_px[(y + 1) * 240u + x]); if (got != border) printf("LIB BORDER %u expected %04x got %04x occupied %d\n",s,border,got,occupied); ok &= got == border; }
     }
     for (genre = 0; genre <= NGENRE; genre++)
         for (form = 0; form < 3u; form++) {
@@ -13686,11 +13737,11 @@ static int test_section_colors(void)
             width = 228 / (int32_t)n;
             cv_begin(240, 140, T_SURF); gen_panel();
             for (s = 0; s < n; s++)
-                ok &= swap16(cv_px[103u * 240u + 7u + s * (uint32_t)width]) == expected[ord[s] & 3u];
+                { uint16_t got = swap16(cv_px[103u * 240u + 7u + s * (uint32_t)width]); if (got != sec_col(ord[s] & 3u)) printf("GEN g%u f%u s%u expected %04x got %04x\n",genre,form,s,sec_col(ord[s] & 3u),got); ok &= got == sec_col(ord[s] & 3u); }
         }
     memcpy(&gp, saved_gp, sizeof gp);
     ui_power_on(); frame();
-    return check("JIANT sections: exact A-D colors, full/half/empty chips, project/arrangement/library pixels and GEN previews", ok);
+    return check("SAVE: filled orange, empty gray, project/arrangement/library chips; GEN unchanged", ok);
 }
 
 #ifndef UI_TEST_CUSTOM_MAIN
@@ -13726,6 +13777,15 @@ int main(void)
 #endif
 #ifdef UI_TEST_HUD_AIR_ONLY
     return test_skin() ? 1 : 0;
+#endif
+#ifdef UI_TEST_SAVE_COLORS_ONLY
+    return test_section_colors() ? 1 : 0;
+#endif
+#ifdef UI_TEST_ORANGE_VALUES_ONLY
+    return test_orange_values() ? 1 : 0;
+#endif
+#ifdef UI_TEST_HOME_FROM_GLO_ONLY
+    return test_home_from_glo() ? 1 : 0;
 #endif
 #ifdef UI_TEST_GLO_NAV_ONLY
     return test_lz_glo() ? 1 : 0;

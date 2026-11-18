@@ -138,7 +138,8 @@ static int skin_hud(void) { return ux.skin == SKIN_HUD || ux.skin == SKIN_AIR; }
 #define T_BG ux.bg               /* background */
 #define T_SURF ux.surf           /* dialogs, menu rows, mixer strips */
 #define T_TEXT ux.text           /* primary text */
-#define T_THEME ux.theme         /* values, curves, the gauge's end line */
+#define T_THEME ux.theme         /* grayscale graph and gauge theme */
+#define T_VALUE RGB(255, 153, 0)  /* orange #FF9900 for editable values */
 #define T_ACCENT ux.accent       /* the one active thing: hot knob, cursor, playhead */
 #define T_MID ux.mid             /* labels, units, secondary text */
 #define T_DIM ux.dim             /* inactive, empty */
@@ -181,15 +182,15 @@ static void palette_set(uint32_t i)
     ux.mid = ux_mix(p->bg, p->text, UI_MID_PCT);
     ux.dim = ux_mix(p->bg, p->text, UI_DIM_PCT);
     ux.line = ux_mix(p->bg, p->text, UI_LINE_PCT);
-    ux.sel = ux_mix(p->bg, p->theme, UI_SEL_PCT);
-    ux.tint = ux_mix(p->bg, p->theme, UI_TINT_PCT);
+    ux.sel = p->accent;            /* white highlight / black ink for high-contrast selection */
+    ux.tint = ux.surf;             /* use the dark gray surface rather than extra gray tokens */
     ux.ink = p->bg;
     ux.raise = ux_mix(p->surf, p->text, UI_JIANT_RAISE_PCT);
     for (k = 0; k < 4u; k++)
         ux.k[k] = UI_JIANT_KNOBS[k];
     ux.key = ux_mix(p->bg, p->text, UI_KEY_PCT);
-    ux.lane = ux_mix(ux.surf, p->theme, 10);
-    ux.grid = ux_mix(ux.surf, p->text, 6);
+    ux.lane = ux.surf;
+    ux.grid = ux.surf;
     ux.light = 0;
     ux.rec = UI_REC_DARK;
     ux.gen++;                                    /* the text ramps change with the coverage curve */
