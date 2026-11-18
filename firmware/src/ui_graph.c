@@ -922,19 +922,12 @@ static void page_title(char *ti)
     }
 }
 /* the strip's title: L centred (M when L lacks a glyph or is too wide) */
-/* the thermal ramp (JIANT): a value 0..256 as heat, as a thermal camera sees it: cyan (cold) .. blue .. violet .. red
- * .. orange .. yellow .. white (other palettes: their surface toward their accent and text) */
+/* Monochrome intensity ramp (JIANT): dark grey at zero, white at full strength.
+ * RGB565 interpolation remains smooth but every pixel is achromatic. */
 static uint16_t heat_col(int32_t v)
 {
-    static const uint16_t H[7] = {0x3955u, 0x82DFu, 0xFA09u, 0xFBA3u, 0xFDEBu, 0xFF99u, 0xFFFFu};   /* (0.8.9, the skins' mock-up: the 0.6's
-                                                         * ramp, indigo violet red orange amber cream white; was cyan blue violet
-                                                         * red orange yellow white) */
-    int32_t k;
     v = clamp(v, 0, 256);
-    if (settings.palette != UI_JIANT_INDEX)
-        return v < 128 ? ux_mix(T_SURF, T_ACCENT, v * 100 / 128) : ux_mix(T_ACCENT, T_TEXT, (v - 128) * 100 / 128);
-    k = v * 6 / 257;
-    return ux_mix(H[k], H[k + 1], (v * 6 - k * 256) * 100 / 256);
+    return ux_mix(ux_gray(4), T_TEXT, v * 100 / 256);
 }
 
 /* DRUM (DRUM-X): the eight sounds as columns, each as high and as hot as its hit now (a muted one crossed); the MORPH
