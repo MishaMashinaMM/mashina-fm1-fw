@@ -82,15 +82,15 @@ For either engine, press **EDIT** and navigate through **EDIT 1 → EDIT 2 → E
 
 **Physical testing (November 17, 2026):** v0.7 was tested on the FM1 with **three melodic tracks receiving the same MIDI channel**, EQ enabled, and chords and melodies together. The owner reported very good performance. Automated tests also covered high control settings, rapid retriggers, the four-voice cap and BRASS/INDUSTRIAL/DRUM-LAB project serialization. Physical testing does not constitute exhaustive worst-case CPU qualification.
 
-### Per-track MIDI transpose and the new GLO opening page (v0.6 — device-tested)
+### GLO MIXER and per-track MIDI transpose (MIXER introduced in v0.6; TUNING updated in v0.9)
 
-Open **GLO → MIX → MIXER**. The MIXER is now the first GLO page whenever you enter GLO from elsewhere, even after visiting GLOBAL or SYSTEM. The old **LIVE → MANO** and **LIVE → RIELES** GLO pages are removed from navigation, but their underlying project data is preserved. The remaining page chain is **MIXER → SENDS → EQ → GLOBAL → SYSTEM**.
+Open **GLO → MIX → MIXER**. The MIXER is now the first GLO page whenever you enter GLO from elsewhere, even after visiting GLOBAL or SYSTEM. The old **LIVE → MANO** and **LIVE → RIELES** GLO pages are removed from navigation, but their underlying project data is preserved. The current page chain is **MIXER → ZONES → TUNING → SENDS → EQ → GLOBAL → SYSTEM**.
 
 In the six-row MIXER, select a track with **ALGORITHM** and use **K1** to set its MIDI RX channel, **K2** for level and **K3** for pan; **K4 is unused**. Transpose is now on **TUNING K1**, with **−36…+36 semitones**, independently of the other tracks. Transpose affects both incoming USB/TRS MIDI and the FM1's own keyboard (including the browser emulator keyboard); **DRUM-X and DRUM-LAB pad mappings are unchanged**. The **PRESETS rotary** becomes the master DJ Filter control on this MIXER screen only; its ordinary preset browsing is unchanged elsewhere.
 
-Each project's six transpose values are stored and restored with that project. Loading a legacy project with no transpose data starts the tracks at zero transpose. For a held note, changing K4 affects **subsequent note-ons**, not the currently sounding pitch; note-off and sustain release still end the originally sounding note. Out-of-range transposed MIDI notes are ignored rather than wrapped. Layered tracks can share a MIDI channel and use different transpose values.
+Each project's six transpose values are stored and restored with that project. Loading a legacy project with no transpose data starts the tracks at zero transpose. For a held note, changing **TUNING K1** affects **subsequent note-ons**, not the currently sounding pitch; note-off and sustain release still end the originally sounding note. Out-of-range transposed MIDI notes are ignored rather than wrapped. Layered tracks can share a MIDI channel and use different transpose values.
 
-**Device verification:** v0.6 was tested on the browser emulator and successfully flashed and functionally checked on an FM1 on **November 16, 2026**, including the audible transpose behavior and updated GLO navigation. The firmware build passed flash layout, RAM budget, and automated regression checks. This does not substitute for exhaustive long-duration stress testing.
+**Device verification:** the original v0.6 transpose control was checked on an FM1 on **November 16, 2026**. Its updated v0.9 TUNING placement, expanded ±36 range and FINE parameter were subsequently tested with a Korg X5D on **November 18, 2026**. The firmware build passed flash layout, RAM budget, and automated regression checks. This does not substitute for exhaustive long-duration stress testing.
 
 ### Live MIDI channel selection (v0.5 — device-tested)
 
