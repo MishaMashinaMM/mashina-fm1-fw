@@ -2243,18 +2243,17 @@ static void draw_cc_macros(void)
 }
 #endif
 
-/* MIDI note ownership indicator: 11px circle, 2px gray ring when idle.
- * No audio probing, extra MIDI state, or animation timers. */
+/* MIDI ownership indicator: solid #FF9900 while held; otherwise a
+ * thin, subdued gray ring with a black center, including selected rows. */
 static void mixer_midi_activity_dot(int32_t cx, int32_t cy, uint32_t active)
 {
     int32_t x, y;
     for (y = -5; y <= 5; y++)
         for (x = -5; x <= 5; x++) {
             int32_t r2 = x * x + y * y;
-            if (r2 <= 25 && (active || r2 >= 9))
-                cv_pset(cx + x, cy + y, active ? T_ACCENT : T_MID);
-            else if (r2 < 9)
-                cv_pset(cx + x, cy + y, T_BG);
+            if (r2 <= 25)
+                cv_pset(cx + x, cy + y, active ? T_VALUE :
+                        r2 >= 17 ? RGB(70, 70, 70) : RGB(0, 0, 0));
         }
 }
 
