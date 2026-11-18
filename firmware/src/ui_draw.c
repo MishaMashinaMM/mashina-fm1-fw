@@ -2101,6 +2101,13 @@ static void ui_draw(void)
     }
     if (!scr_frame())                                   /* MENU > SCREEN OFF: dark (or waking), nothing drawn */
         return;
+    if (panic_mode_screen) {
+        /* Deliberately bypass the theme: full black, white lettering, no previous page. */
+        cv_begin(240, 240, 0x0000);
+        cv_text(48, 126, &AF_L, "PANIC MODE", 0xFFFF);
+        scr_shown();
+        return;
+    }
     ui_draw_page(counting);
     scr_shown();
 }
