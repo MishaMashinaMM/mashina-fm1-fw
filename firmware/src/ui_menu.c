@@ -231,7 +231,7 @@ static int32_t menu_document(int32_t y, int draw)
     if (ui.menu == 3)
         return prof_document(y, draw);
     if (draw) {
-        cv_text(6, y + 2, &AF_M, "JIANT LIVE DRUMS", T_THEME);
+        cv_text(6, y + 2, &AF_M, "JIANT LIVE DRUMS", T_VALUE);
         cv_text(6, y + 38, &AF_S, "FM1 DRUM PERFORMANCE FIRMWARE", T_TEXT);
         cv_text(6, y + 58, &AF_M, "v0.6", T_THEME);
         cv_text_r(232, y + 61, &AF_S, __DATE__, T_MID, T_BG);
@@ -417,7 +417,8 @@ static uint16_t menu_vcol(uint32_t c, uint32_t row)   /* a value's colour, as it
 {
     int32_t r = menu_ratio(row);
     uint16_t k = knob_col(c, r, 0);
-    return r < 0 ? T_MID : heat_on(r) ? ux_mix(k, T_TEXT, 20) : k;
+    (void)k;
+    return menu_valued(row) ? T_VALUE : T_MID;
 }
 static void menu_cards(void)
 {
