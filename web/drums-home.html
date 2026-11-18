@@ -7,43 +7,43 @@
 <title>JIANT LIVE DRUMS v0.9 — Firmware for M-VAVE FM1</title>
 <meta name="description" content="JIANT LIVE DRUMS v0.9 for M-VAVE FM1. Keyboard Zones and TUNING firmware with two 12-pad drum engines, six MIDI-routed tracks, per-track ±36-semitone transpose and ±50-cent fine tuning, live project recall, 32 CC macros, shared 3-band EQ and BRASS/INDUSTRIAL sound engines.">
 <meta property="og:title" content="JIANT LIVE DRUMS v0.9">
-<meta property="og:description" content="Device-tested M-VAVE FM1 firmware: per-track MIDI and keyboard transpose, DRUM-X, DRUM-LAB, live recall, 32 macros and global EQ.">
+<meta property="og:description" content="Earlier v0.9 features device-tested; new orange UI awaits FM1 validation: per-track MIDI and keyboard transpose, DRUM-X, DRUM-LAB, live recall, 32 macros and global EQ.">
 <style>
-  :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #0e0e10; color: #f1f1ed; }
+  :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #000000; color: #ffffff; }
   * { box-sizing: border-box; }
   body { max-width: 1000px; margin: 0 auto; padding: 2.7rem 1.5rem 3.5rem; }
   h1 { font-size: clamp(2.25rem, 6vw, 4.6rem); line-height: 1.08; letter-spacing: -.045em; margin: .25em 0; }
   h2 { font-size: 1.5rem; margin: 2.4rem 0 .6rem; }
   h3 { font-size: 1.08rem; margin: .1rem 0 .45rem; }
   p { max-width: 800px; margin: .65rem 0 1rem; }
-  .eyebrow { color: #b1b1b6; letter-spacing: .13em; font-size: .78rem; text-transform: uppercase; }
-  .intro { font-size: 1.15rem; color: #e3e3e5; }
-  .status { display: inline-block; margin: .7rem 0 1.2rem; color: #d1efd8; font-size: .95rem; }
+  .eyebrow { color: #b8b8b8; letter-spacing: .13em; font-size: .78rem; text-transform: uppercase; }
+  .intro { font-size: 1.15rem; color: #e0e0e0; }
+  .status { display: inline-block; margin: .7rem 0 1.2rem; color: #ff9900; font-size: .95rem; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
-  .card { border: 1px solid #45454b; padding: 1.15rem; border-radius: 8px; background: #19191c; }
+  .card { border: 1px solid #454545; padding: 1.15rem; border-radius: 8px; background: #181818; }
   .card a { font-size: 1.16rem; font-weight: 700; color: #fff; }
-  .card p { margin: .65rem 0 0; font-size: .94rem; color: #d3d3d6; }
-  a { color: #d3d3ff; }
-  a:focus-visible { outline: 2px solid #d3d3ff; outline-offset: 4px; }
+  .card p { margin: .65rem 0 0; font-size: .94rem; color: #b8b8b8; }
+  a { color: #ff9900; }
+  a:focus-visible { outline: 2px solid #ff9900; outline-offset: 4px; }
   .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1rem; }
-  .feature { border-top: 1px solid #45454b; padding: .85rem 0; }
-  .feature p { font-size: .96rem; color: #d3d3d6; margin: 0; }
-  .notice { margin: 2rem 0; padding: 1rem 1.1rem; border-left: 3px solid #e6b179; background: #29241f; }
+  .feature { border-top: 1px solid #454545; padding: .85rem 0; }
+  .feature p { font-size: .96rem; color: #b8b8b8; margin: 0; }
+  .notice { margin: 2rem 0; padding: 1rem 1.1rem; border-left: 3px solid #ff9900; background: #181818; }
   .notice p { margin: .4rem 0; }
-  footer { margin-top: 3rem; border-top: 1px solid #45454b; padding-top: 1rem; color: #c7c7ca; font-size: .9rem; }
+  footer { margin-top: 3rem; border-top: 1px solid #454545; padding-top: 1rem; color: #b8b8b8; font-size: .9rem; }
 </style>
 </head>
 <body>
 <header>
   <div class="eyebrow">M-VAVE FM1 · independent GPL-3.0-only firmware fork</div>
-  <h1>JIANT LIVE DRUMS v0.9</h1>
+  <h1>JIANT LIVE DRUMS <span style="color:#ff9900">v0.9</span></h1>
   <p class="intro">Live-performance firmware for the FM1 with per-track Keyboard Zones and ±50-cent FINE tuning, BRASS (morphing SAX–TRUMPET), INDUSTRIAL bass/lead sounds, two 12-pad drum engines, six MIDI-routed tracks and 32 CC macros.</p>
-  <p class="status"><strong>v0.9 tested successfully on an FM1 with a Korg X5D keyboard</strong> · MIDI note/velocity zones and six-track TUNING verified · firmware and emulator regression tests passed.</p>
+  <p class="status"><strong>New orange-accent UI candidate: awaiting physical FM1 test. Previous v0.9 feature firmware passed Korg X5D testing.</strong> · MIDI note/velocity zones and six-track TUNING verified · firmware and emulator regression tests passed.</p>
 </header>
 
 <nav class="cards" aria-label="JIANT LIVE DRUMS tools">
   <div class="card"><a href="emu/">Try the emulator</a><p>Play the current firmware in a browser, test MIDI controls and optionally import a JIANT backup into an isolated session.</p></div>
-  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the approved v0.9 using the dedicated browser-based FM1 updater. Back up projects before upgrading or downgrading and verify the displayed build version.</p></div>
+  <div class="card"><a href="webapp/installer/">FM1 installer</a><p>Install the previously device-tested v0.9 using the public browser updater. The new orange-accent UI has a separate branch-only test installer. Back up projects before upgrading or downgrading and verify the displayed build version.</p></div>
   <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1 to manage compatible sounds, settings and backups. Some newer Drums controls, including global EQ, are not yet exposed here.</p></div>
   <div class="card"><a href="manual/">Interactive manual</a><p>Inherited from original JIANT; useful for unchanged controls but not yet an exact reference for Drums' live pages.</p></div>
 </nav>
