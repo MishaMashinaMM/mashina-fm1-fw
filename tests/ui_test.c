@@ -12281,25 +12281,32 @@ static int test_lz_glo(void)
     ok &= str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
           lz_crumb_is("GLO \xB7 MIX \xB7 MIXER");
     bad += check("v0.6 GLO navigation: MIXER first, no LIVE, three groups, reopen resets MIXER", ok);
-    /* Regression: GLO's remembered GR_TRK must not paint a mixer over HOME.
-     * Compare the visible HOME body with the identical HOME state whose
-     * remembered page is EDIT. This catches the stale-page rendering branch. */
-    {
-        uint32_t mixer_home, edit_home;
-        press(B_HOME); frames(160);
-        ok = ui.home && !ui.menu && !ui.layer;
-        ui.force = 1; ui_draw_page(0);
-        mixer_home = mx_pixel_hash(4, 48, 236, 190);
-        ui.page = (uint8_t)page_first(FAM_EDIT);
-        ui.force = 1; ui_draw_page(0);
-        edit_home = mx_pixel_hash(4, 48, 236, 190);
-        ok &= mixer_home == edit_home;
-        if (!ok) printf("  GLO->HOME stale page: remembered MIXER %08x, EDIT %08x, home %u\\n",
-                        mixer_home, edit_home, ui.home);
-        bad += check("GLO -> HOME draws the HOME body, not the remembered mixer", ok);
-    }
     ui_power_on();
     return bad;
+}
+
+/* Regression independent of the older five-page GLO fixture: the current v0.9
+ * has MIXER, SENDS, EQ, ZONES, TUNING, GLOBAL and SYSTEM. */
+static int test_home_from_glo(void)
+{
+    uint32_t mixer_home, edit_home;
+    int ok;
+    ui_power_on(); frame();
+    press(B_GLO); frame();
+    ok = !ui.home && str_eq(cur_page()->title, "MIXER");
+    press(B_HOME); frames(160);
+    ok &= ui.home && !ui.menu && !ui.layer;
+    /* HOME must not depend on the last page remembered in ui.page. */
+    ui.force = 1; ui_draw_page(0);
+    mixer_home = mx_pixel_hash(4, 48, 236, 190);
+    ui.page = (uint8_t)page_first(FAM_EDIT);
+    ui.force = 1; ui_draw_page(0);
+    edit_home = mx_pixel_hash(4, 48, 236, 190);
+    ok &= mixer_home == edit_home;
+    if (!ok) printf("  GLO->HOME stale page: remembered MIXER %08x, EDIT %08x, home %u\\n",
+                    mixer_home, edit_home, ui.home);
+    ui_power_on();
+    return check("GLO -> HOME draws the HOME body, not the remembered mixer", ok);
 }
 
 /* a held layer (ui_layer.c) as a lens: MAP . KNOBS . STATE by ALGORITHM while it is held (no wrap; the track stays),
@@ -13743,6 +13750,9 @@ int main(void)
 #endif
 #ifdef UI_TEST_HUD_AIR_ONLY
     return test_skin() ? 1 : 0;
+#endif
+#ifdef UI_TEST_HOME_FROM_GLO_ONLY
+    return test_home_from_glo() ? 1 : 0;
 #endif
 #ifdef UI_TEST_GLO_NAV_ONLY
     return test_lz_glo() ? 1 : 0;
