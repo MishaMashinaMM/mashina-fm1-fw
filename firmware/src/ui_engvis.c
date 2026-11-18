@@ -108,7 +108,7 @@ static struct {
 /* DRUM-X's beings in the thermal ramp of the mock-up the kit was chosen from (cyan blue violet red orange yellow white:
  * the 0.6's, the JIANT palette); every other palette as the beings (bg_col) */
 static const uint8_t VK_HP[8] = {0, 26, 51, 82, 118, 154, 200, 255};
-static const uint16_t VK_HC[8] = {0x13D4u, 0x2DFCu, 0x4B5Fu, 0x8B7Fu, 0xFA49u, 0xFC43u, 0xFE87u, 0xFFFFu};
+static const uint16_t VK_HC[8] = {0x2104u, 0x4208u, 0x630Cu, 0x8410u, 0xAD55u, 0xCE79u, 0xEF7Du, 0xFFFFu};
 static uint16_t vx_col(int32_t h)
 {
     uint32_t k = 0;
