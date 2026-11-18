@@ -245,7 +245,7 @@ static uint16_t head_title(char *b)
         str_cpy(b, ui.menu == 2 ? "ABOUT / CREDITS" : ui.menu == 3 ? "ABOUT / PROFILE" : "MENU \xB7 ", 40);
         if (ui.menu == 1)
             str_cpy(b + str_len(b), MTAB_NAME[menu_tab()], 16);
-        return T_MID;
+        return T_VALUE;
     }
     b[0] = 'T';
     b[1] = (char)('1' + song.sel % NTRK);
@@ -262,7 +262,7 @@ static uint16_t head_title(char *b)
             project_cur_name(nm);
         str_cpy(b + str_len(b), " ", 2);
         str_cpy(b + str_len(b), nm[0] ? nm : "NO NAME", 16);
-        return T_MID;
+        return T_VALUE;
     }
     str_cpy(b + 2, " \xB7 ", 4);
     str_cpy(b + str_len(b), trk_engp(TSEL)->name, 12);
@@ -314,7 +314,7 @@ static int32_t head_group(void)
         x = cv_text(x, HEAD_SY, &AF_S, "OCT", hud_cap(T_MID)) + 4;
     }
     GFX_HOOK_ALIGN(0, 0, 0, HEAD_RULE_Y, AL_V, "header text on its middle");
-    cv_text(x, HEAD_SY, &AF_S, b, T_THEME);
+    cv_text(x, HEAD_SY, &AF_S, b, T_VALUE);
     return x0;
 }
 static void draw_head(void)
@@ -345,7 +345,7 @@ static void draw_head(void)
     if (!ui.force && sig == ui.head_sig) {
         if (ui.roll[ROLL_BPM].from[0]) {               /* rolling: the BPM's strip only (the rule under it again) */
             cv_begin((uint32_t)(g.sx1 - g.sx0), H_HEAD, T_BG);
-            roll_text(ROLL_BPM, g.bx - g.sx0, HEAD_BMY, b, ui.bpm_t ? T_ACCENT : T_THEME);
+            roll_text(ROLL_BPM, g.bx - g.sx0, HEAD_BMY, b, T_VALUE);
             if (!skin_hud())
                 cv_rect(0, HEAD_RULE_Y, g.sx1 - g.sx0, 1, T_LINE);
             cv_blit((uint32_t)g.sx0, Y_HEAD);
@@ -367,7 +367,7 @@ static void draw_head(void)
     head_transport();
     if (!ui.roll[ROLL_BPM].from[0])
         GFX_HOOK_ALIGN(0, 0, 0, HEAD_RULE_Y, AL_V, "header text on its middle");
-    roll_text(ROLL_BPM, g.bx, HEAD_BMY, b, ui.bpm_t ? T_ACCENT : T_THEME);
+    roll_text(ROLL_BPM, g.bx, HEAD_BMY, b, T_VALUE);
     lx = g.bx + g.b[2];                                /* the right end of the BPM's ink (and what follows it) */
     if (ui_prefs & PREF_BPM_LOCK) {                    /* BPM LOCK ON (#58): the lock right of the BPM */
         int32_t x = lx + HEAD_GAP;                     /* (0.8.5: drawn) a shackle over a body, 8 x 10 */
@@ -469,9 +469,8 @@ static uint16_t gauge_col(int32_t ratio)
 }
 static uint16_t value_col(uint16_t vc, int32_t ratio)
 {
-    if (vc != T_THEME)
-        return vc;
-    return T_TEXT; /* keep numerical values legible even when their gauges are near-black */
+    (void)ratio;
+    return vc == T_DIM ? T_DIM : T_VALUE; /* orange editable values, grayscale gauges */
 }
 static uint8_t card_free_next;                          /* (0.8.5) the next draw_column's value is a name: free text */
 static uint8_t card_arm_next;                           /* (0.8.5) the next draw_column is an action armed (OCT+ does it):
@@ -666,11 +665,11 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
     if (lz_on() && kind != LK_TALL) {
         if (kid < 0 && (vc == T_THEME || vc == T_ACCENT)) {
             gk = knob_col(c, ratio, card_bip);          /* (the gauge's, the frame's) */
-            vc = T_TEXT; /* grayscale intensity belongs on gauges, not low-contrast digits */
+            vc = T_VALUE; /* intensity remains on the grayscale gauge */
         }
         lc = arm || mot ? T_THEME : T_TEXT;
     }
-    if (!gk)
+    if (kid < 0 && !arm && val[0])
         vc = value_col(vc, ratio);
     fmt_named = 0;                                      /* (params.c: a name, for this card only) */
     card_mot_next = 0;                                  /* (the same: MOTION, this card only) */
@@ -1040,7 +1039,7 @@ static __attribute__((noinline)) void draw_crumbs(int32_t y, uint16_t fg, uint16
     else
         GFX_HOOK_ALIGN(0, y + AF_S_CAP_Y, 0, y + AF_S_CAP_Y + AF_S_CAP_H, AL_V, "footer breadcrumb on its line");
     if (cw)
-        cv_text_r(234, y, f, cnt, f == &AF_X ? T_TEXT : fg, T_BG);   /* (0.8.9, the skins' mock-up: the count TEXT) */
+        cv_text_r(234, y, f, cnt, T_VALUE, T_BG);   /* (0.8.9, the skins' mock-up: the count TEXT) */
     if (f == &AF_X && k) {                              /* (0.8.9) "LENTE" DIM, the level THEME, the set TEXT (as `last` if
                                                          * that is not DIM) */
         uint32_t j = 0;
@@ -1054,32 +1053,32 @@ static __attribute__((noinline)) void draw_crumbs(int32_t y, uint16_t fg, uint16
                 d++;
             c = b[j];
             b[j] = 0;
-            x = cv_text_on(6, y, f, b, fg, T_BG);
+            x = cv_text_on(6, y, f, b, T_VALUE, T_BG);
             b[j] = c;
             c = b[d];                                   /* (the level, then the dot before the set) */
             b[d] = 0;
-            x = cv_text_on(x, y, f, b + j, T_THEME, T_BG);
+            x = cv_text_on(x, y, f, b + j, T_VALUE, T_BG);
             b[d] = c;
             c = b[d + 2u];
             b[d + 2u] = 0;
-            x = cv_text_on(x, y, f, b + d, fg, T_BG);
+            x = cv_text_on(x, y, f, b + d, T_VALUE, T_BG);
             b[d + 2u] = c;
-            cv_free_text(x, y, f, b + d + 2u, last == fg ? T_TEXT : last, T_BG, mx - x);
+            cv_free_text(x, y, f, b + d + 2u, T_VALUE, T_BG, mx - x);
             return;
         }
         if (last == fg)                                 /* (two parts, "FX . BUSES": the level THEME) */
             last = T_THEME;
     }
     if (last == fg || !k) {
-        cv_free_text(6, y, f, b, fg, T_BG, mx - 6);
+        cv_free_text(6, y, f, b, T_VALUE, T_BG, mx - 6);
         return;
     }
     {
         char c = b[k];
         b[k] = 0;
-        x = cv_text_on(6, y, f, b, fg, T_BG);
+        x = cv_text_on(6, y, f, b, T_VALUE, T_BG);
         b[k] = c;
-        cv_free_text(x, y, f, b + k, last, T_BG, mx - x);
+        cv_free_text(x, y, f, b + k, T_VALUE, T_BG, mx - x);
     }
 }
 static void draw_foot(void)
@@ -1740,8 +1739,8 @@ static void draw_columns(void)
 static void draw_splash(void)
 {
     lcd_fill(0, 0, 240, 240, T_BG);
-    draw_text_box(0, 42, 240, &AF_L, "JIANT LIVE", T_TEXT, 1);
-    draw_text_box(0, 82, 240, &AF_L, "DRUMS", T_THEME, 1);
+    draw_text_box(0, 42, 240, &AF_L, "JIANT LIVE", T_VALUE, 1);
+    draw_text_box(0, 82, 240, &AF_L, "DRUMS", T_VALUE, 1);
     draw_text_box(0, 122, 240, &AF_M, "FM1 DRUM PERFORMANCE", T_TEXT, 1);
     draw_text_box(0, 150, 240, &AF_X, "orig: Juan Jiant | mod: Misha Mashina", T_MID, 1);
     draw_text_box(0, 191, 240, &AF_X, FELUCCA_VERSION, T_DIM, 1);
@@ -2301,7 +2300,7 @@ static void draw_mixer_table(void)
                  * (MIDI 48 = C3, 60 = C4); velocities stay numeric. */
                 if (k <= Z_NOTE_MAX) note_name(m, midi_zone[i][k]);
                 else fmt_int(m, midi_zone[i][k]);
-                cv_text(zx[k], ry + CAP_IN(S, 20), &AF_S, m, tc);
+                cv_text(zx[k], ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
             }
         } else if (tuning) {
             char a[8], b[8];
@@ -2310,8 +2309,8 @@ static void draw_mixer_table(void)
             else fmt_int(a, tr);
             if (fine > 0) { b[0] = '+'; fmt_int(b + 1, fine); }
             else fmt_int(b, fine);
-            cv_text(101, ry + CAP_IN(S, 20), &AF_S, a, tc);
-            cv_text(132, ry + CAP_IN(S, 20), &AF_S, b, tc);
+            cv_text(101, ry + CAP_IN(S, 20), &AF_S, a, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+            cv_text(132, ry + CAP_IN(S, 20), &AF_S, b, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         } else {
         /* midi rx */
         { char m[8]; m[0]=0; /* format */
@@ -2319,14 +2318,14 @@ static void draw_mixer_table(void)
           uint32_t ch = midi_live_channel(i);
           m[0] = (char)('0' + (ch / 10u));
           if (ch >= 10u) { m[1] = (char)('0' + (ch % 10u)); m[2]=0; } else { m[0]=(char)('0'+ch); m[1]=0; }
-          cv_text(101, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : midi_live_rx[i] ? T_ACCENT : tc);
+          cv_text(101, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         }
         /* volume */
         { char m[8]; uint32_t v = (uint32_t)trk[i].p[P_LEVEL];
           /* itoa */
           int k=0; char tmp[8];
           if (v==0) tmp[k++]='0'; else { uint32_t x=v; char r[8]; int ri=0; while(x){r[ri++]='0'+x%10;x/=10;} while(ri) tmp[k++]=r[--ri]; } tmp[k]=0;
-          str_cpy(m,tmp,8); cv_text(132, ry + CAP_IN(S, 20), &AF_S, m, tc);
+          str_cpy(m,tmp,8); cv_text(132, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         }
         /* pan */
         { char m[8]; int32_t p = trk[i].p[P_PAN];
@@ -2337,7 +2336,7 @@ static void draw_mixer_table(void)
           if (p > 0) { /* add + prefix */
              char mm[8]; mm[0]='+'; str_cpy(mm+1,tmp,7); str_cpy(m,mm,8);
           } else str_cpy(m,tmp,8);
-          cv_text(168, ry + CAP_IN(S, 20), &AF_S, m, tc);
+          cv_text(168, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         }
         /* pan motion indicator: a small filled square in the PAN cell's upper-right corner */
         {
@@ -2375,9 +2374,9 @@ static void draw_mixer_table(void)
         db[k] = 0;
         cv_begin(240, 24, T_BG);
         cv_text(4, CAP_IN(S, 14), &AF_S, "ROUTE", T_DIM);
-        cv_text(48, CAP_IN(S, 14), &AF_S, rb, T_TEXT);
+        cv_text(48, CAP_IN(S, 14), &AF_S, rb, T_VALUE);
         cv_text(132, CAP_IN(S, 14), &AF_S, "DJ FILTER", T_DIM);
-        cv_text(204, CAP_IN(S, 14), &AF_S, db, T_TEXT);
+        cv_text(204, CAP_IN(S, 14), &AF_S, db, T_VALUE);
         cv_blit(0, 198);
     }
 }
