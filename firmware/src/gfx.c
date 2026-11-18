@@ -138,7 +138,8 @@ static int skin_hud(void) { return ux.skin == SKIN_HUD || ux.skin == SKIN_AIR; }
 #define T_BG ux.bg               /* background */
 #define T_SURF ux.surf           /* dialogs, menu rows, mixer strips */
 #define T_TEXT ux.text           /* primary text */
-#define T_THEME ux.theme         /* values, curves, the gauge's end line */
+#define T_THEME ux.theme         /* grayscale graph and gauge theme */
+#define T_VALUE RGB(255, 153, 0)  /* orange #FF9900 for editable values */
 #define T_ACCENT ux.accent       /* the one active thing: hot knob, cursor, playhead */
 #define T_MID ux.mid             /* labels, units, secondary text */
 #define T_DIM ux.dim             /* inactive, empty */
