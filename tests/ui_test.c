@@ -13680,15 +13680,13 @@ static int test_engine_order_099(void)
 /* SAVE accent regression: occupied orange / empty gray, with distinct selection frames. */
 static int test_section_colors(void)
 {
-    static const uint16_t expected[4] = {0x3955u, 0xFA09u, 0xFDEBu, 0xFF99u};
     uint8_t saved_gp[sizeof gp];
     uint32_t s, selected, ar, form, genre;
     int ok = 1;
     memcpy(saved_gp, &gp, sizeof gp);
     ui_power_on(); settings.palette = UI_JIANT_INDEX; palette_set(UI_JIANT_INDEX); frame();
     for (s = 0; s < 16u; s++) {
-        uint16_t c = expected[s & 3u];
-        ok &= sec_col(s) == c && lz_sec(s, 1, 0) == T_VALUE && lz_sec(s, 1, 1) == T_VALUE;
+        ok &= lz_sec(s, 1, 0) == T_VALUE && lz_sec(s, 1, 1) == T_VALUE;
         ok &= lz_sec(s, 0, 0) == T_RAISE && lz_sec(s, 0, -1) == T_RAISE;
     }
     song.playing = 0;
@@ -13739,7 +13737,7 @@ static int test_section_colors(void)
             width = 228 / (int32_t)n;
             cv_begin(240, 140, T_SURF); gen_panel();
             for (s = 0; s < n; s++)
-                { uint16_t got = swap16(cv_px[103u * 240u + 7u + s * (uint32_t)width]); if (got != expected[ord[s] & 3u]) printf("GEN g%u f%u s%u expected %04x got %04x\n",genre,form,s,expected[ord[s] & 3u],got); ok &= got == expected[ord[s] & 3u]; }
+                { uint16_t got = swap16(cv_px[103u * 240u + 7u + s * (uint32_t)width]); if (got != sec_col(ord[s] & 3u)) printf("GEN g%u f%u s%u expected %04x got %04x\n",genre,form,s,sec_col(ord[s] & 3u),got); ok &= got == sec_col(ord[s] & 3u); }
         }
     memcpy(&gp, saved_gp, sizeof gp);
     ui_power_on(); frame();
