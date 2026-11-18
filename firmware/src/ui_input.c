@@ -3,7 +3,6 @@
  * Portions Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant) */
 /* Felucca UI input: LEDs, knobs and buttons, SEQ step entry, panel setup. */
 static void pm_off(void);                               /* (0.9.14) ui_layer.c: the FX macros off */
-static uint8_t panic_mode_screen;                       /* GLO + OCT- overlay, until GLO release */
 #include "ui_name.c"                                    /* NAME: naming user presets and projects */
 /* ----------------------------------------------------------- LEDs --- */
 /* The LED picture is built off-line and copied one byte per column: clearing
