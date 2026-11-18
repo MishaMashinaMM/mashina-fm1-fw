@@ -4,7 +4,13 @@ This is the **JIANT LIVE DRUMS (JLD) v0.9** user manual for the M-VAVE FM1, cove
 
 > **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/jiant-live-drums/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
 
-> **Safety and testing:** Back up projects, presets and sound banks before changing firmware. **v0.9 was flashed and tested successfully on a physical FM1 with a Korg X5D MIDI keyboard on November 18, 2026.** The final v0.9 firmware preserves the tested feature implementation. Device validation is functional, not an exhaustive long-duration/recovery guarantee.
+> **UI build status (ui-changes):** This new black/white/gray/orange UI is a **v0.9 device-test candidate, not yet tested on a physical FM1**. The November 18 Korg X5D tests verified the previous v0.9 feature release, not this updated screen build. Do not mark this theme device-tested until a new flash-and-test report. The installer for this branch is a separately downloadable GitHub Actions artifact, not the public installer.\n\n> **Safety and testing of previous v0.9 release:** Back up projects, presets and sound banks before changing firmware. **v0.9 was flashed and tested successfully on a physical FM1 with a Korg X5D MIDI keyboard on November 18, 2026.** The previous main-branch v0.9 release preserves the tested feature implementation; the separate ui-changes build still requires FM1 display tests. Device validation is functional, not an exhaustive long-duration/recovery guarantee.
+
+## Visual language — v0.9 orange-accent UI test candidate
+
+The performance-oriented UI uses a **black background, white primary text and neutral gray labels/panels** with a single **orange `#FF9900` accent**. Numbers and other editable knob values are orange. Page titles, breadcrumbs and the JIANT LIVE DRUMS boot wordmark are orange; value gauges still use a gray-to-white intensity scale. A **selected MIXER/ZONES/TUNING row is solid white with black text** for high contrast. In **SAVE → PROJECT → SECTIONS** and **SAVE → LIBRARY → PROJECTS**, **occupied slots/section chips are orange, empty slots gray** and the selected project retains a white border. Animations remain disabled.
+
+**Navigation fix:** pressing HOME while viewing GLO now redraws HOME instead of leaving the GLO mixer over it. Knobs continue to edit HOME parameters. The UI change does not alter the audio engine, project format, MIDI routing, or any menu/knob mapping. This is an **emulator-verified change awaiting physical display testing**.
 
 ## 1. Physical controls and navigation
 
