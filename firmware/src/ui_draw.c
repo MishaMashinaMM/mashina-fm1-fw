@@ -2674,7 +2674,7 @@ static void ui_draw_body(uint32_t counting)
         if (v != view)
             ui.knob_ms = fm1_ms, view = v;
     }
-    if (cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK) {   /* GLO > MIXER: full-height table, not SENDS */
+    if (!ui.home && cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK) {   /* GLO > MIXER only: HOME must draw its own view */
         if (ui.force)
             draw_frame();
         draw_head();
