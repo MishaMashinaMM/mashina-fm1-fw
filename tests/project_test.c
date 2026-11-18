@@ -945,6 +945,36 @@ int main(void)
             for (k = 0; k < NTRK; k++) ok &= dst.transpose[k] == 0;
             bad += check("v0.6: project without transpose block defaults all tracks to zero", ok);
         }
+        {   /* TUNING: preserve old TR, extend to ±36 with T2, and signed ±50 cents FN. */
+            static project_t src, dst;
+            static project_store_t wire;
+            src = f;
+            src.transpose[0] = -36;
+            src.transpose[1] = 36;
+            src.transpose[2] = -24;
+            src.transpose[3] = 24;
+            src.fine[0] = -50;
+            src.fine[1] = 50;
+            src.fine[4] = -7;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire) &&
+                 !memcmp(dst.transpose, src.transpose, sizeof src.transpose) &&
+                 !memcmp(dst.fine, src.fine, sizeof src.fine);
+            bad += check("TUNING: ±36 TRN and ±50 FINE round trip across six tracks", ok);
+            src = f;
+            src.transpose[0] = -24;
+            src.transpose[1] = 24;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire) &&
+                 dst.transpose[0] == -24 && dst.transpose[1] == 24;
+            for (k = 0; k < NTRK; k++) ok &= dst.fine[k] == 0;
+            bad += check("TUNING: legacy TR encoding remains supported", ok);
+            src = f;
+            src.sum = proj_sum(&src);
+            ok = proj_pack(&wire, &src) && proj_import(&dst, &wire, sizeof wire);
+            for (k = 0; k < NTRK; k++) ok &= dst.fine[k] == 0 && dst.transpose[k] == 0;
+            bad += check("TUNING: old project defaults fine and transpose to zero", ok);
+        }
         {   /* Global EQ: optional six-byte block, legacy default, and corrupt-value rejection. */
             static project_t eq_src, eq_dst;
             static project_store_t eq_wire;
