@@ -13695,7 +13695,7 @@ static int test_section_colors(void)
     /* Empty sections are visibly gray, not black; their frames remain distinct. */
     cv_begin(240, 140, T_SURF); graph_proj(0);
     for (s = 0; s < 4u; s++)
-        ok &= swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]) == T_RAISE;
+        { uint16_t got = swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]); if (got != T_RAISE) printf("EMPTY section %u expected %04x got %04x used %d\n",s,T_RAISE,got,graph_project_used(s)); ok &= got == T_RAISE; }
     for (s = 0; s < 4u; s++) ok &= project_save(s) == 0;
     fm1_ms += 501u; ui.frame++; ui.force = 1;
     for (s = 0; s < 4u; s++) ok &= graph_project_used(s) != 0;
@@ -13709,8 +13709,8 @@ static int test_section_colors(void)
             for (s = 0; s < 4u; s++) {
                 uint16_t top = T_VALUE;
                 uint16_t row = T_VALUE;
-                ok &= swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]) == top;
-                ok &= swap16(cv_px[73u * 240u + 5u + s * 293u / 10u]) == row;
+                { uint16_t got = swap16(cv_px[3u * 240u + (uint32_t)LZ_TX(s) + 1u]); if (got != top) printf("SECTION top %u sel %u ar %u expected %04x got %04x\n",s,selected,ar,top,got); ok &= got == top; }
+                { uint16_t got = swap16(cv_px[73u * 240u + 5u + s * 293u / 10u]); if (got != row) printf("ARRANGE %u sel %u ar %u expected %04x got %04x\n",s,selected,ar,row,got); ok &= got == row; }
             }
         }
     }
@@ -13718,7 +13718,7 @@ static int test_section_colors(void)
     for (s = 0; s < 4u; s++) {
         uint32_t x = (uint32_t)LZ_TX(song_cur % 4u) + 5u + (s % 2u) * 25u;
         uint32_t y = (song_cur / 4u) * 70u + 29u + (s / 2u) * 18u;
-        ok &= swap16(cv_px[y * 240u + x]) == T_VALUE;
+        { uint16_t got = swap16(cv_px[y * 240u + x]); if (got != T_VALUE) printf("LIB CHIP %u expected %04x got %04x\n",s,T_VALUE,got); ok &= got == T_VALUE; }
     }
     /* Library: project occupancy frames are orange/gray except current white. */
     for (s = 0; s < NSONG; s++) {
@@ -13726,7 +13726,7 @@ static int test_section_colors(void)
         int occupied = s == song_cur ? (graph_project_used(0) || graph_project_used(1) ||
                                        graph_project_used(2) || graph_project_used(3)) : lib.mask[s] != 0u;
         uint16_t border = s == song_cur ? T_TEXT : occupied ? T_VALUE : T_MID;
-        ok &= swap16(cv_px[(y + 1) * 240u + x]) == border;
+        { uint16_t got = swap16(cv_px[(y + 1) * 240u + x]); if (got != border) printf("LIB BORDER %u expected %04x got %04x occupied %d\n",s,border,got,occupied); ok &= got == border; }
     }
     for (genre = 0; genre <= NGENRE; genre++)
         for (form = 0; form < 3u; form++) {
@@ -13739,7 +13739,7 @@ static int test_section_colors(void)
             width = 228 / (int32_t)n;
             cv_begin(240, 140, T_SURF); gen_panel();
             for (s = 0; s < n; s++)
-                ok &= swap16(cv_px[103u * 240u + 7u + s * (uint32_t)width]) == expected[ord[s] & 3u];
+                { uint16_t got = swap16(cv_px[103u * 240u + 7u + s * (uint32_t)width]); if (got != expected[ord[s] & 3u]) printf("GEN g%u f%u s%u expected %04x got %04x\n",genre,form,s,expected[ord[s] & 3u],got); ok &= got == expected[ord[s] & 3u]; }
         }
     memcpy(&gp, saved_gp, sizeof gp);
     ui_power_on(); frame();
