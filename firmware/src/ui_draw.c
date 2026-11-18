@@ -2263,8 +2263,15 @@ static void draw_mixer_table(void)
             cv_begin(240, 38, T_BG);
             ry = 14;
         }
-        uint16_t tc = (trk[i].p[P_MUTE]) ? T_DIM : ((i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT));
-        uint16_t nc = (i == song.sel) ? T_ACCENT : (i >= trk_live ? T_DIM : T_TEXT);
+        /* The selected track must be unmistakable in a monochrome live mixer:
+         * solid white row and black ink. Mute/asleep stay dim within that row. */
+        const uint32_t selected = i == song.sel;
+        const uint16_t row_bg = selected ? T_SEL : T_BG;
+        uint16_t tc = selected ? (trk[i].p[P_MUTE] || i >= trk_live ? T_MID : T_INK) :
+                      (trk[i].p[P_MUTE] || i >= trk_live ? T_DIM : T_TEXT);
+        uint16_t nc = selected ? T_INK : (i >= trk_live ? T_DIM : T_TEXT);
+        if (selected)
+            cv_rect(2, ry + 1, 236, 22, row_bg);
         char b[16];
         char vname[16];
         /* voice name (replicate trk_short_name) */
@@ -2283,7 +2290,7 @@ static void draw_mixer_table(void)
             cv_text(18, ry + CAP_IN(S, 20), &AF_S, "M", nc);
         }
         /* voice (clipped to column) */
-        cv_text_in(32, ry + CAP_IN(S, 20), 66, &AF_S, vname, tc, T_BG);
+        cv_text_in(32, ry + CAP_IN(S, 20), 66, &AF_S, vname, tc, row_bg);
         if (zones) {
             /* Same 6-row geometry as MIXER; each of K1-K4 maps to
              * one inclusive boundary in the selected track's row. */
@@ -2312,7 +2319,7 @@ static void draw_mixer_table(void)
           uint32_t ch = midi_live_channel(i);
           m[0] = (char)('0' + (ch / 10u));
           if (ch >= 10u) { m[1] = (char)('0' + (ch % 10u)); m[2]=0; } else { m[0]=(char)('0'+ch); m[1]=0; }
-          cv_text(101, ry + CAP_IN(S, 20), &AF_S, m, midi_live_rx[i] ? T_ACCENT : tc);
+          cv_text(101, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : midi_live_rx[i] ? T_ACCENT : tc);
         }
         /* volume */
         { char m[8]; uint32_t v = (uint32_t)trk[i].p[P_LEVEL];
@@ -2337,7 +2344,7 @@ static void draw_mixer_table(void)
             uint32_t mm[(P_COUNT + 31u) / 32u];
             (void)motion_mask(i, mm);
             if ((mm[P_PAN / 32u] >> (P_PAN % 32u)) & 1u)
-                cv_rect(196, ry + 1, 2, 2, T_ACCENT);
+                cv_rect(196, ry + 1, 2, 2, selected ? T_INK : T_ACCENT);
         }
         } /* MIXER cells */
     }
