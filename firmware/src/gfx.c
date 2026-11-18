@@ -181,15 +181,15 @@ static void palette_set(uint32_t i)
     ux.mid = ux_mix(p->bg, p->text, UI_MID_PCT);
     ux.dim = ux_mix(p->bg, p->text, UI_DIM_PCT);
     ux.line = ux_mix(p->bg, p->text, UI_LINE_PCT);
-    ux.sel = ux_mix(p->bg, p->theme, UI_SEL_PCT);
-    ux.tint = ux_mix(p->bg, p->theme, UI_TINT_PCT);
+    ux.sel = p->accent;            /* white highlight / black ink for high-contrast selection */
+    ux.tint = ux.surf;             /* use the dark gray surface rather than extra gray tokens */
     ux.ink = p->bg;
     ux.raise = ux_mix(p->surf, p->text, UI_JIANT_RAISE_PCT);
     for (k = 0; k < 4u; k++)
         ux.k[k] = UI_JIANT_KNOBS[k];
     ux.key = ux_mix(p->bg, p->text, UI_KEY_PCT);
-    ux.lane = ux_mix(ux.surf, p->theme, 10);
-    ux.grid = ux_mix(ux.surf, p->text, 6);
+    ux.lane = ux.surf;
+    ux.grid = ux.surf;
     ux.light = 0;
     ux.rec = UI_REC_DARK;
     ux.gen++;                                    /* the text ramps change with the coverage curve */
