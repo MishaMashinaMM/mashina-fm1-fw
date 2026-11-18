@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 # Portions Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant)
-"""Stable palette identities and the single JIANT rendering definition.
+"""Stable palette identities and the monochrome JIANT rendering definition.
 
 Historical indices, tagged settings IDs and the 20-entry migration map are compatibility
-metadata. Only JIANT has rendering colors. Derived tokens use gfx.c's unchanged RGB565
+metadata. Only JIANT has rendering colors; the live UI is grayscale. Derived tokens use gfx.c's unchanged RGB565
 integer blends; --report validates the JIANT contrast pairings.
 """
 import argparse
@@ -17,9 +17,9 @@ PALETTE_NAMES = ("GREY", "GREEN", "AMBER", "ICE", "VIOLET", "ROSE", "PAPER",
                  "HI-CON", "NIGHT", "MONO", "JIANT")
 JIANT_INDEX = 10
 # bg, surf, text, theme, accent; preserve the original RGB565 conversion exactly.
-JIANT_COLORS = ((0, 0, 0), (10, 9, 14), (244, 241, 234), (184, 112, 255), (255, 122, 0))
-JIANT_KNOBS = ((138, 108, 255), (255, 210, 60), (88, 116, 255), (255, 75, 75))
-JIANT_RAISE_PCT = 4
+JIANT_COLORS = ((0, 0, 0), (48, 48, 48), (255, 255, 255), (184, 184, 184), (255, 255, 255))
+JIANT_KNOBS = ((255, 255, 255),) * 4
+JIANT_RAISE_PCT = 0
 # the 20 palettes of the earlier firmware (index order) -> the new palette
 OLD = ["GREEN", "AMBER", "CYAN", "RED", "MONO", "VIOLET", "PINK", "ICE", "WARM", "OCEAN", "DUSK", "HI-CON",
        "LIGHT", "PAPER", "SKY", "MINT", "LILAC", "ROSE", "SAND", "L-HICON"]
@@ -28,9 +28,9 @@ OLD_TO_NEW = {"GREEN": "GREEN", "AMBER": "AMBER", "CYAN": "ICE", "RED": "ROSE", 
               "LIGHT": "PAPER", "PAPER": "PAPER", "SKY": "PAPER", "MINT": "PAPER", "LILAC": "PAPER", "ROSE": "PAPER",
               "SAND": "PAPER", "L-HICON": "HI-CON"}
 PAL_TAG = 64                       # stored id = PAL_TAG + index; below 20: an old id
-REC_DARK = (255, 72, 72)
-QR_LIGHT, QR_DARK, CRASH_BG, CRASH_INK = (255, 255, 255), (0, 0, 0), (160, 0, 0), (255, 255, 255)
-PCT = {"MID": 70, "DIM": 42, "LINE": 18, "SEL": 80, "TINT": 12, "KEY": 78}
+REC_DARK = (255, 255, 255)
+QR_LIGHT, QR_DARK, CRASH_BG, CRASH_INK = (255, 255, 255), (0, 0, 0), (48, 48, 48), (255, 255, 255)
+PCT = {"MID": 72, "DIM": 47, "LINE": 19, "SEL": 100, "TINT": 12, "KEY": 100}
 
 
 def to565(c):
