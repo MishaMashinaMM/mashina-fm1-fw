@@ -93,7 +93,7 @@ int main(int argc, char **argv)
         assert(!ux.light);                         /* PAPER is the light one */
         assert(T_REC == 0xffff && T_SEL == 0xffff && T_K(0) == 0xffff);
         /* Only neutral channel values may be emitted by the permanent Jiant palette. */
-        for (unsigned i = 0; i < 16; i++) assert(gray(tok[i]));
+        for (unsigned i = 0; i < 16; i++) assert(neutral(tok[i]));
         /* the blend: transparent, solid and an edge between the two, on two backgrounds */
         for (unsigned b = 0; b < 2; b++) {
             uint16_t under = b ? T_SEL : T_BG, ink = b ? T_INK : T_THEME;
