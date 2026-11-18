@@ -17,11 +17,15 @@
  *            right, a favourite's star.
  * The other projects' sections and names come from their flash headers (project.c lib_scan), one project a frame,
  * cached here until a project is written, loaded or renamed (lib_gen). */
-/* a section's chip colour: stored, its colour (half: mixed with BG); empty: BG */
+/* SAVE occupancy is independent of selection: orange means stored, dark gray means
+ * empty. The selected section/project is identified by its separate white frame.
+ * Keep the old half argument for callers (including ARRANGE), but never dim a
+ * stored slot until it becomes indistinguishable from an empty one. */
 static uint16_t lz_sec(uint32_t s, int used, int half)
 {
-    uint16_t c = used ? sec_col(s) : half < 0 ? ux_mix(T_BG, T_RAISE, 50) : T_BG;
-    return used && half ? ux_mix(T_BG, c, 50) : c;
+    (void)s;
+    (void)half;
+    return used ? T_VALUE : T_RAISE;
 }
 #define LZ_TX(c) (4 + (int32_t)(c) * 117 / 2)          /* four columns of 56 px, 58 or 59 apart (the mock-up's 58.5) */
 static void graph_lib(void)
@@ -30,21 +34,24 @@ static void graph_lib(void)
     for (i = 0; i < NSONG; i++) {
         int32_t x = LZ_TX(i % 4u), y = (int32_t)(i / 4u) * 70;
         int cur = i == song_cur;
+        int occupied = cur ? (graph_project_used(0) || graph_project_used(1) ||
+                              graph_project_used(2) || graph_project_used(3)) : lib.mask[i] != 0u;
         uint16_t bg = cur ? T_TINT : T_RAISE;
         char b[4], nm[13];
         cv_rect(x, y, 56, 66, bg);
-        if (cur)
-            cv_frame(x, y, 56, 66, T_THEME);
+        /* Orange outline = stored project, gray outline = empty project.
+         * White overrides the outline only for the currently selected tile. */
+        cv_frame(x, y, 56, 66, cur ? T_TEXT : occupied ? T_VALUE : T_MID);
         fmt_int(b, (int32_t)i + 1);
         GFX_HOOK_ALIGN(0, y + 3, 0, y + 12, AL_V | AL_PASS, "library tile number");
-        cv_text_on(x + 4, y + 3, &AF_X, b, cur ? T_THEME : T_DIM, bg);
+        cv_text_on(x + 4, y + 3, &AF_X, b, occupied ? T_VALUE : T_DIM, bg);
         if (cur)
             str_cpy(nm, graph_project_used(0) ? graph_project_name(0) : "", sizeof nm);
         else
             str_cpy(nm, lib.name[i], sizeof nm);
         if (!nm[0] && (cur ? graph_project_used(0) : (lib.mask[i] & 1u)))
             str_cpy(nm, "USED", sizeof nm);
-        cv_clip_text(x + 4, y + 14, &AF_X, nm[0] ? nm : "--", nm[0] ? T_TEXT : T_DIM, bg, 50);
+        cv_clip_text(x + 4, y + 14, &AF_X, nm[0] ? nm : "--", occupied ? T_TEXT : T_DIM, bg, 50);
         for (j = 0; j < 4u; j++) {
             int32_t sx = x + 4 + (int32_t)(j % 2u) * 25, sy = y + 28 + (int32_t)(j / 2u) * 18;
             int used = cur ? graph_project_used(j) : (int)((lib.mask[i] >> j) & 1u);
@@ -52,7 +59,7 @@ static void graph_lib(void)
             char l[2] = {(char)('A' + j), 0};
             cv_rect(sx, sy, 23, 15, c);
             GFX_HOOK_ALIGN(sx, sy, sx + 23, sy + 15, AL_HV, "library section chip letter centred");
-            cv_text_in(sx, sy + CAP_IN(X, 15), 23, &AF_X, l, used ? T_INK : T_DIM, c);
+            cv_text_in(sx, sy + CAP_IN(X, 15), 23, &AF_X, l, used ? T_INK : T_MID, c);
             if (cur && (int32_t)j + 1 == song.g[G_SLOT])
                 cv_frame(sx - 1, sy - 1, 25, 17, T_TEXT);
         }
@@ -102,7 +109,7 @@ static void graph_proj(int ar)
     for (i = 0; i < 4u; i++) {
         int32_t x = LZ_TX(i);
         int used = graph_project_used(i), pick = !ar && i == (sel & 3u);
-        uint16_t c = lz_sec(i, used, used ? !pick : -1), ink = used ? T_INK : T_DIM;
+        uint16_t c = lz_sec(i, used, used ? !pick : -1), ink = used ? T_INK : T_MID;
         const char *nm = graph_project_name(i);
         b[0] = (char)('A' + i); b[1] = 0;
         cv_rect(x, 2, 56, 49, c);
