@@ -106,6 +106,20 @@ footer small { font-size: 11px; opacity: .8; }
     <button id="midi-test-panic" type="button" disabled>All Notes Off</button>
   </div>
   <div class="controls">
+    <label>Channel <input id="midi-test-channel-2" type="number" min="1" max="16" value="2"></label>
+    <label>Note <input id="midi-test-note-2" type="number" min="0" max="127" value="60"></label>
+    <label>Velocity <input id="midi-test-velocity-2" type="number" min="1" max="127" value="100"></label>
+    <button id="midi-test-on-2" type="button" disabled>Note On</button>
+    <button id="midi-test-off-2" type="button" disabled>Note Off</button>
+  </div>
+  <div class="controls">
+    <label>Channel <input id="midi-test-channel-3" type="number" min="1" max="16" value="3"></label>
+    <label>Note <input id="midi-test-note-3" type="number" min="0" max="127" value="60"></label>
+    <label>Velocity <input id="midi-test-velocity-3" type="number" min="1" max="127" value="100"></label>
+    <button id="midi-test-on-3" type="button" disabled>Note On</button>
+    <button id="midi-test-off-3" type="button" disabled>Note Off</button>
+  </div>
+  <div class="controls">
     <label>CC number <input id="midi-test-cc" type="number" min="0" max="127" value="30"></label>
     <label>CC value <input id="midi-test-cc-value" type="number" min="0" max="127" value="64"></label>
     <button id="midi-test-send-cc" type="button" disabled>Send CC</button>
@@ -485,6 +499,25 @@ function testPulse(ch, n, vel) {
 document.getElementById("midi-test-on").addEventListener("click", () => testStart(testChannel(), testNote(), testVelocity()));
 document.getElementById("midi-test-off").addEventListener("click", () => testStop(testChannel(), testNote()));
 document.getElementById("midi-test-pulse").addEventListener("click", () => testPulse(testChannel(), testNote(), testVelocity()));
+for (const row of [2, 3]) {
+  const suffix = "-" + row;
+  const channel = () => testValue("midi-test-channel" + suffix, 1, 16) - 1;
+  const note = () => testValue("midi-test-note" + suffix, 0, 127);
+  const velocity = () => testValue("midi-test-velocity" + suffix, 1, 127);
+  let held = null;
+  document.getElementById("midi-test-on" + suffix).addEventListener("click", () => {
+    if (held !== null) testStop(held.ch, held.note);
+    held = {ch: channel(), note: note()};
+    testStart(held.ch, held.note, velocity());
+  });
+  document.getElementById("midi-test-off" + suffix).addEventListener("click", () => {
+    if (held !== null) {
+      testStop(held.ch, held.note);
+      held = null;
+    }
+  });
+  document.getElementById("midi-test-panic").addEventListener("click", () => { held = null; });
+}
 document.getElementById("midi-test-send-cc").addEventListener("click", () => {
   if (node) midiTestSend(0xB0 | testChannel(), testCC(), testCCValue());
 });
