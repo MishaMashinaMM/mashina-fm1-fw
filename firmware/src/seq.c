@@ -45,6 +45,7 @@ static uint8_t last_note = 60;
 static volatile uint8_t transport_req;   /* 1 start, 2 stop, 3 restart (from the UI) */
 static volatile uint8_t panic_req;       /* bit per track: release every sounding note (preset / engine change) */
 static volatile uint8_t panic_all_req;   /* GLO + OCT-: hard silence, including MIDI sustain and ownership */
+static uint8_t panic_mode_screen;         /* temporary monochrome UI overlay while GLO remains held */
 static volatile uint8_t midi_hint;       /* MIDI IN played track n - 1, which is not the selected one (the UI says so) */
 
 static uint32_t trk_index(const track_t *t) { return (uint32_t)(t - trk); }
