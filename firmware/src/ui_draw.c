@@ -641,6 +641,14 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
 }
 /* All engine EDIT pages: four encoders in a 2x2 grid.
  * ENV, LFO, FX and other specialized pages retain their existing geometry. */
+static int glo_parameter_grid(void)
+{
+    if (ui.home || ui.menu || ui.layer || name_on() || PAGES[ui.page].fam != FAM_GLO)
+        return 0;
+    const char *t = PAGES[ui.page].title;
+    return str_eq(t, "SENDS") || str_eq(t, "EQ") ||
+           str_eq(t, "GLOBAL") || str_eq(t, "SYSTEM");
+}
 static int engine_edit_grid(void)
 {
     /* The lens may use a page override while rendering a non-ATMOS engine.
@@ -652,7 +660,8 @@ static int engine_edit_grid(void)
             PAGES[ui.page].fam == FAM_LFO ||
             PAGES[ui.page].fam == FAM_FX ||
             PAGES[ui.page].fam == FAM_SCL ||
-            PAGES[ui.page].fam == FAM_ARP);
+            PAGES[ui.page].fam == FAM_ARP ||
+            glo_parameter_grid());
 }
 static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
@@ -1227,6 +1236,22 @@ static int glo_mix_table_ui(void)
 
 static void draw_foot(void)
 {
+    if (glo_parameter_grid()) {
+        const char *name = PAGES[ui.page].title;
+        const char *group = str_eq(name, "GLOBAL") ? "GLOBAL" :
+                            str_eq(name, "SYSTEM") ? "SYSTEM" : "MIX";
+        const char *page = str_eq(name, "SENDS") ? "4/5" :
+                           str_eq(name, "EQ") ? "5/5" : "1/1";
+        cv_begin(240, 18, T_BG);
+        cv_rect(3, 1, 43, 16, T_VALUE);
+        cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
+        cv_rect(48, 1, 65, 16, RGB(58,58,58));
+        cv_text_in(51, 1, 59, &AF_S, group, T_TEXT, RGB(58,58,58));
+        cv_text(117, 1, &AF_S, name, T_VALUE);
+        cv_text_r(237, 1, &AF_S, page, T_VALUE, T_BG);
+        cv_blit(0, 222);
+        return;
+    }
     if (glo_mix_table_ui()) {
         const char *name = cur_page()->title;
         const char *page = str_eq(name, "ZONES") ? "2/5" :
