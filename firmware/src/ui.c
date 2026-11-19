@@ -517,20 +517,30 @@ static uint32_t large_kind(void)
 /* (0.8.9) a lens page in SKIN BOTTOM / HUD's layout (LARGE: COLORS'); HUD's HOME (ECO): the beings full screen */
 /* (0.9.17) .. with the knobs' row on top, under the tabs: AIR; HUD on the SEQ pages (the values over the pattern's pictures,
  * as AIR and COLORS: the owner's "parameters on top") */
+/* Quick-layer overlays have no navigation tabs: their cards begin directly
+ * below the header, and their panel grows into the released tab strip.
+ * HOME long-press and ordinary page geometry are unchanged. */
 static uint32_t card_y(void)
 {
+    if (ui.layer) return 26u;
     return lz_on() ? (PAGES[ui.page].fam == FAM_SAVE ? LZ_CARD_Y - 8u : LZ_CARD_Y) : Y_LABEL;
 }
-static uint32_t foot_y(void) { return lz_on() ? LZ_FOOT_Y : Y_FOOT; }
-static uint32_t foot_h(void) { return lz_on() ? LZ_FOOT_H : H_FOOT; }
+static uint32_t foot_y(void) { return ui.layer ? 222u : lz_on() ? LZ_FOOT_Y : Y_FOOT; }
+static uint32_t foot_h(void) { return ui.layer ? 18u : lz_on() ? LZ_FOOT_H : H_FOOT; }
 static uint32_t card_h(void) { return large_kind() == LK_TALL ? LG_CARD_H : lz_on() ? LZ_CARD_H : CARD_H; }
 static uint32_t graph_y(void)
 {
+    if (ui.layer) return 68u;
     return large_kind() == LK_TALL ?
            (lz_on() ? LZ_LG_Y_GRAPH : LG_Y_GRAPH) :
            lz_on() ? (PAGES[ui.page].fam == FAM_SAVE ? LZ_GRAPH_Y - 8u : LZ_GRAPH_Y) : Y_GRAPH;
 }
-static uint32_t graph_h(void) { return large_kind() == LK_TALL ? LG_H_GRAPH : lz_on() ? (PAGES[ui.page].fam == FAM_SAVE ? LZ_GRAPH_H + 8u : LZ_GRAPH_H) : H_GRAPH; }
+static uint32_t graph_h(void)
+{
+    if (ui.layer) return 154u;
+    return large_kind() == LK_TALL ? LG_H_GRAPH : lz_on() ?
+           (PAGES[ui.page].fam == FAM_SAVE ? LZ_GRAPH_H + 8u : LZ_GRAPH_H) : H_GRAPH;
+}
 static int large_face_has(const char *s)                /* every glyph of s in the sparse L face */
 {
     for (; *s; s++)
