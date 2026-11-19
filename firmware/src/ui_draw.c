@@ -648,7 +648,8 @@ static int engine_edit_grid(void)
     return !ui.home && !ui.menu && !ui.layer && !name_on() &&
            (PAGES[ui.page].fam == FAM_EDIT ||
             PAGES[ui.page].fam == FAM_ENV ||
-            PAGES[ui.page].fam == FAM_LFO);
+            PAGES[ui.page].fam == FAM_LFO ||
+            PAGES[ui.page].fam == FAM_FX);
 }
 static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
@@ -1162,6 +1163,8 @@ static void draw_engine_edit_footer(void)
         group = "ENVELOPE";
     else if (PAGES[ui.page].fam == FAM_LFO)
         group = "MODULATION";
+    else if (PAGES[ui.page].fam == FAM_FX)
+        group = "EFFECTS";
     else
         group = str_eq(page, "FOCUS") ? "FOCUS" :
                 str_eq(page, "EDIT 1") || str_eq(page, "EDIT 2") ||
@@ -1171,7 +1174,8 @@ static void draw_engine_edit_footer(void)
     cv_rect(0, 0, 240, 18, T_BG);
     {
         const char *section = PAGES[ui.page].fam == FAM_ENV ? "ENV" :
-                              PAGES[ui.page].fam == FAM_LFO ? "LFO" : "EDIT";
+                              PAGES[ui.page].fam == FAM_LFO ? "LFO" :
+                              PAGES[ui.page].fam == FAM_FX ? "FX" : "EDIT";
         cv_rect(3, 1, 43, 16, T_VALUE);
         cv_text_in(5, 1, 39, &AF_S, section, T_INK, T_VALUE);
     }
