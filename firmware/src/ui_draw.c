@@ -646,7 +646,9 @@ static int engine_edit_grid(void)
     /* The lens may use a page override while rendering a non-ATMOS engine.
      * Identify the actual EDIT section, not the transient page descriptor. */
     return !ui.home && !ui.menu && !ui.layer && !name_on() &&
-           PAGES[ui.page].fam == FAM_EDIT;
+           (PAGES[ui.page].fam == FAM_EDIT ||
+            PAGES[ui.page].fam == FAM_ENV ||
+            PAGES[ui.page].fam == FAM_LFO);
 }
 static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
@@ -1156,16 +1158,26 @@ static void draw_engine_edit_footer(void)
     const char *group;
     int32_t n, x;
     page_title(page);
-    group = str_eq(page, "FOCUS") ? "FOCUS" :
-            str_eq(page, "EDIT 1") || str_eq(page, "EDIT 2") ||
-            str_eq(page, "EDIT 3") ? "SOUND" : "TONE";
+    if (PAGES[ui.page].fam == FAM_ENV)
+        group = "ENVELOPE";
+    else if (PAGES[ui.page].fam == FAM_LFO)
+        group = "MODULATION";
+    else
+        group = str_eq(page, "FOCUS") ? "FOCUS" :
+                str_eq(page, "EDIT 1") || str_eq(page, "EDIT 2") ||
+                str_eq(page, "EDIT 3") ? "SOUND" : "TONE";
     str_cpy(pos, page, sizeof pos);
     lz_begin(240, 18, 0, 222);
     cv_rect(0, 0, 240, 18, T_BG);
-    cv_rect(3, 1, 43, 16, T_VALUE);
-    cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_VALUE);
+    {
+        const char *section = PAGES[ui.page].fam == FAM_ENV ? "ENV" :
+                              PAGES[ui.page].fam == FAM_LFO ? "LFO" : "EDIT";
+        cv_rect(3, 1, 43, 16, T_VALUE);
+        cv_text_in(5, 1, 39, &AF_S, section, T_INK, T_VALUE);
+    }
     n = ink_w(&AF_S, group) + 12;
     if (n < 48) n = 48;
+    if (n > 106) n = 106;
     /* Match the dark-gray unfilled portion of the parameter range bars. */
     cv_rect(48, 1, n, 16, RGB(58, 58, 58));
     cv_text_in(54, 1, n - 12, &AF_S, group, T_TEXT, RGB(58, 58, 58));
