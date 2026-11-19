@@ -1221,6 +1221,25 @@ static void draw_engine_edit_footer(void)
 }
 static void draw_foot(void)
 {
+    if (!ui.home && !ui.menu && !ui.layer &&
+        cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK) {
+        const char *name = cur_page()->title;
+        const char *page = str_eq(name, "ZONES") ? "2/3" :
+                           str_eq(name, "TUNING") ? "3/3" : "1/3";
+        char track[12];
+        cv_begin(240, 18, T_BG);
+        cv_rect(3, 1, 43, 16, T_VALUE);
+        cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
+        cv_rect(48, 1, 65, 16, RGB(58,58,58));
+        cv_text_in(51, 1, 59, &AF_S, "MIX", T_TEXT, RGB(58,58,58));
+        cv_text(117, 1, &AF_S, name, T_VALUE);
+        str_cpy(track, "T", sizeof track);
+        fmt_int(track + 1, (int32_t)song.sel + 1);
+        cv_text(183, 1, &AF_S, track, T_VALUE);
+        cv_text_r(237, 1, &AF_S, page, T_VALUE, T_BG);
+        cv_blit(0, 222);
+        return;
+    }
     if (engine_edit_grid()) {
         draw_engine_edit_footer();
         return;
