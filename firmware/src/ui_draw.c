@@ -639,6 +639,39 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
         py = cy;
     }
 }
+/* ATMOS EDIT: four encoders in a 2x2 grid, no ornamental icons or percent suffix.
+ * Other engines and pages retain their existing geometry. */
+static int atmos_edit_grid(void)
+{
+    return !ui.home && !ui.menu && !ui.layer && !name_on() &&
+           cur_page()->fam == FAM_EDIT && TSEL->eng_req == ENG_ATMOS;
+}
+static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
+                                 uint16_t vc, int32_t ratio, int hot)
+{
+    int32_t x = 3 + (int32_t)(c & 1u) * 119, y = 43 + (int32_t)(c >> 1u) * 89;
+    int32_t w = 115, h = 85, vwidth;
+    char k[3] = {'K', (char)('1' + c), 0};
+    const aafont_t *vf = &AF_L, *lf = &AF_M;
+    cv_begin(w, h, T_BG);
+    cv_rect(0, 0, w, h, T_SURF);
+    if (hot) cv_rect(0, 0, w, 2, T_ACCENT);
+    cv_rect(0, h - 1, w, 1, T_LINE);
+    cv_text_in(4, 7, 25, &AF_S, k, hot ? T_ACCENT : T_MID, T_SURF);
+    if (ink_w(lf, label) > w - 36) lf = &AF_S;
+    cv_text_in(31, 7, w - 35, lf, label, T_TEXT, T_SURF);
+    vwidth = ink_w(vf, val);
+    if (!large_face_has(val) || vwidth > w - 8) vf = &AF_M;
+    if (ink_w(vf, val) > w - 8) vf = &AF_S;
+    cv_text_in(4, 32, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
+    if (ratio >= 0) {
+        int32_t n = clamp(ratio, 0, 1000) * (w - 12) / 1000;
+        cv_rect(6, 72, w - 12, 4, T_MID);
+        if (n) cv_rect(6, 72, n, 4, hot ? T_ACCENT : T_THEME);
+    }
+    cv_blit((uint32_t)x, (uint32_t)y);
+}
+
 static void draw_column(uint32_t c, const char *label, const char *val, const char *unit, uint16_t vc,
                         int32_t ratio, uint32_t icon)
 {
@@ -675,6 +708,14 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
     }
     if (kid < 0 && !arm && val[0])
         vc = value_col(vc, ratio);
+    if (atmos_edit_grid()) {
+        fmt_named = 0;
+        card_mot_next = 0;
+        card_arm_next = card_free_next = 0;
+        card_curve_next = 0;
+        draw_atmos_grid_cell(c, label, val, vc, ratio, hot);
+        return;
+    }
     fmt_named = 0;                                      /* (params.c: a name, for this card only) */
     card_mot_next = 0;                                  /* (the same: MOTION, this card only) */
     card_arm_next = card_free_next = 0;
@@ -2719,8 +2760,11 @@ static void ui_draw_body(uint32_t counting)
         if (ui.force)
             draw_frame();
         draw_head();
+        if (atmos_edit_grid() && ui.force)
+            lcd_fill(0, 40, 240, 184, T_BG);
         draw_columns();
-        draw_graph();
+        if (!atmos_edit_grid())
+            draw_graph();
     }
     if (ui.msg_t && !--ui.msg_t && ui.msg2[0]) {     /* the second message (ui_notices) */
         str_cpy(ui.msg, ui.msg2, sizeof ui.msg);
