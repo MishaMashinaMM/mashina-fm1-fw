@@ -645,11 +645,14 @@ static int engine_edit_grid(void)
 {
     /* The lens may use a page override while rendering a non-ATMOS engine.
      * Identify the actual EDIT section, not the transient page descriptor. */
-    return !ui.home && !ui.menu && !ui.layer && !name_on() &&
-           (PAGES[ui.page].fam == FAM_EDIT ||
+    return !ui.menu && !ui.layer && !name_on() &&
+           (ui.home ||
+            PAGES[ui.page].fam == FAM_EDIT ||
             PAGES[ui.page].fam == FAM_ENV ||
             PAGES[ui.page].fam == FAM_LFO ||
-            PAGES[ui.page].fam == FAM_FX);
+            PAGES[ui.page].fam == FAM_FX ||
+            PAGES[ui.page].fam == FAM_SCL ||
+            PAGES[ui.page].fam == FAM_ARP);
 }
 static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
@@ -1159,7 +1162,11 @@ static void draw_engine_edit_footer(void)
     const char *group;
     int32_t n, x;
     page_title(page);
-    if (PAGES[ui.page].fam == FAM_ENV)
+    if (ui.home)
+        group = "CONTROLS";
+    else if (PAGES[ui.page].fam == FAM_SCL || PAGES[ui.page].fam == FAM_ARP)
+        group = "KEYS";
+    else if (PAGES[ui.page].fam == FAM_ENV)
         group = "ENVELOPE";
     else if (PAGES[ui.page].fam == FAM_LFO)
         group = "MODULATION";
@@ -1180,7 +1187,10 @@ static void draw_engine_edit_footer(void)
     lz_begin(240, 18, 0, 222);
     cv_rect(0, 0, 240, 18, T_BG);
     {
-        const char *section = PAGES[ui.page].fam == FAM_ENV ? "ENV" :
+        const char *section = ui.home ? "HOME" :
+                              PAGES[ui.page].fam == FAM_SCL ? "SCL" :
+                              PAGES[ui.page].fam == FAM_ARP ? "ARP" :
+                              PAGES[ui.page].fam == FAM_ENV ? "ENV" :
                               PAGES[ui.page].fam == FAM_LFO ? "LFO" :
                               PAGES[ui.page].fam == FAM_FX ? "FX" : "EDIT";
         cv_rect(3, 1, 43, 16, T_VALUE);
@@ -1196,11 +1206,16 @@ static void draw_engine_edit_footer(void)
     {
         char count[8];
         int32_t cw = crumb_count(count);
-        int32_t right = cw ? 235 - cw - 8 : 238;
-        if (right > x)
+        int32_t count_w = cw ? ink_w(&AF_S, count) : 0;
+        int32_t right = cw ? 235 - count_w - 8 : 238;
+        /* Draw at the actual left edge: cv_text_in centres within its box. */
+        if (right > x && ink_w(&AF_S, pos) <= right - x)
+            cv_text(x, 1, &AF_S, pos, T_VALUE);
+        else if (right > x)
             cv_text_in(x, 1, right - x, &AF_S, pos, T_VALUE, T_BG);
+        /* Same font and y coordinate as the other footer text. */
         if (cw)
-            cv_text_r(235, 1, &AF_X, count, T_VALUE, T_BG);
+            cv_text_r(235, 1, &AF_S, count, T_VALUE, T_BG);
     }
     lz_blit(0, 222);
 }
