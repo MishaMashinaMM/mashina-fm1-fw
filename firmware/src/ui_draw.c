@@ -666,10 +666,20 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     cv_text_in(4, 7, 25, &AF_S, k, hot ? T_THEME : T_MID, T_SURF);
     if (ink_w(lf, label) > w - 36) lf = &AF_S;
     cv_text_in(31, 7, w - 35, lf, label, T_TEXT, T_SURF);
+    /* Numeric-only values get the larger dedicated 25px Oxanium face. */
+    {
+        const char *p = val;
+        int numeric = *p != 0;
+        for (; *p; ++p)
+            if (!(*p >= '0' && *p <= '9') && *p != '.' && *p != '-' && *p != '+')
+                numeric = 0;
+        if (numeric && ink_w(&AF_N, val) <= w - 8)
+            vf = &AF_N;
+    }
     vwidth = ink_w(vf, val);
-    if (!large_face_has(val) || vwidth > w - 8) vf = &AF_M;
+    if (vf != &AF_N && (!large_face_has(val) || vwidth > w - 8)) vf = &AF_M;
     if (ink_w(vf, val) > w - 8) vf = &AF_S;
-    cv_text_in(4, 38, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
+    cv_text_in(4, vf == &AF_N ? 32 : 38, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
     if (ratio >= 0) {
         int32_t n = clamp(ratio, 0, 1000) * (w - 12) / 1000;
         cv_rect(6, 82, w - 12, 4, T_MID);
