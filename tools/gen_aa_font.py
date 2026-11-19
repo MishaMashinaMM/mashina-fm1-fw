@@ -74,12 +74,12 @@ def preset(name):
                 ("M", str(f / "InterTight[wght].ttf") + "@600", 15, (32, 126), EXTRAS, 0.0, PHASES),
                 ("L", str(f / "Michroma-Regular.ttf"), 18, (32, 32), [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L)]
     if name == "oxanium":
-        # ATMOS preview: squared Oxanium labels and values; preserve Michroma titles.
+        # ATMOS preview: Oxanium across all anti-aliased UI font sizes.
         f = FONTS.parent / "assets" / "fonts"
         v = str(f / "Oxanium[wght].ttf")
         return [("S", v + "@500", 12, (32, 126), EXTRAS, -0.025, PHASES),
                 ("M", v + "@600", 15, (32, 126), EXTRAS, -0.015, PHASES),
-                ("L", str(f / "Michroma-Regular.ttf"), 18, (32, 32),
+                ("L", v + "@700", 18, (32, 32),
                  [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L)]
     if name == "inter-tight":
         v = str(FONTS.parent / "assets" / "fonts" / "InterTight[wght].ttf")   # SIL OFL 1.1, Google Fonts
