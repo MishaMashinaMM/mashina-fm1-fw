@@ -2935,11 +2935,13 @@ static void ui_draw_body(uint32_t counting)
     if (ui.hot_t)
         ui.hot_t--;
     felucca_dbg.stage = 6;
-    if (pf_on && !engine_edit_grid())
+    /* GLO track tables own their compact footer. Never paint the legacy
+     * page-flash footer or lens navigation tabs over these screens. */
+    if (pf_on && !engine_edit_grid() && !glo_mix_table_ui())
         page_flash_draw();
-    if (!pf_on || engine_edit_grid())
+    if (!pf_on || engine_edit_grid() || glo_mix_table_ui())
         draw_foot();
-    if (lz_on() && !engine_edit_grid())                  /* Engine EDIT: navigation is footer-only */
+    if (lz_on() && !engine_edit_grid() && !glo_mix_table_ui())
         draw_tabs();
     ui.force = 0;
 }
