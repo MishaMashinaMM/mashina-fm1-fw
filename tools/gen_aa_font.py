@@ -84,7 +84,9 @@ def preset(name):
                 ("N", v + "@700", 32, (32, 32),
                  [ord(c) for c in "0123456789.-+"], 0.0, PHASES_L),
                 ("V", v + "@700", 21, (32, 32),
-                 [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L)]
+                 [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L),
+                ("Q", v + "@750", 17, (32, 126), [], 0.0, PHASES_L),
+                ("R", v + "@750", 16, (32, 126), [], 0.0, PHASES_L)]
     if name == "inter-tight":
         v = str(FONTS.parent / "assets" / "fonts" / "InterTight[wght].ttf")   # SIL OFL 1.1, Google Fonts
         return [("S", v + "@400", 12, (32, 126), EXTRAS, 0.0, PHASES),
@@ -199,7 +201,8 @@ def huff_unpack(hc, data, n):
 def emit(face, tracking, gamma, kern_min):
     name, font, px, (first, last), extras, ftrack, phases = face
     chars = [chr(c) for c in range(first, last + 1)] + [chr(c) for c in extras]
-    r = ar.raster_font(font, px, chars, tracking if ftrack is None else ftrack, gamma, True, kern_min, phases)
+    r = ar.raster_font(font, px, chars, tracking if ftrack is None else ftrack, gamma, True, kern_min, phases,
+                       stretch=1.15 if name == "Q" else 1.10 if name == "R" else 1.0)
     rise = RISE.get(os.path.basename(font.split("#")[0].split("@")[0]), 0)
     if rise:                                       # the ink up by rise px in its line (the line shorter by as much)
         r["asc"] -= rise
