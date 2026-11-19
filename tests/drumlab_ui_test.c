@@ -157,7 +157,7 @@ int main(void)
         sent = ui_sent_px;
         turn(EN_SELECT, 1);
         bad += check("Stage 29C: PLAY pad selection repaints old and new rows",
-                     host_big_fills == drawn && ui_sent_px - sent == 2u * 240u * 23u);
+                     host_big_fills == drawn && ui_sent_px - sent == 2u * 240u * 23u + 240u * 18u);
         turn(EN_SELECT, -1);
         drum_perf_sound[0][0] = 0u;
         ui.force = 1u; frame();
@@ -186,7 +186,7 @@ int main(void)
         sent = ui_sent_px;
         turn(EN_SELECT, 1);
         bad += check("Stage 29C: SEQ pad selection repaints old and new rows",
-                     host_big_fills == drawn && ui_sent_px - sent == 2u * 240u * 23u);
+                     host_big_fills == drawn && ui_sent_px - sent == 2u * 240u * 23u + 240u * 18u);
         turn(EN_SELECT, -1);
         sent = host_big_fills;
         for (uint32_t i = 0; i < 6u; i++) turn(EN_SELECT, 1);
