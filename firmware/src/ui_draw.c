@@ -676,10 +676,15 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
         if (numeric && ink_w(&AF_N, val) <= w - 8)
             vf = &AF_N;
     }
+    /* Enlarged enum strings (e.g. PULSE) use 21px Oxanium; keep a
+     * measured-width fallback for long names and numeric extremes. */
+    if (vf != &AF_N && large_face_has(val) && ink_w(&AF_V, val) <= w - 8)
+        vf = &AF_V;
     vwidth = ink_w(vf, val);
-    if (vf != &AF_N && (!large_face_has(val) || vwidth > w - 8)) vf = &AF_M;
+    if (vf != &AF_N && vf != &AF_V && (!large_face_has(val) || vwidth > w - 8)) vf = &AF_M;
+    if (ink_w(vf, val) > w - 8) vf = &AF_M;
     if (ink_w(vf, val) > w - 8) vf = &AF_S;
-    cv_text_in(4, vf == &AF_N ? 32 : 38, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
+    cv_text_in(4, vf == &AF_N ? 28 : vf == &AF_V ? 35 : 38, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
     if (ratio >= 0) {
         int32_t n = clamp(ratio, 0, 1000) * (w - 12) / 1000;
         cv_rect(6, 82, w - 12, 4, RGB(58, 58, 58));
