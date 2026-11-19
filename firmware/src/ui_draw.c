@@ -1985,10 +1985,10 @@ static void draw_columns(void)
  * splash (v0.9, v11.2, etc.), even when an emulator build attaches a
  * development suffix such as "-atmos" to FELUCCA_VERSION. */
 #define SPL_HOLD 1700u
-/* A deliberately pixel-precise, 8-tooth mechanical emblem. It is drawn using
- * the firmware's palette, not a full-colour image: orange gear, grey spokes,
- * dark recesses, and a small orange/white hub. No font or asset dependency.
- * The 76x76 canvas stays inside the splash's reserved 80px middle band. */
+/* MASHINA's abstract mechanism mark: eight orange gear teeth and
+ * asymmetric machined segments around a hollow bearing. No crossed spokes.
+ * Entirely rendered in the existing orange / grayscale UI palette. The
+ * 76px glyph is self-contained, static and requires no external assets. */
 static void splash_cog(void)
 {
     int32_t x, y;
@@ -1998,26 +1998,48 @@ static void splash_cog(void)
             int32_t ax = x < 0 ? -x : x, ay = y < 0 ? -y : y;
             int32_t r2 = x * x + y * y;
             int32_t delta = ax > ay ? ax - ay : ay - ax;
-            int32_t tooth = (ax <= 6 || ay <= 6 || delta <= 5);
+            int32_t tooth = ax <= 7 || ay <= 7 || delta <= 6;
             uint16_t col = T_BG;
-            /* Twelve? No: eight substantial teeth are legible at LCD size. */
-            if (r2 >= 23 * 23 && r2 <= 29 * 29)
+
+            /* Strong orange rim and eight broad teeth: the recognisable cog. */
+            if (r2 >= 25 * 25 && r2 <= 30 * 30)
                 col = T_VALUE;
-            if (tooth && r2 >= 27 * 27 && r2 <= 36 * 36)
+            if (tooth && r2 >= 28 * 28 && r2 <= 36 * 36)
                 col = T_VALUE;
-            /* Dark bevel between the outer ring and the spokes. */
-            if (r2 >= 21 * 21 && r2 < 23 * 23)
+
+            /* Deep recess, with isolated curved machinery plates. Deliberate
+             * breaks between plates remove any plus/cross silhouette. */
+            if (r2 >= 16 * 16 && r2 <= 23 * 23) {
+                if (x < -4 && y < -3)
+                    col = T_TEXT;               /* brushed-metal upper arc */
+                else if (x < -4 && y > 5)
+                    col = T_MID;                /* softer lower arc */
+                else if (x > 6 && y < -4)
+                    col = T_MID;                /* upper-right instrument dial */
+                else if (x > 4 && y > 5)
+                    col = T_TEXT;               /* asymmetrical lower plate */
+            }
+            /* Second smaller broken ring, offset from the outer segments. */
+            if (r2 >= 13 * 13 && r2 <= 15 * 15 &&
+                ((x < -5 && y > -2) || (x > 5 && y < 0)))
                 col = T_MID;
-            /* Four rigid steel spokes cross the open inner wheel. */
-            if (r2 <= 23 * 23 && (ax <= 4 || ay <= 4))
+
+            /* Three gray rivets following the upper-right circular plate. */
+            if ((x - 8) * (x - 8) + (y + 20) * (y + 20) <= 4 ||
+                (x - 16) * (x - 16) + (y + 15) * (y + 15) <= 4 ||
+                (x - 21) * (x - 21) + (y + 7) * (y + 7) <= 4)
                 col = T_TEXT;
-            /* Layered hub, like a simplified machined bearing. */
+            /* Three diagonal vent cuts make the lower-right segment feel
+             * mechanical rather than emblematic or heraldic. */
+            if (x >= 8 && x <= 22 && y >= 9 && y <= 24 &&
+                (x + y == 29 || x + y == 33 || x + y == 37))
+                col = T_BG;
+
+            /* Central orange bearing is a ring with a hollow black core. */
             if (r2 <= 11 * 11)
-                col = T_MID;
-            if (r2 <= 8 * 8)
+                col = T_BG;
+            if (r2 >= 7 * 7 && r2 <= 11 * 11)
                 col = T_VALUE;
-            if (r2 <= 4 * 4)
-                col = T_INK;
             if (col != T_BG)
                 cv_pset(x + 38, y + 38, col);
         }
