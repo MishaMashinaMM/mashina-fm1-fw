@@ -643,10 +643,14 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
  * ENV, LFO, FX and other specialized pages retain their existing geometry. */
 static int glo_parameter_grid(void)
 {
-    if (ui.home || ui.menu || ui.layer || name_on() || PAGES[ui.page].fam != FAM_GLO)
+    if (ui.home || ui.menu || ui.layer || name_on())
         return 0;
     const char *t = PAGES[ui.page].title;
-    return str_eq(t, "SENDS") || str_eq(t, "EQ") ||
+    if (str_eq(t, "SENDS"))
+        return PAGES[ui.page].fam == FAM_TRK && PAGES[ui.page].scope == SC_TRACK;
+    if (PAGES[ui.page].fam != FAM_GLO)
+        return 0;
+    return str_eq(t, "EQ") ||
            str_eq(t, "GLOBAL") || str_eq(t, "SYSTEM");
 }
 static int engine_edit_grid(void)
@@ -1231,7 +1235,10 @@ static void draw_engine_edit_footer(void)
 static int glo_mix_table_ui(void)
 {
     return !ui.home && !ui.menu && !ui.layer &&
-           cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK;
+           cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK &&
+           (str_eq(cur_page()->title, "MIXER") ||
+            str_eq(cur_page()->title, "ZONES") ||
+            str_eq(cur_page()->title, "TUNING"));
 }
 
 static void draw_foot(void)
@@ -1240,8 +1247,9 @@ static void draw_foot(void)
         const char *name = PAGES[ui.page].title;
         const char *group = str_eq(name, "GLOBAL") ? "GLOBAL" :
                             str_eq(name, "SYSTEM") ? "SYSTEM" : "MIX";
-        const char *page = str_eq(name, "SENDS") ? "4/5" :
-                           str_eq(name, "EQ") ? "5/5" : "1/1";
+        const char *page = str_eq(name, "SENDS") ? "4/7" :
+                           str_eq(name, "EQ") ? "5/7" :
+                           str_eq(name, "GLOBAL") ? "6/7" : "7/7";
         cv_begin(240, 18, T_BG);
         cv_rect(3, 1, 43, 16, T_VALUE);
         cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
@@ -1254,8 +1262,8 @@ static void draw_foot(void)
     }
     if (glo_mix_table_ui()) {
         const char *name = cur_page()->title;
-        const char *page = str_eq(name, "ZONES") ? "2/5" :
-                           str_eq(name, "TUNING") ? "3/5" : "1/5";
+        const char *page = str_eq(name, "ZONES") ? "2/7" :
+                           str_eq(name, "TUNING") ? "3/7" : "1/7";
         cv_begin(240, 18, T_BG);
         cv_rect(3, 1, 43, 16, T_VALUE);
         cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
@@ -2935,7 +2943,7 @@ static void ui_draw_body(uint32_t counting)
         if (v != view)
             ui.knob_ms = fm1_ms, view = v;
     }
-    if (!ui.home && cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK) {   /* GLO > MIXER only: HOME must draw its own view */
+    if (glo_mix_table_ui()) {   /* Only MIXER, ZONES and TUNING use the six-track table. */
         if (ui.force)
             draw_frame();
         draw_head();
