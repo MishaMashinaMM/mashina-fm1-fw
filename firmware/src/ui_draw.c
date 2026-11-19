@@ -2832,7 +2832,12 @@ static void ui_draw_body(uint32_t counting)
             draw_frame();
         draw_head();
         gen_cards();
-        draw_graph();
+        /* The legacy GEN graph occupies the lower half of the screen.
+         * Do not paint it over K3/K4 in the new full-height 2x2 layout. */
+        if (!engine_edit_grid())
+            draw_graph();
+        else
+            draw_foot();
         lz_frame_end();
         return;
     }
