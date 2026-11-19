@@ -1219,23 +1219,24 @@ static void draw_engine_edit_footer(void)
     }
     lz_blit(0, 222);
 }
+static int glo_mix_table_ui(void)
+{
+    return !ui.home && !ui.menu && !ui.layer &&
+           cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK;
+}
+
 static void draw_foot(void)
 {
-    if (!ui.home && !ui.menu && !ui.layer &&
-        cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK) {
+    if (glo_mix_table_ui()) {
         const char *name = cur_page()->title;
         const char *page = str_eq(name, "ZONES") ? "2/5" :
                            str_eq(name, "TUNING") ? "3/5" : "1/5";
-        char track[12];
         cv_begin(240, 18, T_BG);
         cv_rect(3, 1, 43, 16, T_VALUE);
         cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
         cv_rect(48, 1, 65, 16, RGB(58,58,58));
         cv_text_in(51, 1, 59, &AF_S, "MIX", T_TEXT, RGB(58,58,58));
         cv_text(117, 1, &AF_S, name, T_VALUE);
-        str_cpy(track, "T", sizeof track);
-        fmt_int(track + 1, (int32_t)song.sel + 1);
-        cv_text(183, 1, &AF_S, track, T_VALUE);
         cv_text_r(237, 1, &AF_S, page, T_VALUE, T_BG);
         cv_blit(0, 222);
         return;
@@ -2245,11 +2246,11 @@ static void lz_frame_end(void)
         ui.hot_t--;
     /* GEN/HOME now uses the shared 2x2 layout: never briefly paint
      * the legacy page flash or navigation tabs over its footer. */
-    if (pf_on && !engine_edit_grid())
+    if (pf_on && !engine_edit_grid() && !glo_mix_table_ui())
         page_flash_draw();
-    if (!pf_on || engine_edit_grid())
+    if (!pf_on || engine_edit_grid() || glo_mix_table_ui())
         draw_foot();
-    if (!engine_edit_grid())
+    if (!engine_edit_grid() && !glo_mix_table_ui())
         draw_tabs();
     ui.force = 0;
 }
@@ -2423,7 +2424,7 @@ static void mixer_midi_activity_dot(int32_t cx, int32_t cy, uint32_t active)
         for (x = -5; x <= 5; x++) {
             int32_t r2 = x * x + y * y;
             if (r2 <= 25)
-                cv_pset(cx + x, cy + y, active ? T_VALUE :
+                cv_pset(cx + x, cy + y, active ? T_TEXT :
                         r2 >= 17 ? RGB(70, 70, 70) : RGB(0, 0, 0));
         }
 }
