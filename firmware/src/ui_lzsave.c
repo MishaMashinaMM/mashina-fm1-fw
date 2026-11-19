@@ -36,7 +36,7 @@ static void graph_lib(void)
         int cur = i == song_cur;
         int occupied = cur ? (graph_project_used(0) || graph_project_used(1) ||
                               graph_project_used(2) || graph_project_used(3)) : lib.mask[i] != 0u;
-        uint16_t bg = cur ? T_TINT : T_RAISE;
+        uint16_t bg = cur ? RGB(35,35,35) : (i & 1u ? RGB(23,23,23) : RGB(36,36,36));
         char b[4], nm[13];
         cv_rect(x, y, 56, 66, bg);
         /* Orange outline = stored project, gray outline = empty project.
@@ -76,7 +76,7 @@ static void graph_lz_tools(void)
         c = LIVE_TOOL[row];
         int32_t y = 2 + (int32_t)row * 34;
         int sel = ui.act == c + 1u;
-        uint16_t bg = sel ? T_TINT : T_RAISE;
+        uint16_t bg = sel ? RGB(50,38,27) : RGB(30,30,30);
         cv_rect(4, y, 232, 31, bg);
         GFX_HOOK_ALIGN(0, y, 0, y + 31, AL_V, "tools row text centred up/down");
         cv_text_on(12, y + CAP_IN(M, 31), &AF_M, c == 3u ? "CLEAR SLOT" : WHAT[c], sel ? T_TEXT : T_MID, bg);
@@ -230,7 +230,7 @@ static void graph_sound(void)
             cv_text_in(x, y + CAP_IN(X, 15), 35, &AF_X, b, T_DIM, bg);
         }
         if (sel)
-            cv_frame(x, y, 35, 15, T_THEME);
+            cv_frame(x, y, 35, 15, T_TEXT);
     }
 }
 static void graph_lz_presets(void)
@@ -247,7 +247,7 @@ static void graph_lz_presets(void)
     for (i = first; i < total && i < first + 9u; i++) {
         int32_t y = 2 + (int32_t)(i - first) * 15;
         int sel = i == cur;
-        uint16_t bg = sel ? T_TINT : T_SURF;
+        uint16_t bg = sel ? T_VALUE : (i & 1u ? RGB(23,23,23) : RGB(36,36,36));
         char nm[13];
         const char *en;
         e = preset_at(i, &k);
@@ -261,13 +261,13 @@ static void graph_lz_presets(void)
         if (sel)
             cv_rect(88, y, 148, 14, bg);
         GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
-        cv_free_text(94, y + CAP_IN(X, 14), &AF_X, nm, sel ? T_TEXT : T_MID, bg, 84);
+        cv_free_text(94, y + CAP_IN(X, 14), &AF_X, nm, sel ? T_INK : T_MID, bg, 84);
         if (favorite_has(e, k)) {
             GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset star centred up/down");
             cv_text_on(182, y + CAP_IN(S, 14), &AF_S, "*", T_ACCENT, bg);   /* (a favourite; 0.8.5 no icons) */
         }
         GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
-        cv_text_r(232, y + CAP_IN(X, 14), &AF_X, eng_abbr(en), T_DIM, bg);
+        cv_text_r(232, y + CAP_IN(X, 14), &AF_X, eng_abbr(en), sel ? T_INK : T_DIM, bg);
     }
 }
 /* the lens's panel for the SAVE page shown */
