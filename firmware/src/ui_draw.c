@@ -658,14 +658,12 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     /* Active K1-K4: complete orange outline, not a top-only indicator.
      * Draw the outline inside the cell so it never overlaps adjacent cells. */
     if (hot) {
-        cv_rect(0, 0, w, 2, T_ACCENT);
-        cv_rect(0, h - 2, w, 2, T_ACCENT);
-        cv_rect(0, 2, 2, h - 4, T_ACCENT);
-        cv_rect(w - 2, 2, 2, h - 4, T_ACCENT);
+        cv_rrect(0, 0, w, h, 5, T_THEME, T_SURF);
+        cv_rrect(2, 2, w - 4, h - 4, 4, T_SURF, T_THEME);
     } else {
         cv_rect(0, h - 1, w, 1, T_LINE);
     }
-    cv_text_in(4, 7, 25, &AF_S, k, hot ? T_ACCENT : T_MID, T_SURF);
+    cv_text_in(4, 7, 25, &AF_S, k, hot ? T_THEME : T_MID, T_SURF);
     if (ink_w(lf, label) > w - 36) lf = &AF_S;
     cv_text_in(31, 7, w - 35, lf, label, T_TEXT, T_SURF);
     vwidth = ink_w(vf, val);
@@ -675,7 +673,7 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     if (ratio >= 0) {
         int32_t n = clamp(ratio, 0, 1000) * (w - 12) / 1000;
         cv_rect(6, 82, w - 12, 4, T_MID);
-        if (n) cv_rect(6, 82, n, 4, hot ? T_ACCENT : T_THEME);
+        if (n) cv_rect(6, 82, n, 4, T_THEME);
     }
     cv_blit((uint32_t)x, (uint32_t)y);
 }
@@ -1147,14 +1145,14 @@ static void draw_atmos_edit_footer(void)
     str_cpy(pos, page, sizeof pos);
     lz_begin(240, 18, 0, 222);
     cv_rect(0, 0, 240, 18, T_BG);
-    cv_rect(3, 1, 43, 16, T_ACCENT);
-    cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_ACCENT);
+    cv_rect(3, 1, 43, 16, T_THEME);
+    cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_THEME);
     n = ink_w(&AF_S, group) + 12;
     if (n < 48) n = 48;
     cv_rect(48, 1, n, 16, T_SURF);
     cv_text_in(54, 1, n - 12, &AF_S, group, T_TEXT, T_SURF);
     x = 52 + n;
-    cv_text_in(x, 1, 238 - x, &AF_S, pos, T_ACCENT, T_BG);
+    cv_text_in(x, 1, 238 - x, &AF_S, pos, T_THEME, T_BG);
     lz_blit(0, 222);
 }
 static void draw_foot(void)
@@ -2811,11 +2809,9 @@ static void ui_draw_body(uint32_t counting)
     if (ui.hot_t)
         ui.hot_t--;
     felucca_dbg.stage = 6;
-    if (pf_on)                                          /* (0.6.61) the page's name for a moment; (0.6.64) over the
-                                                         * footer, which says the same: the header, the cards and
-                                                         * the graph stay in sight */
+    if (pf_on && !atmos_edit_grid())
         page_flash_draw();
-    if (!pf_on)                                         /* (its end: the footer back at once) */
+    if (!pf_on || atmos_edit_grid())
         draw_foot();
     if (lz_on() && !atmos_edit_grid())                  /* ATMOS EDIT: navigation is footer-only */
         draw_tabs();
