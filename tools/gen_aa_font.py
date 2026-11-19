@@ -274,7 +274,7 @@ def emit(face, tracking, gamma, kern_min):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("out")
-    ap.add_argument("--preset", choices=["standin", "inter-tight", "chakra-petch", "jiant-lab"])
+    ap.add_argument("--preset", choices=["standin", "inter-tight", "chakra-petch", "jiant-lab", "oxanium"])
     ap.add_argument("--face", action="append", default=[])
     ap.add_argument("--tracking", type=float, default=0.0, help="extra advance per glyph in em")
     ap.add_argument("--gamma", type=float, default=1.0, help="coverage curve; <1 thickens light-on-dark text")
