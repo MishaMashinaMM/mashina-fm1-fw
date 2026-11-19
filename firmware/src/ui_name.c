@@ -318,6 +318,10 @@ static uint32_t name_leds(void)
  * or a hint, and ABC / 123; the white keys as two rows of 8 pills (the left octave, then the right one; the
  * cycling key THEME); the black keys' functions as five KEY cells under their names. The footer: OCT+ / OCT-,
  * then the knobs and the keys */
+/* NAME uses no top dialog tabs; its editor starts below the header. */
+#define NM_CARD_Y 26
+#define NM_GRAPH_Y 68
+#define NM_GRAPH_H 150
 #define NM_CX(i) (12 + 18 * (int32_t)(i))              /* cell i: 18 x 22 at y 18 of the card */
 static void nm_title(char *b)
 {
@@ -343,7 +347,7 @@ static void nm_card(uint32_t c, const char *l, const char *v, uint16_t vc)
         cv_rect(0, LZ_CARD_H - 1, CARD_W, 1, c == 3u ? T_ACCENT : T_LINE);
     cv_text(4, CARD_XY - AF_X_CAP_Y + 1, &AF_X, l, T_MID);
     cv_text(4, 17 - AF_M_CAP_Y, &AF_M, v, vc);
-    cv_blit((uint32_t)CARD_X(c), LZ_CARD_Y);
+    cv_blit((uint32_t)CARD_X(c), NM_CARD_Y);
 }
 static void nm_draw_field(void)
 {
@@ -364,8 +368,8 @@ static void nm_draw_panel(void)
     static const char *const FN[5] = {"F#", "G#", "A#", "C#", "D#"};
     uint32_t i, empty = nm.len == 0u, w0 = nm.cur > NM_LEN - 1u ? nm.cur - (NM_LEN - 1u) : 0u;   /* (a lyric: the window) */
     char b[24];
-    cv_begin(240, LZ_GRAPH_H, T_BG);
-    cv_rect(4, 0, 232, LZ_GRAPH_H, T_SURF);
+    cv_begin(240, NM_GRAPH_H, T_BG);
+    cv_rect(4, 0, 232, NM_GRAPH_H, T_SURF);
     cv_bg = T_SURF;
     nm_title(b);
     cv_text(10, 6 - AF_X_CAP_Y, &AF_X, b, T_THEME);
@@ -425,7 +429,7 @@ static void nm_draw_panel(void)
         cv_text_in(x, y + 16 - AF_X_CAP_Y, 42, &AF_X, i == NB_LEFT ? "<" : i == NB_RIGHT ? ">" : i == NB_SPACE ? "SPACE" :
                    i == NB_DEL ? "DEL" : nm.num ? "ABC" : "123", T_INK, T_KEY);
     }
-    cv_blit(0, LZ_GRAPH_Y);
+    cv_blit(0, NM_GRAPH_Y);
 }
 /* Match the compact SAVE/GLO footer, without touching the NAME editor's
  * keyboard, confirmation, transport guard or the HOME long-press screen. */
@@ -451,13 +455,13 @@ static void name_draw(void)
     uint32_t sig = fnv(fnv(2166136261u, st, sizeof st), nm.s, sizeof nm.s) + ux.gen * 7919u +
                    (uint32_t)transport_busy() * 104729u;
     if (ui.force) {
-        const int16_t R[7][4] = {{0, LT_Y, 240, (int16_t)DLG_TAB_H}, {CARD_X(0), LZ_CARD_Y, CARD_W, LZ_CARD_H},
-                                 {CARD_X(1), LZ_CARD_Y, CARD_W, LZ_CARD_H}, {CARD_X(2), LZ_CARD_Y, CARD_W, LZ_CARD_H},
-                                 {CARD_X(3), LZ_CARD_Y, CARD_W, LZ_CARD_H}, {0, LZ_GRAPH_Y, 240, LZ_GRAPH_H},
-                                 {0, LZ_FOOT_Y, 240, LZ_FOOT_H}};
-        fill_around(R, 7);                             /* (0.8.5: the lens's layout, the dialogs' tabs; 0.9.0: round its
-                                                        * strips, not under them too) */
-        dlg_tabs(2u);
+        const int16_t R[6][4] = {{CARD_X(0), NM_CARD_Y, CARD_W, LZ_CARD_H},
+                                  {CARD_X(1), NM_CARD_Y, CARD_W, LZ_CARD_H},
+                                  {CARD_X(2), NM_CARD_Y, CARD_W, LZ_CARD_H},
+                                  {CARD_X(3), NM_CARD_Y, CARD_W, LZ_CARD_H},
+                                  {0, NM_GRAPH_Y, 240, NM_GRAPH_H},
+                                  {0, 222, 240, 18}};
+        fill_around(R, 6);  /* clear the former NOTICE/DICE/NAME tab area */
         nm.sig = ~sig;
     }
     draw_head();
