@@ -201,13 +201,14 @@ int main(void)
                  ui.drum_perf_open && !ui.drum_map_open);
     /* The middle canvas is capped at 150 rows: the uncovered part must
      * still be black, never the previous screen's pixels. */
-    /* Settle row signatures first: a force with changed row data intentionally
-     * updates only rows, while a force with unchanged data repaints the page. */
+    /* The six-row table now ends at y=194, not y=194 with a black
+     * margin at y=190: check the actual blank strip at y=210 instead.
+     * Settle signatures first so forced refresh repaints the whole page. */
     frame();
-    host_screen[190u * 240u + 237u] = swap16(0xFFFFu);
+    host_screen[210u * 240u + 237u] = swap16(0xFFFFu);
     ui.force = 1u; ui_draw();
     bad += check("Stage 25C: PLAY clears the entire screen",
-                 host_screen[190u * 240u + 237u] == swap16(T_BG));
+                 host_screen[210u * 240u + 237u] == swap16(T_BG));
     press(B_ENV);
     bad += check("Stage 25C: ENV tap leaves PLAY immediately",
                  !ui.drum_perf_open && !ui.drum_map_open && !ui.home && cur_page()->fam == FAM_ENV);
@@ -216,10 +217,10 @@ int main(void)
     /* Settle row signatures first: a force with changed row data intentionally
      * updates only rows, while a force with unchanged data repaints the page. */
     frame();
-    host_screen[190u * 240u + 237u] = swap16(0xFFFFu);
+    host_screen[210u * 240u + 237u] = swap16(0xFFFFu);
     ui.force = 1u; ui_draw();
     bad += check("Stage 25C: SEQ clears the entire screen",
-                 host_screen[190u * 240u + 237u] == swap16(T_BG));
+                 host_screen[210u * 240u + 237u] == swap16(T_BG));
     press(B_EDIT);
     bad += check("Stage 25C: EDIT tap leaves SEQ immediately",
                  !ui.drum_perf_open && !ui.drum_map_open && !ui.home && cur_page()->fam == FAM_EDIT);
