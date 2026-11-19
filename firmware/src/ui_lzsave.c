@@ -213,24 +213,28 @@ static void lz_track_being(void)
 static void graph_sound(void)
 {
     uint32_t k;
-    lz_track_being();
+    /* 32 user slots: 4 columns x 8 rows. On a 240x148 panel this
+     * gives 58x17px cells with 2px gaps. A 6x6 grid would have
+     * narrower 38px cells, leaving less room for preset names. */
     for (k = 0; k < UP_SLOTS; k++) {
-        int32_t x = 88 + (int32_t)(k % 4u) * 37, y = 2 + (int32_t)(k / 4u) * 17;
+        int32_t x = 3 + (int32_t)(k % 4u) * 60;
+        int32_t y = 3 + (int32_t)(k / 4u) * 18;
         int sel = k == ui.uslot, used = up_used(k);
-        uint16_t bg = sel ? T_TINT : T_RAISE;
+        uint16_t bg = sel ? RGB(51,39,27) : (k / 4u & 1u ? RGB(24,24,24) : RGB(38,38,38));
         char b[13];
-        cv_rect(x, y, 35, 15, bg);
+        cv_rect(x, y, 57, 16, bg);
         if (used) {
-            lz_mini_being(up_engine(k), x + 5, y + 7, 3, bg_col(150));
             up_name(k, b);
-            cv_clip_text(x + 10, y + CAP_IN(X, 15), &AF_X, b, T_TEXT, bg, 24);
+            if (!b[0]) up_slot_label(b, k);
+            cv_clip_text(x + 4, y + CAP_IN(X, 16), &AF_X, b, T_TEXT, bg, 49);
         } else {
             up_slot_label(b, k);
-            GFX_HOOK_ALIGN(x, y, x + 35, y + 15, AL_HV, "sound slot label centred");
-            cv_text_in(x, y + CAP_IN(X, 15), 35, &AF_X, b, T_DIM, bg);
+            cv_text_in(x + 3, y + CAP_IN(X, 16), 51, &AF_X, b, T_DIM, bg);
         }
         if (sel)
-            cv_frame(x, y, 35, 15, T_TEXT);
+            cv_frame(x, y, 57, 16, T_TEXT);
+        else if (used)
+            cv_frame(x, y, 57, 16, T_VALUE);
     }
 }
 static void graph_lz_presets(void)
