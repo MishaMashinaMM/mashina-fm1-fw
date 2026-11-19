@@ -639,14 +639,14 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
         py = cy;
     }
 }
-/* ATMOS EDIT: four encoders in a 2x2 grid, no ornamental icons or percent suffix.
- * Other engines and pages retain their existing geometry. */
-static int atmos_edit_grid(void)
+/* All engine EDIT pages: four encoders in a 2x2 grid.
+ * ENV, LFO, FX and other specialized pages retain their existing geometry. */
+static int engine_edit_grid(void)
 {
     return !ui.home && !ui.menu && !ui.layer && !name_on() &&
-           cur_page()->fam == FAM_EDIT && TSEL->eng_req == ENGI_ATMOS;
+           cur_page()->fam == FAM_EDIT;
 }
-static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
+static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
 {
     int32_t x = 3 + (int32_t)(c & 1u) * 119, y = 27 + (int32_t)(c >> 1u) * 96;
@@ -729,12 +729,12 @@ static void draw_column(uint32_t c, const char *label, const char *val, const ch
     }
     if (kid < 0 && !arm && val[0])
         vc = value_col(vc, ratio);
-    if (atmos_edit_grid()) {
+    if (engine_edit_grid()) {
         fmt_named = 0;
         card_mot_next = 0;
         card_arm_next = card_free_next = 0;
         card_curve_next = 0;
-        draw_atmos_grid_cell(c, label, val, vc, ratio, hot);
+        draw_engine_grid_cell(c, label, val, vc, ratio, hot);
         return;
     }
     fmt_named = 0;                                      /* (params.c: a name, for this card only) */
@@ -1148,7 +1148,7 @@ static __attribute__((noinline)) void draw_crumbs(int32_t y, uint16_t fg, uint16
     }
 }
 /* Single-line EDIT navigation, sized to its text rather than a tall footer. */
-static void draw_atmos_edit_footer(void)
+static void draw_engine_edit_footer(void)
 {
     char page[20], pos[20];
     const char *group;
@@ -1164,7 +1164,7 @@ static void draw_atmos_edit_footer(void)
     cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_VALUE);
     n = ink_w(&AF_S, group) + 12;
     if (n < 48) n = 48;
-    /* Match the dark-gray unfilled portion of the ATMOS parameter range bars. */
+    /* Match the dark-gray unfilled portion of the parameter range bars. */
     cv_rect(48, 1, n, 16, RGB(58, 58, 58));
     cv_text_in(54, 1, n - 12, &AF_S, group, T_TEXT, RGB(58, 58, 58));
     x = 52 + n;
@@ -1173,8 +1173,8 @@ static void draw_atmos_edit_footer(void)
 }
 static void draw_foot(void)
 {
-    if (atmos_edit_grid()) {
-        draw_atmos_edit_footer();
+    if (engine_edit_grid()) {
+        draw_engine_edit_footer();
         return;
     }
     char s[48], ti[20];
@@ -2809,10 +2809,10 @@ static void ui_draw_body(uint32_t counting)
         if (ui.force)
             draw_frame();
         draw_head();
-        if (atmos_edit_grid() && ui.force)
+        if (engine_edit_grid() && ui.force)
             lcd_fill(0, 24, 240, 198, T_BG);
         draw_columns();
-        if (!atmos_edit_grid())
+        if (!engine_edit_grid())
             draw_graph();
     }
     if (ui.msg_t && !--ui.msg_t && ui.msg2[0]) {     /* the second message (ui_notices) */
@@ -2825,11 +2825,11 @@ static void ui_draw_body(uint32_t counting)
     if (ui.hot_t)
         ui.hot_t--;
     felucca_dbg.stage = 6;
-    if (pf_on && !atmos_edit_grid())
+    if (pf_on && !engine_edit_grid())
         page_flash_draw();
-    if (!pf_on || atmos_edit_grid())
+    if (!pf_on || engine_edit_grid())
         draw_foot();
-    if (lz_on() && !atmos_edit_grid())                  /* ATMOS EDIT: navigation is footer-only */
+    if (lz_on() && !engine_edit_grid())                  /* Engine EDIT: navigation is footer-only */
         draw_tabs();
     ui.force = 0;
 }
