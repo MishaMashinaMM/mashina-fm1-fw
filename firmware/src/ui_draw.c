@@ -1698,14 +1698,20 @@ static void draw_columns(void)
     }
     if (cur_page()->graph == GR_BROWSE) {
         uint32_t total, cur = preset_pos(&total);
-        char u[8];
+        char count[8];
         if (cur < total) fmt_int(val, (int32_t)cur + 1);
-        else str_cpy(val, total ? "--" : "NONE", 8);   /* (0.6.25: an empty list said "--/0") */
-        str_cpy(u, "/", 8);
-        fmt_int(u + 1, (int32_t)total);
-        if (!total || (cur + 1u >= 100u && total >= 100u)) u[0] = 0;   /* (0.7.0) "147/155" is too wide for the card: the
-                                                         * number alone past 99 (every engine's presets counted) */
-        draw_column(0, "No.", val, u, VAL(0u), -1, ICON_NONE);
+        else str_cpy(val, total ? "--" : "NONE", sizeof val);
+        /* Keep the full position/total in the value itself. The previous
+         * code dropped /total at position 100 because it was split into
+         * a separate unit, even though the small font fits the full text. */
+        if (total) {
+            fmt_int(count, (int32_t)total);
+            if (str_len(val) + 1u + str_len(count) < sizeof val) {
+                str_cpy(val + str_len(val), "/", sizeof val - str_len(val));
+                str_cpy(val + str_len(val), count, sizeof val - str_len(val));
+            }
+        }
+        draw_column(0, "No.", val, "", VAL(0u), -1, ICON_NONE);
         draw_column(1, "ENG", TSEL->eng_req == ENGI_DRUMLAB ? "D-LAB" : ENGINES[TSEL->eng_req]->name, "", VAL(1u), -1, engine_icon(ENGINES[TSEL->eng_req]->name));
         draw_column(2, "FAV", preset_favorite() ? "ON" : "OFF", "", VAL(2u), -1, ICON_X_STAR);
         draw_column(3, "LIST", N_LIST[list_get()], "", VAL(3u), -1, ICON_X_FOLDER);
