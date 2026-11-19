@@ -236,16 +236,17 @@ static void graph_sound(void)
 static void graph_lz_presets(void)
 {
     uint32_t total, cur = preset_pos(&total), e, k, i, first;
-    lz_track_being();
+    /* JLD: no Jiant being or track illustration. The browser uses the
+     * complete 240px panel, with ten 14px rows and full engine names. */
     if (!total) {
-        cv_text_in(88, 63, 148, &AF_X, "NO FAVORITES", T_MID, T_SURF);
+        cv_text_in(6, 63, 228, &AF_M, "NO FAVORITES", T_MID, T_SURF);
         return;
     }
     first = cur < 4u ? 0u : cur - 4u;
-    if (total > 9u && first + 9u > total)
-        first = total - 9u;
-    for (i = first; i < total && i < first + 9u; i++) {
-        int32_t y = 2 + (int32_t)(i - first) * 15;
+    if (total > 10u && first + 10u > total)
+        first = total - 10u;
+    for (i = first; i < total && i < first + 10u; i++) {
+        int32_t y = (int32_t)(i - first) * 14;
         int sel = i == cur;
         uint16_t bg = sel ? T_VALUE : (i & 1u ? RGB(23,23,23) : RGB(36,36,36));
         char nm[13];
@@ -258,16 +259,15 @@ static void graph_lz_presets(void)
             str_cpy(nm, ENGINES[e]->presets[k].name, sizeof nm);
             en = ENGINES[e]->name;
         }
-        if (sel)
-            cv_rect(88, y, 148, 14, bg);
-        GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
-        cv_free_text(94, y + CAP_IN(X, 14), &AF_X, nm, sel ? T_INK : T_MID, bg, 84);
-        if (favorite_has(e, k)) {
-            GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset star centred up/down");
-            cv_text_on(182, y + CAP_IN(S, 14), &AF_S, "*", T_ACCENT, bg);   /* (a favourite; 0.8.5 no icons) */
-        }
-        GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "sound preset row centred up/down");
-        cv_text_r(232, y + CAP_IN(X, 14), &AF_X, eng_abbr(en), sel ? T_INK : T_DIM, bg);
+        cv_rect(0, y, 240, 14, bg);
+        GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "preset row centred");
+        cv_free_text(6, y + CAP_IN(X, 14), &AF_X, nm, sel ? T_INK : T_TEXT, bg, 126);
+        if (favorite_has(e, k))
+            cv_text_on(133, y + CAP_IN(S, 14), &AF_S, "*", sel ? T_INK : T_ACCENT, bg);
+        /* Reserve the right-hand 99px for the actual engine name,
+         * rather than the old 4-letter abbreviation. */
+        cv_clip_text(141, y + CAP_IN(X, 14), &AF_X, en,
+                     sel ? T_INK : T_MID, bg, 95);
     }
 }
 /* the lens's panel for the SAVE page shown */
