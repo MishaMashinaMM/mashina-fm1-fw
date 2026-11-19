@@ -57,7 +57,7 @@ HUFF = [("M", "L")]
 # Chakra Petch's sat (tests/ui_render.c alignment: a value centred in its window, its unit on its baseline)
 RISE = {"IBMPlexMono-SemiBold.ttf": 1, "Oxanium[wght].ttf": -2}
 UI_PRESET = "jiant-lab"            # the firmware's faces (tools/build.py; tests/text_spacing_test.py)
-L_CHARS = " #+-./0123456789ABCDEFGHIJKLMNOPQRSTUVWXY"
+L_CHARS = " #+-./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 def preset(name):
