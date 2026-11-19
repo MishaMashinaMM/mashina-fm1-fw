@@ -244,31 +244,28 @@ static int32_t menu_document(int32_t y, int draw)
         cv_text(6, y + 58, &AF_M, ver, T_THEME);
         cv_text_r(232, y + 61, &AF_S, __DATE__, T_MID, T_BG);
         cv_text(6, y + 82, &AF_S, "Misha Mashina", T_TEXT);
-        cv_text(6, y + 100, &AF_S, "Live sound + MIDI performance", T_TEXT);
+        cv_text(6, y + 100, &AF_S, "EXTERNAL MIDI / LIVE SOUND", T_TEXT);
         cv_text(6, y + 118, &AF_S, "GPL-3.0-only / no warranty", T_TEXT);
         cv_text(6, y + 138, &AF_S, "github.com", T_MID);
         cv_text(6, y + 156, &AF_S, "/MishaMashinaMM", T_MID);
         cv_text(6, y + 174, &AF_S, "/jiant-live-drums", T_MID);
         draw_about_qr(158, y + 122);
     }
-    y = menu_text("MASHINA - FM1 PERFORMANCE FW", y + 216, T_THEME, draw);
-    y = menu_text("Live-focused FM1 firmware: six MIDI-routed tracks, keyboard zones, transpose and fine tuning.", y, T_TEXT, draw);
-    y = menu_text("Synth engines, DRUM-X and DRUM-LAB, MIDI macros, global EQ, effects and live project recall.", y, T_TEXT, draw);
-    y = menu_text("Sequencer disabled; animations removed. See the repository for builds, documentation and source.", y, T_TEXT, draw);
-    y = menu_text("PROJECT SOURCE", y + 12, T_THEME, draw);
+    /* Introduce MASHINA as a playable MIDI sound module, not a drum sequencer.
+     * Short paragraphs wrap safely in the 240px scrollable ABOUT document. */
+    y = menu_text("MASHINA - LIVE PERFORMANCE", y + 216, T_THEME, draw);
+    y = menu_text("Performance-focused firmware that turns the M-VAVE FM1 into a flexible, multitrack sound module for external MIDI controllers.", y, T_TEXT, draw);
+    y = menu_text("MIDI CONTROL", y + 12, T_THEME, draw);
+    y = menu_text("USB and TRS MIDI input. Six tracks with independent receive channels, overlapping or split keyboard zones and velocity ranges.", y, T_TEXT, draw);
+    y = menu_text("Per-track level, pan, transpose and fine tuning. Layer sounds or assign separate keyboards and controllers to different tracks.", y, T_TEXT, draw);
+    y = menu_text("MIDI CC Learn and 32 assignable performance macros let external controllers change synth and effect parameters live.", y, T_TEXT, draw);
+    y = menu_text("SOUND + PERFORMANCE", y + 12, T_THEME, draw);
+    y = menu_text("Multiple melodic synthesis engines, two 12-sound drum engines, effects and three-band global EQ. Not limited to drums.", y, T_TEXT, draw);
+    y = menu_text("Live project recall, mixer controls and performance shortcuts are designed for playing, not programming a song.", y, T_TEXT, draw);
+    y = menu_text("The song sequencer is disabled. The streamlined orange, gray and white interface has no animations.", y, T_TEXT, draw);
+    y = menu_text("PROJECT + SOURCE", y + 12, T_THEME, draw);
+    y = menu_text("Firmware, emulator, installer and documentation:", y, T_TEXT, draw);
     y = menu_text("github.com/MishaMashinaMM/jiant-live-drums", y, T_MID, draw);
-    y = menu_text("ORIGINS + CREDITS", y + 18, T_THEME, draw);
-    y = menu_text("MASHINA by Misha Mashina, based on JIANT by Juan Ignacio Antonucci (Juan Jiant), which is based on Felucca.", y, T_TEXT, draw);
-    y = menu_text("Original JIANT repository:", y + 8, T_TEXT, draw);
-    y = menu_text("github.com/juanjiant-bit/JIANT", y, T_MID, draw);
-    y = menu_text("Original Jiant project: Juan Jiant, visual artist and musician, Argentina; independent and free.", y, T_TEXT, draw);
-    y = menu_text("Original Jiant homepage and manual:", y + 8, T_TEXT, draw);
-    y = menu_text("juanjiant-bit.github.io/JIANT", y, T_MID, draw);
-    y = menu_text("Videos: youtube.com/@JUANJIANT", y, T_MID, draw);
-    y = menu_text("Support the original author:", y + 4, T_TEXT, draw);
-    y = menu_text("ko-fi.com/juanjiant", y, T_MID, draw);
-    y = menu_text("cafecito.app/juanjiant (Argentina)", y, T_MID, draw);
-    y = menu_text("Free software, GPL-3.0-only. The full notices and source credits are preserved.", y + 4, T_TEXT, draw);
     y -= 216;
     {   /* (0.6.17) the audio's load since power-on (voice.c load_diag): to tell what happened when it clicked */
         char b[40], n[12];
@@ -291,7 +288,20 @@ static int32_t menu_document(int32_t y, int draw)
         y = menu_text("LAST CRASH", y + 4, T_THEME, draw);
         y = menu_text(crash_log_get(b) ? b : "NONE", y, T_TEXT, draw) - 216 + 8;
     }
-    y = menu_text("CREDITS", y + 216, T_THEME, draw) + 8;
+    y = menu_text("ORIGINS + ATTRIBUTION", y + 216, T_THEME, draw);
+    y = menu_text("MASHINA: a live-performance modification by Misha Mashina, based on JIANT by Juan Ignacio Antonucci (Juan Jiant). JIANT builds on Felucca.", y, T_TEXT, draw);
+    y = menu_text("JIANT is an independent project by Juan Jiant, visual artist and musician in Argentina. Original code and project credits remain acknowledged.", y, T_TEXT, draw);
+    y = menu_text("Original JIANT repository:", y + 8, T_TEXT, draw);
+    y = menu_text("github.com/juanjiant-bit/JIANT", y, T_MID, draw);
+    y = menu_text("Original homepage and manual:", y + 8, T_TEXT, draw);
+    y = menu_text("juanjiant-bit.github.io/JIANT", y, T_MID, draw);
+    y = menu_text("Videos: youtube.com/@JUANJIANT", y, T_MID, draw);
+    y = menu_text("Support the original author:", y + 4, T_TEXT, draw);
+    y = menu_text("ko-fi.com/juanjiant", y, T_MID, draw);
+    y = menu_text("cafecito.app/juanjiant (Argentina)", y, T_MID, draw);
+    y = menu_text("Free software under GPL-3.0-only. Full source attributions and notices are preserved.", y + 8, T_TEXT, draw);
+    y = menu_text("OTHER CONTRIBUTORS + SOURCES", y + 18, T_THEME, draw) + 8;
+
     for (i = 0; i < NELEM(MENU_CREDITS); i++) {
         const menu_credit_t *c = &MENU_CREDITS[i];
         const char *text = c->text;
