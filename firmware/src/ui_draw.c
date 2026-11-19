@@ -1981,16 +1981,26 @@ static void draw_columns(void)
 }
 
 
-/* Static Jiant Live Drums power-on screen. Existing fonts only; no animation. */
+/* MASHINA power-on identity. Keep the actual release version on the
+ * splash (v0.9, v11.2, etc.), even when an emulator build attaches a
+ * development suffix such as "-atmos" to FELUCCA_VERSION. */
 #define SPL_HOLD 1700u
 static void draw_splash(void)
 {
+    const char *src = FELUCCA_VERSION;
+    char version[24];
+    uint32_t i = 0;
+    while (src[i] && src[i] != '-' && i + 1u < sizeof version) {
+        version[i] = src[i];
+        i++;
+    }
+    version[i] = 0;
     lcd_fill(0, 0, 240, 240, T_BG);
-    draw_text_box(0, 42, 240, &AF_L, "JIANT LIVE", T_VALUE, 1);
-    draw_text_box(0, 82, 240, &AF_L, "DRUMS", T_VALUE, 1);
-    draw_text_box(0, 122, 240, &AF_M, "FM1 DRUM PERFORMANCE", T_TEXT, 1);
-    draw_text_box(0, 150, 240, &AF_X, "orig: Juan Jiant | mod: Misha Mashina", T_MID, 1);
-    draw_text_box(0, 191, 240, &AF_X, FELUCCA_VERSION, T_DIM, 1);
+    draw_text_box(0, 45, 240, &AF_L, "MASHINA", T_VALUE, 1);
+    draw_text_box(0, 98, 240, &AF_M, "FM1 PERFORMANCE FW", T_TEXT, 1);
+    draw_text_box(0, 145, 240, &AF_X, "based on Jiant by Juan Jiant", T_MID, 1);
+    draw_text_box(0, 162, 240, &AF_X, "Misha Mashina", T_MID, 1);
+    draw_text_box(0, 200, 240, &AF_X, version, T_DIM, 1);
     lcd_sync();
 }
 
