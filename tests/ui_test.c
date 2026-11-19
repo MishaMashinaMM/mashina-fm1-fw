@@ -2434,8 +2434,8 @@ static int test_display_preferences(void)
     return bad;
 }
 
-/* Live Stage 17: MENU has six full pages, preserving five editor tabs.
- * CLICK shares its last slot with MIDI OUT; MIDI and USB share a page. SELECT walks the pages (no wrap), ALGORITHM
+/* Live HOME menu has six pages of 4/4/3/2/4/4 options and five editor tabs.
+ * CLICK, CLICK LEVEL and COUNT-IN retain legacy IDs but are not visible. SELECT walks the pages (no wrap), ALGORITHM
  * the tabs' first pages (no wrap), PRESETS nothing, KNOB n the page's setting n, OCT+ / OCT- the setting turned last; an
  * action armed by its knob, OCT+ does it; HOME closes (OCT- not); reopened at the same page */
 static int lz_tab_lit(uint32_t l);                 /* (0.8.5: below, with the lenses' tests) */
@@ -2459,7 +2459,7 @@ static int test_menu_tabs(void)
     }
     for (i = 0; i < MI_COUNT; i++)
         ok &= seen[i] == (i == MI_COLOR || i == MI_SKIN || i == MI_STYLE || i == MI_LARGE || i == MI_ANIM ||
-                             (i >= MI_T1_RX && i <= MI_T6_RX) ? 0u : 1u) && mi_tab(i) < MTAB_COUNT;
+                             (i >= MI_T1_RX && i <= MI_T6_RX) || i == MI_CLICK || i == MI_CLKLVL || i == MI_COUNTIN ? 0u : 1u) && mi_tab(i) < MTAB_COUNT;
     for (n = 0, t = 0; t < MTAB_COUNT; t++)
         n += mtab_pages(t);
     ui_prefs = 0;
@@ -2474,7 +2474,7 @@ static int test_menu_tabs(void)
               str_eq(menu_short(MI_PANEL), "CALIB") && str_eq(menu_short(MI_CLOCK), "CPU MHZ") &&
               str_eq(menu_short(MI_SERIAL), "USB AUD");
     }
-    bad += check("Live MENU: 24 active options on six full pages, five legacy editor tabs, six RX rows absent",
+    bad += check("Live MENU: 21 active options on six pages, five legacy editor tabs; metronome and RX rows hidden",
                  ok && n == MP_COUNT && MP_COUNT == 6u && MTAB_COUNT == 5u &&
                  str_eq(MTAB_NAME[0], "SCREEN") && str_eq(MTAB_NAME[MTAB_SYSTEM], "SYSTEM") &&
                  mtab_pages(MTAB_SCREEN) == 1u && mtab_pages(MTAB_AUDIO) == 1u &&
@@ -2506,7 +2506,7 @@ static int test_menu_tabs(void)
     hold(B_HOME);
     ok = ui.menu == 1 && ui.menu_sel == MI_SCOPE && menu_page() == 0u && menu_tab() == MTAB_SCREEN;
     turn(EN_SELECT, 1); ok &= menu_page() == 1u && ui.menu_sel == MI_LOWCUT && menu_tab() == MTAB_AUDIO;
-    turn(EN_SELECT, 1); ok &= menu_page() == 2u && ui.menu_sel == MI_CLICK && menu_tab() == MTAB_MIDI;
+    turn(EN_SELECT, 1); ok &= menu_page() == 2u && ui.menu_sel == MI_MIDIOUT && menu_tab() == MTAB_MIDI;
     turn(EN_SELECT, -1); ok &= menu_page() == 1u;
     turn(EN_SELECT, -40); ok &= menu_page() == 0u && ui.menu_sel == MI_SCOPE;   /* (no wrap) */
     turn(EN_PRESET, 1); ok &= ui.menu_sel == MI_SCOPE;   /* (PRESETS: nothing, rule 3) */
@@ -2514,11 +2514,11 @@ static int test_menu_tabs(void)
     turn(EN_SELECT, -40);
     bad += check("0.9.18 MENU: SELECT walks the pages (SCREEN .. SYSTEM, no wrap), each opened on its first setting; PRESETS does nothing", ok);
     turn(EN_ALGO, 1); ok = menu_tab() == MTAB_AUDIO && menu_page() == 1u;
-    turn(EN_SELECT, 1); ok &= menu_page() == 2u && ui.menu_sel == MI_CLICK && menu_tab() == MTAB_MIDI;
-    turn(EN_SELECT, 1); ok &= menu_page() == 3u && ui.menu_sel == MI_LEARN && menu_tab() == MTAB_USB;
+    turn(EN_SELECT, 1); ok &= menu_page() == 2u && ui.menu_sel == MI_MIDIOUT && menu_tab() == MTAB_MIDI;
+    turn(EN_SELECT, 1); ok &= menu_page() == 3u && ui.menu_sel == MI_SERIAL && menu_tab() == MTAB_USB;
     turn(EN_ALGO, 1); ok &= menu_tab() == MTAB_SYSTEM && menu_page() == 4u && ui.menu_sel == MI_HOLD;
-    turn(EN_ALGO, -1); ok &= menu_tab() == MTAB_USB && menu_page() == 3u && ui.menu_sel == MI_LEARN;
-    turn(EN_ALGO, -1); ok &= menu_tab() == MTAB_MIDI && menu_page() == 2u && ui.menu_sel == MI_CLICK;
+    turn(EN_ALGO, -1); ok &= menu_tab() == MTAB_USB && menu_page() == 3u && ui.menu_sel == MI_SERIAL;
+    turn(EN_ALGO, -1); ok &= menu_tab() == MTAB_MIDI && menu_page() == 2u && ui.menu_sel == MI_MIDIOUT;
     turn(EN_SELECT, -1); ok &= menu_page() == 1u;
     turn(EN_ALGO, -1); ok &= menu_page() == 0u && menu_tab() == MTAB_SCREEN;
     turn(EN_ALGO, -1); ok &= menu_page() == 0u;  /* no wrap */
@@ -2533,12 +2533,15 @@ static int test_menu_tabs(void)
     turn(EN_K1, 1); ok &= settings_hold == HOLD_DEF + 1u && ui.menu_sel == MI_HOLD && ui.hot_t && ui.hot_col == 0u;
     turn(EN_K1, -1); ok &= settings_hold == HOLD_DEF;
     ui_prefs = 0;
-    turn(EN_ALGO, -1);                                 /* MIDI/USB: LEARN, CLEAR, USB AUDIO, USB LEVEL */
-    ok &= ui.menu_sel == MI_LEARN;
-    turn(EN_K4, 1); ok &= (ui_prefs & PREF_USB_FIXED) && fx_usb_fixed && ui.menu_sel == MI_USB;
-    turn(EN_K4, -1); ok &= !(ui_prefs & PREF_USB_FIXED) && !fx_usb_fixed;
-    turn(EN_K3, 1); ok &= ui.menu_sel == MI_SERIAL;
-    bad += check("Stage 17 MENU: every knob controls its own occupied slot (including MIDI/USB)", ok && ui.menu == 1);
+    turn(EN_ALGO, -1);                                 /* USB: USB AUDIO K1, USB LEVEL K2 */
+    ok &= ui.menu_sel == MI_SERIAL && menu_tab() == MTAB_USB;
+    turn(EN_K2, 1); ok &= (ui_prefs & PREF_USB_FIXED) && fx_usb_fixed && ui.menu_sel == MI_USB;
+    turn(EN_K2, -1); ok &= !(ui_prefs & PREF_USB_FIXED) && !fx_usb_fixed;
+    turn(EN_K1, 1); ok &= ui.menu_sel == MI_SERIAL;
+    turn(EN_SELECT, -1);                               /* MIDI: MIDI OUT, LEARN, LEARN CLEAR */
+    turn(EN_K2, 1); ok &= ui.menu_sel == MI_LEARN && ml.on;
+    turn(EN_K2, -1); ok &= !ml.on;
+    bad += check("Live MENU: all occupied MIDI and USB knob slots work; empty slots stay empty", ok && ui.menu == 1);
 
     /* OCT+ / OCT-: the next / previous value on every kind of row (as the knobs: stopping at the ends; COLOR wraps) */
     ok = 1;
@@ -2549,6 +2552,13 @@ static int test_menu_tabs(void)
         if (i == MI_COLOR || i == MI_SKIN || i == MI_STYLE || i == MI_ANIM || i == MI_LARGE) {
             menu_put(i, 1);
             ok &= menu_get(i) == (i == MI_COLOR ? UI_JIANT_INDEX : i == MI_SKIN || i == MI_STYLE ? 0u : 1u);
+            continue;
+        }
+        if (i == MI_CLICK || i == MI_CLKLVL || i == MI_COUNTIN) {
+            uint32_t original = menu_get(i);
+            menu_put(i, (original + 1u) % menu_n(i));
+            ok &= menu_get(i) == (original + 1u) % menu_n(i) && mi_tab(i) == MTAB_AUDIO;
+            menu_put(i, original);                      /* legacy editor compatibility; not on-device */
             continue;
         }
         if (i >= MI_T1_RX && i <= MI_T6_RX) {
@@ -2670,7 +2680,7 @@ static int test_menu_tabs(void)
     menu_close();
     bad += check("MENU: HOME closes ABOUT too; reopened at its page, the action let go; the setting turned last breathes OCT- / OCT+ where they can go", ok);
 
-    /* Six full physical pages and five stable tabs; the page counter is 1/6 .. 6/6. */
+    /* Six physical pages (some deliberately partial) and five stable tabs; the page counter is 1/6 .. 6/6. */
     ui_power_on();
     hold(B_HOME);
     frame();
@@ -2680,9 +2690,9 @@ static int test_menu_tabs(void)
     ok &= lz_tab_lit(1) && lz_crumb_is("MENU \xB7 AUDIO") && lz_count_is("2/6");
     turn(EN_ALGO, 1); frame();
     ok &= menu_tab() == MTAB_MIDI && lz_tab_lit(2) &&
-          lz_crumb_is("MENU \xB7 MIDI \xB7 CLICK") && lz_count_is("3/6");
+          lz_crumb_is("MENU \xB7 MIDI") && lz_count_is("3/6");
     turn(EN_SELECT, 1); frame();
-    ok &= lz_tab_lit(3) && lz_crumb_is("MENU \xB7 USB \xB7 MIDI/USB") && lz_count_is("4/6");
+    ok &= lz_tab_lit(3) && lz_crumb_is("MENU \xB7 USB") && lz_count_is("4/6");
     turn(EN_ALGO, 1); frame();
     ok &= lz_tab_lit(4) && lz_crumb_is("MENU \xB7 SYSTEM \xB7 CONTROLS") && lz_count_is("5/6");
     turn(EN_K3, 1); frame();
@@ -2691,7 +2701,7 @@ static int test_menu_tabs(void)
     turn(EN_SELECT, 1); frame();
     ok &= lz_crumb_is("MENU \xB7 SYSTEM") && lz_count_is("6/6");
     menu_close();
-    bad += check("Stage 17 MENU: five tabs, six full pages, current breadcrumb and knob values", ok && MI_COUNT == 35u);
+    bad += check("Live MENU: five tabs, six pages, current breadcrumb and knob values", ok && MI_COUNT == 35u);
     return bad;
 }
 
