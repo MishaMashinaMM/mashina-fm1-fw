@@ -12,7 +12,7 @@ static const param_desc_t ATMOS_EXTRA[4] = {
     {"SPREAD", F_PCT, 0, 127, 20, 0, 0}
 };
 static const uint8_t ATMOS_EXTRA_PRESETS[][4] = {
-    {18, 22, 26, 16}, {38, 17, 55, 35}, {50, 8, 65, 20},
+    {18, 22, 26, 16}, {38, 17, 55, 35}, {30, 52, 75, 20},
     {30, 44, 58, 48}, {12, 30, 42, 25}, {55, 9, 72, 40}
 };
 static void atmos_note_on(track_t *t, voice_t *v)
@@ -47,9 +47,15 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     int32_t morph = p[P_E1] * 258;
     int32_t texture = p[P_E6] * 95;
     int32_t shimmer = p[P_E7] * 120;
-    int32_t breath = p[AT_BREATH] * 160;
-    int32_t flow = p[AT_FLOW] * 160;
-    uint32_t motion_inc = (uint32_t)(3500 + p[AT_MOTION] * 2100);
+    /* BREATH: full-scale amplitude movement at maximum, with useful midrange.
+     * The old 160 multiplier allowed only ~62% attenuation at maximum. */
+    int32_t breath = (int32_t)p[AT_BREATH] * 258;
+    /* FLOW: allow the morph to sweep its full range, not just ~62%. */
+    int32_t flow = (int32_t)p[AT_FLOW] * 258;
+    /* MOTION: old range (~1200..16 seconds per cycle at 44.1 kHz)
+     * made normal knob changes almost imperceptible. New range ~90..2.5s,
+     * still slow enough for pads but clearly audible on sustained chords. */
+    uint32_t motion_inc = (uint32_t)(13000 + (uint32_t)p[AT_MOTION] * 5300u);
     tsvf_t flt;
     tsvf_coef(&flt, ((int32_t)p[P_E4] << 8) + m->cutoff, p[P_E5]);
     for (i = 0; i < n; i++) {
@@ -65,7 +71,10 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
         if (texture) s += mulq15((int32_t)(noise32(&seed) >> 17) - 16384, texture);
         if (shimmer) s += mulq15(osc_sine(ph + (ph << 1)), shimmer);
         s = tsvf_lp(&flt, s >> 1, &ic1, &ic2) << 1;
-        s = mulq15(s, 32767 - ((lfo + 32767) * breath >> 16));
+        /* Unipolar amplitude sweep: at BREATH=0 unity, at 127 near silence
+         * at the trough. Keep the upper end bounded to avoid sign inversion. */
+        int32_t attenuation = ((lfo + 32767) * breath) >> 16;
+        s = mulq15(s, 32767 - clamp(attenuation, 0, 32767));
         out[i] += voice_amp(s, m, i) << 1;
         ph += inc;
         ph2 += inc2;
@@ -81,7 +90,7 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
 static const preset_t ATMOS_PRESETS[] = {
     {"SOFT CLOUD", {0, 25, 45, 12, 83, 10, 0, 12}, {65, 90, 112, 95}, 10, TAG(PAD), FX(0, 30, 25, 55), PAT(5)},
     {"BREATHING", {1, 55, 55, 14, 70, 20, 12, 22}, {80, 90, 115, 110}, 10, TAG(PAD), FX(0, 35, 25, 60), PAT(5)},
-    {"DEEP DRONE", {0, 45, 65, 5, 52, 24, 8, 8}, {95, 105, 120, 120}, 0, TAG(PAD), FX(0, 20, 30, 65), PAT(8)},
+    {"HARP PLUCK", {1, 34, 48, 7, 91, 12, 2, 37}, {0, 25, 12, 32}, 22, TAG(PLUCK), FX(0, 20, 24, 32), PAT(3)},
     {"GLASS TIDE", {2, 70, 40, 18, 96, 35, 10, 48}, {50, 85, 108, 95}, 12, TAG(PAD), FX(0, 45, 35, 70), PAT(5)},
     {"DUSK STRINGS", {1, 30, 80, 10, 60, 15, 4, 15}, {70, 90, 110, 105}, 8, TAG(PAD), FX(0, 40, 20, 60), PAT(5)},
     {"SLOW NEBULA", {3, 65, 60, 20, 75, 40, 20, 35}, {85, 100, 120, 115}, 12, TAG(PAD), FX(0, 40, 30, 75), PAT(5)}
