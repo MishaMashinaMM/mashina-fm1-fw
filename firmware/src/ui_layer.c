@@ -23,12 +23,8 @@
  *              REVERSE, SHIFT < >, RANDOM, COOK, CLR AUTO (0.6.8: the track's automation); on a DRUM track BEAT and the lane's CLEAR REVERSE FILL RANDOM), black
  *              keys 1..8 the lane (DRUM); KNOB 1..4 the PATTERN page's LEN DIV SWING GATE. No undo (TONIC: the song
  *              layer's RECALL)
- *   REC  SET   (1.1.5, on every page; REC's tap still arms / disarms) the white keys from F3: CLEAR (the selected
- *              track's steps and automation, no dialog), CLICK (OFF REC ON, each press the next value); KNOB 1 the
- *              same (TONIC: COUNT-IN and CLICK LEVEL only in MENU > AUDIO). The settings
- *              are MENU > AUDIO's (ui.c rp_get / rp_put: one store), saved when the layer closes.
- *              Replaces the old REC held on SEQ (Discussion #91:
- *              the CLEAR Tn SEQUENCE? dialog and its "HOLD: CLEAR" hint)
+ *   REC  SET   legacy CLEAR shortcut. Live-only JLD has no metronome,
+ *              click level or count-in controls; they are hidden from this overlay.
  * The gesture: let go before HOLD (the menu: 0.3 .. 0.6 s) with nothing else touched: a tap, the button's page.
  * Held past HOLD alone: the map (a peek), letting go does nothing. A key, a knob or a button meanwhile: a combo,
  * the map at once, no tap. Keys pressed with the button down are the layer's (seq.c keyboard_block): silent, no
@@ -401,30 +397,12 @@ static void rec_clear(void)
     }
     ui.force = 1;
 }
-/* REC's settings, row r (G3, KNOB 1): CLICK as MENU > AUDIO steps it (ui.c rp_*). TONIC: COUNT-IN and CLICK LEVEL
- * left the layer (MENU > AUDIO still has them) */
-#define RL_N 1u
-static const uint8_t RL_F[RL_N] = {RP_CLICK};
-static const char *const RL_LABEL[RL_N] = {"CLICK"};
-static const uint8_t RL_ICON[RL_N] = {ICON_TEMPO};
-static const char *rl_name(uint32_t r, uint32_t v) { (void)r; return CLICK_N[v % 3u]; }
-static void rec_set(uint32_t r, uint32_t v)
-{
-    if (v == rp_get(RL_F[r]))
-        return;
-    rp_put(RL_F[r], v);
-    lys.rp_dirty = 1;
-}
+/* The historical REC-layer metronome knob/key controls were removed from
+ * the live UI. Retain the existing CLEAR shortcut without exposing CLICK. */
 static void rec_key(uint32_t p)
 {
-    uint32_t r = p - 1u, v;
-    if (p == 0u) {
+    if (p == 0u)
         rec_clear();
-        return;
-    }
-    v = (rp_get(RL_F[r]) + 1u) % 3u;                    /* the next value, round */
-    rec_set(r, v);
-    ui_say("CLICK ", rl_name(r, v));
 }
 
 /* SAVE, the song layer (song_chain.c): white key p. 1..4 (F3..B3) play section A..D (on the next bar; tapped in a row
@@ -631,7 +609,7 @@ static void layer_key(uint32_t l, uint32_t k)
         else
             confirm_open(p == LY_INIT ? CF_INIT_SOUND : CF_RECALL_SOUND, song.sel);   /* (the dialog closes the layer) */
     } else if (l == LAYER_REC) {
-        if (!key_black(k) && p < 1u + RL_N)
+        if (!key_black(k) && p == 0u)
             rec_key(p);
     } else if (l == LAYER_SEQ) {
         if (!key_black(k) && p == TL_STEP)
@@ -735,9 +713,9 @@ static void layer_knob(uint32_t k, int32_t s)
                                        NSONG - 1) + 1);
     } else if (l == LAYER_MACRO) {                      /* M1..M4 (the project's; the MOD slots that name them) */
         macro_v[k] = (uint8_t)clamp(macro_v[k] + accel(EN_K1 + k, s, 127), 0, 127);
-    } else if (l == LAYER_REC) {                        /* CLICK (KNOB 2..4: none) */
-        if (k < RL_N)
-            rec_set(k, (uint32_t)clamp((int32_t)rp_get(RL_F[k]) + s, 0, 2));
+    } else if (l == LAYER_REC) {                        /* no live-only REC layer knob assignments */
+        (void)k;
+        (void)s;
     } else if (l) {                                     /* the page's knobs, wherever the page is */
         uint8_t h = ui.home, pg = ui.page, nm[sizeof ui.nmem];
         memcpy(nm, ui.nmem, sizeof nm);                 /* (the sections' memories: not this borrowed page's) */
@@ -849,9 +827,8 @@ static uint32_t layer_leds(uint32_t *br)
             on = (p < SK_STORE && live.cur == (int8_t)p) || (p == SK_REC && live.srec) ||   /* actions breathe */
                  (p == SK_MODE && live.mode);
             can = p < SK_STORE ? project_used(p) : p < SK_STORE + 4u || p == SK_MODE || p == SK_REC || p == SK_PAGE;
-        } else if (l == LAYER_REC && !b && p < 1u + RL_N) {   /* the click on: lit, else it breathes; CLEAR: */
-            on = p == 1u && rp_get(RP_CLICK) != 0u;    /* something to clear, not while a song plays */
-            can = p ? 1u : !chain_busy() && rec_clearable();
+        } else if (l == LAYER_REC && !b && p == 0u) {
+            can = !chain_busy() && rec_clearable();
         }
         m |= on << k;
         n |= (can & !on) << k;
@@ -1011,12 +988,10 @@ static uint32_t ly_keyname(uint32_t l, int blk, uint32_t p, char *nm)
         return busy;
     }
     if (l == LAYER_REC) {
-        if (blk || p > RL_N)
+        if (blk || p != 0u)
             return LS_OFF;
-        str_cpy(nm, p ? "CLICK " : "CLEAR", 12);
-        if (p)
-            str_cpy(nm + 6, rl_name(0, rp_get(RL_F[0])), 6);
-        return p ? (rp_get(RL_F[0]) ? LS_SEL : LS_OFF) : chain_busy() || !rec_clearable() ? LS_DIM : LS_OFF;
+        str_cpy(nm, "CLEAR", 12);
+        return chain_busy() || !rec_clearable() ? LS_DIM : LS_OFF;
     }
     if (l == LAYER_SAVE) {
         if (blk)
@@ -1148,13 +1123,9 @@ static void layer_cards(uint32_t l)
             fmt_int(val, macro_v[c] * 100 / 127);
             draw_column(c, M[c], val, "%", macro_routes(c, 0, 0) ? VAL(c) : T_DIM, macro_v[c] * 1000 / 127, ICON_MIX);
         }
-    } else if (l == LAYER_REC) {                        /* CLICK, then empty cards */
-        for (c = 0; c < 4u; c++) {
-            uint32_t v = c < RL_N ? rp_get(RL_F[c]) : 0u;
-            if (c < RL_N)
-                draw_column(c, RL_LABEL[c], rl_name(c, v), "", !v ? T_DIM : VAL(c), (int32_t)v * 500, RL_ICON[c]);
-            else
-                draw_column(c, "", "", "", T_THEME, -1, ICON_NONE);
+    } else if (l == LAYER_REC) {
+        for (c = 0; c < 4u; c++)
+            draw_column(c, "", "", "", T_DIM, -1, ICON_NONE);
         }
     } else {                                            /* the page's four (SCL: LY_SCL) */
         uint8_t h = ui.home, pg = ui.page, nm[sizeof ui.nmem];
@@ -1278,9 +1249,7 @@ static void layer_state(uint32_t l)
         b[0] = 'T'; b[1] = (char)('1' + song.sel); b[2] = 0;
         lst_chip("ARMED", b, (song.rec >> song.sel) & 1u);
         lst_chip(b, rec_clearable() ? "SEQUENCE" : "EMPTY", rec_clearable());
-        lst_chip("CLICK", rl_name(0, rp_get(RP_CLICK)), rp_get(RP_CLICK) != 0u);
-        lst_chip("COUNT-IN", COUNTIN_N[rp_get(RP_COUNTIN) % 3u], rp_get(RP_COUNTIN) != 0u);
-    } else if (l == LAYER_SAVE) {
+     } else if (l == LAYER_SAVE) {
         fmt_int(v, (int32_t)song_cur + 1);
 #if FELUCCA_NO_SEQUENCER
         lst_chip("BANK", v, 1);
