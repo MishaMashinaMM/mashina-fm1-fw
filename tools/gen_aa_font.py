@@ -80,7 +80,9 @@ def preset(name):
         return [("S", v + "@500", 12, (32, 126), EXTRAS, -0.025, PHASES),
                 ("M", v + "@600", 15, (32, 126), EXTRAS, -0.015, PHASES),
                 ("L", v + "@700", 18, (32, 32),
-                 [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L)]
+                 [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L),
+                ("N", v + "@700", 25, (32, 32),
+                 [ord(c) for c in "0123456789.-+"], 0.0, PHASES_L)]
     if name == "inter-tight":
         v = str(FONTS.parent / "assets" / "fonts" / "InterTight[wght].ttf")   # SIL OFL 1.1, Google Fonts
         return [("S", v + "@400", 12, (32, 126), EXTRAS, 0.0, PHASES),
