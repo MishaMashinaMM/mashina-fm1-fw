@@ -52,10 +52,10 @@ static void atmos_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
     int32_t breath = (int32_t)p[AT_BREATH] * 258;
     /* FLOW: allow the morph to sweep its full range, not just ~62%. */
     int32_t flow = (int32_t)p[AT_FLOW] * 258;
-    /* MOTION: old range (~1200..16 seconds per cycle at 44.1 kHz)
-     * made normal knob changes almost imperceptible. New range ~90..2.5s,
-     * still slow enough for pads but clearly audible on sustained chords. */
-    uint32_t motion_inc = (uint32_t)(13000 + (uint32_t)p[AT_MOTION] * 5300u);
+    /* MOTION: wider, curved speed response (~65s down to ~0.18s/cycle
+     * at 44.1kHz). Slow atmospheric sweeps at low settings; faster
+     * rhythmic movement at high settings, without extra modulation voices. */
+    uint32_t motion_inc = 1500u + (uint32_t)p[AT_MOTION] * (uint32_t)p[AT_MOTION] * 30u;
     tsvf_t flt;
     tsvf_coef(&flt, ((int32_t)p[P_E4] << 8) + m->cutoff, p[P_E5]);
     for (i = 0; i < n; i++) {
