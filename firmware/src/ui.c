@@ -519,7 +519,7 @@ static uint32_t large_kind(void)
  * as AIR and COLORS: the owner's "parameters on top") */
 static uint32_t card_y(void)
 {
-    return lz_on() ? LZ_CARD_Y : Y_LABEL;
+    return lz_on() ? (PAGES[ui.page].fam == FAM_SAVE ? LZ_CARD_Y - 8u : LZ_CARD_Y) : Y_LABEL;
 }
 static uint32_t foot_y(void) { return lz_on() ? LZ_FOOT_Y : Y_FOOT; }
 static uint32_t foot_h(void) { return lz_on() ? LZ_FOOT_H : H_FOOT; }
@@ -528,9 +528,9 @@ static uint32_t graph_y(void)
 {
     return large_kind() == LK_TALL ?
            (lz_on() ? LZ_LG_Y_GRAPH : LG_Y_GRAPH) :
-           lz_on() ? LZ_GRAPH_Y : Y_GRAPH;
+           lz_on() ? (PAGES[ui.page].fam == FAM_SAVE ? LZ_GRAPH_Y - 8u : LZ_GRAPH_Y) : Y_GRAPH;
 }
-static uint32_t graph_h(void) { return large_kind() == LK_TALL ? LG_H_GRAPH : lz_on() ? LZ_GRAPH_H : H_GRAPH; }
+static uint32_t graph_h(void) { return large_kind() == LK_TALL ? LG_H_GRAPH : lz_on() ? (PAGES[ui.page].fam == FAM_SAVE ? LZ_GRAPH_H + 8u : LZ_GRAPH_H) : H_GRAPH; }
 static int large_face_has(const char *s)                /* every glyph of s in the sparse L face */
 {
     for (; *s; s++)
