@@ -1368,7 +1368,8 @@ static void draw_layer(void)
             ly_piano(l);
         cv_blit(0, graph_y());
     }
-    draw_tabs();                                        /* (0.8.5: MAP . KNOBS . STATE, the breadcrumb) */
+    /* No top navigation tabs on quick layers: the active view is named in
+     * the compact footer. ALGORITHM retains the existing three-view cycle. */
     draw_foot();
 }
 
