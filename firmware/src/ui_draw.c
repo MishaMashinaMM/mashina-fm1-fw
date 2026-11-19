@@ -2599,7 +2599,7 @@ static void draw_drum_live_footer(uint32_t perf)
     fmt_int(b + 4, (int32_t)pad);
     cv_text(160, 1, &AF_S, b, T_VALUE);
     fmt_int(b, (int32_t)pad);
-    str_cat(b, "/12", sizeof b);
+    { uint32_t n = str_len(b); b[n++] = '/'; b[n++] = '1'; b[n++] = '2'; b[n] = 0; }
     cv_text_r(237, 1, &AF_S, b, T_VALUE, T_BG);
     cv_blit(0, 222);
 }
@@ -2712,7 +2712,7 @@ static void draw_drum_perf(void)
     cv_text(6, CAP_IN(S, 14), &AF_S, "ALGO: TRACK", T_DIM);
     cv_text(143, CAP_IN(S, 14), &AF_S, "SELECT: PAD", T_DIM);
     cv_blit(0, 194);
-    draw_drum_live_footer(0u);
+    draw_drum_live_footer(1u);
     ui.force = 0;
 }
 #endif
