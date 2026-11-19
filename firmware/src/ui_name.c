@@ -427,12 +427,23 @@ static void nm_draw_panel(void)
     }
     cv_blit(0, LZ_GRAPH_Y);
 }
+/* Match the compact SAVE/GLO footer, without touching the NAME editor's
+ * keyboard, confirmation, transport guard or the HOME long-press screen. */
 static void nm_draw_foot(void)
 {
-    cv_begin(240, LZ_FOOT_H, T_BG);
-    cv_text(6, CRUMB_Y, &AF_X, nm.kind == NK_LYRIC ? "LENTE \xB7 LYRIC \xB7 K3 DICE \xB7 OCT- CANCEL" :   /* (0.8.5: playing too) */
-            transport_busy() ? "LENTE \xB7 NAME \xB7 STOP TO SAVE" : "LENTE \xB7 NAME \xB7 OCT- CANCEL", T_DIM);
-    cv_blit(0, LZ_FOOT_Y);
+    const int lyric = nm.kind == NK_LYRIC;
+    const char *section = lyric ? "EDIT" : "SAVE";
+    const char *group = lyric ? "WORDS" :
+                        nm.kind == NK_USER_SAVE || nm.kind == NK_USER_RENAME ? "SOUND" : "PROJECT";
+    const char *state = !lyric && transport_busy() ? "STOP TO SAVE" : "NAME";
+    cv_begin(240, 18, T_BG);
+    cv_rect(3, 1, 43, 16, T_VALUE);
+    cv_text_in(5, 1, 39, &AF_S, section, T_INK, T_VALUE);
+    cv_rect(48, 1, 65, 16, RGB(58,58,58));
+    cv_text_in(51, 1, 59, &AF_S, group, T_TEXT, RGB(58,58,58));
+    cv_text(117, 1, &AF_S, state, T_VALUE);
+    cv_text_r(237, 1, &AF_S, "OCT-", T_VALUE, T_BG);
+    cv_blit(0, 222);
 }
 static void name_draw(void)
 {
