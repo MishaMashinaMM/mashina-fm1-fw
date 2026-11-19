@@ -2585,16 +2585,37 @@ static uint32_t drum_live_row_signature(uint32_t perf, uint32_t lane)
 /* One row is 23 pixels high (the same text baseline as the original 158px
  * table canvas). Its own background clears old longer values in that row,
  * without blanking the other five rows, header or footer. */
+static void draw_drum_live_footer(uint32_t perf)
+{
+    char b[12];
+    uint32_t pad = ui.drum_map_pad + 1u;
+    cv_begin(240, 18, T_BG);
+    cv_rect(0, 0, 240, 18, T_BG);
+    cv_rect(3, 1, 43, 16, T_VALUE);
+    cv_text_in(5, 1, 39, &AF_S, perf ? "PLAY" : "SEQ", T_INK, T_VALUE);
+    cv_rect(48, 1, perf ? 105 : 91, 16, RGB(58,58,58));
+    cv_text_in(51, 1, perf ? 99 : 85, &AF_S, perf ? "PERFORMANCE" : "MIDI MAP", T_TEXT, RGB(58,58,58));
+    b[0] = 'P'; b[1] = 'A'; b[2] = 'D'; b[3] = ' '; b[4] = 0;
+    fmt_int(b + 4, (int32_t)pad);
+    cv_text(160, 1, &AF_S, b, T_VALUE);
+    fmt_int(b, (int32_t)pad);
+    str_cat(b, "/12", sizeof b);
+    cv_text_r(237, 1, &AF_S, b, T_VALUE, T_BG);
+    cv_blit(0, 222);
+}
+
 static void draw_drum_live_row(uint32_t perf, uint32_t lane)
 {
     uint32_t ti = song.sel, first = ui.drum_map_pad < 6u ? 0u : 6u;
     const track_t *t = &trk[ti];
     uint32_t drum = t->eng_req == ENGI_DRUM, lab = t->eng_req == ENGI_DRUMLAB;
-    uint16_t col = lane == ui.drum_map_pad ? T_ACCENT : T_TEXT;
+    uint32_t selected = lane == ui.drum_map_pad;
+    uint16_t col = selected ? T_INK : T_VALUE;
     static const char *const curves[] = {"LIN", "SOFT", "HARD", "FIX"};
     char b[24];
     const aafont_t *face = perf ? &AF_R : &AF_Q;
-    cv_begin(240, 23, T_BG);
+    cv_begin(240, 23, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
+    cv_rect(0, 0, 240, 23, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
     if (drum || lab) {
         if (lab) {
             drumlab_pad_label(lane, drumlab_kit[ti][lane].kind, b);
@@ -2627,7 +2648,7 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
             }
         }
     }
-    cv_blit(0, 40 + 16 + (int32_t)(lane - first) * 23);
+    cv_blit(0, 56 + (int32_t)(lane - first) * 23);
 }
 
 /* Live-only SEQ screen. Six pads are visible at once; the list belongs to
@@ -2644,7 +2665,7 @@ static void draw_drum_midi_map(void)
     cv_text(6, CAP_IN(M, 24), &AF_M, "DRUM MIDI MAP", T_TEXT);
     b[0] = 'T'; b[1] = (char)('1' + ti); b[2] = ' '; b[3] = 0;
     str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : "NO DRUM", sizeof b - 3u);
-    cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_ACCENT);
+    cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_VALUE);
     cv_blit(0, 0);
 
     cv_begin(240, 16, T_BG);
@@ -2656,10 +2677,11 @@ static void draw_drum_midi_map(void)
     if (drum || lab) for (uint32_t lane = first; lane < first + 6u; lane++)
         draw_drum_live_row(0u, lane);
 
-    cv_begin(240, 42, T_BG);
-    cv_text(6, CAP_IN(S, 14), &AF_S, "ALGO TRACK  SELECT PAD", T_DIM);
-    cv_text(6, 20 + CAP_IN(S, 14), &AF_S, "K1 NOTE K2 PAN K3 PIT", T_TEXT);
-    cv_blit(0, 198);
+    cv_begin(240, 28, T_BG);
+    cv_text(6, CAP_IN(S, 14), &AF_S, "ALGO: TRACK", T_DIM);
+    cv_text(143, CAP_IN(S, 14), &AF_S, "SELECT: PAD", T_DIM);
+    cv_blit(0, 194);
+    draw_drum_live_footer(0u);
     ui.force = 0;
 }
 
@@ -2675,7 +2697,7 @@ static void draw_drum_perf(void)
     cv_text(6, CAP_IN(M, 24), &AF_M, "DRUM PERFORMANCE", T_TEXT);
     b[0] = 'T'; b[1] = (char)('1' + ti); b[2] = ' '; b[3] = 0;
     str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : "NO DRUM", sizeof b - 3u);
-    cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_ACCENT);
+    cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_VALUE);
     cv_blit(0, 0);
     cv_begin(240, 16, T_BG);
     cv_text(6, CAP_IN(S, 14), &AF_S, "PAD", T_DIM);
@@ -2686,10 +2708,11 @@ static void draw_drum_perf(void)
     cv_blit(0, 40);
     if (drum || lab) for (uint32_t lane = first; lane < first + 6u; lane++)
         draw_drum_live_row(1u, lane);
-    cv_begin(240, 42, T_BG);
-    cv_text(6, CAP_IN(S, 14), &AF_S, "ALGO TRACK SELECT PAD", T_DIM);
-    cv_text(6, 20 + CAP_IN(S, 14), &AF_S, "K1 CUR K2 V>S K3 CH K4 RET", T_TEXT);
-    cv_blit(0, 198);
+    cv_begin(240, 28, T_BG);
+    cv_text(6, CAP_IN(S, 14), &AF_S, "ALGO: TRACK", T_DIM);
+    cv_text(143, CAP_IN(S, 14), &AF_S, "SELECT: PAD", T_DIM);
+    cv_blit(0, 194);
+    draw_drum_live_footer(0u);
     ui.force = 0;
 }
 #endif
