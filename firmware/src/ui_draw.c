@@ -1004,6 +1004,9 @@ static uint32_t tabs_now(const char **nm, const char **tab, uint8_t *cnt, uint32
 }
 static void draw_tabs(void)
 {
+    /* Quick layers have no top navigation strip. Their active view is in
+     * the footer, and the freed pixels belong to cards/keyboard content. */
+    if (ui.layer) return;
     static uint32_t drawn;
     const char *nm[8], *tab[8];
     uint8_t cnt[8];
