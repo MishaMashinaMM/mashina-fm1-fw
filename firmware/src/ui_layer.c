@@ -1126,7 +1126,6 @@ static void layer_cards(uint32_t l)
     } else if (l == LAYER_REC) {
         for (c = 0; c < 4u; c++)
             draw_column(c, "", "", "", T_DIM, -1, ICON_NONE);
-        }
     } else {                                            /* the page's four (SCL: LY_SCL) */
         uint8_t h = ui.home, pg = ui.page, nm[sizeof ui.nmem];
         memcpy(nm, ui.nmem, sizeof nm);
