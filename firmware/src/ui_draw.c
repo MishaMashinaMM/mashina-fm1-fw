@@ -483,8 +483,12 @@ static void draw_column_tall(uint32_t c, const char *label, const char *val, con
     int32_t ly = LG_LY, vy, lw = 0, mw;
     char k[3] = {'K', (char)('1' + c), 0};
     uint32_t ic = mot ? ICON_X_MOTION : icon, isz = 16u;
+    /* Industrial edit prototype: flat, unframed parameter columns.
+     * Preserve the existing four-knob mapping, value fitting, units and gauges. */
     cv_begin(COL_W, LG_CARD_H, T_BG);
-    cv_rrect(0, 0, COL_W, LG_CARD_H, 4, T_SURF, T_BG);
+    cv_rrect(0, 0, COL_W, LG_CARD_H, 0, T_SURF, T_BG);
+    if (hot)
+        cv_rect(0, 0, COL_W, 2, T_ACCENT);
     {   /* the knob: "K1" .. "K4" on a pill */
         uint16_t fill = hot ? T_ACCENT : label[0] || val[0] ? T_KEY : T_DIM;
         mw = ink_w(&AF_M, k) + 10;
