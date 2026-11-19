@@ -643,8 +643,10 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
  * ENV, LFO, FX and other specialized pages retain their existing geometry. */
 static int engine_edit_grid(void)
 {
+    /* The lens may use a page override while rendering a non-ATMOS engine.
+     * Identify the actual EDIT section, not the transient page descriptor. */
     return !ui.home && !ui.menu && !ui.layer && !name_on() &&
-           cur_page()->fam == FAM_EDIT;
+           PAGES[ui.page].fam == FAM_EDIT;
 }
 static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
