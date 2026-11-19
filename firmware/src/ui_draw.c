@@ -649,8 +649,8 @@ static int atmos_edit_grid(void)
 static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
 {
-    int32_t x = 3 + (int32_t)(c & 1u) * 119, y = 43 + (int32_t)(c >> 1u) * 89;
-    int32_t w = 115, h = 85, vwidth;
+    int32_t x = 3 + (int32_t)(c & 1u) * 119, y = 27 + (int32_t)(c >> 1u) * 96;
+    int32_t w = 115, h = 94, vwidth;
     char k[3] = {'K', (char)('1' + c), 0};
     const aafont_t *vf = &AF_L, *lf = &AF_M;
     cv_begin(w, h, T_BG);
@@ -671,11 +671,11 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     vwidth = ink_w(vf, val);
     if (!large_face_has(val) || vwidth > w - 8) vf = &AF_M;
     if (ink_w(vf, val) > w - 8) vf = &AF_S;
-    cv_text_in(4, 32, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
+    cv_text_in(4, 38, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
     if (ratio >= 0) {
         int32_t n = clamp(ratio, 0, 1000) * (w - 12) / 1000;
-        cv_rect(6, 72, w - 12, 4, T_MID);
-        if (n) cv_rect(6, 72, n, 4, hot ? T_ACCENT : T_THEME);
+        cv_rect(6, 82, w - 12, 4, T_MID);
+        if (n) cv_rect(6, 82, n, 4, hot ? T_ACCENT : T_THEME);
     }
     cv_blit((uint32_t)x, (uint32_t)y);
 }
@@ -1134,8 +1134,35 @@ static __attribute__((noinline)) void draw_crumbs(int32_t y, uint16_t fg, uint16
         cv_free_text(x, y, f, b + k, T_VALUE, T_BG, mx - x);
     }
 }
+/* Single-line EDIT navigation, sized to its text rather than a tall footer. */
+static void draw_atmos_edit_footer(void)
+{
+    char page[20], pos[20];
+    const char *group;
+    int32_t n, x;
+    page_title(page);
+    group = str_eq(page, "FOCUS") ? "FOCUS" :
+            str_eq(page, "EDIT 1") || str_eq(page, "EDIT 2") ||
+            str_eq(page, "EDIT 3") ? "SOUND" : "TONE";
+    str_cpy(pos, page, sizeof pos);
+    lz_begin(240, 18, 0, 222);
+    cv_rect(0, 0, 240, 18, T_BG);
+    cv_rect(3, 1, 43, 16, T_ACCENT);
+    cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_ACCENT);
+    n = ink_w(&AF_S, group) + 12;
+    if (n < 48) n = 48;
+    cv_rect(48, 1, n, 16, T_SURF);
+    cv_text_in(54, 1, n - 12, &AF_S, group, T_TEXT, T_SURF);
+    x = 52 + n;
+    cv_text_in(x, 1, 238 - x, &AF_S, pos, T_ACCENT, T_BG);
+    lz_blit(0, 222);
+}
 static void draw_foot(void)
 {
+    if (atmos_edit_grid()) {
+        draw_atmos_edit_footer();
+        return;
+    }
     char s[48], ti[20];
     const track_t *t = TSEL;
     uint32_t sig;
@@ -2769,7 +2796,7 @@ static void ui_draw_body(uint32_t counting)
             draw_frame();
         draw_head();
         if (atmos_edit_grid() && ui.force)
-            lcd_fill(0, 40, 240, 184, T_BG);
+            lcd_fill(0, 24, 240, 198, T_BG);
         draw_columns();
         if (!atmos_edit_grid())
             draw_graph();
@@ -2790,7 +2817,7 @@ static void ui_draw_body(uint32_t counting)
         page_flash_draw();
     if (!pf_on)                                         /* (its end: the footer back at once) */
         draw_foot();
-    if (lz_on())                                        /* (0.8.5) a lens page: the level's tabs on top */
+    if (lz_on() && !atmos_edit_grid())                  /* ATMOS EDIT: navigation is footer-only */
         draw_tabs();
     ui.force = 0;
 }
