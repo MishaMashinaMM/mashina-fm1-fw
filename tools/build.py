@@ -98,10 +98,12 @@ def tc_all(*cmds):
 def generate():
     """generated headers (UI fonts, icons, keycaps, palettes, line art shapes, tables, samples)"""
     GEN.mkdir(parents=True, exist_ok=True)
+    # ATMOS branch: retrieve pinned OFL font before rasterizing.
+    subprocess.run([sys.executable, str(SRC / "tools" / "fetch_oxanium.py")], check=True)
     for old in ("felucca_font.h", "felucca_icons.h"):     # headers of the bitmap font and icon atlas
         (GEN / old).unlink(missing_ok=True)
     tools = SRC / "tools"
-    cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "jiant-lab"],   # (gen_aa_font.UI_PRESET),
+    cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "oxanium"],   # (gen_aa_font.UI_PRESET),
             [tools / "gen_px_font.py", GEN / "ui_font_x.h"],
             [tools / "gen_aa_icons.py", GEN / "ui_icons.h"],
             [tools / "gen_aa_keycaps.py", GEN / "ui_keycaps.h"],
