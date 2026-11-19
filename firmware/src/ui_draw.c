@@ -2447,12 +2447,11 @@ static void draw_mixer_table(void)
         /* The selected track must be unmistakable in a monochrome live mixer:
          * solid white row and black ink. Mute/asleep stay dim within that row. */
         const uint32_t selected = i == song.sel;
-        const uint16_t row_bg = selected ? T_SEL : T_BG;
-        uint16_t tc = selected ? (trk[i].p[P_MUTE] || i >= trk_live ? T_MID : T_INK) :
+        const uint16_t row_bg = selected ? T_VALUE : (i & 1u ? RGB(23,23,23) : RGB(36,36,36));
+        uint16_t tc = selected ? T_TEXT :
                       (trk[i].p[P_MUTE] || i >= trk_live ? T_DIM : T_TEXT);
-        uint16_t nc = selected ? T_INK : (i >= trk_live ? T_DIM : T_TEXT);
-        if (selected)
-            cv_rect(2, ry + 1, 236, 22, row_bg);
+        uint16_t nc = selected ? T_TEXT : (i >= trk_live ? T_DIM : T_TEXT);
+        cv_rect(0, ry, 240, 24, row_bg);
         char b[16];
         char vname[16];
         /* voice name (replicate trk_short_name) */
