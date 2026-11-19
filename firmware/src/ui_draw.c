@@ -1170,6 +1170,13 @@ static void draw_engine_edit_footer(void)
                 str_eq(page, "EDIT 1") || str_eq(page, "EDIT 2") ||
                 str_eq(page, "EDIT 3") ? "SOUND" : "TONE";
     str_cpy(pos, page, sizeof pos);
+    /* Group position already appears as the numeral in DELAY 2/3:
+     * show DELAY 2, and reserve the far right for the full chain index. */
+    {
+        uint32_t len = str_len(pos), i = len;
+        while (i && pos[i - 1] >= '0' && pos[i - 1] <= '9') --i;
+        if (i < len && i && pos[i - 1] == '/') pos[i - 1] = 0;
+    }
     lz_begin(240, 18, 0, 222);
     cv_rect(0, 0, 240, 18, T_BG);
     {
@@ -1186,7 +1193,15 @@ static void draw_engine_edit_footer(void)
     cv_rect(48, 1, n, 16, RGB(58, 58, 58));
     cv_text_in(54, 1, n - 12, &AF_S, group, T_TEXT, RGB(58, 58, 58));
     x = 52 + n;
-    cv_text_in(x, 1, 238 - x, &AF_S, pos, T_VALUE, T_BG);
+    {
+        char count[8];
+        int32_t cw = crumb_count(count);
+        int32_t right = cw ? 235 - cw - 8 : 238;
+        if (right > x)
+            cv_text_in(x, 1, right - x, &AF_S, pos, T_VALUE, T_BG);
+        if (cw)
+            cv_text_r(235, 1, &AF_X, count, T_VALUE, T_BG);
+    }
     lz_blit(0, 222);
 }
 static void draw_foot(void)
