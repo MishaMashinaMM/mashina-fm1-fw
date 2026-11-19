@@ -658,12 +658,12 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     /* Active K1-K4: complete orange outline, not a top-only indicator.
      * Draw the outline inside the cell so it never overlaps adjacent cells. */
     if (hot) {
-        cv_rrect(0, 0, w, h, 5, T_THEME, T_SURF);
-        cv_rrect(2, 2, w - 4, h - 4, 4, T_SURF, T_THEME);
+        cv_rrect(0, 0, w, h, 5, T_VALUE, T_SURF);
+        cv_rrect(2, 2, w - 4, h - 4, 4, T_SURF, T_VALUE);
     } else {
         cv_rect(0, h - 1, w, 1, T_LINE);
     }
-    cv_text_in(4, 7, 25, &AF_S, k, hot ? T_THEME : T_MID, T_SURF);
+    cv_text_in(4, 7, 25, &AF_S, k, hot ? T_VALUE : T_MID, T_SURF);
     if (ink_w(lf, label) > w - 36) lf = &AF_S;
     cv_text_in(31, 7, w - 35, lf, label, T_TEXT, T_SURF);
     /* Numeric-only values get the larger dedicated 25px Oxanium face. */
@@ -682,8 +682,8 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     cv_text_in(4, vf == &AF_N ? 32 : 38, w - 8, vf, val, vc == T_DIM ? T_DIM : T_VALUE, T_SURF);
     if (ratio >= 0) {
         int32_t n = clamp(ratio, 0, 1000) * (w - 12) / 1000;
-        cv_rect(6, 82, w - 12, 4, T_MID);
-        if (n) cv_rect(6, 82, n, 4, T_THEME);
+        cv_rect(6, 82, w - 12, 4, RGB(58, 58, 58));
+        if (n) cv_rect(6, 82, n, 4, T_VALUE);
     }
     cv_blit((uint32_t)x, (uint32_t)y);
 }
@@ -1155,14 +1155,14 @@ static void draw_atmos_edit_footer(void)
     str_cpy(pos, page, sizeof pos);
     lz_begin(240, 18, 0, 222);
     cv_rect(0, 0, 240, 18, T_BG);
-    cv_rect(3, 1, 43, 16, T_THEME);
-    cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_THEME);
+    cv_rect(3, 1, 43, 16, T_VALUE);
+    cv_text_in(5, 1, 39, &AF_S, "EDIT", T_INK, T_VALUE);
     n = ink_w(&AF_S, group) + 12;
     if (n < 48) n = 48;
     cv_rect(48, 1, n, 16, T_SURF);
     cv_text_in(54, 1, n - 12, &AF_S, group, T_TEXT, T_SURF);
     x = 52 + n;
-    cv_text_in(x, 1, 238 - x, &AF_S, pos, T_THEME, T_BG);
+    cv_text_in(x, 1, 238 - x, &AF_S, pos, T_VALUE, T_BG);
     lz_blit(0, 222);
 }
 static void draw_foot(void)
