@@ -2342,7 +2342,7 @@ static void draw_cc_macro_cell(uint32_t i, uint32_t row, uint32_t col)
 
 static void draw_cc_macro_row(uint32_t i, uint32_t row)
 {
-    if (i < CM_MAX) for (uint32_t col = 0; col < 7u; col++) draw_cc_macro_cell(i, row, col);
+    if (i < 32u) for (uint32_t col = 0; col < 7u; col++) draw_cc_macro_cell(i, row, col);
 }
 
 static void draw_cc_macro_position(void)
@@ -2750,7 +2750,7 @@ static void ui_draw_body(uint32_t counting)
                    cm_delete != cc_delete_old || cm_wait != cc_wait_old;
         for (uint32_t row = 0; row < 6u; row++) {
             uint32_t i = first + row;
-            if (i >= CM_MAX) continue;
+            if (i >= 32u) continue;
             const uint8_t *r = cm_rows[i], *old = cc_old[row];
             uint32_t ti = r[1] >> 4;
             uint8_t status = !(r[4] & CM_ON) ? 0u :
