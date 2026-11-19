@@ -1985,6 +1985,44 @@ static void draw_columns(void)
  * splash (v0.9, v11.2, etc.), even when an emulator build attaches a
  * development suffix such as "-atmos" to FELUCCA_VERSION. */
 #define SPL_HOLD 1700u
+/* A deliberately pixel-precise, 8-tooth mechanical emblem. It is drawn using
+ * the firmware's palette, not a full-colour image: orange gear, grey spokes,
+ * dark recesses, and a small orange/white hub. No font or asset dependency.
+ * The 76x76 canvas stays inside the splash's reserved 80px middle band. */
+static void splash_cog(void)
+{
+    int32_t x, y;
+    cv_begin(76, 76, T_BG);
+    for (y = -37; y <= 37; y++)
+        for (x = -37; x <= 37; x++) {
+            int32_t ax = x < 0 ? -x : x, ay = y < 0 ? -y : y;
+            int32_t r2 = x * x + y * y;
+            int32_t delta = ax > ay ? ax - ay : ay - ax;
+            int32_t tooth = (ax <= 6 || ay <= 6 || delta <= 5);
+            uint16_t col = T_BG;
+            /* Twelve? No: eight substantial teeth are legible at LCD size. */
+            if (r2 >= 23 * 23 && r2 <= 29 * 29)
+                col = T_VALUE;
+            if (tooth && r2 >= 27 * 27 && r2 <= 36 * 36)
+                col = T_VALUE;
+            /* Dark bevel between the outer ring and the spokes. */
+            if (r2 >= 21 * 21 && r2 < 23 * 23)
+                col = T_MID;
+            /* Four rigid steel spokes cross the open inner wheel. */
+            if (r2 <= 23 * 23 && (ax <= 4 || ay <= 4))
+                col = T_TEXT;
+            /* Layered hub, like a simplified machined bearing. */
+            if (r2 <= 11 * 11)
+                col = T_MID;
+            if (r2 <= 8 * 8)
+                col = T_VALUE;
+            if (r2 <= 4 * 4)
+                col = T_INK;
+            if (col != T_BG)
+                cv_pset(x + 38, y + 38, col);
+        }
+    cv_blit(82, 64);
+}
 static void draw_splash(void)
 {
     const char *src = FELUCCA_VERSION;
@@ -1996,11 +2034,12 @@ static void draw_splash(void)
     }
     version[i] = 0;
     lcd_fill(0, 0, 240, 240, T_BG);
-    draw_text_box(0, 45, 240, &AF_L, "MASHINA", T_VALUE, 1);
-    draw_text_box(0, 98, 240, &AF_M, "FM1 PERFORMANCE FW", T_TEXT, 1);
-    draw_text_box(0, 145, 240, &AF_X, "based on Jiant by Juan Jiant", T_MID, 1);
-    draw_text_box(0, 162, 240, &AF_X, "Misha Mashina", T_MID, 1);
-    draw_text_box(0, 200, 240, &AF_X, version, T_DIM, 1);
+    draw_text_box(0, 24, 240, &AF_L, "MASHINA", T_VALUE, 1);
+    splash_cog();
+    draw_text_box(0, 146, 240, &AF_M, "FM1 PERFORMANCE FW", T_TEXT, 1);
+    draw_text_box(0, 178, 240, &AF_X, "based on Jiant by Juan Jiant", T_MID, 1);
+    draw_text_box(0, 193, 240, &AF_X, "Misha Mashina", T_MID, 1);
+    draw_text_box(0, 220, 240, &AF_X, version, T_DIM, 1);
     lcd_sync();
 }
 
