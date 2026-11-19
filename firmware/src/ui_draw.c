@@ -655,8 +655,16 @@ static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
     const aafont_t *vf = &AF_L, *lf = &AF_M;
     cv_begin(w, h, T_BG);
     cv_rect(0, 0, w, h, T_SURF);
-    if (hot) cv_rect(0, 0, w, 2, T_ACCENT);
-    cv_rect(0, h - 1, w, 1, T_LINE);
+    /* Active K1-K4: complete orange outline, not a top-only indicator.
+     * Draw the outline inside the cell so it never overlaps adjacent cells. */
+    if (hot) {
+        cv_rect(0, 0, w, 2, T_ACCENT);
+        cv_rect(0, h - 2, w, 2, T_ACCENT);
+        cv_rect(0, 2, 2, h - 4, T_ACCENT);
+        cv_rect(w - 2, 2, 2, h - 4, T_ACCENT);
+    } else {
+        cv_rect(0, h - 1, w, 1, T_LINE);
+    }
     cv_text_in(4, 7, 25, &AF_S, k, hot ? T_ACCENT : T_MID, T_SURF);
     if (ink_w(lf, label) > w - 36) lf = &AF_S;
     cv_text_in(31, 7, w - 35, lf, label, T_TEXT, T_SURF);
