@@ -644,7 +644,7 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
 static int atmos_edit_grid(void)
 {
     return !ui.home && !ui.menu && !ui.layer && !name_on() &&
-           cur_page()->fam == FAM_EDIT && TSEL->eng_req == ENG_ATMOS;
+           cur_page()->fam == FAM_EDIT && TSEL->eng_req == ENGI_ATMOS;
 }
 static void draw_atmos_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
