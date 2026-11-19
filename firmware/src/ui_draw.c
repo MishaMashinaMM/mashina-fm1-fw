@@ -2598,8 +2598,7 @@ static void draw_drum_live_footer(uint32_t perf)
     b[0] = 'P'; b[1] = 'A'; b[2] = 'D'; b[3] = ' '; b[4] = 0;
     fmt_int(b + 4, (int32_t)pad);
     cv_text(160, 1, &AF_S, b, T_VALUE);
-    fmt_int(b, (int32_t)pad);
-    { uint32_t n = str_len(b); b[n++] = '/'; b[n++] = '1'; b[n++] = '2'; b[n] = 0; }
+    str_cpy(b, ui.drum_map_pad < 6u ? "1/2" : "2/2", sizeof b);
     cv_text_r(237, 1, &AF_S, b, T_VALUE, T_BG);
     cv_blit(0, 222);
 }
@@ -2611,16 +2610,17 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
     uint32_t drum = t->eng_req == ENGI_DRUM, lab = t->eng_req == ENGI_DRUMLAB;
     uint32_t selected = lane == ui.drum_map_pad;
     uint16_t col = selected ? T_INK : T_VALUE;
+    uint16_t pad_col = T_TEXT;
     static const char *const curves[] = {"LIN", "SOFT", "HARD", "FIX"};
     char b[24];
-    const aafont_t *face = perf ? &AF_R : &AF_Q;
+    const aafont_t *face = &AF_Q;
     cv_begin(240, 23, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
     cv_rect(0, 0, 240, 23, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
     if (drum || lab) {
         if (lab) {
             drumlab_pad_label(lane, drumlab_kit[ti][lane].kind, b);
-            cv_text(6, CAP_IN(M, 20), ink_w(face, b) < 52 ? face : &AF_M, b, col);
-        } else cv_text(6, CAP_IN(M, 20), ink_w(face, drum_lane_abbr(t, lane)) < 52 ? face : &AF_M, drum_lane_abbr(t, lane), col);
+            cv_text(6, CAP_IN(M, 20), ink_w(face, b) < 52 ? face : &AF_M, b, pad_col);
+        } else cv_text(6, CAP_IN(M, 20), ink_w(face, drum_lane_abbr(t, lane)) < 52 ? face : &AF_M, drum_lane_abbr(t, lane), pad_col);
         if (perf) {
             cv_text(61, CAP_IN(M, 20), ink_w(face, curves[drum_perf_curve[ti][lane] & 3u]) < 55 ? face : &AF_M, curves[drum_perf_curve[ti][lane] & 3u], col);
             fmt_int(b, drum_perf_sound[ti][lane]);
@@ -2721,7 +2721,7 @@ static void ui_draw_body(uint32_t counting)
 {
 #if FELUCCA_NO_SEQUENCER
     static uint32_t live_rows[6];
-    static uint8_t live_kind, live_track, live_bank;
+    static uint8_t live_kind, live_track, live_bank, live_pad;
     static uint8_t cc_old[4][CM_ROW_SIZE], cc_status[4];
     static uint8_t cc_open, cc_pick_old, cc_count_old, cc_delete_old, cc_wait_old, cc_first_old;
 #endif
@@ -2795,12 +2795,15 @@ static void ui_draw_body(uint32_t counting)
             for (uint32_t i = 0; i < 6u; i++)
                 if (changed & (1u << i))
                     draw_drum_live_row(kind == 2u, bank + i);
+            if (live_pad != ui.drum_map_pad)
+                draw_drum_live_footer(kind == 2u);
             ui.force = 0;
         }
         for (uint32_t i = 0; i < 6u; i++) live_rows[i] = next[i];
         live_kind = kind;
         live_track = (uint8_t)song.sel;
         live_bank = bank;
+        live_pad = ui.drum_map_pad;
         return;
     }
     live_kind = 0u;
