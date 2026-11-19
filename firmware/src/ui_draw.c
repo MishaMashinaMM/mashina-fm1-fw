@@ -1224,8 +1224,8 @@ static void draw_foot(void)
     if (!ui.home && !ui.menu && !ui.layer &&
         cur_page()->graph == GR_TRK && cur_page()->scope == SC_TRK) {
         const char *name = cur_page()->title;
-        const char *page = str_eq(name, "ZONES") ? "2/3" :
-                           str_eq(name, "TUNING") ? "3/3" : "1/3";
+        const char *page = str_eq(name, "ZONES") ? "2/5" :
+                           str_eq(name, "TUNING") ? "3/5" : "1/5";
         char track[12];
         cv_begin(240, 18, T_BG);
         cv_rect(3, 1, 43, 16, T_VALUE);
