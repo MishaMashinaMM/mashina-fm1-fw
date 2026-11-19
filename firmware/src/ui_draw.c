@@ -2306,12 +2306,12 @@ static void draw_cc_macro_cell(uint32_t i, uint32_t row, uint32_t col)
     static const int16_t x[8] = {4, 27, 50, 112, 146, 194, 220, 240};
     const uint8_t *r = cm_rows[i];
     uint32_t ti = r[1] >> 4, id = r[3], engine = r[2];
-    uint16_t bg = i == cm_pick && cm_count ? T_RAISE : T_BG;
-    uint16_t ink = col >= 3u && i < cm_count ? T_VALUE : i == cm_pick ? T_THEME : T_TEXT;  /* type/range/reverse/on are editable */
+    uint16_t bg = i == cm_pick && i < cm_count ? T_VALUE : (row & 1u ? RGB(23,23,23) : RGB(36,36,36));
+    uint16_t ink = col < 3u ? T_TEXT : i == cm_pick ? T_INK : T_VALUE;
     char b[16];
     const char *value = b;
     b[0] = 0;
-    cv_begin(x[col + 1u] - x[col], 34, bg);
+    cv_begin(x[col + 1u] - x[col], 23, bg);
     if (i < cm_count) {
         switch (col) {
         case 0u: fmt_int(b, r[0]); break;
@@ -2337,32 +2337,40 @@ static void draw_cc_macro_cell(uint32_t i, uint32_t row, uint32_t col)
         }
         cv_text(0, CAP_IN(S, 20), &AF_S, value, ink);
     }
-    cv_blit(x[col], 59 + (int32_t)row * 34);
+    cv_blit(x[col], 59 + (int32_t)row * 23);
 }
 
 static void draw_cc_macro_row(uint32_t i, uint32_t row)
 {
-    for (uint32_t col = 0; col < 7u; col++) draw_cc_macro_cell(i, row, col);
+    if (i < CM_MAX) for (uint32_t col = 0; col < 7u; col++) draw_cc_macro_cell(i, row, col);
 }
 
 static void draw_cc_macro_position(void)
 {
-    cv_begin(48, 20, T_BG);
-    if (cm_count > 4u) {
-        char location[16];
-        fmt_int(location, cm_pick + 1u);
-        str_cpy(location + str_len(location), "/", sizeof location - str_len(location));
-        fmt_int(location + str_len(location), cm_count);
-        cv_text(0, CAP_IN(S, 14), &AF_S, location, T_ACCENT);
-    }
-    cv_blit(192, 198);
+    char b[16];
+    uint32_t pages = (cm_count + 5u) / 6u;
+    uint32_t page = cm_pick / 6u + 1u;
+    if (!pages) pages = 1u;
+    cv_begin(240, 18, T_BG);
+    cv_rect(3, 1, 43, 16, T_VALUE);
+    cv_text_in(5, 1, 39, &AF_S, "REC", T_INK, T_VALUE);
+    cv_rect(48, 1, 90, 16, RGB(58,58,58));
+    cv_text_in(51, 1, 84, &AF_S, "CC MACROS", T_TEXT, RGB(58,58,58));
+    str_cpy(b, "MACRO ", sizeof b);
+    fmt_int(b + 6, cm_count ? (int32_t)cm_pick + 1 : 0);
+    cv_text(145, 1, &AF_S, b, T_VALUE);
+    fmt_int(b, page);
+    { uint32_t n = str_len(b); b[n++] = '/'; b[n] = 0; }
+    fmt_int(b + str_len(b), pages);
+    cv_text_r(237, 1, &AF_S, b, T_VALUE, T_BG);
+    cv_blit(0, 222);
 }
 
 static void draw_cc_macros(void)
 {
     static const int16_t x[7] = {4, 27, 50, 112, 146, 194, 220};
     static const char *const headings[7] = {"CC", "CH", "SRC", "TYP", "VAL", "REV", "ON"};
-    uint32_t first = (cm_pick / 4u) * 4u;
+    uint32_t first = (cm_pick / 6u) * 6u;
     lcd_fill(0, 0, 240, 240, T_BG);
     cv_begin(240, 40, T_BG);
     cv_text(6, CAP_IN(M, 24), &AF_M, "MIDI CC MACROS", T_TEXT);
@@ -2373,16 +2381,15 @@ static void draw_cc_macros(void)
     cv_begin(240, 16, T_BG);
     for (uint32_t c = 0; c < 7u; c++) cv_text(x[c], CAP_IN(S, 14), &AF_S, headings[c], T_DIM);
     cv_blit(0, 43);
-    for (uint32_t row = 0; row < 4u; row++) draw_cc_macro_row(first + row, row);
+    for (uint32_t row = 0; row < 6u; row++) draw_cc_macro_row(first + row, row);
     if (!cm_count) {
         cv_begin(240, 34, T_BG);
         cv_text(6, CAP_IN(S, 20), &AF_S, "NO MACROS - OCT+ TO ADD", T_DIM);
         cv_blit(0, 59);
     }
-    cv_begin(240, 42, T_BG);
-    cv_text(6, CAP_IN(S, 14), &AF_S, "OCT+ ADD  OCT- DELETE", T_DIM);
-    cv_text(6, 20 + CAP_IN(S, 14), &AF_S, "K1 TYP K2 A K3 B K4 REV", T_TEXT);
-    cv_blit(0, 198);
+    cv_begin(240, 22, T_BG);
+    cv_text(6, CAP_IN(S, 14), &AF_S, "OCT+ ADD   OCT- DELETE", T_DIM);
+    cv_blit(0, 199);
     draw_cc_macro_position();
     ui.force = 0;
 }
@@ -2722,7 +2729,7 @@ static void ui_draw_body(uint32_t counting)
 #if FELUCCA_NO_SEQUENCER
     static uint32_t live_rows[6];
     static uint8_t live_kind, live_track, live_bank, live_pad;
-    static uint8_t cc_old[4][CM_ROW_SIZE], cc_status[4];
+    static uint8_t cc_old[6][CM_ROW_SIZE], cc_status[6];
     static uint8_t cc_open, cc_pick_old, cc_count_old, cc_delete_old, cc_wait_old, cc_first_old;
 #endif
     if (ui.hint_pg && ui.hint_pg != (ui.home ? 255u : ui.page + 1u)) {   /* (0.9.0) a layer's hint: its own page's only */
@@ -2737,12 +2744,13 @@ static void ui_draw_body(uint32_t counting)
     }
 #if FELUCCA_NO_SEQUENCER
     if (cm_ui_open && !ui.menu) {
-        uint32_t first = (cm_pick / 4u) * 4u, changed = 0u;
-        uint32_t masks[4] = {0u};
+        uint32_t first = (cm_pick / 6u) * 6u, changed = 0u;
+        uint32_t masks[6] = {0u};
         int full = !cc_open || first != cc_first_old || cm_count != cc_count_old ||
                    cm_delete != cc_delete_old || cm_wait != cc_wait_old;
-        for (uint32_t row = 0; row < 4u; row++) {
+        for (uint32_t row = 0; row < 6u; row++) {
             uint32_t i = first + row;
+            if (i >= CM_MAX) continue;
             const uint8_t *r = cm_rows[i], *old = cc_old[row];
             uint32_t ti = r[1] >> 4;
             uint8_t status = !(r[4] & CM_ON) ? 0u :
@@ -2762,7 +2770,7 @@ static void ui_draw_body(uint32_t counting)
         }
         if (full || (ui.force && !changed && cm_pick == cc_pick_old)) draw_cc_macros();
         else {
-            for (uint32_t row = 0; row < 4u; row++)
+            for (uint32_t row = 0; row < 6u; row++)
                 for (uint32_t col = 0; col < 7u; col++)
                     if (masks[row] & (1u << col)) draw_cc_macro_cell(first + row, row, col);
             if (cm_pick != cc_pick_old) draw_cc_macro_position();
