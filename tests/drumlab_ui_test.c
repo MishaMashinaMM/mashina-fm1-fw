@@ -201,9 +201,11 @@ int main(void)
                  ui.drum_perf_open && !ui.drum_map_open);
     /* The middle canvas is capped at 150 rows: the uncovered part must
      * still be black, never the previous screen's pixels. */
-    /* The redesigned pages reserve a blank strip below the six pad rows.
-     * Check its background after page entry; row-only edits deliberately do
-     * not repaint unrelated pixels outside the edited row. */
+    /* Settle row signatures first: a force with changed row data intentionally
+     * updates only rows, while a force with unchanged data repaints the page. */
+    frame();
+    host_screen[190u * 240u + 237u] = swap16(0xFFFFu);
+    ui.force = 1u; ui_draw();
     bad += check("Stage 25C: PLAY clears the entire screen",
                  host_screen[190u * 240u + 237u] == swap16(T_BG));
     press(B_ENV);
@@ -211,9 +213,11 @@ int main(void)
                  !ui.drum_perf_open && !ui.drum_map_open && !ui.home && cur_page()->fam == FAM_ENV);
     press(B_SEQ);
     bad += check("Stage 25C: SEQ opens from ENV", ui.drum_map_open);
-    /* The redesigned pages reserve a blank strip below the six pad rows.
-     * Check its background after page entry; row-only edits deliberately do
-     * not repaint unrelated pixels outside the edited row. */
+    /* Settle row signatures first: a force with changed row data intentionally
+     * updates only rows, while a force with unchanged data repaints the page. */
+    frame();
+    host_screen[190u * 240u + 237u] = swap16(0xFFFFu);
+    ui.force = 1u; ui_draw();
     bad += check("Stage 25C: SEQ clears the entire screen",
                  host_screen[190u * 240u + 237u] == swap16(T_BG));
     press(B_EDIT);
