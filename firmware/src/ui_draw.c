@@ -641,6 +641,11 @@ static void djf_curve(int32_t x, int32_t y, int32_t w, int32_t rows, int32_t v, 
 }
 /* All engine EDIT pages: four encoders in a 2x2 grid.
  * ENV, LFO, FX and other specialized pages retain their existing geometry. */
+static int save_atmos_ui(void)
+{
+    return !ui.home && !ui.menu && !ui.layer && !name_on() &&
+           PAGES[ui.page].fam == FAM_SAVE;
+}
 static int glo_parameter_grid(void)
 {
     if (ui.home || ui.menu || ui.layer || name_on())
@@ -1243,6 +1248,27 @@ static int glo_mix_table_ui(void)
 
 static void draw_foot(void)
 {
+    if (save_atmos_ui()) {
+        const char *name = PAGES[ui.page].title;
+        const char *group = str_eq(name, "USER") || str_eq(name, "PRESETS") ? "SOUND" :
+                            str_eq(name, "ARRANGE") || (str_eq(name, "PROJECT") && save_level() == SV_PROJ) ? "PROJECT" : "LIBRARY";
+        const char *label = str_eq(name, "PROJECT") ?
+                            (save_level() == SV_PROJ ? "SECTIONS" : "PROJECTS") : name;
+        const char *page = str_eq(name, "USER") ? "1/6" :
+                           str_eq(name, "PRESETS") ? "2/6" :
+                           str_eq(label, "SECTIONS") ? "3/6" :
+                           str_eq(name, "ARRANGE") ? "4/6" :
+                           str_eq(label, "PROJECTS") ? "5/6" : "6/6";
+        cv_begin(240, 18, T_BG);
+        cv_rect(3, 1, 43, 16, T_VALUE);
+        cv_text_in(5, 1, 39, &AF_S, "SAVE", T_INK, T_VALUE);
+        cv_rect(48, 1, 65, 16, RGB(58,58,58));
+        cv_text_in(51, 1, 59, &AF_S, group, T_TEXT, RGB(58,58,58));
+        cv_text(117, 1, &AF_S, label, T_VALUE);
+        cv_text_r(237, 1, &AF_S, page, T_VALUE, T_BG);
+        cv_blit(0, 222);
+        return;
+    }
     if (glo_parameter_grid()) {
         const char *name = PAGES[ui.page].title;
         const char *group = str_eq(name, "GLOBAL") ? "GLOBAL" :
@@ -2279,9 +2305,9 @@ static void lz_frame_end(void)
         ui.hot_t--;
     /* GEN/HOME now uses the shared 2x2 layout: never briefly paint
      * the legacy page flash or navigation tabs over its footer. */
-    if (pf_on && !engine_edit_grid() && !glo_mix_table_ui())
+    if (pf_on && !engine_edit_grid() && !glo_mix_table_ui() && !save_atmos_ui())
         page_flash_draw();
-    if (!pf_on || engine_edit_grid() || glo_mix_table_ui())
+    if (!pf_on || engine_edit_grid() || glo_mix_table_ui() || save_atmos_ui())
         draw_foot();
     if (!engine_edit_grid() && !glo_mix_table_ui())
         draw_tabs();
@@ -2970,11 +2996,11 @@ static void ui_draw_body(uint32_t counting)
     felucca_dbg.stage = 6;
     /* GLO track tables own their compact footer. Never paint the legacy
      * page-flash footer or lens navigation tabs over these screens. */
-    if (pf_on && !engine_edit_grid() && !glo_mix_table_ui())
+    if (pf_on && !engine_edit_grid() && !glo_mix_table_ui() && !save_atmos_ui())
         page_flash_draw();
-    if (!pf_on || engine_edit_grid() || glo_mix_table_ui())
+    if (!pf_on || engine_edit_grid() || glo_mix_table_ui() || save_atmos_ui())
         draw_foot();
-    if (lz_on() && !engine_edit_grid() && !glo_mix_table_ui())
+    if (lz_on() && !engine_edit_grid() && !glo_mix_table_ui() && !save_atmos_ui())
         draw_tabs();
     ui.force = 0;
 }
