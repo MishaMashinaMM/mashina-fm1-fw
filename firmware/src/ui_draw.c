@@ -2465,7 +2465,7 @@ static void draw_mixer_table(void)
             str_cpy(vname, e->name, 13);
         /* track number */
         b[0] = (char)('1' + i); b[1] = 0;
-        cv_text(4, ry + CAP_IN(S, 20), &AF_S, b, nc);
+        cv_text(4, ry + CAP_IN(M, 20), &AF_M, b, nc);
         if (trk[i].p[P_MUTE]) {
             cv_text(18, ry + CAP_IN(S, 20), &AF_S, "M", nc);
         }
@@ -2481,7 +2481,7 @@ static void draw_mixer_table(void)
                  * (MIDI 48 = C3, 60 = C4); velocities stay numeric. */
                 if (k <= Z_NOTE_MAX) note_name(m, midi_zone[i][k]);
                 else fmt_int(m, midi_zone[i][k]);
-                cv_text(zx[k], ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+                cv_text(zx[k], ry + CAP_IN(M, 20), &AF_M, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
             }
         } else if (tuning) {
             char a[8], b[8];
@@ -2490,8 +2490,8 @@ static void draw_mixer_table(void)
             else fmt_int(a, tr);
             if (fine > 0) { b[0] = '+'; fmt_int(b + 1, fine); }
             else fmt_int(b, fine);
-            cv_text(101, ry + CAP_IN(S, 20), &AF_S, a, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
-            cv_text(132, ry + CAP_IN(S, 20), &AF_S, b, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+            cv_text(101, ry + CAP_IN(M, 20), &AF_M, a, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+            cv_text(132, ry + CAP_IN(M, 20), &AF_M, b, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         } else {
         /* midi rx */
         { char m[8]; m[0]=0; /* format */
@@ -2499,14 +2499,14 @@ static void draw_mixer_table(void)
           uint32_t ch = midi_live_channel(i);
           m[0] = (char)('0' + (ch / 10u));
           if (ch >= 10u) { m[1] = (char)('0' + (ch % 10u)); m[2]=0; } else { m[0]=(char)('0'+ch); m[1]=0; }
-          cv_text(101, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+          cv_text(101, ry + CAP_IN(M, 20), &AF_M, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         }
         /* volume */
         { char m[8]; uint32_t v = (uint32_t)trk[i].p[P_LEVEL];
           /* itoa */
           int k=0; char tmp[8];
           if (v==0) tmp[k++]='0'; else { uint32_t x=v; char r[8]; int ri=0; while(x){r[ri++]='0'+x%10;x/=10;} while(ri) tmp[k++]=r[--ri]; } tmp[k]=0;
-          str_cpy(m,tmp,8); cv_text(132, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+          str_cpy(m,tmp,8); cv_text(132, ry + CAP_IN(M, 20), &AF_M, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         }
         /* pan */
         { char m[8]; int32_t p = trk[i].p[P_PAN];
@@ -2517,7 +2517,7 @@ static void draw_mixer_table(void)
           if (p > 0) { /* add + prefix */
              char mm[8]; mm[0]='+'; str_cpy(mm+1,tmp,7); str_cpy(m,mm,8);
           } else str_cpy(m,tmp,8);
-          cv_text(168, ry + CAP_IN(S, 20), &AF_S, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+          cv_text(168, ry + CAP_IN(M, 20), &AF_M, m, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         }
         /* pan motion indicator: a small filled square in the PAN cell's upper-right corner */
         {
