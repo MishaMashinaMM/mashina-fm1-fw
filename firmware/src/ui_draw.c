@@ -1248,6 +1248,23 @@ static int glo_mix_table_ui(void)
 
 static void draw_foot(void)
 {
+    /* Long-press quick layers use the same 18px footer as normal JLD pages.
+     * ALGORITHM still cycles MAP / KNOBS / STATE; nothing changes in input. */
+    if (ui.layer) {
+        static const char *const LN[LAYER_N] = {"", "FX", "GLO", "SCL", "EDIT", "SEQ", "REC", "SAVE", "LFO"};
+        static const char *const VN[3] = {"MAP", "KNOBS", "STATE"};
+        static const char *const PN[3] = {"1/3", "2/3", "3/3"};
+        uint32_t v = ui.lylv % 3u;
+        cv_begin(240, 18, T_BG);
+        cv_rect(3, 1, 43, 16, T_VALUE);
+        cv_text_in(5, 1, 39, &AF_S, LN[ui.layer % LAYER_N], T_INK, T_VALUE);
+        cv_rect(48, 1, 65, 16, RGB(58,58,58));
+        cv_text_in(51, 1, 59, &AF_S, "HOLD", T_TEXT, RGB(58,58,58));
+        cv_text(117, 1, &AF_S, VN[v], T_VALUE);
+        cv_text_r(237, 1, &AF_S, PN[v], T_VALUE, T_BG);
+        cv_blit(0, 222);
+        return;
+    }
     if (save_atmos_ui()) {
         const char *name = PAGES[ui.page].title;
         const char *group = str_eq(name, "USER") || str_eq(name, "PRESETS") ? "SOUND" :
