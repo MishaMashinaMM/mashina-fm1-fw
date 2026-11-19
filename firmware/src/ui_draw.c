@@ -2224,11 +2224,14 @@ static void lz_frame_end(void)
         ui.bpm_t--;
     if (ui.hot_t)
         ui.hot_t--;
-    if (pf_on)
+    /* GEN/HOME now uses the shared 2x2 layout: never briefly paint
+     * the legacy page flash or navigation tabs over its footer. */
+    if (pf_on && !engine_edit_grid())
         page_flash_draw();
-    if (!pf_on)
+    if (!pf_on || engine_edit_grid())
         draw_foot();
-    draw_tabs();
+    if (!engine_edit_grid())
+        draw_tabs();
     ui.force = 0;
 }
 static void ui_draw_page(uint32_t counting);
