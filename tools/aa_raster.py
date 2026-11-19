@@ -98,7 +98,7 @@ FIXED = "0123456789."       # one phase, at the rounded pen: src/ui_draw.c roll_
 WHOLE = "0123456789."       # with tabular, their advance in whole pixels too: a number keeps an even pitch
 
 
-def raster_font(spec, px, chars, tracking=0.0, gamma=1.0, tabular=True, kern_min=1, phases=1):
+def raster_font(spec, px, chars, tracking=0.0, gamma=1.0, tabular=True, kern_min=1, phases=1, stretch=1.0):
     """-> dict(h, asc, phases, glyphs{ch: (adv16, [(bx, by, bw, bh, bytes) per phase, or one])}, kern{(a,b): d16})
 
     Advances, kerning and the outlines come from the instanced weight at 16 x the size (unhinted): advances in
@@ -135,7 +135,7 @@ def raster_font(spec, px, chars, tracking=0.0, gamma=1.0, tabular=True, kern_min
                 adv[c] = float(max(1, round(adv[c])))
     bot_max = 0
     for ch in chars:
-        a16 = int(round(adv[ch] * 16))
+        a16 = int(round(adv[ch] * stretch * 16))
         f = feats if ch.isdigit() else None
         shift = (adv[ch] - nat[ch]) / 2 if tabular and ch in WHOLE else 0.0   # centre the figure in the cell
         ph = []
@@ -146,7 +146,12 @@ def raster_font(spec, px, chars, tracking=0.0, gamma=1.0, tabular=True, kern_min
                 ph.append((0, 0, 0, 0, b""))
                 continue
             x0, y0, x1, y1 = bb
-            ph.append((x0 - pad, y0 - pad, x1 - x0, y1 - y0, pack(list(nib.crop(bb).tobytes()))))
+            cropped = nib.crop(bb)
+            if stretch != 1.0:
+                cropped = cropped.resize((max(1, round(cropped.width * stretch)), cropped.height),
+                                         Image.Resampling.BILINEAR)
+            ph.append((round((x0 - pad) * stretch), y0 - pad, cropped.width, cropped.height,
+                       pack(list(cropped.tobytes()))))
             bot_max = max(bot_max, y1 - pad)
         glyphs[ch] = (a16, ph)
     h = max(asc + desc, bot_max)
@@ -159,7 +164,7 @@ def raster_font(spec, px, chars, tracking=0.0, gamma=1.0, tabular=True, kern_min
             if a in WHOLE and b in WHOLE:
                 continue                       # tabular figures (and the point between them) never kern
             d = (font_hi.getlength(a + b, features=feats) - lens[a] - lens[b]) / SS
-            d16 = int(round(d * 16))
+            d16 = int(round(d * stretch * 16))
             if abs(d16) >= kern_min:
                 kern[(a, b)] = max(-127, min(127, d16))
     return {"h": h, "asc": asc, "glyphs": glyphs, "kern": kern, "px": px, "phases": phases}
