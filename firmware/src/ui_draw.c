@@ -2593,36 +2593,37 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
     uint16_t col = lane == ui.drum_map_pad ? T_ACCENT : T_TEXT;
     static const char *const curves[] = {"LIN", "SOFT", "HARD", "FIX"};
     char b[24];
+    const aafont_t *face = perf ? &AF_R : &AF_Q;
     cv_begin(240, 23, T_BG);
     if (drum || lab) {
         if (lab) {
             drumlab_pad_label(lane, drumlab_kit[ti][lane].kind, b);
-            cv_text(6, CAP_IN(S, 20), &AF_S, b, col);
-        } else cv_text(6, CAP_IN(S, 20), &AF_S, drum_lane_abbr(t, lane), col);
+            cv_text(6, CAP_IN(M, 20), ink_w(face, b) < 52 ? face : &AF_M, b, col);
+        } else cv_text(6, CAP_IN(M, 20), ink_w(face, drum_lane_abbr(t, lane)) < 52 ? face : &AF_M, drum_lane_abbr(t, lane), col);
         if (perf) {
-            cv_text(61, CAP_IN(S, 20), &AF_S, curves[drum_perf_curve[ti][lane] & 3u], col);
+            cv_text(61, CAP_IN(M, 20), ink_w(face, curves[drum_perf_curve[ti][lane] & 3u]) < 55 ? face : &AF_M, curves[drum_perf_curve[ti][lane] & 3u], col);
             fmt_int(b, drum_perf_sound[ti][lane]);
-            cv_text(119, CAP_IN(S, 20), &AF_S, b, col);
+            cv_text(119, CAP_IN(M, 20), ink_w(face, b) < 38 ? face : &AF_M, b, col);
             if (!drum_perf_choke[ti][lane]) str_cpy(b, "--", sizeof b);
             else { b[0] = 'G'; b[1] = (char)('0' + drum_perf_choke[ti][lane]); b[2] = 0; }
-            cv_text(159, CAP_IN(S, 20), &AF_S, b, col);
-            cv_text(194, CAP_IN(S, 20), &AF_S, drum_retrigger[ti][lane] ? "RST" : "OVR", col);
+            cv_text(159, CAP_IN(M, 20), ink_w(face, b) < 32 ? face : &AF_M, b, col);
+            cv_text(194, CAP_IN(M, 20), ink_w(face, "OVR") < 45 ? face : &AF_M, drum_retrigger[ti][lane] ? "RST" : "OVR", col);
         } else {
             uint32_t note = drum ? (drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane])
                                  : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36u + lane);
             fmt_int(b, (int32_t)note);
-            cv_text(68, CAP_IN(S, 20), &AF_S, b, col);
+            cv_text(68, CAP_IN(M, 20), ink_w(face, b) < 46 ? face : &AF_M, b, col);
             {
                 int32_t pan = drum_pad_pan[ti][lane];
                 if (pan == 0) str_cpy(b, "C", sizeof b);
                 else { b[0] = pan < 0 ? 'L' : 'R'; fmt_int(b + 1, pan < 0 ? -pan : pan); }
-                cv_text(116, CAP_IN(S, 20), &AF_S, b, col);
+                cv_text(116, CAP_IN(M, 20), ink_w(face, b) < 54 ? face : &AF_M, b, col);
             }
             {
                 int32_t pitch = drum_pad_pitch[ti][lane];
                 if (pitch > 0) { b[0] = '+'; fmt_int(b + 1, pitch); }
                 else fmt_int(b, pitch);
-                cv_text(174, CAP_IN(S, 20), &AF_S, b, col);
+                cv_text(174, CAP_IN(M, 20), ink_w(face, b) < 62 ? face : &AF_M, b, col);
             }
         }
     }
