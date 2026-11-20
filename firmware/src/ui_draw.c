@@ -1989,7 +1989,7 @@ static void draw_columns(void)
         char lab_level_label[12];
         const char *label = d->label;
         uint32_t id = cur_page()->id[c];
-        if (cur_page()->scope == SC_TRACK && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
+        if (cur_page()->scope == SC_TRACK && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND) &&
             ((id >= P_LN0 && id <= P_LN7) || (id >= P_LN8 && id <= P_LN11))) {
             uint32_t lane = id <= P_LN7 ? id - P_LN0 : id - P_LN8 + 8u;
             if (trk_eng(TSEL) == ENGI_DRUMIND) {
