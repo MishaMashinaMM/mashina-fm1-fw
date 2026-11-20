@@ -141,7 +141,30 @@ Las **ocho voces de síntesis son compartidas** por todas las pistas activas y m
 
 Elegí una pista y un motor, luego abrí **EDIT**. Girá **SELECT** para recorrer sus páginas y modificá los controles con K1–K4.
 
-**ATMOS** crea pads armónicos evolutivos; **BREATH**, **MOTION**, **FLOW** y **SPREAD** controlan movimiento y textura. **BRASS** crea vientos sintéticos: **TYPE 0** es saxofón, **64** un híbrido y **127** trompeta. Sus páginas EDIT ofrecen **PRESS, BUZZ, BREATH, BODY, FORMNT, GROWL, ATTACK, FAT, GRIND, METAL y CRUSH**. **INDUSTRIAL** genera bajos y leads agresivos con **WAVE, FAT, GRIND, METAL, CRUSH, FEED, CUT, RES, WAVE2, MIX, SUB y MODE**.
+### Motores de sonido heredados de JIANT
+
+Estos ocho motores siguen disponibles junto a los nuevos. Elegí un preset para escuchar su carácter y ajustá sus parámetros desde EDIT.
+
+| Motor | Sonido y controles principales |
+| --- | --- |
+| **ANALOG** | Síntesis sustractiva para bajos cálidos, leads, pulsos y pads; osciladores, desafinación, filtro y drive. |
+| **PHASE** | Distorsión de fase para metales sintéticos, campanas, teclas y bajos expresivos; DCW y ENV transforman la forma de onda. |
+| **LOFI** | Sonidos de chip, tablas de ondas, bytebeat y texturas de videojuegos; CHIP, WAVE, DUTY, SWEEP y reducción digital. |
+| **VOICE** | Vocales cantadas, coros, voces robóticas y frases; VOWEL, VOWEL2 y TALK transforman los formantes. |
+| **WHEEL** | Órgano de ruedas tonales con registros, percusión, clic de tecla, saturación y efecto rotatorio. |
+| **NOISE** | Viento, lluvia, chasquidos, ruidos metálicos y registros de desplazamiento; MODE, COLOR, FREQ y PEAK. |
+| **FM6** | FM de seis operadores: pianos eléctricos, campanas, bajos y timbres digitales; algoritmos y envolventes por operador. |
+| **ANIMAL** | Cantos sintéticos de pájaros, insectos, ranas y zumbidos; distintos modos controlan resonancias, ritmo y tono. |
+
+**DRUM-X** también procede del motor de batería original, ampliado a doce sonidos; aparece junto a las otras baterías más abajo.
+
+### Motores melódicos adicionales de MASHINA
+
+**ATMOS — pads y texturas en movimiento.** Probá **SOFT CLOUD**, **BREATHING** o **GLASS TIDE**. **WAVE** selecciona la onda; **MORPH**, **DENSITY** y **DRIFT** transforman sus capas; **CUT/RES** controlan el filtro, y **TEXTURE/SHIMMER** agregan color. **BREATH** crea cambios de volumen, **MOTION** determina la velocidad, **FLOW** modifica el timbre en el tiempo y **SPREAD** separa los osciladores. Para acordes superpuestos, comenzá con movimientos sutiles.
+
+**BRASS — saxofones y metales electrónicos.** No intenta reproducir perfectamente instrumentos acústicos: su sonido es deliberadamente sintético. **TYPE 0** da un carácter de saxo y **127** se acerca a la trompeta, con híbridos en medio. **PRESS** cambia la intensidad, **BUZZ** el borde áspero, **BREATH** el aire y **BODY/FORMNT** la resonancia. **GROWL** agrega rugosidad y **ATTACK** define el comienzo. En la tercera página, **FAT, GRIND, METAL, CRUSH** permiten sonidos exagerados. Probá **TENOR SAX**, **SAX GROWL** o **BRASS LEAD**.
+
+**INDUSTRIAL — bajos y leads melódicos agresivos.** A diferencia de DRUM-IND, sigue las notas tocadas. **WAVE** elige la onda principal; **FAT** la engrosa; **GRIND, METAL, CRUSH y FEED** generan distorsión y aspereza; **CUT/RES** moldean el filtro. La tercera página ofrece **WAVE2, MIX, SUB y MODE** para el segundo oscilador y graves adicionales. Empezá con **IRON BASS**, **SUB MACHINE**, **STEEL LEAD** o **GEAR LEAD**.
 
 **DRUM-X** tiene doce sonidos independientes: BD 36, SD 38, CP 39, CH 42, OH 46, TM 45, RM 37, BL 56, B2 41, S2 40, O2 43 y T2 44. **DRUM-LAB** tiene doce pads sintetizados, inicialmente en MIDI **36–47**. Abrí EDIT para editar cada pad y sus niveles.
 
