@@ -85,10 +85,10 @@ int main(void){
         snprintf(label,sizeof label,"pad %u audible and bounded",(unsigned)k);
         bad+=ind_check(label,energy>10000u&&peak<32768);
     }
-    host_tracks_init();host_preset(t,ENGI_DRUMIND,0);
+    host_tracks_init();memset(t->v,0,sizeof t->v);host_preset(t,ENGI_DRUMIND,0);
     trk_note_on(t,36u,110u);
     int same=t->v[0].active&&ind_state[0][0].kind==IND_CLANG;
-    host_tracks_init();host_preset(t,ENGI_DRUMIND,0);
+    host_tracks_init();memset(t->v,0,sizeof t->v);host_preset(t,ENGI_DRUMIND,0);
     trk_note_on(t,60u,110u);
     bad+=ind_check("C pad identity repeats across octaves",
         same&&t->v[0].active&&ind_state[0][0].kind==IND_CLANG);
@@ -106,7 +106,7 @@ int main(void){
             if(changed)audible++;
             if(difference<2){
                 weak++;
-                printf("DRUM-IND SUBTLE pad=%u (%s) field=%u (%s), energy delta=%d%%\\n",
+                printf("DRUM-IND SUBTLE pad=%u (%s) field=%u (%s), energy delta=%d%%\n",
                        (unsigned)pad,IND_NAMES[pad],(unsigned)field,
                        IND_FIELDS[field],(int)difference);
             }
