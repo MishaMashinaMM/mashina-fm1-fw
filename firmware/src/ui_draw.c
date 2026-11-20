@@ -1967,7 +1967,7 @@ static void draw_columns(void)
             uint32_t acoustic = trk_eng(TSEL) == ENGI_DRUMAC;
             int32_t value = drumlab_global[song.sel][field];
             fmt_int(val, value);
-            draw_column(c, acoustic ? AC_GLOBAL_NAMES[field] : d->label,
+            draw_column(c, acoustic ? ac_global_name(field) : d->label,
                         val, "%", VAL(c),
                         acoustic ? value * 5 : value * 10, ICON_LEVEL);
             continue;
