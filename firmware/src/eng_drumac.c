@@ -167,8 +167,11 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     inc = ac_is_metal(kind) ?
           a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192) : 0u;
     if (ac_is_tom(kind)) {
+        /* TUNE adjusts the drumhead's real resonance, not the thud filter.
+         * At 64, retain the approved tom's pitch and noise character.
+         * Approximately a semitone per four points across a useful range. */
         int32_t semitone = clamp(35 + (int32_t)(kind - AC_FLOOR) * 4 +
-                                 (tune - 64) / 16, 26, 65);
+                                 (tune - 64) / 4, 24, 81);
         tom_tone_inc = pitch_inc((uint32_t)semitone * 16u);
     }
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
@@ -241,6 +244,16 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 33);
             if (metal != 65)
                 raw += (int32_t)(((int64_t)(mid - low) * body * (metal - 65)) >> 31);
+            /* Keep the approved snare exactly unchanged at WIRES=43 and
+             * BRIGHT=87, but make editing either parameter clearly audible.
+             * Wires adds/subtracts rattling noise rather than changing the
+             * membrane; brightness changes the sharp high-frequency crack. */
+            if (wire_amt != 43)
+                raw += (int32_t)(((int64_t)(white - wire) * body *
+                                  (wire_amt - 43)) >> 32);
+            if (bright != 87)
+                raw += (int32_t)(((int64_t)(white - fast) * trans *
+                                  (bright - 87)) >> 32);
             ph0 = (uint32_t)low;
             ph1 = (uint32_t)mid;
         } else if (kind == AC_HAT_C || kind == AC_HAT_O) {
@@ -255,8 +268,10 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
              * Each body filter starts in a different low-frequency region. */
             int32_t low = (int32_t)ph0, deep = (int32_t)ph1;
             uint32_t height = kind - AC_FLOOR;
-            int32_t k1 = 600 + (int32_t)height * 540 + tune * 13;
-            int32_t k2 = 150 + (int32_t)height * 130 + tune * 3;
+            /* The noise-body colour is fixed for each tom. TUNE controls
+             * only the independent resonating head so it is pitch, not thud. */
+            int32_t k1 = 600 + (int32_t)height * 540 + 64 * 13;
+            int32_t k2 = 150 + (int32_t)height * 130 + 64 * 3;
             low += (int32_t)(((int64_t)(white - low) * k1) >> 15);
             deep += (int32_t)(((int64_t)(low - deep) * k2) >> 15);
             int32_t thud = deep * (100 + body_mix) / 128 +
@@ -270,7 +285,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             if (age < 8000u) {
                 int32_t head = sine_i(ph2);
                 raw += (int32_t)(((int64_t)head * body * (8000u - age) *
-                                  (64 + ring_amt)) >> 51);
+                                  (64 + ring_amt)) >> 49);
                 ph2 += tom_tone_inc;
             }
             ph0 = (uint32_t)low;
