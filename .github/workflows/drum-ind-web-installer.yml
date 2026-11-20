@@ -185,6 +185,26 @@ jobs:
           Please do not merge into main before physical testing succeeds.
           EOF
           test -s "$OUT/READ-ME-FIRST.txt"
+      - name: Check generated browser script syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('build/drum-ind-web-installer/webapp/installer/index.html')
+          html=p.read_text(encoding='utf-8')
+          assert html.count('<script>') == 1
+          assert 'installer-startup-warning' in html
+          assert 'document.getElementById("installer-startup-warning").remove()' in html
+          start=html.index('<script>')+len('<script>')
+          end=html.index('</script>',start)
+          Path('build/drum-ind-web-installer/installer-script-check.js').write_text(
+              html[start:end],encoding='utf-8')
+          PY
+          node --check build/drum-ind-web-installer/installer-script-check.js
+      - name: Test complete installer UI in headless Chromium
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.58.2
+          npx playwright install --with-deps chromium
+          node tools/test_drum_ind_installer.cjs build/drum-ind-web-installer
       - name: Upload DRUM-IND standalone browser installer
         uses: actions/upload-artifact@v4
         with:
