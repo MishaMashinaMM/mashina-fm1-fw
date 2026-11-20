@@ -11,7 +11,7 @@ static const char *const IND_FIELDS[8] = {
 };
 typedef struct {
     uint32_t rng, age;
-    int32_t lp, mid, slow, rough, band, band_low, amp, hit;
+    int32_t lp, mid, slow, rough, band, band_low, bright_lp, amp, hit;
     uint8_t kind, active;
 } ind_voice_t;
 static ind_voice_t ind_state[NPART][NVOICE] __attribute__((section(".pool")));
@@ -134,7 +134,7 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
     const uint32_t mul_b=dlab_decay_long(n,duration);
     const uint32_t mul_t=dlab_decay_long(n,(uint32_t)clamp(36000-(hit-64)*260,13000,57000));
     int32_t amp=a->amp,trans=a->hit,lp=a->lp,mid=a->mid,slow=a->slow,rough=a->rough;
-    int32_t band=a->band,band_low=a->band_low;
+    int32_t band=a->band,band_low=a->band_low,bright_lp=a->bright_lp;
     const int32_t step_b=((int32_t)(((int64_t)amp*mul_b)>>16)-amp)/(int32_t)n;
     const int32_t step_t=((int32_t)(((int64_t)trans*mul_t)>>16)-trans)/(int32_t)n;
     uint32_t seed=a->rng,age=a->age;
@@ -254,11 +254,34 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
                 raw+=((int64_t)scatter*motion_change*hiss*amp)>>39;
             }
         }
+        /* Two independent, intentionally wide kit-wide controls:
+         * BRIGHT is a post-synthesis spectral tilt, so it also works on
+         * bass-heavy impacts and swept/filtered noises. At 0% the entire
+         * sound becomes a low-passed version; at 200% the upper band is
+         * boosted strongly. 100% reproduces the old sample exactly.
+         * Track the low-pass state even while neutral, so a live MIDI
+         * macro can move BRIGHT without a sudden first-sample jump. */
+        if (kit[4] != 0) {
+            int64_t upper=raw-bright_lp;
+            if (kit[4]<0) raw+=(upper*kit[4])/100;
+            else raw+=(upper*kit[4]*2)/100;
+        }
+        bright_lp+=(int32_t)(((raw>32767?32767:raw< -32768?-32768:raw)-bright_lp)*3500>>15);
+        /* ATTACK acts on the complete output of every industrial sound,
+         * not merely the existing short noise transient. During the first
+         * ~80 ms, 0% softens the hit towards silence, while 200% roughly
+         * doubles its initial intensity. Fade this change out smoothly
+         * so the underlying texture and tail remain unaffected. */
+        if (kit[3] && age<3528u) {
+            int32_t early=(int32_t)(3528u-age);
+            int32_t attack_factor=100+(kit[3]*early)/3528;
+            raw=(raw*attack_factor)/100;
+        }
         raw=clamp(raw,-32768,32767);
         out[i]+=voice_amp((int32_t)((raw*gain)>>15),m,i);
     }
     a->lp=lp;a->mid=mid;a->slow=slow;a->rough=rough;
-    a->band=band;a->band_low=band_low;
+    a->band=band;a->band_low=band_low;a->bright_lp=bright_lp;
     a->rng=seed;a->age=age;a->amp=amp>0?amp:0;a->hit=trans>0?trans:0;
     if(a->amp<100)a->active=0;
 }
