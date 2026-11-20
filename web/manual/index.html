@@ -29,7 +29,7 @@ table{border-collapse:collapse;width:100%;margin:16px 0 24px;min-width:520px}
 th,td{padding:9px 12px;border-bottom:1px solid #404040;text-align:left;vertical-align:top}
 th{background:#2b2115;color:var(--orange);font-weight:650}
 tr:nth-child(even) td{background:#111}
-main>div{overflow-x:auto}
+main>div{overflow-x:auto} article[data-manual-lang]:not([data-active]){display:none} article table{display:block;overflow-x:auto}
 code{font:0.95em ui-monospace,monospace;color:var(--orange)}
 blockquote{border-left:3px solid var(--orange);padding:6px 18px;margin-left:0;background:var(--panel)}
 #toc{border:1px solid #494949;border-radius:12px;padding:12px 20px;margin:18px 0 24px;background:var(--panel)}
@@ -40,6 +40,7 @@ footer{border-top:1px solid #444;max-width:1024px;padding:20px;margin:auto;color
 </style>
 <link rel="stylesheet" href="../mashina-nav.css">
 <script defer src="../mashina-nav.js"></script>
+<script defer src="../mashina-manual-locale.js"></script>
 </head>
 <body>
 <nav id="mashina-langs" style="padding:12px;max-width:1024px;margin:auto"></nav>
