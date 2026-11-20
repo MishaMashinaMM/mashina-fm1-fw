@@ -110,7 +110,7 @@ jobs:
             if [ -e "build/emu/$f" ]; then mv "build/emu/$f" build/pages/emu/; fi
           done
           cp -r build/emu/. build/pages/
-          cp web/mashina-nav.js web/mashina-nav.css web/mashina-translations.js web/mashina-emu-locale.js build/pages/
+          cp web/mashina-nav.js web/mashina-nav.css web/mashina-translations.js web/mashina-emu-locale.js web/mashina-manual-locale.js build/pages/
           cp web/drums-home.html build/pages/index.html
           cp web/landing/frecuencia.html build/pages/frecuencia.html
           # (0.9.12) the front page's animations, recorded from the firmware's drawing code (tools/landing_anim)
