@@ -87,6 +87,10 @@ Turn **SELECT** to change the MENU page; **ALGORITHM** changes its higher-level 
 
 > Older JIANT screenshots may show other MENU arrangements. The table above reflects MASHINA's six-page layout; CLICK, CLICK LEVEL and COUNT-IN were removed.
 
+### ATMOS harmonic-pad engine
+
+MASHINA includes **ATMOS**, a lightweight polyphonic engine for evolving harmonic textures. It has two oscillators, filtering and controls for **BREATH**, **MOTION**, **FLOW** and **SPREAD**. Use it like any melodic engine on a track; combine it with other tracks through external MIDI channels, zones and tuning. The ATMOS-equipped MASHINA build was flashed and functionally checked on a physical FM1 on November 20, 2026.
+
 ## 2. Tracks, GLO, EQ and MIDI routing
 
 Press **GLO** from another section to open **MIX → MIXER**. The MIXER contains six track rows; select a row using **ALGORITHM**.
