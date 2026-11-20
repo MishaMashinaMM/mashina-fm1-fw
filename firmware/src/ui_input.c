@@ -1349,7 +1349,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         fop_knob(slot, steps);
         return;
     }
-    if (pg->scope == SC_ENGINE && trk_eng(TSEL) == ENGI_DRUMLAB &&
+    if (pg->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
         pg->id[slot] >= P_E0 && pg->id[slot] < P_E0 + 8u) {
         uint32_t field = pg->id[slot] - P_E0, ti = song.sel;
         drumlab_global_ensure(ti);
