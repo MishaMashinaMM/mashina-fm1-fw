@@ -46,6 +46,18 @@
           u.pathname === "/mashina-fm1-fw/")) continue;
     u.searchParams.set("lang", code); a.href = u.href;
   }
+  const labels = {
+    en: {emu:"Emulator",installer:"Installer",editor:"Editor"},
+    es: {emu:"Emulador",installer:"Instalador",editor:"Editor"},
+    ja: {emu:"エミュレーター",installer:"インストーラー",editor:"エディター"},
+    ru: {emu:"Эмулятор",installer:"Установщик",editor:"Редактор"},
+    sr: {emu:"Емулатор",installer:"Инсталатер",editor:"Едитор"},
+    hi: {emu:"एमुलेटर",installer:"इंस्टॉलर",editor:"एडिटर"}
+  };
+  for (const item of document.querySelectorAll("[data-nav-label]")) {
+    const name = item.dataset.navLabel;
+    item.textContent = (labels[code] || labels.en)[name] || item.textContent;
+  }
   const header = document.querySelector(".mashina-brand");
   if (header) header.setAttribute("aria-label", "MASHINA — FM1 PERFORMANCE FW");
 })();
