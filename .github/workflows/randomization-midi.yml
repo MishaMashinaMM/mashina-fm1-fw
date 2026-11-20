@@ -1,0 +1,150 @@
+name: Randomization MIDI validation
+on:
+  push:
+    branches: [randomization-midi]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emulator-and-regressions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate headers
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Compile emulator
+        run: EMU_PREVIEW=0 sh web/emu/build.sh
+      - name: Emulator smoke test
+        run: node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+      - name: Dedicated MIDI randomization regressions
+        run: |
+          mkdir -p build/host/randomization
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -Ibuild/gen -Ifirmware/src -o build/host/randomization/randomization_midi_test tests/randomization_midi_test.c -lm
+          build/host/randomization/randomization_midi_test
+      - name: Existing live-drum regressions
+        run: bash tests/run_live_drum_tests.sh
+      - name: Publish downloadable branch emulator (not production Pages)
+        uses: actions/upload-artifact@v4
+        with:
+          name: randomization-midi-emulator
+          path: build/emu/
+          retention-days: 14
+
+  native-firmware-build:
+    needs: emulator-and-regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Restore tested JieLi toolchain and SDK cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: Ensure JieLi toolchain and pinned SDK files
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T=$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          [ -e "$HOME/.jieli/toolchain" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            cd "$HOME/fw-AC79_AIoT_SDK"
+            git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin
+            retry git checkout d179b4484759423312073f5fbb232501aa491047
+          fi
+          test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
+      - name: Compile and package native FM1 firmware (experimental, not deployed)
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+        run: |
+          python3 tools/build.py
+          ls -lh build/felucca.bin build/felucca.fwsc
+      - name: Build branch-only local web installer
+        run: |
+          VERSION="v0.5-randomization-${GITHUB_SHA::7}-preview"
+          python3 web/make_site.py build/felucca.fwsc "$VERSION" build/randomization-installer
+          printf '%s\n' "$GITHUB_SHA" > build/randomization-installer/firmware/SOURCE_COMMIT
+          (cd build/randomization-installer/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
+          cp docs/randomization-midi.md build/randomization-installer/TESTING.md
+          cat > build/randomization-installer/START-HERE.txt <<'EOF'
+          JIANT LIVE DRUMS - RANDOMIZATION MIDI EXPERIMENTAL INSTALLER
+          
+          This build is ONLY from branch randomization-midi.
+          It is NOT the production/main firmware or installer.
+          
+          1. Extract this entire ZIP into a folder.
+          2. In that folder open a terminal and run:
+               python -m http.server 8000
+             (or on Windows: py -m http.server 8000)
+          3. In desktop Chrome or Edge open:
+               http://localhost:8000/webapp/installer/
+          4. Verify the version says v0.5-randomization-...-preview.
+          5. Back up all FM1 projects and settings before flashing.
+          6. Use the installer's existing USB MIDI flashing flow.
+          
+          CC85 on MIDI ch13/14/15: +/-20..60, up to 2 sound parameters
+          CC86 on MIDI ch13/14/15: +/-40..90, up to 3 sound parameters
+          CC87 on MIDI ch13/14/15: restore last saved sound
+          
+          No physical device flash has yet been verified for this build.
+          EOF
+      - name: Validate branch installer identity, firmware and local links
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          root = pathlib.Path("build/randomization-installer")
+          sha = os.environ["GITHUB_SHA"]
+          assert os.environ["GITHUB_REF_NAME"] == "randomization-midi"
+          assert (root/"firmware/SOURCE_COMMIT").read_text().strip() == sha
+          versions = json.loads((root/"firmware/versions.json").read_text())
+          assert len(versions) == 1, "must not include unrelated/older firmware versions"
+          v = versions[0]
+          assert v["version"] == f"v0.5-randomization-{sha[:7]}-preview"
+          assert re.fullmatch(r"FM-1_9[0-9]{2}", v["product"])
+          pkg = root/"firmware"/v["file"]
+          raw = pkg.read_bytes()
+          assert len(raw) > 100000 and b"FELUCCA-LOADER-1" in raw
+          import sys
+          sys.path.insert(0, "web")
+          from make_site import product_of
+          assert product_of(raw) == v["product"]
+          assert raw == pathlib.Path("build/felucca.fwsc").read_bytes()
+          checksums = (root/"firmware/SHA256SUMS").read_text()
+          assert hashlib.sha256(raw).hexdigest() in checksums
+          html = (root/"webapp/installer/index.html").read_text()
+          assert v["version"] in html and v["file"] in html
+          assert '"channel": "preview"' in html
+          assert "navigator.requestMIDIAccess" in html or "requestMIDIAccess" in html
+          assert (root/"webapp/editor/index.html").is_file()
+          print("BRANCH INSTALLER VERIFIED", sha, v["version"], v["product"], len(raw))
+          PY
+      - name: Upload experimental web installer ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: randomization-midi-web-installer
+          path: build/randomization-installer/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload native FM1 package separately
+        uses: actions/upload-artifact@v4
+        with:
+          name: randomization-midi-firmware-fwsc
+          path: build/felucca.fwsc
+          if-no-files-found: error
+          retention-days: 14
+
