@@ -1,77 +1,51 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MASHINA v0.9 — Firmware for M-VAVE FM1</title>
-<meta name="description" content="MASHINA v0.9 for the M-VAVE FM1: six-track external MIDI performance firmware with keyboard zones, tuning, melodic synthesis and drum engines, per-track ±36-semitone transpose and ±50-cent fine tuning, live project recall, 32 CC macros, shared 3-band EQ and BRASS/INDUSTRIAL sound engines.">
-<meta property="og:title" content="MASHINA v0.9">
-<meta property="og:description" content="MASHINA: external MIDI and live-performance firmware for FM1, with six-track sound routing, synths, drums, macros and effects. Device-tested November 20, 2026.">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>MASHINA — FM1 PERFORMANCE FW</title>
+<meta name="description" content="MASHINA: multitrack external MIDI sound module firmware for M-VAVE FM1.">
 <style>
-  :root { color-scheme: dark; font: 16px/1.6 system-ui, sans-serif; background: #000000; color: #ffffff; }
-  * { box-sizing: border-box; }
-  body { max-width: 1000px; margin: 0 auto; padding: 2.7rem 1.5rem 3.5rem; }
-  h1 { font-size: clamp(2.25rem, 6vw, 4.6rem); line-height: 1.08; letter-spacing: -.045em; margin: .25em 0; }
-  h2 { font-size: 1.5rem; margin: 2.4rem 0 .6rem; }
-  h3 { font-size: 1.08rem; margin: .1rem 0 .45rem; }
-  p { max-width: 800px; margin: .65rem 0 1rem; }
-  .eyebrow { color: #b8b8b8; letter-spacing: .13em; font-size: .78rem; text-transform: uppercase; }
-  .intro { font-size: 1.15rem; color: #e0e0e0; }
-  .status { display: inline-block; margin: .7rem 0 1.2rem; color: #ff9900; font-size: .95rem; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
-  .card { border: 1px solid #454545; padding: 1.15rem; border-radius: 8px; background: #181818; }
-  .card a { font-size: 1.16rem; font-weight: 700; color: #fff; }
-  .card p { margin: .65rem 0 0; font-size: .94rem; color: #b8b8b8; }
-  a { color: #ff9900; }
-  a:focus-visible { outline: 2px solid #ff9900; outline-offset: 4px; }
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 1rem; }
-  .feature { border-top: 1px solid #454545; padding: .85rem 0; }
-  .feature p { font-size: .96rem; color: #b8b8b8; margin: 0; }
-  .notice { margin: 2rem 0; padding: 1rem 1.1rem; border-left: 3px solid #ff9900; background: #181818; }
-  .notice p { margin: .4rem 0; }
-  footer { margin-top: 3rem; border-top: 1px solid #454545; padding-top: 1rem; color: #b8b8b8; font-size: .9rem; }
-</style>
-</head>
-<body>
+:root{color-scheme:dark;--fg:#f5f5f5;--dim:#b4b4b4;--accent:#ff9900;background:#080808;color:var(--fg);font:16px/1.65 system-ui,sans-serif}
+*{box-sizing:border-box}body{max-width:1050px;margin:auto;padding:24px 20px 55px}
+.mashina-brand{display:inline-flex;flex-direction:column;text-decoration:none;line-height:1.2;letter-spacing:.045em;color:var(--accent)}
+.mashina-brand strong{font-size:clamp(30px,5vw,54px)}
+.mashina-brand span{font-size:clamp(15px,2vw,20px);color:var(--fg);font-weight:600}
+.mashina-langs{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;margin:0 0 18px}
+.mashina-langs button{background:#171717;border:1px solid #444;color:var(--dim);padding:7px 9px;cursor:pointer}
+.mashina-langs button[aria-pressed=true]{background:var(--accent);color:#000;border-color:var(--accent)}
+header{border-bottom:1px solid #424242;padding-bottom:23px}
+h2{font-size:23px;margin-top:38px}p{max-width:85ch}.intro{font-size:19px;color:#ddd}
+.cards,.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{padding:18px;background:#151515;border:1px solid #494949;border-radius:8px}
+.card a{font-weight:700;font-size:19px}.card p,.feature p{color:var(--dim);margin:5px 0}
+.feature{padding:10px 0;border-top:1px solid #404040}
+.feature h3{color:var(--accent);font-size:17px;margin:5px 0}
+.notice{border-left:3px solid var(--accent);padding:12px 17px;background:#161616;margin:26px 0}
+a{color:var(--accent)}footer{border-top:1px solid #444;padding-top:17px;color:var(--dim)}
+</style></head><body data-mashina-page="home">
+<nav id="mashina-langs"></nav>
 <header>
-  <div class="eyebrow">M-VAVE FM1 · independent GPL-3.0-only firmware fork</div>
-  <h1>MASHINA <span style="color:#ff9900">v0.9</span></h1>
-  <p class="intro">Live-performance firmware for the FM1 with per-track Keyboard Zones and ±50-cent FINE tuning, BRASS (morphing SAX–TRUMPET), INDUSTRIAL bass/lead sounds, two 12-pad drum engines, six MIDI-routed tracks and 32 CC macros.</p>
-  <p class="status"><strong>MASHINA v0.9 with ATMOS, redesigned UI and ABOUT identity was flashed and checked on a physical FM1 on November 20, 2026. Earlier v0.9 tuning and zones features were verified with Korg X5D.</strong> · MIDI note/velocity zones and six-track TUNING verified · firmware and emulator regression tests passed.</p>
+<a class="mashina-brand" href="https://github.com/MishaMashinaMM/mashina-fm1-fw"><strong>MASHINA</strong><span>FM1 PERFORMANCE FW</span></a>
+<p class="intro" data-i18n="intro">Make the M-VAVE FM1 a multitrack instrument for external MIDI keyboards, controllers and live performance.</p>
 </header>
-
 <nav class="cards" aria-label="MASHINA tools">
-  <div class="card"><a href="emu/">Try the emulator</a><p>Play the current firmware in a browser, test MIDI controls and optionally import a JIANT backup into an isolated session.</p></div>
-  <div class="card"><a href="webapp/installer/">MASHINA FM1 installer · v0.9</a><p>Install the MASHINA v0.9 live-performance firmware. Confirm the page says MASHINA and displays a build ID before flashing. Back up projects before upgrading or downgrading.</p></div>
-  <div class="card"><a href="webapp/editor/">Web editor</a><p>Connect to the FM1 to manage compatible sounds, settings and backups. Some MASHINA controls, including global EQ, are not yet exposed here.</p></div>
-  <div class="card"><a href="manual/">Interactive manual</a><p>Inherited from original JIANT; useful for unchanged controls but not yet an exact reference for MASHINA's live pages.</p></div>
+<div class="card"><a href="emu/" data-i18n="emu">Play in emulator</a><p data-i18n="emuDesc">Try sounds, controls and MIDI routing in your browser without flashing.</p></div>
+<div class="card"><a href="webapp/installer/" data-i18n="installer">FM1 web installer</a><p data-i18n="installerDesc">Install MASHINA on the FM1. Save a backup before changing firmware.</p></div>
+<div class="card"><a href="webapp/editor/" data-i18n="editor">Web editor</a><p data-i18n="editorDesc">Manage sounds, presets, settings and backups over USB MIDI.</p></div>
+<div class="card"><a href="manual/" data-i18n="manual">User manual</a><p data-i18n="manualDesc">Instructions for keyboard zones, live MIDI routing, engines and performance controls.</p></div>
 </nav>
-
-<main>
-  <h2>What’s in v0.9</h2>
-  <div class="features">
-    <section class="feature"><h3>v0.8: KEYBOARD ZONES</h3><p>GLO → MIX → ZONES is a second six-row mixer-style screen. K1 MIN and K2 MAX define note range; K3 V.MIN and K4 V.MAX define velocity range. Each of six tracks stores its own settings in projects. Same-channel instruments can split or overlap across note and velocity zones with external MIDI. The FM1 built-in keybed still targets the selected track.</p></section>
-    <section class="feature"><h3>ATMOS — evolving harmonic pads</h3><p>Polyphonic pad engine with two oscillators, filters and slow texture movement. EDIT controls include BREATH, MOTION, FLOW and SPREAD; it can be layered with other MASHINA engines through external MIDI.</p></section>
-    <section class="feature"><h3>NEW: BRASS — SAX to TRUMPET</h3><p>Expressive, synthetic wind-instrument engine with a continuous 0–127 SAX/TRUMPET morph, pressure, buzz, breath, formant/body shaping and growl. EDIT 3 offers optional FAT, GRIND, METAL and CRUSH. Six factory presets; four-voice engine cap.</p></section>
-    <section class="feature"><h3>NEW: INDUSTRIAL — heavy bass and leads</h3><p>Six aggressive presets, dual oscillators, FAT detune, GRIND, METAL, CRUSH and FEED, plus independent WAVE2/MIX/SUB/MODE on EDIT 3. Synth sounds can be combined across MIDI-routed tracks.</p></section>
-    <section class="feature"><h3>Two independent 12-pad drum engines</h3><p>DRUM-X retains the original eight sounds and adds independent B2, S2, O2 and T2 instances. DRUM-LAB provides 12 editable synthesized pads and kit-wide shaping controls.</p></section>
-    <section class="feature"><h3>Live Recall and project management</h3><p>Long-press REC to toggle Live Recall. Then tap FX, SEL, ENV or LFO to recall project slots 1–4. SAVE → LIBRARY includes CLEAR SLOT and NEW PROJECT; saved-section indicators were corrected and device-tested.</p></section>
-    <section class="feature"><h3>NEW v0.9: TUNING — per-track pitch and fine detune</h3><p>GLO → MIX → TUNING is the third six-row page, after MIXER and ZONES. K1 sets TRN −36…+36 semitones (three octaves); K2 sets FINE −50…+50 cents for fuller, slightly detuned layers. K3/K4 are reserved. Synth pitch changes without changing MIDI note ownership; drums keep their mapped pitches. The Korg X5D was used to verify the feature on FM1 hardware.</p></section>
-    <section class="feature"><h3>Six-track MIDI routing and mixer</h3><p>GLO opens directly to MIX → MIXER. Set each track's RX channel (K1), level (K2), pan (K3); K4 is now unused. Per-track transpose moved to TUNING. Settings persist per project; PRESETS adjusts the master DJ Filter only on MIXER. CC88–90 can select temporary live RX channels for T1–T3.</p></section>
-    <section class="feature"><h3>32 CC macros and MIDI Learn</h3><p>Up to 32 saved CC macros per project, with range/toggle, reverse and independent enable settings. MIDI Learn provides 32 additional parameter destinations and CC fan-out across tracks.</p></section>
-    <section class="feature"><h3>Shared three-band EQ</h3><p>Global EQ before effects: LOW 50 Hz, MID 700 Hz and HIGH 10 kHz, each adjustable ±15 dB. Its settings are saved with each project.</p></section>
-    <section class="feature"><h3>Built for live performance</h3><p>Eight shared synthesis voices, the original melodic engines and effects, and a live-only layout: SEQ opens DRUM MIDI MAP, PLAY opens DRUM PERFORMANCE, and REC opens MIDI CC MACROS. The sequencer is disabled.</p></section>
-  </div>
-  <section class="notice">
-    <strong>v0.9 orange UI successfully flashed and device-tested on FM1 (November 18, 2026).</strong>
-    <p>Keyboard Zones and TUNING (TRN ±36 semitones, FINE ±50 cents) were tested with a Korg X5D, and the new orange/gray live interface was subsequently flashed to a physical FM1 and reported working correctly. This is owner-reported functional testing, not exhaustive endurance or recovery certification. Back up projects/presets before flashing and keep a working recovery installer. Older firmware may not understand projects saved with nonzero fine tuning.</p>
-    <p>For MASHINA controls, see the <a href="https://mishamashinamm.github.io/mashina-fm1-fw/manual/">v0.9 User Manual</a> and <a href="https://github.com/MishaMashinaMM/mashina-fm1-fw">current README</a>. The online manual contains the current MASHINA instructions.</p>
-  </section>
+<main><h2 data-i18n="features">Performance features</h2><div class="features">
+<section class="feature"><h3 data-i18n="midiTitle">Six MIDI-routed tracks</h3><p data-i18n="midi">Each track has its own MIDI receive channel, volume and pan. Share a channel to layer sounds or use separate channels for different controllers.</p></section>
+<section class="feature"><h3 data-i18n="zonesTitle">Keyboard zones and tuning</h3><p data-i18n="zones">Split or layer instruments by MIDI note or velocity. Transpose each melodic track ±36 semitones and fine-tune ±50 cents.</p></section>
+<section class="feature"><h3 data-i18n="synthTitle">Melodic synthesizers</h3><p data-i18n="synth">ATMOS creates evolving pads, BRASS morphs synthetic winds, INDUSTRIAL creates heavy basses and leads. Other synthesis engines are available too.</p></section>
+<section class="feature"><h3 data-i18n="drumTitle">Two 12-sound drum engines</h3><p data-i18n="drum">DRUM-X and DRUM-LAB offer individually editable sounds, customizable MIDI mappings, velocity response and choke behavior.</p></section>
+<section class="feature"><h3 data-i18n="macroTitle">32 MIDI CC macros</h3><p data-i18n="macro">Learn incoming controller CCs and map them to live sound parameters, with continuous ranges, toggles, reverse and bypass.</p></section>
+<section class="feature"><h3 data-i18n="mixTitle">Effects, EQ and live projects</h3><p data-i18n="mix">Use shared three-band EQ, effects, project save and recall, and panic mode in a fast, animation-free interface.</p></section>
+</div>
+<section class="notice"><strong data-i18n="safetyTitle">Before flashing</strong><p data-i18n="safety">Back up projects, user presets and settings. Keep a recovery method available when switching from other firmware.</p><p><a href="manual/" data-i18n="readManual">Read the MASHINA user manual</a></p></section>
 </main>
-<footer>
-  Modified by Misha Mashina from <a href="https://github.com/juanjiant-bit/JIANT">JIANT</a> by Juan Ignacio Antonucci (Juan Jiant), based on Felucca by Hügelton Instruments.
-  <a href="https://github.com/MishaMashinaMM/mashina-fm1-fw">Source code and licensing (GPL-3.0-only)</a>.
-</footer>
-</body>
-</html>
+<footer><span data-i18n="credit">MASHINA by Misha Mashina, based on JIANT by Juan Jiant and Felucca. GPL-3.0-only.</span> <a href="https://github.com/MishaMashinaMM/mashina-fm1-fw" data-i18n="source">Source and licenses</a></footer>
+<script defer src="mashina-nav.js"></script>
+<script defer src="mashina-translations.js"></script>
+</body></html>
