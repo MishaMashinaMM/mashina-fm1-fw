@@ -735,11 +735,11 @@ static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel)
             vel = drum_perf_velocity(ti, lane, vel);
         }
     }
-    if (t->engine == ENGI_DRUMAC && note == 42u) {
-        /* Acoustic closed hi-hat chokes only the open hi-hat, allowing
-         * the crash and ride tails to continue independently. */
+    if (t->engine == ENGI_DRUMAC && ac_kind(note) == AC_HAT_C) {
+        /* Choke across octaves too: closed hat kills only open-hat tails,
+         * preserving independent crash and ride cymbals. */
         for (i = 0; i < NVOICE; i++)
-            if (t->v[i].active && t->v[i].note == 46u)
+            if (t->v[i].active && ac_kind(t->v[i].note) == AC_HAT_O)
                 voice_kill(&t->v[i]);
     }
     mod_note(t, note, vel);                             /* the matrix's VEL / KEY / RAND */
