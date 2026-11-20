@@ -81,29 +81,41 @@ def earlier(prev, version, product):
     return out
 
 
-MANUAL_FILES = ("index.html", "manual.js", "data.js", "nav.js", "sw.js")
-
-
 def manual(out):
-    """(JIANT 0.9.12) the interactive manual at OUT/manual/ (the front page links it; the workflow puts it next to the
-    emulator): its five files and the screens they name, nothing else from web/manual"""
-    src, dst = HERE / "manual", Path(out) / "manual"
-    names = set()
-    for f in ("nav.js", "data.js"):
-        names |= set(re.findall(r"""(?:"shot":"|\bshot:\s*')([\w-]+)""", (src / f).read_text(encoding="utf-8")))
-    for m in re.findall(r"\bshots:\s*\[([^\]]*)\]", (src / "data.js").read_text(encoding="utf-8")):
-        names |= set(re.findall(r"'([\w-]+)'", m))
-    missing = [n for n in sorted(names) if not (src / "shots" / f"{n}.png").is_file()]
-    if missing:
-        raise SystemExit(f"web/manual/shots: missing {' '.join(missing)} (run tools/gen_manual.py)")
-    if dst.exists():
-        shutil.rmtree(dst)
-    (dst / "shots").mkdir(parents=True)
-    for f in MANUAL_FILES:
-        shutil.copy(src / f, dst / f)
-    for n in sorted(names):
-        shutil.copy(src / "shots" / f"{n}.png", dst / "shots" / f"{n}.png")
-    print(f"site: {dst}: the manual, {len(names)} screens")
+    """Publish the current MASHINA usage manual as a standalone responsive page.
+
+    docs/MASHINA_MANUAL.md is the single source for the web and Markdown manuals.
+    The inherited JIANT interactive-manual assets remain in source history, but
+    they are not published as current MASHINA instructions.
+    """
+    import markdown
+    src = HERE / "manual" / "index.html"
+    md = HERE.parent / "docs" / "MASHINA_MANUAL.md"
+    dst = Path(out) / "manual"
+    dst.mkdir(parents=True, exist_ok=True)
+    template = src.read_text(encoding="utf-8")
+    marker = "<!--MASHINA_MANUAL_CONTENT-->"
+    if template.count(marker) != 1:
+        raise SystemExit("MASHINA manual template must contain one content marker")
+    source = md.read_text(encoding="utf-8")
+    content = markdown.markdown(source, extensions=["tables", "toc", "fenced_code"],
+                                extension_configs={"toc": {"toc_depth": "2-3"}})
+    # Build an in-page table of contents with the same anchors as the headings.
+    import re as _re
+    toc = []
+    for lvl, anchor, label in _re.findall(
+        r'<h([23]) id="([^"]+)">([^<]+)</h[23]>', content
+    ):
+        indent = " style='margin-left:16px'" if lvl == "3" else ""
+        toc.append(f'<li{indent}><a href="#{anchor}">{label}</a></li>')
+    toc_html = '<nav id="toc" aria-label="Contents"><strong>Contents</strong><ul>' + "".join(toc) + '</ul></nav>'
+    content = content.replace("</h1>", "</h1>" + toc_html, 1)
+    html = template.replace(marker, content)
+    for forbidden in ("JIANT", "JLD", "Juan Jiant", "development process"):
+        if forbidden.lower() in content.lower():
+            raise SystemExit(f"manual includes non-user-facing reference: {forbidden}")
+    (dst / "index.html").write_text(html, encoding="utf-8")
+    print(f"site: {dst}: MASHINA user manual ({len(html)} B)")
 
 
 def main(pkg, version, out, prev=None):
