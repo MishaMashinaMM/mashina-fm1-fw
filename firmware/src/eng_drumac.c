@@ -14,6 +14,7 @@ static ac_voice_t ac_state[NPART][NVOICE];
 static uint8_t ac_patch[NPART][3][8] __attribute__((section(".pool")));
 static uint8_t ac_ready[NPART];
 static uint8_t ac_dirty[NPART]; /* bit per instrument; saved sparsely with the project */
+static uint8_t ac_override[NPART][3] __attribute__((section(".pool"))); /* one bit per overridden field */
 
 static void ac_patch_ensure(track_t *t)
 {
@@ -36,12 +37,21 @@ static void ac_patch_reset(track_t *t)
     if (ti >= NPART) return;
     ac_ready[ti] = 0;
     ac_dirty[ti] = 0;
+    memset(ac_override[ti], 0, sizeof ac_override[ti]);
+}
+static uint8_t ac_param_value(track_t *t, uint32_t instrument, uint32_t field)
+{
+    uint8_t *patch = ac_patch_of(t, instrument);
+    if (!patch || field >= 8u) return 0u;
+    return (ac_override[t - trk][instrument] & (1u << field)) ?
+           patch[field] : (uint8_t)clamp(t->p[P_E0 + field], 0, 127);
 }
 static void ac_patch_set(track_t *t, uint32_t instrument, uint32_t field, uint32_t value)
 {
     uint8_t *p = ac_patch_of(t, instrument);
     if (!p || field >= 8u) return;
     p[field] = (uint8_t)clamp(value, 0, 127);
+    ac_override[t - trk][instrument] |= (uint8_t)(1u << field);
     ac_dirty[t - trk] |= (uint8_t)(1u << instrument);
 }
 
@@ -105,16 +115,15 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     kind = a->kind;
     /* All three instrument patches are independent; changing one pad never
      * changes the others. Initial values exactly match the old global kit. */
-    const uint8_t *patch = ac_patch_of(t, kind);
-    if (!patch) return;
-    tune = patch[0];
-    damp = patch[1];
-    body_mix = patch[2];
-    strike = patch[3];
-    wire_amt = patch[4];
-    bright = patch[5];
-    metal = patch[6];
-    ring_amt = patch[7];
+    if (!ac_patch_of(t, kind)) return;
+    tune = ac_param_value(t, kind, 0);
+    damp = ac_param_value(t, kind, 1);
+    body_mix = ac_param_value(t, kind, 2);
+    strike = ac_param_value(t, kind, 3);
+    wire_amt = ac_param_value(t, kind, 4);
+    bright = ac_param_value(t, kind, 5);
+    metal = ac_param_value(t, kind, 6);
+    ring_amt = ac_param_value(t, kind, 7);
     inc = a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192);
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
