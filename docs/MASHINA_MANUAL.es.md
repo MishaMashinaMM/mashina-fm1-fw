@@ -229,7 +229,7 @@ Al editar un pad, los nombres se adaptan al instrumento: **BEATER / TEXTURE** (b
 
 Los sonidos individuales, los volúmenes y los ocho controles globales se guardan en cada proyecto. DRUM-AC comparte las **ocho voces de síntesis** del firmware; no suma doce voces independientes. Los platos son aproximaciones sintetizadas, no grabaciones acústicas.
 
-**Al actualizar:** hacé una copia de seguridad. El firmware anterior puede no entender proyectos con DRUM-AC. Los proyectos experimentales con controles globales no neutros pueden sonar diferentes porque ahora esos controles tienen funciones comunes para todo el kit.
+**Compatibilidad:** guardá una copia de seguridad antes de cambiar el firmware. Las versiones anteriores pueden no reconocer proyectos con DRUM-AC.
 
 ### DRUM-IND: percusión industrial sin afinación musical
 
@@ -246,7 +246,7 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 | E (40) | **WHISTLE** — silbido de aire | A♯ (46) | **MOTOR** — motor giratorio |
 | F (41) | **SCREECH** — chirrido estridente | B (47) | **EXPLOSION** — explosión y cola turbulenta |
 
-**Páginas EDIT:** las dos primeras ofrecen ocho controles independientes para todo el kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (cada uno **0–200%**, con **100% neutro**). ATTACK modifica aproximadamente los primeros 80 ms; BRIGHT modifica el balance de agudos después de limitar el sonido. En **SOUND 1–3**, **K1** selecciona el pad y **K2–K4** editan ocho parámetros individuales (**0–127**): **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** permiten doce niveles independientes (**0–127**). Los controles pueden actuar de forma distinta en cada sonido; se comprobó la respuesta de las 96 combinaciones de pad y parámetro.
+**Páginas EDIT:** las dos primeras ofrecen ocho controles independientes para todo el kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (cada uno **0–200%**, con **100% neutro**). ATTACK modifica aproximadamente los primeros 80 ms; BRIGHT modifica el balance de agudos después de limitar el sonido. En **SOUND 1–3**, **K1** selecciona el pad y **K2–K4** editan ocho parámetros individuales (**0–127**): **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** permiten doce niveles independientes (**0–127**). Los controles pueden actuar de forma distinta en cada sonido.
 
 Presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. Su asignación MIDI es fija; la reasignación SEQ de DRUM-X/DRUM-LAB no se aplica.
 
