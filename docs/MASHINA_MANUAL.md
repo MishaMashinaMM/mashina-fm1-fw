@@ -181,7 +181,7 @@ The per-pad labels depend on the chosen instrument: **BEATER** and **TEXTURE** (
 
 The twelve individual sounds, pad levels and eight kit-wide settings are retained with the project. DRUM-AC uses the same **eight shared synthesis voices** as the other engines, not an independent twelve-voice sampler. The cymbal sounds are synthesized acoustic approximations, not recorded cymbals.
 
-**Upgrading:** back up your projects before flashing. Older firmware may not recognize projects containing DRUM-AC. Non-neutral global controls saved with earlier experimental DRUM-AC builds may sound different because the global parameters now have consistent kit-wide meanings.
+**Compatibility:** Back up projects before changing firmware. Older versions may not recognize projects containing DRUM-AC.
 
 ### DRUM-IND: non-tonal industrial percussion
 
@@ -198,7 +198,7 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 | E (40) | **WHISTLE** — noisy jet whistle | A♯ (46) | **MOTOR** — rotary mechanical noise |
 | F (41) | **SCREECH** — unstable squeal | B (47) | **EXPLOSION** — blast and turbulent tail |
 
-**EDIT structure:** the first two pages control the whole kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (each **0–200%**, **100% neutral**). ATTACK changes roughly the first 80 ms of the hit; BRIGHT changes its high-frequency balance after the sound's limiting. The individual SOUND 1–3 pages use **K1** for pad selection and **K2–K4** for the eight **0–127** parameters **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** offer twelve independent pad volumes (**0–127**). The same parameter may act differently on different models; all 96 combinations were tested for audio response.
+**EDIT structure:** the first two pages control the whole kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (each **0–200%**, **100% neutral**). ATTACK changes roughly the first 80 ms of the hit; BRIGHT changes its high-frequency balance after the sound's limiting. The individual SOUND 1–3 pages use **K1** for pad selection and **K2–K4** for the eight **0–127** parameters **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** offer twelve independent pad volumes (**0–127**). The same parameter may act differently on different models.
 
 Three presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. The note mapping is fixed and repeats every octave; the SEQ custom-note mapping of DRUM-X/DRUM-LAB does not apply.
 
