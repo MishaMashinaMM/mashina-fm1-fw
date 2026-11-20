@@ -1541,7 +1541,7 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         for (t = 0; t < NPART; t++) {
             uint16_t lanes;
             if (!(mask & (1u << t))) continue;
-            if (pos + 2u > room || q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC) return 0;
+            if (pos + 2u > room || (q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC)) return 0;
             lanes = (uint16_t)(b[pos] | b[pos + 1u] << 8); pos += 2u;
             if (!lanes || (lanes & 0xF000u)) return 0;
             q->lab_mask[t] = lanes;
