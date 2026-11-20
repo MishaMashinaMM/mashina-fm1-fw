@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="486" viewBox="0 0 1080 486" role="img" aria-labelledby="title description">
-<title id="title">JIANT LIVE DRUMS v0.2 overview</title>
-<desc id="description">An overview of JIANT LIVE DRUMS with two independent twelve-pad drum engines, SEQ MIDI mapping, PLAY performance options, and REC control of up to 32 MIDI CC macros per project. Eight voices are shared across all tracks.</desc>
+<title id="title">MASHINA v0.2 overview</title>
+<desc id="description">An overview of MASHINA with two independent twelve-pad drum engines, SEQ MIDI mapping, PLAY performance options, and REC control of up to 32 MIDI CC macros per project. Eight voices are shared across all tracks.</desc>
 <rect width="1080" height="486" rx="20" fill="#000000"/>
 <rect x="24" y="24" width="342" height="438" rx="20" fill="#000000" stroke="#ff9900" stroke-width="2"/>
 <text x="195" y="106" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="31" font-weight="bold" letter-spacing="1">JIANT LIVE</text>
