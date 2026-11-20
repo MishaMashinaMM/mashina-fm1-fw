@@ -87,11 +87,18 @@ int main(void){
     }
     host_tracks_init();memset(t->v,0,sizeof t->v);host_preset(t,ENGI_DRUMIND,0);
     trk_note_on(t,36u,110u);
-    int same=t->v[0].active&&ind_state[0][0].kind==IND_CLANG;
+    int same=0;
+    for(uint32_t i=0;i<NVOICE;i++)
+        if(t->v[i].active && ind_state[0][i].active &&
+           ind_state[0][i].kind==IND_CLANG) same=1;
     host_tracks_init();memset(t->v,0,sizeof t->v);host_preset(t,ENGI_DRUMIND,0);
     trk_note_on(t,60u,110u);
+    int repeated=0;
+    for(uint32_t i=0;i<NVOICE;i++)
+        if(t->v[i].active && ind_state[0][i].active &&
+           ind_state[0][i].kind==IND_CLANG) repeated=1;
     bad+=ind_check("C pad identity repeats across octaves",
-        same&&t->v[0].active&&ind_state[0][0].kind==IND_CLANG);
+        same && repeated);
     /* Full 12x8 parameter effectiveness audit (0 versus 127).
      * This directly exercises the real host audio renderer. */
     uint32_t audible=0u, weak=0u;
