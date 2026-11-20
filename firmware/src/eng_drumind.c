@@ -4,7 +4,7 @@ enum { IND_CLANG, IND_ANVIL, IND_METAL, IND_SCRAPE, IND_WHISTLE, IND_SCREECH,
        IND_NPAD };
 static const char *const IND_NAMES[12] = {
     "CLANG C", "ANVIL C#", "METAL D", "SCRAPE D#", "WHISTLE E", "SCREECH F",
-    "BUZZ F#", "LIGHTNING G", "ENGINE G#", "WHOOSH A", "MOTOR A#", "EXPLODE B"
+    "BUZZ F#", "LIGHTNING G", "ENGINE G#", "WHOOSH A", "MOTOR A#", "EXPLOSION B"
 };
 static const char *const IND_FIELDS[8] = {
     "GRAIN", "DECAY", "WEIGHT", "STRIKE", "MOTION", "AIR", "CRUNCH", "TAIL"
