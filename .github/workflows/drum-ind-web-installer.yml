@@ -134,13 +134,19 @@ jobs:
           assert 'channel":"preview"' in html or '"channel": "preview"' in html, "Expected preview metadata"
           # Remove the static warning ONLY after the full installer script
           # has reached its initialized state and applied translations.
-          bootstrap = 'applyLang();'
-          assert bootstrap in html, "Translation bootstrap changed"
+          bootstrap = 'applyLang();\n\n/* (0.9.11)'
+          assert html.count(bootstrap) == 1, "Translation bootstrap changed"
+          assert 'data-t="intro"' in html and 'data-t="install"' in html
           html = html.replace(
               bootstrap,
-              bootstrap + '\\n'
-              + 'document.getElementById("installer-startup-warning").remove();',
-              1)
+              'applyLang();\n'
+              'if (!document.querySelector("[data-t=intro]").textContent.trim() '
+              '|| !document.getElementById("first-stock").textContent.trim() '
+              '|| !document.getElementById("go").textContent.trim()) {'
+              'throw new Error("Installer translations missing - do not flash");'
+              '}\n'
+              'document.getElementById("installer-startup-warning").remove();'
+              '\n\n/* (0.9.11)', 1)
           page.write_text(html, encoding="utf-8")
           PY
           cp "$OUT/webapp/installer/index.html" "$OUT/webapp/installer-orange-v09/index.html"
