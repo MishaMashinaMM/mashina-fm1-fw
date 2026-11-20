@@ -2141,7 +2141,7 @@ static void project_capture(project_t *p)
         if (!p->lab_mask[i]) continue;
         if (trk[i].eng_req == ENGI_DRUMAC) {
             ac_patch_ensure(&trk[i]);
-            for (lane = 0; lane < 3u; lane++)
+            for (lane = 0; lane < AC_NPAD; lane++)
                 if (p->lab_mask[i] & (1u << lane)) {
                     memcpy(p->lab_patch[i][lane], ac_patch[i][lane], 8u);
                     p->lab_patch[i][lane][8] = ac_override[i][lane] & 127u;
@@ -2408,12 +2408,12 @@ static void sound_put(project_t *p, uint32_t k)
         uint32_t ti = k % NTRK, lane;
         ac_patch_reset(t);
         ac_patch_ensure(t);
-        for (lane = 0; lane < 3u; lane++)
+        for (lane = 0; lane < AC_NPAD; lane++)
             if (p->lab_mask[ti] & (1u << lane)) {
                 memcpy(ac_patch[ti][lane], p->lab_patch[ti][lane], 8u);
                 ac_override[ti][lane] = (uint8_t)(p->lab_patch[ti][lane][8] |
                                         (p->lab_patch[ti][lane][9] << 7));
-                ac_dirty[ti] |= (uint8_t)(1u << lane);
+                ac_dirty[ti] |= (uint16_t)(1u << lane);
             }
     }
     if (e == ENGI_DRUM) {
@@ -2614,12 +2614,12 @@ static int project_restore_runtime(const project_t *input)
         if (p->t[k].engine == ENGI_DRUMAC) {
             ac_patch_reset(&trk[k]);
             ac_patch_ensure(&trk[k]);
-            for (lane = 0; lane < 3u; lane++)
+            for (lane = 0; lane < AC_NPAD; lane++)
                 if (p->lab_mask[k] & (1u << lane)) {
                     memcpy(ac_patch[k][lane], p->lab_patch[k][lane], 8u);
                     ac_override[k][lane] = (uint8_t)(p->lab_patch[k][lane][8] |
                                            (p->lab_patch[k][lane][9] << 7));
-                    ac_dirty[k] |= (uint8_t)(1u << lane);
+                    ac_dirty[k] |= (uint16_t)(1u << lane);
                 }
             continue;
         }
