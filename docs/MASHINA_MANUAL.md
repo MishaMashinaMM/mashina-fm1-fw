@@ -147,6 +147,39 @@ Select a DRUM-X track and open EDIT to adjust kit, individual sound controls and
 
 Kit-wide multipliers scale individual pad settings without replacing them. At 100% they are neutral; reducing a multiplier scales that aspect of the sound.
 
+### DRUM-AC: acoustic-style 12-pad engine
+
+**DRUM-AC** is a third, separately synthesized drum engine (no samples). Its twelve pads use acoustic-style impact, tom-head and metallic-plate models. The original DRUM-X and DRUM-LAB engines are unaffected. The DRUM-AC kit has three presets: **ACOUSTIC**, **DRY KIT** and **BIG ROOM**.
+
+**Chromatic layout, repeating in every octave:** each note name plays the same pad in any octave. This is the fixed DRUM-AC mapping, not the customizable mapping of the other drum engines.
+
+| Key | Pad | Key | Pad |
+| --- | --- | --- | --- |
+| C (36) | Kick | F♯ (42) | Closed hi-hat |
+| C♯ (37) | Crash | G (43) | Low tom |
+| D (38) | Snare | G♯ (44) | Ride splash |
+| D♯ (39) | Clap | A (45) | Mid tom |
+| E (40) | Ride bell | A♯ (46) | Open hi-hat |
+| F (41) | Floor tom | B (47) | High tom |
+
+The MIDI numbers in parentheses are examples in the **36–47** octave. Every note 12 semitones above or below selects the same pad. A closed-hi-hat hit chokes an open-hi-hat tail even across octaves, but does not choke crash or ride. DRUM-AC has no custom per-pad MIDI-note mapping through SEQ.
+
+**EDIT pages on a DRUM-AC track:**
+
+| Pages | Controls |
+| --- | --- |
+| **First two kit-wide EDIT pages** | **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL**. Eight independent effects across all twelve drums, **0–200%**, with **100% neutral**. They do not modify individual pad values. |
+| **SOUND 1–3** | Turn **K1** to select a pad; use **K2–K4** for its own eight **0–127** parameters, spread over three pages: TUNE, DAMP, BODY, HIT, instrument-specific strike, BRIGHT, instrument-specific character, RING/DECAY/TAIL. |
+| **LEVELS 1–3** | Independent pad volumes **0–127** for all twelve instruments. |
+
+The per-pad labels depend on the chosen instrument: **BEATER** and **TEXTURE** (kick); **WIRES** and **TEXTURE** (snare); **SPLASH** and **METAL** (crash); **CHICK** and **DECAY** (hi-hats); **STICK** and **SHELL** (all four toms); **SNAP**, **TEXTURE** and **TAIL** (clap); **STRIKE** (ride bell); **SPLASH** (ride splash). Unlike the kit-wide controls, an individual field may have a different sonic function on different pads.
+
+**Tom tuning:** each tom is tuned separately. **TUNE = 0** disables pitched drumhead resonance (untuned thud); **1–127** introduces a clear head resonance that rises from low to high pitch, leaving the noise-based impact intact. **Crash/ride SPLASH** controls the noisy attack and cymbal wash.
+
+The twelve individual sounds, pad levels and eight kit-wide settings are retained with the project. DRUM-AC uses the same **eight shared synthesis voices** as the other engines, not an independent twelve-voice sampler. The cymbal sounds are synthesized acoustic approximations, not recorded cymbals.
+
+**Upgrading:** back up your projects before flashing. Older firmware may not recognize projects containing DRUM-AC. Non-neutral global controls saved with earlier experimental DRUM-AC builds may sound different because the global parameters now have consistent kit-wide meanings.
+
 ### SEQ: drum MIDI mapping
 
 Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selects the pad, **OCT−/OCT+** switch pad banks.
