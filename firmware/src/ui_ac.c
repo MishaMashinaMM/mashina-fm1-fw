@@ -20,6 +20,10 @@ static const char *ac_field_name(uint32_t pad, uint32_t field)
         return "TEXTURE";
     return AC_FIELDS[field];
 }
+static const char *ac_level_name(uint32_t lane)
+{
+    return lane < AC_NPAD ? AC_PAD_NAMES[lane] : "PAD";
+}
 static uint8_t ac_ui_pad;
 static uint32_t ac_page_index(const page_t *pg)
 {
