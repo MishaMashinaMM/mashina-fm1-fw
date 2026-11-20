@@ -1,16 +1,22 @@
 # MASHINA v0.9 — FM1 Performance Firmware User Manual
 
-This is the **MASHINA v0.9** user manual for the M-VAVE FM1, a live sound module designed primarily for external MIDI controllers, covering live controls, MIDI performance, **Keyboard Zones (note and velocity ranges)**, drum kits, sound engines, project management and the v0.7 **BRASS** and **INDUSTRIAL** synthesizers. This fork disables the original JIANT sequencer. The firmware and its [README](../README.md) are the authoritative implementation references; diagrams below are annotated schematics, not photographs of the physical screen.
+This is the **MASHINA v0.9** user manual for the M-VAVE FM1, a live sound module designed primarily for external MIDI controllers, covering live controls, MIDI performance, **Keyboard Zones (note and velocity ranges)**, drum kits, sound engines, project management and the v0.7 **BRASS** and **INDUSTRIAL** synthesizers. MASHINA disables the original JIANT song sequencer and prioritizes live MIDI routing, splits, layers and expressive external controllers. The ATMOS engine and the renamed MASHINA interface were device-tested on November 20, 2026. The firmware and its [README](../README.md) are the authoritative implementation references; diagrams below are annotated schematics, not photographs of the physical screen.
 
-> **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
+> **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/) is inherited from original JIANT and does not fully describe MASHINA's modern live-performance pages.
 
 > **v0.9 orange UI — FM1 device-tested (November 18, 2026):** The updated black/white/gray/orange interface was successfully flashed to an FM1, and the owner reported everything working correctly. Earlier on the same date, the v0.9 MIDI Zones/TUNING feature build was tested with a Korg X5D. Firmware identity remains `FM-1_909`. Physical validation confirms the installation and tested functions, not an exhaustive endurance/recovery guarantee. Back up projects and presets before firmware changes.
 
 ## Visual language — v0.9 orange-accent UI (FM1 device-tested)
 
-The performance-oriented UI uses a **black background, white primary text and neutral gray labels/panels** with a single **orange `#FF9900` accent**. Numbers and other editable knob values are orange. Page titles, breadcrumbs and the JIANT LIVE DRUMS boot wordmark are orange; value gauges still use a gray-to-white intensity scale. A **selected MIXER/ZONES/TUNING row is solid white with black text** for high contrast. In **SAVE → PROJECT → SECTIONS** and **SAVE → LIBRARY → PROJECTS**, **occupied slots/section chips are orange, empty slots gray** and the selected project retains a white border. Animations remain disabled.
+The performance-oriented UI uses a **black background, white primary text and neutral gray labels/panels** with a single **orange `#FF9900` accent**. Numbers and other editable knob values are orange. Page titles, breadcrumbs and the MASHINA boot wordmark and abstract cog are orange; value gauges still use a gray-to-white intensity scale. A **selected MIXER/ZONES/TUNING row is solid white with black text** for high contrast. In **SAVE → PROJECT → SECTIONS** and **SAVE → LIBRARY → PROJECTS**, **occupied slots/section chips are orange, empty slots gray** and the selected project retains a white border. Animations remain disabled.
 
-**Navigation fix:** pressing HOME while viewing GLO now redraws HOME instead of leaving the GLO mixer over it. Knobs continue to edit HOME parameters. The UI change does not alter the audio engine, project format, MIDI routing, or any menu/knob mapping. This is an **emulator-verified change awaiting physical display testing**.
+**Navigation fix:** pressing HOME while viewing GLO now redraws HOME instead of leaving the GLO mixer over it. Knobs continue to edit HOME parameters. The UI change does not alter the audio engine, project format, MIDI routing, or any menu/knob mapping. The changes have been verified on a physical FM1.
+
+### MASHINA identity and live UI (November 20, 2026)
+
+The HOME boot screen reads **MASHINA — FM1 PERFORMANCE FW**, with an abstract orange mechanical cog, original Jiant attribution and a release-only version label. **HOME (long press) → ABOUT** describes external MIDI/live performance first; its QR leads to [MASHINA's source repository](https://github.com/MishaMashinaMM/mashina-fm1-fw). The original Jiant and other contributor credits remain farther down.
+
+On FX, GLO, EDIT and other non-HOME held-button overlays, the old MAP/KNOBS/STATE top strip was removed and its selected view is shown in the compact footer. The NAME editor no longer has the obsolete NOTICE/DICE/NAME tab strip.
 
 ## 1. Physical controls and navigation
 
@@ -23,7 +29,7 @@ The performance-oriented UI uses a **black background, white primary text and ne
 | **HOME** | Open HOME; a repeat tap moves to its next group | **Hold HOME** to open or close MENU; a tap also closes MENU. |
 | **EDIT** | Sound-engine editing | Pages differ for synthesizers (including BRASS/INDUSTRIAL EDIT 3), FM6, DRUM-X and DRUM-LAB. |
 | **ENV** | Envelopes, destination and stage pages | May expose track and individual envelope views. |
-| **LFO** | Modulation matrix, LFO and MSEQ | The original engine M1–M4 macros are separate from JLD REC macros. |
+| **LFO** | Modulation matrix, LFO and MSEQ | The original engine M1–M4 macros are separate from MASHINA REC macros. |
 | **FX** | Track sends/effects and global buses | Delay, reverb, chorus, slicer and master/punch groups follow. |
 | **SCL** | Scale and chord controls | Works on the selected track. |
 | **ARP** | Arpeggiator controls | ARP and ARP 2 pages. |
@@ -72,14 +78,14 @@ Hold **HOME**. MENU has six visible physical pages, each with K1–K4 controls:
 | --- | --- | --- | --- | --- |
 | **SCREEN** | Scope | Screen sleep | LED glow | Scale LEDs |
 | **AUDIO** | Speaker EQ | Tracks 4/6 | Load | BPM lock |
-| **CLICK** | Click | Click level | Count-in | MIDI out |
-| **MIDI/USB** | MIDI Learn | Learn clear | USB audio mode | USB level |
+| **MIDI** | MIDI out | MIDI Learn | Learn clear | — |
+| **USB** | USB audio mode | USB level | — | — |
 | **CONTROLS** | Hold time | Knob speedup | FX latch | Panel calibration |
 | **SYSTEM** | Restore last | CPU cores | CPU clock | About |
 
 Turn **SELECT** to change the MENU page; **ALGORITHM** changes its higher-level tab. Turn the relevant **K** knob to change a value. Some action entries require **OCT+** after selection; in particular, **LEARN CLEAR** is destructive to the stored learn mappings. HOME exits MENU.
 
-> Older JIANT screenshots may show other MENU arrangements. The table above comes from JLD's six-page layout.
+> Older JIANT screenshots may show other MENU arrangements. The table above reflects MASHINA's six-page layout; CLICK, CLICK LEVEL and COUNT-IN were removed.
 
 ## 2. Tracks, GLO, EQ and MIDI routing
 
