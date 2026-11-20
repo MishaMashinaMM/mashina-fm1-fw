@@ -105,29 +105,29 @@ footer small { font-size: 11px; opacity: .8; }
     <label><span data-ml="channel">Channel</span> <input id="midi-test-channel" type="number" min="1" max="16" value="1"></label>
     <label><span data-ml="note">Note</span> <input id="midi-test-note" type="number" min="0" max="127" value="60"></label>
     <label><span data-ml="velocity">Velocity</span> <input id="midi-test-velocity" type="number" min="1" max="127" value="100"></label>
-    <button id="midi-test-on" type="button" disabled>Note On</button>
-    <button id="midi-test-off" type="button" disabled>Note Off</button>
-    <button id="midi-test-pulse" type="button" disabled>Play 200 ms</button>
-    <button id="midi-test-panic" type="button" disabled>All Notes Off</button>
+    <button id="midi-test-on" type="button" disabled data-ml="noteOn">Note On</button>
+    <button id="midi-test-off" type="button" disabled data-ml="noteOff">Note Off</button>
+    <button id="midi-test-pulse" type="button" disabled data-ml="pulse">Play 200 ms</button>
+    <button id="midi-test-panic" type="button" disabled data-ml="off">All Notes Off</button>
   </div>
   <div class="controls">
     <label><span data-ml="channel">Channel</span> <input id="midi-test-channel-2" type="number" min="1" max="16" value="2"></label>
     <label><span data-ml="note">Note</span> <input id="midi-test-note-2" type="number" min="0" max="127" value="60"></label>
     <label><span data-ml="velocity">Velocity</span> <input id="midi-test-velocity-2" type="number" min="1" max="127" value="100"></label>
-    <button id="midi-test-on-2" type="button" disabled>Note On</button>
-    <button id="midi-test-off-2" type="button" disabled>Note Off</button>
+    <button id="midi-test-on-2" type="button" disabled data-ml="noteOn">Note On</button>
+    <button id="midi-test-off-2" type="button" disabled data-ml="noteOff">Note Off</button>
   </div>
   <div class="controls">
     <label><span data-ml="channel">Channel</span> <input id="midi-test-channel-3" type="number" min="1" max="16" value="3"></label>
     <label><span data-ml="note">Note</span> <input id="midi-test-note-3" type="number" min="0" max="127" value="60"></label>
     <label><span data-ml="velocity">Velocity</span> <input id="midi-test-velocity-3" type="number" min="1" max="127" value="100"></label>
-    <button id="midi-test-on-3" type="button" disabled>Note On</button>
-    <button id="midi-test-off-3" type="button" disabled>Note Off</button>
+    <button id="midi-test-on-3" type="button" disabled data-ml="noteOn">Note On</button>
+    <button id="midi-test-off-3" type="button" disabled data-ml="noteOff">Note Off</button>
   </div>
   <div class="controls">
     <label><span data-ml="ccNum">CC number</span> <input id="midi-test-cc" type="number" min="0" max="127" value="30"></label>
     <label><span data-ml="ccVal">CC value</span> <input id="midi-test-cc-value" type="number" min="0" max="127" value="64"></label>
-    <button id="midi-test-send-cc" type="button" disabled>Send CC</button>
+    <button id="midi-test-send-cc" type="button" disabled data-ml="sendCC">Send CC</button>
   </div>
   <div class="pads" id="midi-test-pads" aria-label="Selected track drum MIDI assignments"></div>
   <p id="midi-test-pad-status" data-ml="drums">Select a DRUM-X or DRUM-LAB track to use its MIDI note assignments. Set Channel to that track's RX channel. All Notes Off sends CC123 on every channel.</p>
