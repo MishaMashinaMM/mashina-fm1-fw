@@ -35,6 +35,16 @@ for name in ("mashina-translations.js", "mashina-emu-locale.js", "mashina-editor
     for code in codes if name != "mashina-editor-locales.js" else ("es", "ru", "sr", "hi"):
         assert f'"{code}"' in src, f"{name} missing {code}"
 
+# All labels used by the editor's primary controls must be translated.
+editor_source = Path("web/editor.html").read_text(encoding="utf-8")
+editor_keys = set(re.findall(r'data-t="([^"]+)"', editor_source))
+catalog = (root / "mashina-editor-locales.js").read_text(encoding="utf-8")
+catalog = json.JSONDecoder().raw_decode(catalog.split(" = ", 1)[1])[0]
+for code in ("es", "ru", "sr", "hi"):
+    missing = editor_keys - set(catalog[code])
+    assert not missing, f"Editor {code}: untranslated primary controls {sorted(missing)}"
+print(f"OK editor: {len(editor_keys)} primary controls translated into each added language")
+
 manual = (root / "manual/index.html").read_text(encoding="utf-8")
 for code in codes:
     assert f'data-manual-lang="{code}"' in manual, f"Manual: missing {code}"
