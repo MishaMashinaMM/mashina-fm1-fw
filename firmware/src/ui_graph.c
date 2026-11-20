@@ -100,6 +100,27 @@ static int32_t bg_energy(void)
 #include "ui_engvis.c"
 #endif                               /* (0.9.4) VOICE's head, ANIMAL's creature, DRUM-X's kit */
 
+#if FELUCCA_NO_SEQUENCER
+/* The quick-layer KNOBS view still needs a static arc gauge. Keep its
+ * functional indicator without linking the old organic antialiased renderer. */
+static void lz_arc(int32_t cx, int32_t cy, int32_t r, int32_t w,
+                   int32_t f, uint16_t tc, uint16_t vc)
+{
+    for (int32_t k = 0; k < w; k++) {
+        int32_t rr = r - k, px = 0, py = 0;
+        for (int32_t i = 0; i <= 18; i++) {
+            uint32_t a = 0x6000u + (uint32_t)i * 0xC000u / 18u;
+            int32_t x = cx + (sine_i((a + 0x4000u) << 16) * rr >> 15);
+            int32_t y = cy + (sine_i(a << 16) * rr >> 15);
+            if (i)
+                cv_line(px, py, x, y, i * 1000 <= f * 18 ? vc : tc);
+            px = x;
+            py = y;
+        }
+    }
+}
+#endif
+
 /* Matches voice.c: attack is linear, decay and release are exponential
  * (env += (target - env) * k each tick, ~99 % after the set time). Time
  * axis is the parameter value (the times themselves are exponential). */
