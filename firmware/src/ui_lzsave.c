@@ -104,8 +104,11 @@ static void graph_lz_tools(void)
 /* PROJECT: the sections, the arrangement's chips, the song's strip (ar: ARRANGE, its rows picked) */
 static void graph_proj(int ar)
 {
-    uint32_t i, total = 0, played = 0, sel = (uint32_t)song.g[G_SLOT] - 1u, n = chain_config.count, end;
+    uint32_t i, sel = (uint32_t)song.g[G_SLOT] - 1u;
     char b[24];
+#if !FELUCCA_NO_SEQUENCER
+    uint32_t total = 0, played = 0, n = chain_config.count, end;
+#endif
     for (i = 0; i < 4u; i++) {
         int32_t x = LZ_TX(i);
         int used = graph_project_used(i), pick = !ar && i == (sel & 3u);
@@ -123,6 +126,7 @@ static void graph_proj(int ar)
             cv_frame(x - 1, 1, 58, 51, T_TEXT);
         }
     }
+#if !FELUCCA_NO_SEQUENCER
     GFX_HOOK_ALIGN(0, 58, 0, 67, AL_V | AL_PASS, "project arrange title");
     cv_text(6, 58, &AF_X, "ARRANGE", ar ? T_THEME : T_DIM);
     for (i = 0; i < n && i < CHAIN_ROWS; i++) {
@@ -166,7 +170,9 @@ static void graph_proj(int ar)
     GFX_HOOK_ALIGN(0, 128, 0, 137, AL_V | AL_PASS, "project song length");
     cv_text_r(236, 128, &AF_X, n ? b : "NO ROWS: OCT+ ADDS ONE", ar && ui.song_row >= song_end_row() ? T_THEME : T_DIM,
               T_SURF);
+#endif /* MASHINA has project sections, but no song arrangement editor. */
 }
+#if !FELUCCA_NO_SEQUENCER
 /* a being small at (cx, cy) radius r (px): engine e's species, its outline in heat c; 24 vertices (bg_outline's form,
  * its spikes and lobes, at a slot's size: a quarter of the lines) */
 static void lz_mini_being(uint32_t e, int32_t cx, int32_t cy, int32_t r, uint16_t c)
@@ -210,6 +216,7 @@ static void lz_track_being(void)
     sound_name(t, b);
     cv_free_text(42 - HALF_UP(text_w(&AF_X, b) < 76 ? text_w(&AF_X, b) : 76), 99, &AF_X, b, T_TEXT, T_SURF, 76);
 }
+#endif /* Legacy unused SAVE creature art */
 static void graph_sound(void)
 {
     uint32_t k;

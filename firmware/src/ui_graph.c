@@ -45,7 +45,9 @@ static void lz_uline(int32_t x, int32_t y, const aafont_t *f, const char *s, uin
 
 /* the height ADSR and LFO are drawn on: 100 px, or (MENU > LARGE's strip: draw_graph) the strip's ~ 56 */
 static int32_t graph_ht = 100;
-#include "ui_organic.c"                              /* JIANT FM's organic line art (drawn by code) */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_organic.c" /* Legacy graphical flourishes, no longer rendered in MASHINA. */
+#endif                              /* JIANT FM's organic line art (drawn by code) */
 #include "ui_fm6op.c"                                /* (0.6.10, from Felucca 1.5) EDIT > OPERATOR, OP ENV, OPERATOR 2 */
 static uint16_t heat_col(int32_t v);
 /* (0.9.5, as the 0.6.36) JIANT (thermal): a card's colour its value as heat (ratio 0..1000, -1 none); bipolar (its range
@@ -69,8 +71,55 @@ static uint16_t heat_y(int32_t y, int32_t y0, int32_t y1, uint16_t c)
 {
     return settings.palette == UI_JIANT_INDEX && y1 > y0 ? heat_col(24 + (y1 - y) * 232 / (y1 - y0)) : c;
 }
-#include "ui_being.c"                                /* (JIANT 0.5) the beings: the engine pages' creatures */
-#include "ui_engvis.c"                               /* (0.9.4) VOICE's head, ANIMAL's creature, DRUM-X's kit */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_being.c"
+#else
+/* Only the generic audio-level helper is still used by legacy FX status
+ * screens. All creature genomes, morphing and colony drawing are excluded. */
+static int32_t bg_sin(uint32_t ang) { return sine_i(ang << 16); }
+static int32_t bg_energy(void)
+{
+    static int32_t e;
+    static uint32_t fr = 0xFFFFFFFFu;
+    uint32_t w = scope_w, i;
+    int32_t pk = 0, v;
+    if (fr == ui.frame) return e;
+    fr = ui.frame;
+    for (i = 1; i <= 256u; i += 2u) {
+        v = scope_buf[(w - i) & (SCOPE_N - 1u)];
+        if (v < 0) v = -v;
+        if (v > pk) pk = v;
+    }
+    v = pk * 256 / 12000;
+    if (v > 256) v = 256;
+    e += v > e ? (v - e) * 3 / 4 : (v - e) / 6;
+    return e;
+}
+#endif                                /* (JIANT 0.5) the beings: the engine pages' creatures */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_engvis.c"
+#endif                               /* (0.9.4) VOICE's head, ANIMAL's creature, DRUM-X's kit */
+
+#if FELUCCA_NO_SEQUENCER
+/* The quick-layer KNOBS view still needs a static arc gauge. Keep its
+ * functional indicator without linking the old organic antialiased renderer. */
+static void lz_arc(int32_t cx, int32_t cy, int32_t r, int32_t w,
+                   int32_t f, uint16_t tc, uint16_t vc)
+{
+    for (int32_t k = 0; k < w; k++) {
+        int32_t rr = r - k, px = 0, py = 0;
+        for (int32_t i = 0; i <= 18; i++) {
+            uint32_t a = 0x6000u + (uint32_t)i * 0xC000u / 18u;
+            int32_t x = cx + (sine_i((a + 0x4000u) << 16) * rr >> 15);
+            int32_t y = cy + (sine_i(a << 16) * rr >> 15);
+            if (i)
+                cv_line(px, py, x, y, i * 1000 <= f * 18 ? vc : tc);
+            px = x;
+            py = y;
+        }
+    }
+}
+#endif
 
 /* Matches voice.c: attack is linear, decay and release are exponential
  * (env += (target - env) * k each tick, ~99 % after the set time). Time
@@ -1266,8 +1315,10 @@ static uint32_t graph_signature(void)
     if (!UI_ANIM_OFF && pg->scope == SC_ENGINE && trk_eng(t) == ENGI_DRUM)
         h ^= ui.frame * 2654435761u;                 /* DRUM-X: the specimen moves every frame */
     if (pg->graph == GR_DXSND || DX_KIT3(pg) || (pg->scope == SC_ENGINE && trk_eng(t) == ENGI_DRUM)) {
+#if !FELUCCA_NO_SEQUENCER
         const voice_t *strike = vx_kit_strike(t);
-        if (strike) h = (h ^ strike->age) * 16777619u; /* last-struck caption follows notes even with animation off */
+        if (strike) h = (h ^ strike->age) * 16777619u;
+#endif
         h ^= dx_sig() ^ dx_mute ^ (uint32_t)dx_mot_v;
         for (i = 0; i < sizeof dx_kit; i++)
             h = (h ^ ((const uint8_t *)dx_kit)[i]) * 16777619u;
@@ -1731,9 +1782,15 @@ static uint16_t sec_col(uint32_t s)
 #include "ui_tech.c"                                /* (JIANT 0.5) the technical graphs (FX, DEST, VOICE, GLOBAL) */
 #include "ui_lzsave.c"                              /* (0.8.5) SAVE's lens: its levels' panels */
 #include "ui_lzfx.c"                                /* (0.8.5) FX's lens: its levels' panels */
-#include "ui_lzhome.c"                              /* (0.8.5) HOME's lens: ECO, BEING, the critters */
-#include "ui_lzedit.c"                               /* (0.8.5) EDIT's lens panels */
-#include "ui_lzpage.c"                               /* (0.8.5) ENV's, LFO . MOD's, SCL . ARP's, GLO's */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_lzhome.c"
+#endif                              /* (0.8.5) HOME's lens: ECO, BEING, the critters */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_lzedit.c"
+#endif                               /* (0.8.5) EDIT's lens panels */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_lzpage.c" /* Legacy ENV/LFO/SCL graphs now replaced by 2x2 value grids. */
+#endif                               /* (0.8.5) ENV's, LFO . MOD's, SCL . ARP's, GLO's */
 /* (0.9.17) a SEQ page's own marks over the roll (a kit: the grid), column i of the bar shown at x, w px wide:
  * PATTERN the notes as long as GATE plays them, the odd steps late by SWING (graph_roll); TRACK its PITCH, the notes
  * where they will sound outlined (MID); PLAYHEADS the heads playing, a line each as hot as its number (the one edited
@@ -1885,7 +1942,11 @@ static void draw_graph(void)
         gen_panel();
     } else if (ui.home) {
         cv_oy = 0;
+#if !FELUCCA_NO_SEQUENCER
         graph_home_lz();
+#else
+        graph_title();
+#endif
     } else if (pg->graph == GR_LIVE) {               /* (0.9.11) GLO > LIVE: the rails, MANO's board (ui_live.c) */
         cv_oy = 0;
         graph_live();                             /* (0.8.5: HOME's lens, ECO / BEING; JIANT 0.5: the system's
@@ -1905,13 +1966,17 @@ static void draw_graph(void)
     } else if (lz_on() && lz_fam() == LZ_FX) {       /* (0.8.5) FX's lens */
         cv_oy = 0;
         graph_fx_lz(t, pg);
-    } else if (lz_on() && lz_fam() == LZ_EDIT && (cv_oy = 0, graph_edit_lz(t, pg))) {   /* (0.8.5) EDIT's (ui_lzedit.c) */
-    } else if (lz_on() && lz_fam() == LZ_ENV && (cv_oy = 0, graph_env_lz(t, pg))) {     /* .. ENV's (ui_lzpage.c) */
-    } else if (lz_on() && lz_fam() == LZ_MOD && (cv_oy = 0, graph_mod_lz(t, pg))) {     /* .. LFO . MOD's */
-    } else if (lz_on() && lz_fam() == LZ_KEY && (cv_oy = 0, graph_key_lz(t, pg))) {     /* .. SCL . ARP's */
-    } else if (lz_on() && lz_fam() == LZ_GLO && pg->id[0] == G_TRKS) {               /* .. GLO's SYSTEM */
+#if !FELUCCA_NO_SEQUENCER
+    } else if (lz_on() && lz_fam() == LZ_EDIT && (cv_oy = 0, graph_edit_lz(t, pg))) {
+#endif
+#if !FELUCCA_NO_SEQUENCER
+    } else if (lz_on() && lz_fam() == LZ_ENV && (cv_oy = 0, graph_env_lz(t, pg))) {
+    } else if (lz_on() && lz_fam() == LZ_MOD && (cv_oy = 0, graph_mod_lz(t, pg))) {
+    } else if (lz_on() && lz_fam() == LZ_KEY && (cv_oy = 0, graph_key_lz(t, pg))) {
+    } else if (lz_on() && lz_fam() == LZ_GLO && pg->id[0] == G_TRKS) {
         cv_oy = 0;
         graph_system();
+#endif
     } else {
         cv_oy = GOY;
         switch (pg->graph) {
@@ -1922,10 +1987,12 @@ static void draw_graph(void)
             graph_morph(t);
             break;
         case GR_DXIMG:                               /* (0.6.58) KIT 3: the colony; STEREO: IMAGE */
+#if !FELUCCA_NO_SEQUENCER
             if (DX_KIT3(pg)) {
                 cv_oy = 0;
                 graph_colony(t, -1);
             } else
+#endif
                 graph_dximg(t);
             break;
 #if !FELUCCA_SEQ_PROBE && !FELUCCA_NO_SEQUENCER
@@ -1943,6 +2010,7 @@ static void draw_graph(void)
             graph_pats();
             break;
 #endif
+#if !FELUCCA_NO_SEQUENCER
         case GR_FMOP:                                /* (0.6.10) FM6's operators: (0.9.6) the colony (ui_engvis.c), the operator */
         case GR_FMOP2:                               /* picked lit */
             if (fop_ok()) vx_fm6_page(t, fop_op % 6u, pg->graph == GR_FMOP2);
@@ -1959,10 +2027,12 @@ static void draw_graph(void)
             else
                 graph_colony(t, dx_ui_lane);
             break;
+#endif
         case GR_LYRIC:                               /* (0.8.5) EDIT > WORDS: what VOICE sings */
             graph_sing(t);
             break;
         default:
+#if !FELUCCA_NO_SEQUENCER
             if (pg->scope == SC_ENGINE && trk_engp(t) == &ENG_FORMANT && t->p[P_VLANG]) {
                 graph_sing(t);                       /* (0.8.5) VOICE singing: its words on its pages */
                 break;
@@ -1985,6 +2055,12 @@ static void draw_graph(void)
                 if (!graph_tech(t, pg))
                     graph_scope(c);
             }
+#else
+            /* MASHINA grid draws engine parameters; no creature art here. */
+            cv_oy = 0;
+            if (!graph_tech(t, pg))
+                graph_title();
+#endif
             break;
         }
     }

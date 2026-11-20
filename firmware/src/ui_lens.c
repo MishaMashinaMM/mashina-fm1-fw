@@ -133,7 +133,19 @@ static uint32_t nv_page(uint32_t sec, uint32_t e)
             return i;
     return NPAGES;
 }
-static int nv_ok(uint32_t sec, uint32_t e) { return sec == SEC_HOME ? e < NELEM(CE_HOME) : nv_page(sec, e) < NPAGES; }
+static int nv_ok(uint32_t sec, uint32_t e)
+{
+#if FELUCCA_NO_SEQUENCER
+    /* MASHINA's numeric 2x2 UI no longer distinguishes ECO/BEING or
+     * TRACKS/ENV artwork. Each pair addresses exactly the same controls.
+     * Retain the old entries in the table for legacy builds and stable
+     * GEN indices, but do not expose duplicate pages in the live UI. */
+    if ((sec == SEC_HOME && e >= 2u) ||
+        (sec == SEC_ENV && (e == 0u || e == 1u)))
+        return 0;
+#endif
+    return sec == SEC_HOME ? e < NELEM(CE_HOME) : nv_page(sec, e) < NPAGES;
+}
 /* the entry shown: HOME's from its state (ui.hlv, ui.hset, GEN's page); the others the one remembered when it is the page
  * shown, else the page's own (put by code: in the group left, the default page's, then the chain's first), else
  * (PHRASES, CHANCE: out of the chain) the one left */
@@ -141,8 +153,15 @@ static uint32_t nav_cur(void)
 {
     uint32_t sec = nav_sec(), key = nav_key(sec), e = nav_mem(key), k, pass, s;
     const ch_t *c = &CHAINS[key];
-    if (sec == SEC_HOME)
+    if (sec == SEC_HOME) {
+#if FELUCCA_NO_SEQUENCER
+        /* MASHINA exposes only CONTROLS and MACROS. Resolve any saved
+         * level-1 HOME state to the equivalent first-level numeric page. */
+        return ui.hset[0] & 1u;
+#else
         return gen_on() ? 4u + gen_page() : (ui.hlv ? 2u : 0u) + (ui.hset[ui.hlv ? 1 : 0] & 1u);
+#endif
+    }
     s = ((((ui.page * 31u + key) * 131u + e) * 257u + TSEL->eng_req) * 8191u + (uint32_t)(uint16_t)TSEL->p[P_E1]) * 7u +
         sys_load + 1u;
     if (s == ui.nav_sig)
@@ -168,7 +187,14 @@ static uint32_t nav_cur(void)
 static uint32_t nav_lv(void) { return nav_ch(nav_sec())->e[nav_cur()].lv; }   /* the 0.8.5 lens level it is drawn as */
 static uint32_t pd_level(void) { return nav_lv(); }
 static uint32_t save_level(void) { return nav_lv(); }
-static uint32_t home_level(void) { return gen_on() ? 2u : ui.hlv ? 1u : 0u; }
+static uint32_t home_level(void)
+{
+#if FELUCCA_NO_SEQUENCER
+    return 0u;       /* only the CONTROLS/MACROS pair remains */
+#else
+    return gen_on() ? 2u : ui.hlv ? 1u : 0u;
+#endif
+}
 static uint32_t home_set(void) { return ui.hset[home_level() & 1u] & 1u; }
 static int home_macros(void) { return ui.home && !ui.menu && !gen_on() && home_set(); }   /* MACROS / ROUTES: M1..M4 */
 /* the entries shown now (on this track, at this LOAD), in order: their indices in v; how many */
@@ -206,6 +232,11 @@ static void nav_go(uint32_t sec, uint32_t e, int outside)
     e = k;
     nav_mem_put(key, e);
     if (sec == SEC_HOME) {
+#if FELUCCA_NO_SEQUENCER
+        /* No generator navigation in MASHINA. Old callers requesting
+         * legacy HOME pages land on the equivalent live control page. */
+        if (e >= 2u) e = 0u;
+#endif
         if (e >= 4u) {                                  /* GEN: the generator's screen, HOME's last group */
             if (!gen_on()) {
                 if (chain_busy()) {

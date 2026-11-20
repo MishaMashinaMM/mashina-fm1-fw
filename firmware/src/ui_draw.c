@@ -1268,6 +1268,22 @@ static void draw_foot(void)
         cv_blit(0, 222);
         return;
     }
+#if FELUCCA_NO_SEQUENCER
+    /* HOME is a two-page live-performance section. Its footer must use the
+     * actual HOME control set, never the last visited PAGES[ui.page] title. */
+    if (ui.home && !ui.menu && !ui.layer && !gen_on()) {
+        uint32_t macro_page = home_set();
+        cv_begin(240, 18, T_BG);
+        cv_rect(3, 1, 43, 16, T_VALUE);
+        cv_text_in(5, 1, 39, &AF_S, "HOME", T_INK, T_VALUE);
+        cv_rect(48, 1, 92, 16, RGB(58,58,58));
+        cv_text_in(54, 1, 80, &AF_S, macro_page ? "MACROS" : "CONTROLS",
+                   T_TEXT, RGB(58,58,58));
+        cv_text_r(237, 1, &AF_S, macro_page ? "2/2" : "1/2", T_VALUE, T_BG);
+        cv_blit(0, 222);
+        return;
+    }
+#endif
     if (save_atmos_ui()) {
         const char *name = PAGES[ui.page].title;
         const char *group = str_eq(name, "USER") || str_eq(name, "PRESETS") ? "SOUND" :

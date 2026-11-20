@@ -1,0 +1,151 @@
+name: MASHINA UI optimization emulator preview
+
+on:
+  push:
+    branches: [ui-flash-optimization]
+    paths:
+      - '.github/workflows/emulator-preview.yml'
+      - 'firmware/**'
+      - 'tools/**'
+      - 'web/emu/**'
+      - 'build.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    name: Build isolated WebAssembly emulator
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout optimization branch
+        uses: actions/checkout@v4
+        with:
+          ref: ui-flash-optimization
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl xz-utils
+          python3 -m pip install --break-system-packages Pillow fonttools
+
+      - name: Install JieLi compiler
+        run: |
+          sh tools/get_toolchain.sh "$HOME/.jieli"
+          test -x "$HOME/.jieli/toolchain/pi32v2/bin/clang"
+
+      - name: Cache pinned AC79 SDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/fw-AC79_AIoT_SDK
+          key: ac79-sdk-v1.2.1-2023-12-13-linux
+
+      - name: Fetch AC79 SDK with retries
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="$HOME/fw-AC79_AIoT_SDK"
+          for attempt in 1 2 3 4 5; do
+            echo "AC79 SDK clone attempt $attempt/5"
+            rm -rf "$sdk"
+            if git -c http.version=HTTP/1.1 clone --depth 1 --single-branch \
+                 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
+                 https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$sdk"; then
+              if test -s "$sdk/cpu/wl82/tools/uboot.boot"; then
+                echo "AC79 SDK fetched successfully"
+                break
+              fi
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "::error::AC79 SDK download failed after five attempts"
+              exit 1
+            fi
+            echo "Network download interrupted; retrying after $((attempt * 5)) seconds"
+            sleep "$((attempt * 5))"
+          done
+
+      - name: Validate AC79 SDK
+        run: |
+          test -s "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/uboot.boot"
+          test -s "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/cfg_tool.bin"
+
+      - name: Generate assets and compile firmware
+        run: |
+          set -o pipefail
+          FELUCCA_NO_SEQUENCER=1 bash build.sh 2>&1 | tee firmware-build.log
+
+      - name: Install Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: '4.0.15'
+          actions-cache-folder: emsdk-cache
+
+      - name: Compile optimized browser emulator
+        run: |
+          set -o pipefail
+          EMU_VERSION="ui-flash-optimization" EMU_PREVIEW=1 \
+            FELUCCA_NO_SEQUENCER=1 bash web/emu/build.sh 2>&1 | tee emulator-build.log
+
+      - name: Validate preview bundle
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("build/emu")
+          required = ["index.html", "felucca.wasm", "worklet.js",
+                      "stems.js", "sample-bank.js", "fm1backup.js",
+                      "factory-voices.json", "factory-samples.json",
+                      "fonts/DotGothic16-subset.woff",
+                      "mashina-nav.css", "mashina-nav.js",
+                      "mashina-emu-locale.js"]
+          missing = [f for f in required if not (p/f).is_file() or (p/f).stat().st_size == 0]
+          if missing:
+              raise SystemExit("Preview missing: " + ", ".join(missing))
+          page = (p/"index.html").read_text(encoding="utf-8")
+          if 'id="emulator-build-label"' not in page or "ui-flash-optimization (preview)" not in page:
+              raise SystemExit("Preview label not embedded")
+          print("Preview ready:", (p/"felucca.wasm").stat().st_size,
+                "bytes WebAssembly")
+          PY
+
+      - name: Include local preview instructions
+        if: success()
+        run: |
+          cat > build/emu/README-PREVIEW.txt <<'EOF'
+          MASHINA - UI flash optimization test emulator
+
+          This is a separate, unmerged development preview.
+          To run locally, extract the entire artifact and open a terminal in
+          the folder containing index.html, then run:
+
+              python3 -m http.server 8790
+
+          Open http://localhost:8790/ in Chrome or Edge.
+          Do not open index.html directly as a file:// URL:
+          AudioWorklet / WebAssembly require an HTTP origin.
+
+          Test: HOME, EDIT, ENV/LFO/FX, SAVE/PRESETS/USER/PROJECT,
+          DICE, long-press layers and sound output.
+          No firmware installation or hardware flashing is involved.
+          EOF
+
+      - name: Upload browser preview
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-ui-flash-emulator-preview
+          path: build/emu/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-ui-flash-emulator-build-logs
+          path: |
+            firmware-build.log
+            emulator-build.log
+          if-no-files-found: ignore
