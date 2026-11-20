@@ -170,6 +170,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         int32_t level = clamp(t->p[lid], 0, 127);
         level_gain = level == 127 ? 32768 : level * level * 32768 / 16129;
     }
+    ph0 = a->phase[0]; ph1 = a->phase[1]; ph2 = a->phase[2];
     if (ac_is_metal(kind)) {
         /* Inharmonic plate modes: different fixed central bands for bow,
          * bell and crash. TUNE moves the bands, not a musical fundamental.
@@ -214,7 +215,6 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     body = a->body; trans = a->transient;
     step_b = ((int32_t)(((int64_t)body * mul_b) >> 16) - body) / (int32_t)n;
     step_t = ((int32_t)(((int64_t)trans * mul_t) >> 16) - trans) / (int32_t)n;
-    ph0 = a->phase[0]; ph1 = a->phase[1]; ph2 = a->phase[2];
     rng = a->seed; age = a->age;
     lp = a->noise_lp; fast = a->noise_fast; wire = a->wires_lp;
     for (i = 0; i < n; i++, body += step_b, trans += step_t, age++) {
@@ -354,9 +354,9 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                  * Unlike the previous model it changes spectral balance as
                  * well as attack gain, so the range is clearly audible. */
                 int32_t splash = wire_amt;
-                raw = (int32_t)(((int64_t)plate * body * (110 + body_mix)) >> 31);
-                raw += (int32_t)(((int64_t)broad * body * (35 + splash * 2)) >> 32);
-                raw += (int32_t)(((int64_t)upper * trans * (25 + splash * 5)) >> 31);
+                raw = (int32_t)(((int64_t)plate * body * (110 + body_mix)) >> 33);
+                raw += (int32_t)(((int64_t)broad * body * (35 + splash * 2)) >> 34);
+                raw += (int32_t)(((int64_t)upper * trans * (25 + splash * 5)) >> 34);
             } else if (kind == AC_RIDE_BELL) {
                 /* A more focused bell, emphasising the mid plate resonance
                  * with a hard stick impulse. */
@@ -366,10 +366,10 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             } else {
                 /* Ride splash: lighter than the crash and longer than a
                  * single stick strike, with a separate broad wash. */
-                raw = (int32_t)(((int64_t)plate * body * (95 + bright)) >> 31);
-                raw += (int32_t)(((int64_t)broad * body * (60 + wire_amt * 2)) >> 32);
+                raw = (int32_t)(((int64_t)plate * body * (95 + bright)) >> 33);
+                raw += (int32_t)(((int64_t)broad * body * (60 + wire_amt * 2)) >> 34);
                 raw += (int32_t)(((int64_t)upper * trans *
-                                  (40 + wire_amt * 3)) >> 31);
+                                  (40 + wire_amt * 3)) >> 34);
             }
         }
         if (raw > 32767) raw = 32767;
