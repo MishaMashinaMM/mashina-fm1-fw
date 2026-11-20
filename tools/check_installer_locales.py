@@ -26,3 +26,43 @@ for forbidden in ("JIANT", "JLD", "Juan", "firmware build", "development"):
     assert forbidden.lower() not in manual.lower(), f"Manual should only describe MASHINA usage: {forbidden}"
 assert Path("web/manual/index.html").read_text(encoding="utf-8").count("<!--MASHINA_MANUAL_CONTENT-->") == 1
 print("PASS: canonical MASHINA manual and responsive page template")
+
+# The English manual is canonical; each translation must provide detailed
+# operating instructions, not just a seven-section outline.
+base = Path("docs/MASHINA_MANUAL.md")
+english_text = base.read_text(encoding="utf-8")
+for lang in ("es", "ja", "ru", "sr", "hi"):
+    file = Path(f"docs/MASHINA_MANUAL.{lang}.md")
+    content = file.read_text(encoding="utf-8")
+    headings = re.findall(r"(?m)^#{2,3} .+$", content)
+    rows = re.findall(r"(?m)^\\|[^\\n]+\\|$", content)
+    assert len(headings) >= 20, f"{lang}: manual is missing detailed subsections ({len(headings)})"
+    assert len(rows) >= 50, f"{lang}: manual needs complete settings/control tables ({len(rows)})"
+    assert len(content) >= len(english_text) * 0.66, f"{lang}: manual is unexpectedly abridged"
+    for token in ("MIXER", "ROUTE", "ZONES", "TUNING", "ATMOS", "BRASS",
+                  "INDUSTRIAL", "DRUM-X", "DRUM-LAB", "STRIKE", "SEQ",
+                  "PLAY", "REC", "MIDI Learn", "CC85", "CC86", "CC87",
+                  "CC88", "CC89", "CC90", "PANIC", "EQ", "INIT SOUND",
+                  "CLEAR SLOT", "NEW PROJECT", "CPU TEST"):
+        assert token.lower() in content.lower(), f"{lang}: missing manual topic {token}"
+    for band in ("50", "700", "10"):
+        assert band in content, f"{lang}: missing global EQ frequency {band}"
+    for val in ("36", "50", "127", "80", "81", "15", "32"):
+        assert val in content, f"{lang}: missing reference value {val}"
+    for pad in ("BD", "SD", "CP", "CH", "OH", "TM", "RM", "BL", "B2", "S2", "O2", "T2"):
+        assert re.search(r"\\b" + re.escape(pad) + r"\\b", content), f"{lang}: missing DRUM-X pad {pad}"
+    for forbidden in ("JIANT", "JLD", "Juan Jiant"):
+        assert forbidden.lower() not in content.lower(), f"{lang}: unrelated manual attribution {forbidden}"
+    print(f"PASS: {lang} manual — {len(headings)} sections/subsections, {len(rows)} table rows")
+
+# Opening a bare page URL must show English regardless of browser language,
+# previous settings or an earlier in-site language selection.
+nav = Path("web/mashina-nav.js").read_text(encoding="utf-8")
+editor = Path("web/editor.html").read_text(encoding="utf-8")
+assert 'const code = langs.some(x => x[0] === requested) ? requested : "en";' in nav
+assert 'let lang = "en";' in html
+assert 'let lang = EDITOR_LANGS.includes(editorQueryLang) ? editorQueryLang : "en";' in editor
+for source in (nav, html, editor):
+    assert 'localStorage.getItem("mashina-lang")' not in source
+print("PASS: English is the default for all bare URLs; explicit ?lang= selects translations")
+
