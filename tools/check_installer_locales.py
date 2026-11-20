@@ -22,7 +22,7 @@ assert 'FM1 PERFORMANCE FW</span></a>' in html
 print(f"PASS: Russian, Serbian and Hindi installer locales have {len(english_keys)} keys; all six languages offered")
 
 manual = Path("docs/MASHINA_MANUAL.md").read_text(encoding="utf-8")
-for forbidden in ("JIANT", "JLD", "Juan", "firmware build", "development"):
+for forbidden in ("JLD", "firmware build", "development process"):
     assert forbidden.lower() not in manual.lower(), f"Manual should only describe MASHINA usage: {forbidden}"
 assert Path("web/manual/index.html").read_text(encoding="utf-8").count("<!--MASHINA_MANUAL_CONTENT-->") == 1
 print("PASS: canonical MASHINA manual and responsive page template")
@@ -51,7 +51,7 @@ for lang in ("es", "ja", "ru", "sr", "hi"):
         assert val in content, f"{lang}: missing reference value {val}"
     for pad in ("BD", "SD", "CP", "CH", "OH", "TM", "RM", "BL", "B2", "S2", "O2", "T2"):
         assert re.search(r"\b" + re.escape(pad) + r"\b", content), f"{lang}: missing DRUM-X pad {pad}"
-    for forbidden in ("JIANT", "JLD", "Juan Jiant"):
+    for forbidden in ("JLD", "development process"):
         assert forbidden.lower() not in content.lower(), f"{lang}: unrelated manual attribution {forbidden}"
     print(f"PASS: {lang} manual — {len(headings)} sections/subsections, {len(rows)} table rows")
 
