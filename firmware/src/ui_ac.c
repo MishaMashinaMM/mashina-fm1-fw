@@ -65,7 +65,8 @@ static void ac_knob(const page_t *pg, uint32_t k, int32_t steps)
                          (uint32_t)clamp((int32_t)ac_param_value(TSEL, ac_ui_pad, field) +
                                         accel(EN_K1 + k, steps, 127), 0, 127));
     }
-    ui.force = 1;
+    /* The EDIT grid compares displayed values and updates changed cells;
+     * a full-screen redraw here caused flashing on every knob detent. */
 }
 static void ac_cards(const page_t *pg)
 {
