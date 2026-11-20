@@ -90,6 +90,8 @@ def manual(out):
     """
     import markdown
     src = HERE / "manual" / "index.html"
+    dst = Path(out) / "manual"
+    dst.mkdir(parents=True, exist_ok=True)
     template = src.read_text(encoding="utf-8")
     marker = "<!--MASHINA_MANUAL_CONTENT-->"
     if template.count(marker) != 1:
@@ -121,8 +123,8 @@ def manual(out):
                 raise SystemExit(f"{name} includes non-user-facing reference: {forbidden}")
         visible = " data-active" if lang == "en" else ""
         locale = "sr-Cyrl" if lang == "sr" else lang
-        all_articles.append(f'<article lang="{locale}" data-manual-lang="{lang}"{visible}>\\n{content}\\n</article>')
-    html = template.replace(marker, "\\n".join(all_articles))
+        all_articles.append(f'<article lang="{locale}" data-manual-lang="{lang}"{visible}>\n{content}\n</article>')
+    html = template.replace(marker, "\n".join(all_articles))
     (dst / "index.html").write_text(html, encoding="utf-8")
     print(f"site: {dst}: MASHINA user manual ({len(html)} B)")
 
