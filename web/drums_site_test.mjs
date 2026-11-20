@@ -16,7 +16,7 @@ for (const [name, text] of [['home', home], ['installer', installer],
   assert.match(text, /MASHINA/i, `${name} must identify MASHINA`);
 }
 for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
-  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v09/")}"`), `homepage must link to ${href}`);
+  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v010/")}"`), `homepage must link to ${href}`);
 }
 assert.match(home, /<strong>MASHINA<\/strong><span>FM1 PERFORMANCE FW<\/span>/, 'homepage must have a two-line MASHINA wordmark');
 assert.match(home, /data-i18n="safety"/, 'homepage must retain firmware backup warning');
