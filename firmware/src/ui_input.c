@@ -1361,7 +1361,8 @@ static void edit_param(uint32_t slot, int32_t steps)
             (int32_t)drumlab_global[ti][field] +
             accel(EN_K1 + slot, steps, (int32_t)limit), 0, (int32_t)limit);
         fm1_irq_on();
-        ui.force = 1u;
+        /* The 2x2 EDIT cell cache detects changed global values itself.
+         * Never request a full LCD clear for every encoder detent. */
         cm_knob_cap(TSEL, P_E0 + field);
         if (!cm_ui_open) ml_knob(TSEL, P_E0 + field);
         return;
