@@ -81,8 +81,9 @@ static void ac_note_on(track_t *t, voice_t *v)
     a->kind = (uint8_t)ac_kind(v->note);
     a->seed = 0xB5297A4Du ^ ((uint32_t)v->note << 18) ^ (uint32_t)v->age;
     if (!a->seed) a->seed = 1;
-    a->inc = pitch_inc((uint32_t)(a->kind == AC_KICK ? 35u :
-                          a->kind == AC_SNARE ? 51u : 75u) * 16u);
+    /* Only CRASH needs oscillator phases. KICK/SNARE use phase[0..1]
+     * as two signed, noise-driven filter memories; neither has a pitch. */
+    a->inc = a->kind == AC_CRASH ? pitch_inc(75u * 16u) : 0u;
     a->body = a->transient = 1 << 24;
     a->active = 1;
 }
@@ -99,8 +100,11 @@ static int32_t ac_amp(track_t *t, voice_t *v, int32_t adsr)
     v->env = 1 << 24;
     return 32767;
 }
-/* Per-voice damped membrane and excitation, with cymbal inharmonic
- * partials and two noise bands. Decays are computed only per audio block. */
+/* Noise-excited transient models for acoustic-style KICK and SNARE.
+ * Their low and mid bodies are filtered aperiodic noise: no sine, pitch
+ * sweep, repeating phase, or ring oscillator. TUNE sets body filter colour,
+ * not a musical pitch. CRASH retains its separate metallic oscillators.
+ * Decays are calculated once per audio block. */
 static void ac_render(track_t *t, voice_t *v, int32_t *out,
                       uint32_t n, const vmod_t *m)
 {
@@ -124,7 +128,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     bright = ac_param_value(t, kind, 5);
     metal = ac_param_value(t, kind, 6);
     ring_amt = ac_param_value(t, kind, 7);
-    inc = a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192);
+    inc = kind == AC_CRASH ?
+          a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192) : 0u;
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
                                380000u + (uint32_t)body_mix * 16000u;
@@ -141,30 +146,45 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     lp = a->noise_lp; fast = a->noise_fast; wire = a->wires_lp;
     for (i = 0; i < n; i++, body += step_b, trans += step_t, age++) {
         int32_t white = (int32_t)(ac_random(&rng) >> 16) - 32768;
-        int32_t s0 = sine_i(ph0), s1 = sine_i(ph1), s2 = sine_i(ph2);
         int32_t raw;
         /* Noise filters are bounded and share no state between drum voices. */
         lp += (int32_t)(((int64_t)(white - lp) * (800 + bright * 45)) >> 15);
         fast += (int32_t)(((int64_t)(white - fast) * (7800 + bright * 115)) >> 15);
         wire += (int32_t)(((int64_t)(white - wire) * (1800 + bright * 65)) >> 15);
         if (kind == AC_KICK) {
-            /* A quickly relaxing head with an inharmonic shell mode and
-             * short beater strike. */
-            uint32_t sweep = age < 2400u ? 2400u - age : 0u;
-            raw = (int32_t)(((int64_t)(s0 * 3 + s1 * (1 + ring_amt / 32)) * body * (70 + body_mix)) >> 34);
-            raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 32);
-            ph0 += inc + (uint32_t)(((uint64_t)inc * sweep) >> 12);
-            ph1 += (inc * 7u) / 5u;
+            /* Two cascaded low-pass integrators produce a short, dull thump.
+             * Unlike a resonant sine, each hit is genuinely aperiodic. The
+             * controls shift the noise bandwidth and envelope, never pitch. */
+            int32_t deep = (int32_t)ph0, low = (int32_t)ph1;
+            int32_t k_low = 1400 + tune * 16;       /* broad impact around low mids */
+            int32_t k_deep = 220 + tune * 4;       /* sub/low-frequency weight */
+            low += (int32_t)(((int64_t)(white - low) * k_low) >> 15);
+            deep += (int32_t)(((int64_t)(low - deep) * k_deep) >> 15);
+            int32_t thud = deep * (110 + body_mix) / 128 +
+                           (low - deep) * (25 + ring_amt) / 128;
+            int32_t beater = (white - fast) * (20 + strike) / 256;
+            raw = (int32_t)(((int64_t)thud * body) >> 23);
+            raw += (int32_t)(((int64_t)beater * trans) >> 23);
+            ph0 = (uint32_t)deep;
+            ph1 = (uint32_t)low;
         } else if (kind == AC_SNARE) {
-            /* Two membrane modes plus a decaying snare-wire rattle. */
-            int32_t membrane = (s0 * 3 + s1 * (1 + ring_amt / 24)) / (4 + ring_amt / 24);
+            /* Broadband snare-wire rasp over a non-tonal, low-mid drumhead
+             * thud. RING increases the mid-body component, not a sine. */
+            int32_t low = (int32_t)ph0, mid = (int32_t)ph1;
+            int32_t k_mid = 3500 + tune * 42;
+            int32_t k_low = 650 + tune * 12;
+            mid += (int32_t)(((int64_t)(white - mid) * k_mid) >> 15);
+            low += (int32_t)(((int64_t)(mid - low) * k_low) >> 15);
+            int32_t thud = low * (85 + body_mix) / 128 +
+                           (mid - low) * (15 + ring_amt) / 128;
             int32_t rattle = (white - wire) * wire_amt / 127;
-            raw = (int32_t)(((int64_t)membrane * body * (60 + body_mix)) >> 31);
-            raw += (int32_t)(((int64_t)rattle * body * (45 + wire_amt)) >> 32);
-            raw += (int32_t)(((int64_t)(white - fast) * trans * (25 + strike)) >> 32);
-            ph0 += inc;
-            ph1 += (inc * 8u) / 5u;
+            raw = (int32_t)(((int64_t)thud * body) >> 23);
+            raw += (int32_t)(((int64_t)rattle * body * (40 + wire_amt)) >> 30);
+            raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 31);
+            ph0 = (uint32_t)low;
+            ph1 = (uint32_t)mid;
         } else {
+            int32_t s0 = sine_i(ph0), s1 = sine_i(ph1), s2 = sine_i(ph2);
             /* A long metallic wash with several non-harmonic resonances.
              * Broadband splash dominates the attack; partials evolve into
              * the sustain. Crash is deliberately not a short electronic hat. */
