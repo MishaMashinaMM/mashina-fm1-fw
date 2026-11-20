@@ -45,7 +45,9 @@ static void lz_uline(int32_t x, int32_t y, const aafont_t *f, const char *s, uin
 
 /* the height ADSR and LFO are drawn on: 100 px, or (MENU > LARGE's strip: draw_graph) the strip's ~ 56 */
 static int32_t graph_ht = 100;
-#include "ui_organic.c"                              /* JIANT FM's organic line art (drawn by code) */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_organic.c" /* Legacy graphical flourishes, no longer rendered in MASHINA. */
+#endif                              /* JIANT FM's organic line art (drawn by code) */
 #include "ui_fm6op.c"                                /* (0.6.10, from Felucca 1.5) EDIT > OPERATOR, OP ENV, OPERATOR 2 */
 static uint16_t heat_col(int32_t v);
 /* (0.9.5, as the 0.6.36) JIANT (thermal): a card's colour its value as heat (ratio 0..1000, -1 none); bipolar (its range
@@ -1765,7 +1767,9 @@ static uint16_t sec_col(uint32_t s)
 #if !FELUCCA_NO_SEQUENCER
 #include "ui_lzedit.c"
 #endif                               /* (0.8.5) EDIT's lens panels */
-#include "ui_lzpage.c"                               /* (0.8.5) ENV's, LFO . MOD's, SCL . ARP's, GLO's */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_lzpage.c" /* Legacy ENV/LFO/SCL graphs now replaced by 2x2 value grids. */
+#endif                               /* (0.8.5) ENV's, LFO . MOD's, SCL . ARP's, GLO's */
 /* (0.9.17) a SEQ page's own marks over the roll (a kit: the grid), column i of the bar shown at x, w px wide:
  * PATTERN the notes as long as GATE plays them, the odd steps late by SWING (graph_roll); TRACK its PITCH, the notes
  * where they will sound outlined (MID); PLAYHEADS the heads playing, a line each as hot as its number (the one edited
@@ -1944,12 +1948,14 @@ static void draw_graph(void)
 #if !FELUCCA_NO_SEQUENCER
     } else if (lz_on() && lz_fam() == LZ_EDIT && (cv_oy = 0, graph_edit_lz(t, pg))) {
 #endif
-    } else if (lz_on() && lz_fam() == LZ_ENV && (cv_oy = 0, graph_env_lz(t, pg))) {     /* .. ENV's (ui_lzpage.c) */
-    } else if (lz_on() && lz_fam() == LZ_MOD && (cv_oy = 0, graph_mod_lz(t, pg))) {     /* .. LFO . MOD's */
-    } else if (lz_on() && lz_fam() == LZ_KEY && (cv_oy = 0, graph_key_lz(t, pg))) {     /* .. SCL . ARP's */
-    } else if (lz_on() && lz_fam() == LZ_GLO && pg->id[0] == G_TRKS) {               /* .. GLO's SYSTEM */
+#if !FELUCCA_NO_SEQUENCER
+    } else if (lz_on() && lz_fam() == LZ_ENV && (cv_oy = 0, graph_env_lz(t, pg))) {
+    } else if (lz_on() && lz_fam() == LZ_MOD && (cv_oy = 0, graph_mod_lz(t, pg))) {
+    } else if (lz_on() && lz_fam() == LZ_KEY && (cv_oy = 0, graph_key_lz(t, pg))) {
+    } else if (lz_on() && lz_fam() == LZ_GLO && pg->id[0] == G_TRKS) {
         cv_oy = 0;
         graph_system();
+#endif
     } else {
         cv_oy = GOY;
         switch (pg->graph) {
