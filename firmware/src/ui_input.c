@@ -3067,3 +3067,4 @@ timeout:
 #include "ui_dx.c"                                  /* EDIT > SOUND / SOUND 2: the DRUM-X kit */
 #include "ui_lab.c"                                 /* DRUM-LAB: independent electronic drum patches */
 #include "ui_ac.c"                                  /* DRUM-AC: kick/snare/crash individual editing */
+#include "ui_ind.c"                                 /* DRUM-IND: twelve industrial texture pads */
