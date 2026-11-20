@@ -7,9 +7,9 @@ static const char *const AC_FIELDS[8] = {
     "TUNE", "DAMP", "BODY", "HIT", "WIRES", "BRIGHT", "METAL", "RING"
 };
 static const char *const AC_PAD_NAMES[AC_NPAD] = {
-    "KICK 36", "SNARE 38", "CRASH 49", "C-HAT 42", "O-HAT 46",
-    "FLOOR 41", "LOW TOM 43", "MID TOM 45", "HIGH TOM 47",
-    "CLAP 39", "R-BELL 53", "R-SPL 51"
+    "KICK C", "SNARE D", "CRASH C#", "C-HAT F#", "O-HAT A#",
+    "FLOOR F", "LOW TOM G", "MID TOM A", "HIGH TOM B",
+    "CLAP D#", "R-BELL E", "R-SPL G#"
 };
 static const char *ac_field_name(uint32_t pad, uint32_t field)
 {
