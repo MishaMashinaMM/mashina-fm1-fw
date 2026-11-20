@@ -1,0 +1,272 @@
+# MASHINA — FM1 Performance Firmware User Manual
+
+MASHINA turns the M-VAVE FM1 into a **six-track sound module for external MIDI keyboards, pads and controllers**. This guide explains how to select sounds, route MIDI, build splits and layers, control synthesis and drums, and save your live setup.
+
+## 1. Getting around the FM1
+
+| Control | What it does |
+| --- | --- |
+| **HOME** | Return to the home/sound view. **Hold HOME** to open the settings menu. |
+| **GLO** | Mixer, MIDI zones, tuning, sends, global EQ and system settings. |
+| **EDIT** | Edit the selected track's sound engine. |
+| **ENV** | Envelope and modulation destinations. |
+| **LFO** | LFO, modulation and motion controls. |
+| **FX** | Track effects and global effect buses. |
+| **SCL / ARP** | Scale/chord and arpeggiator settings. |
+| **SAVE** | Store sounds, presets and projects; manage the library. |
+| **SEQ** | Drum MIDI note, pan and pitch mapping. It does **not** start a song sequencer. |
+| **PLAY** | Drum performance settings: velocity, choke and retrigger. |
+| **REC** | Live MIDI CC macros, up to 32 per project. |
+| **ALGORITHM** | Select a track (except on pages where it has a dedicated action). |
+| **SELECT** | Move between the pages in the current section; on drum pages, select a pad. |
+| **K1–K4** | Edit the four corresponding controls, where available. |
+| **PRESETS** | Browse sounds, except when a page gives it another role. |
+| **OCT− / OCT+** | Change the FM1 keyboard's playing octave. Together they reset the octave offset. |
+
+On most sections, **press a section button once** to open it, turn **SELECT** to browse pages, and turn the relevant **K** knob to edit a displayed value. The currently selected track is shown in the interface. Settings changed on a track normally take effect immediately; **save your project** to keep them.
+
+### Settings menu
+
+**Hold HOME**, then turn **SELECT** to navigate between groups. The menu pages are:
+
+| Page | Controls |
+| --- | --- |
+| **SCREEN** | Scope, screen sleep, LED glow, scale LEDs |
+| **AUDIO** | Speaker EQ, active tracks (4/6), load, BPM lock |
+| **MIDI** | MIDI output, MIDI Learn, clear learned controls |
+| **USB** | USB audio, USB level |
+| **CONTROLS** | Hold time, knob speedup, FX latch, calibration |
+| **SYSTEM** | Restore last, CPU cores, CPU clock, ABOUT |
+
+Use the displayed K knob to adjust a setting. HOME exits the menu. **LEARN CLEAR** removes MIDI mappings; confirm only if you intend to erase them.
+
+## 2. External MIDI and the six-track mixer
+
+Connect a compatible USB or TRS MIDI source. Open **GLO → MIX → MIXER**.
+
+| Control | Function |
+| --- | --- |
+| **K1** | Receive (RX) MIDI channel for the selected track, **1–16** |
+| **K2** | Track volume |
+| **K3** | Track pan |
+| **K4** | Not assigned on MIXER |
+| **PRESETS** | Master DJ Filter, on MIXER only |
+
+Use **ALGORITHM** to select T1–T6. Tracks may share a MIDI channel: this is how you layer several instruments from one keyboard. You can set RX channels for T5/T6 even when only four tracks are active.
+
+Select the active track count under **HOME (hold) → AUDIO → TRACKS**.
+
+### MIDI routing modes
+
+Open **GLO → SYSTEM → ROUTE**:
+
+- **1-4** — route incoming MIDI to matching assigned channels on tracks 1–4.
+- **1-6** — route to matching channels on tracks 1–6 (subject to active track count).
+- **SEL** — play the currently selected track.
+
+For example, set T1 and T2 both to **RX 1**, use **ROUTE = 1-6**, and send notes on MIDI channel 1. Both tracks respond, each with its own sound and pan. Save the project to retain assignments.
+
+### Note and velocity zones
+
+Open **GLO → MIX → ZONES**. For each selected track:
+
+| Knob | Value | Range |
+| --- | --- | --- |
+| **K1** | MIN — lowest accepted MIDI note | 0–127 |
+| **K2** | MAX — highest accepted MIDI note | 0–127 |
+| **K3** | V.MIN — lowest accepted velocity | 1–127 |
+| **K4** | V.MAX — highest accepted velocity | 1–127 |
+
+Both endpoints are inclusive. **Non-overlapping note ranges** create keyboard splits. **Overlapping note ranges** make layers. Different velocity ranges create soft/hard playing layers.
+
+Example: Give T1 the lower keyboard range and T2 the upper range, while both use RX 1. Or give both the same note range with T1 velocity 1–80 and T2 velocity 81–127.
+
+**Important:** Zones filter incoming **external** MIDI; the FM1's built-in mini-keyboard still addresses only the selected track. Zones are evaluated before transposition.
+
+### Per-track transpose and fine tuning
+
+Open **GLO → MIX → TUNING**:
+
+- **K1 TRN:** −36 to +36 semitones (three octaves in either direction).
+- **K2 FINE:** −50 to +50 cents (subtle detuning).
+- **K3/K4:** reserved.
+
+Use TRN to shift one layer up or down and FINE to thicken two sounds played in unison. A note already sounding keeps its current pitch when TRN changes; later notes use the new tuning. Note Off and sustain still release the correct voices. DRUM-X and DRUM-LAB retain their drum pitches and MIDI note maps regardless of TRN/FINE.
+
+## 3. Sound engines and polyphony
+
+Select the track, choose a sound/engine with the preset controls, then open **EDIT**. Turn **SELECT** to access the available EDIT pages; K1–K4 adjust the labels shown on each page. Use ENV, LFO, FX, SCL and ARP for further shaping.
+
+**ATMOS** makes slowly evolving harmonic pads. Its controls include **BREATH** (amplitude movement), **MOTION** (speed of movement), **FLOW** (timbre movement) and **SPREAD** (oscillator separation). Start from a pad preset and increase the movement controls gradually.
+
+**BRASS** creates expressive synthetic wind sounds. Its **TYPE** control morphs continuously from saxophone (**0**) through hybrids (around **64**) to trumpet (**127**).
+
+| BRASS page | K1 | K2 | K3 | K4 |
+| --- | --- | --- | --- | --- |
+| **EDIT 1** | TYPE | PRESS | BUZZ | BREATH |
+| **EDIT 2** | BODY | FORMNT | GROWL | ATTACK |
+| **EDIT 3** | FAT | GRIND | METAL | CRUSH |
+
+The EDIT 3 controls add deliberate detuning, distortion or digital coloration. Leave them near zero for a cleaner wind-like tone.
+
+**INDUSTRIAL** makes hard-edged basses and leads:
+
+| INDUSTRIAL page | K1 | K2 | K3 | K4 |
+| --- | --- | --- | --- | --- |
+| **EDIT 1** | WAVE | FAT | GRIND | METAL |
+| **EDIT 2** | CRUSH | FEED | CUT | RES |
+| **EDIT 3** | WAVE2 | MIX | SUB | MODE |
+
+Use WAVE/MIX to blend oscillators, CUT/RES to shape the filter and GRIND/METAL/CRUSH for a more aggressive sound.
+
+MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
+
+## 4. Drum engines and live pad controls
+
+**DRUM-X** contains twelve independent sounds. The additional **B2, S2, O2 and T2** have their own settings while using the synthesis options of the corresponding original drum voices.
+
+| Pad | MIDI note | Pad | MIDI note |
+| --- | --- | --- | --- |
+| BD | 36 | RM | 37 |
+| SD | 38 | BL | 56 |
+| CP | 39 | B2 | 41 |
+| CH | 42 | S2 | 40 |
+| OH | 46 | O2 | 43 |
+| TM | 45 | T2 | 44 |
+
+Select a DRUM-X track and open EDIT to adjust kit, individual sound controls and **LEVELS 1–3**, covering all twelve pads.
+
+**DRUM-LAB** also provides twelve individually editable synthesized pads, initially MIDI notes **36–47**. In EDIT, use:
+
+| Page | What you can edit |
+| --- | --- |
+| **STRIKE** | Kit-wide PITCH, SWEEP, BODY and SNAP |
+| **BODY** | Kit-wide NOISE, TONE, DRIVE and WIRES |
+| **SOUND 1–4** | Selected pad's synthesis parameters and type |
+| **LEVELS 1–3** | Individual levels for all twelve pads |
+
+Kit-wide multipliers scale individual pad settings without replacing them. At 100% they are neutral; reducing a multiplier scales that aspect of the sound.
+
+### SEQ: drum MIDI mapping
+
+Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selects the pad, **OCT−/OCT+** switch pad banks.
+
+| Knob | Effect |
+| --- | --- |
+| **K1** | Pad MIDI note, 0–127 |
+| **K2** | Pad pan |
+| **K3** | Pad pitch offset, −24 to +24 semitones |
+| **K4** | Unused |
+
+### PLAY: drum performance
+
+Press **PLAY** on a drum track. Pad and bank selection work as on SEQ.
+
+| Knob | Effect |
+| --- | --- |
+| **K1** | Velocity curve: LIN / SOFT / HARD / FIX |
+| **K2** | Velocity response, 0–127 |
+| **K3** | Choke group: none or G1–G4 |
+| **K4** | OVR (overlap) / RST (restart) retrigger |
+
+Pads in a common choke group can silence each other. Use RST if you want each hit to restart its pad rather than overlap the previous hit.
+
+## 5. MIDI CC macros and MIDI Learn
+
+Press **REC** to open MASHINA's project-specific macro table. A project can store **32 mappings** from external MIDI CC/channel messages to track/engine parameters.
+
+### Create a macro
+
+1. Press **REC**, then **OCT+** to add a mapping.
+2. Send a MIDI CC from your external controller. Its number and channel are captured.
+3. Navigate to the destination track and editable sound parameter.
+4. Turn the matching K knob once to select the destination.
+5. Return to REC to edit endpoints and save the project.
+
+| REC control | Action |
+| --- | --- |
+| **SELECT** | Select a mapping, scrolling in four-row pages |
+| **ALGORITHM** | Enable/disable selected mapping |
+| **K1** | RNG (continuous range) or TGL (two-value toggle) |
+| **K2/K3** | Set minimum/maximum or toggle A/B, 0–127 |
+| **K4** | Reverse input mapping |
+| **OCT−** | Delete prompt; **OCT+** confirms, OCT− cancels |
+
+The table shows **Y** for enabled, **N** for disabled, and **S** when a mapping is temporarily suspended because its target engine is absent. Such a mapping resumes when the target engine is selected again.
+
+The captured **CC, MIDI channel and destination** cannot be changed in place; delete and recreate that mapping. Several mappings may share the same CC and channel to control different parameters at once. **Save the project** to retain changes.
+
+**MIDI Learn** is a separate global feature with 32 learned destinations. Enable it through **HOME (hold) → MIDI → LEARN**, choose a parameter and move a controller. Its assignments are separate from project-specific REC macros.
+
+### Dedicated MIDI CC shortcuts
+
+These commands operate independently of the REC macro table:
+
+| Command | Action |
+| --- | --- |
+| **CC88** | Temporarily switch T1 receive channel |
+| **CC89** | Temporarily switch T2 receive channel |
+| **CC90** | Temporarily switch T3 receive channel |
+| **CC85** | Lightly randomize melodic sound parameters |
+| **CC86** | Strongly randomize melodic sound parameters |
+| **CC87** | Restore last saved melodic sound parameters |
+
+**CC88–90:** send value **0–63 for RX channel 2**, or **64–127 for RX channel 1**, on any incoming MIDI channel. This does not overwrite the project assignment. Loading a project restores the saved channels.
+
+**CC85–87:** use incoming **channel 13 for T1, 14 for T2, 15 for T3**. Send **64–127** to trigger; send **0–63** to re-arm the command. Randomization affects eligible melodic sound parameters, not drum engines. CC87 restores the last saved sound's parameters without interrupting already sounding notes, provided the engine has not changed.
+
+## 6. Global EQ, effects and project management
+
+### Shared three-band EQ
+
+Open **GLO → MIX → EQ**:
+
+| Band | Frequency | Range |
+| --- | --- | --- |
+| LOW | 50 Hz | −15 to +15 dB |
+| MID | 700 Hz | −15 to +15 dB |
+| HIGH | 10 kHz | −15 to +15 dB |
+| ON | EQ enable / bypass | — |
+
+This is a **shared EQ before effects**, not one EQ per track. Save the project to retain its settings. Use FX and the track sends to shape the rest of the signal.
+
+### Saving and loading
+
+Use **SAVE** for edited sounds, project slots and the library. A project stores MIDI assignments, zones, tuning, macros, selected sounds and relevant effects. If you load a different project without saving, unsaved adjustments may be lost.
+
+**SAVE → LIBRARY → TOOLS** provides four actions:
+
+| Control | Action |
+| --- | --- |
+| K1 | INIT SOUND |
+| K2 | CLEAR SLOT — permanently erase the selected project slot after confirmation |
+| K3 | NEW PROJECT |
+| K4 | CPU TEST |
+
+### Live Recall
+
+**Long-press REC** to enable Live Recall. Then tap **FX**, **SEL**, **ENV**, or **LFO** to recall saved project slots **1**, **2**, **3**, or **4**. Long-press REC again to leave Live Recall mode. Previously sounding notes stop when you change projects; delay/reverb tails may continue naturally.
+
+### Panic mode
+
+**Hold GLO and press OCT−** to immediately stop sounding tracks and effects and clear held-note and sustain state. The display shows PANIC MODE while GLO is held. This action does **not** erase the project.
+
+### Backup and restore
+
+Before flashing or changing to an earlier firmware, save a complete backup of projects, user presets and settings. A sound preset export is **not** a complete device backup. Use the [MASHINA web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) for device backups and the [MASHINA installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) for firmware installation.
+
+## 7. Example live configurations
+
+**Two synths in unison:** T1 and T2 on RX 1, overlapping full-note zones; put a different engine on each. Adjust volume/pan on MIXER and use FINE to detune one layer.
+
+**Split keyboard:** Set two tracks to RX 1, but put their ZONES note ranges on separate halves of the keyboard. The external keyboard then plays the appropriate instrument in each region.
+
+**Velocity layers:** Use the same RX channel and note range on two tracks. Set T1 velocity 1–80 and T2 velocity 81–127 to swap timbres according to playing strength.
+
+**One knob, several sounds:** Add two or more REC macros with the same incoming CC/channel but different track destinations. Change range/reverse independently for each row.
+
+**External drum pads:** Assign a drum engine to a track, set its RX channel on MIXER, map incoming notes with SEQ and adjust curves, choke and retrigger in PLAY.
+
+---
+
+MASHINA v0.9 · M-VAVE FM1 · Usage reference
