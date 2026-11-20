@@ -1196,6 +1196,7 @@ static void edit_param(uint32_t slot, int32_t steps)
     if (pg->graph == GR_DXSND) {                          /* EDIT > SOUND: the DRUM-X kit (ui_dx.c) */
         if (trk_eng(TSEL) == ENGI_DRUMLAB) lab_knob(pg, slot, steps);
         else if (trk_eng(TSEL) == ENGI_DRUMAC) ac_knob(pg, slot, steps);
+        else if (trk_eng(TSEL) == ENGI_DRUMIND) ind_knob(pg, slot, steps);
         else dx_knob(pg, slot, steps);
         return;
     }
@@ -1349,18 +1350,19 @@ static void edit_param(uint32_t slot, int32_t steps)
         fop_knob(slot, steps);
         return;
     }
-    if (pg->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
+    if (pg->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND) &&
         pg->id[slot] >= P_E0 && pg->id[slot] < P_E0 + 8u) {
         uint32_t field = pg->id[slot] - P_E0, ti = song.sel;
         drumlab_global_ensure(ti);
         fm1_irq_off();
-        uint32_t is_ac = trk_eng(TSEL) == ENGI_DRUMAC;
+        uint32_t is_ac = trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND;
         uint32_t limit = is_ac ? 200u : 100u;
         drumlab_global[ti][field] = (uint8_t)clamp(
             (int32_t)drumlab_global[ti][field] +
             accel(EN_K1 + slot, steps, (int32_t)limit), 0, (int32_t)limit);
         fm1_irq_on();
-        ui.force = 1u;
+        /* The 2x2 EDIT cell cache detects changed global values itself.
+         * Never request a full LCD clear for every encoder detent. */
         cm_knob_cap(TSEL, P_E0 + field);
         if (!cm_ui_open) ml_knob(TSEL, P_E0 + field);
         return;
@@ -3066,3 +3068,4 @@ timeout:
 #include "ui_dx.c"                                  /* EDIT > SOUND / SOUND 2: the DRUM-X kit */
 #include "ui_lab.c"                                 /* DRUM-LAB: independent electronic drum patches */
 #include "ui_ac.c"                                  /* DRUM-AC: kick/snare/crash individual editing */
+#include "ui_ind.c"                                 /* DRUM-IND: twelve industrial texture pads */

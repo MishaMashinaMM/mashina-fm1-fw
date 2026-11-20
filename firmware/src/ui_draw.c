@@ -672,9 +672,30 @@ static int engine_edit_grid(void)
             PAGES[ui.page].fam == FAM_ARP ||
             glo_parameter_grid());
 }
+/* The large 2x2 EDIT grid used to blit all four 115x94 cells every
+ * frame, even for a single knob increment. Those unnecessary LCD writes
+ * appear as blinking on physical FM1 hardware. Cache the full visual
+ * signature of each cell and redraw only when its appearance changes.
+ * ui.force still invalidates all cells for page changes, track switches,
+ * wake-up, skin changes and explicit full refreshes. */
+static uint32_t grid_cell_sig[4] __attribute__((section(".pool")));
 static void draw_engine_grid_cell(uint32_t c, const char *label, const char *val,
                                  uint16_t vc, int32_t ratio, int hot)
 {
+    uint32_t sig;
+    if (c >= 4u) return;
+    sig = str_hash(str_hash(2166136261u, label), val);
+    sig ^= (uint32_t)vc * 0x9e3779b9u;
+    sig = (sig ^ (uint32_t)ratio) * 16777619u;
+    sig = (sig ^ (uint32_t)hot) * 16777619u;
+    sig = (sig ^ ui.page ^ ((uint32_t)ui.home << 16) ^
+           ((uint32_t)song.sel << 20) ^ ((uint32_t)TSEL->eng_req << 24)) * 16777619u;
+    sig = (sig ^ ux.gen) * 16777619u;
+    sig ^= ((uint32_t)T_BG << 16) ^ T_SURF;
+    sig ^= ((uint32_t)T_TEXT << 16) ^ T_VALUE;
+    sig ^= ((uint32_t)T_MID << 16) ^ T_LINE;
+    if (!ui.force && grid_cell_sig[c] == sig) return;
+    grid_cell_sig[c] = sig;
     int32_t x = 3 + (int32_t)(c & 1u) * 119, y = 27 + (int32_t)(c >> 1u) * 96;
     int32_t w = 115, h = 94, vwidth;
     char k[3] = {'K', (char)('1' + c), 0};
@@ -1476,6 +1497,7 @@ static void draw_columns(void)
     if (cur_page()->graph == GR_DXSND) {               /* EDIT > SOUND (ui_dx.c) */
         if (trk_eng(TSEL) == ENGI_DRUMLAB) lab_cards(cur_page());
         else if (trk_eng(TSEL) == ENGI_DRUMAC) ac_cards(cur_page());
+        else if (trk_eng(TSEL) == ENGI_DRUMIND) ind_cards(cur_page());
         else dx_cards(cur_page());
         return;
     }
@@ -1960,11 +1982,11 @@ static void draw_columns(void)
             draw_act_column(c, d->label, T_THEME, ICON_AUTO);
             continue;
         }
-        if (cur_page()->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
+        if (cur_page()->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND) &&
             cur_page()->id[c] >= P_E0 && cur_page()->id[c] < P_E0 + 8u) {
             uint32_t field = cur_page()->id[c] - P_E0;
             drumlab_global_ensure(song.sel);
-            uint32_t acoustic = trk_eng(TSEL) == ENGI_DRUMAC;
+            uint32_t acoustic = trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND;
             int32_t value = drumlab_global[song.sel][field];
             fmt_int(val, value);
             draw_column(c, acoustic ? ac_global_name(field) : d->label,
@@ -1988,10 +2010,12 @@ static void draw_columns(void)
         char lab_level_label[12];
         const char *label = d->label;
         uint32_t id = cur_page()->id[c];
-        if (cur_page()->scope == SC_TRACK && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
+        if (cur_page()->scope == SC_TRACK && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND) &&
             ((id >= P_LN0 && id <= P_LN7) || (id >= P_LN8 && id <= P_LN11))) {
             uint32_t lane = id <= P_LN7 ? id - P_LN0 : id - P_LN8 + 8u;
-            if (trk_eng(TSEL) == ENGI_DRUMAC) {
+            if (trk_eng(TSEL) == ENGI_DRUMIND) {
+                label = ind_level_name(lane);
+            } else if (trk_eng(TSEL) == ENGI_DRUMAC) {
                 label = ac_level_name(lane);
             } else {
                 dlab_patch_t *patch = drumlab_patch_of(TSEL, 36u + lane);

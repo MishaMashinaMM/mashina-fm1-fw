@@ -47,7 +47,7 @@
 <main>
   <nav class="lang" id="lang" aria-label="Language"><button data-lang="en" lang="en">English</button><button data-lang="es" lang="es">Español</button><button data-lang="ja" lang="ja">日本語</button><button data-lang="ru" lang="ru">Русский</button><button data-lang="sr" lang="sr-Cyrl">Српски</button><button data-lang="hi" lang="hi">हिन्दी</button></nav>
   <h1 class="jiant-wordmark"><a href="https://github.com/MishaMashinaMM/mashina-fm1-fw" aria-label="MASHINA home" style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.25"><span style="display:block">MASHINA</span><span class="fm" style="display:block;margin:0">FM1 PERFORMANCE FW</span></a><span class="jiant-tool" data-nav-label="installer">INSTALLER</span></h1>
-  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.9 · MASHINA · BUILD /*BUILD_TAG*/</p>
+  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.10 · MASHINA · BUILD /*BUILD_TAG*/</p>
   <p data-t="intro"></p>
   <p data-t="warn"></p>
   <p data-t="samples" style="color:var(--orange)"></p>
@@ -97,7 +97,7 @@
   <p><span data-t="manual"></span>
     <a href="https://mishamashinamm.github.io/mashina-fm1-fw/manual/" style="color:inherit">MASHINA user manual</a></p>
   
-  <p class="small">MASHINA v0.9 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
+  <p class="small">MASHINA v0.10 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
     Credits: Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT); the song system after SLOOP by isod89.<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1).<br>
     FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
@@ -111,8 +111,8 @@ const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
     warn: "書き込み中は USB を抜かないでください。",
-    samples: "互換性の注意: MASHINA v0.9 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
-    dual: "MASHINA v0.9: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
+    samples: "互換性の注意: MASHINA v0.10 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
+    dual: "MASHINA v0.10: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
     install: "インストール",
     firstTitle: "別のファームウェアから切り替える場合は、互換性を確認してください",
     firstText: "別のカスタムファームウェアへ直接上書きするとFM1が起動しなくなる可能性があります。Felucca、Skiff、baudgirlなどの場合、先に公式V15へ戻してください。必ずバックアップと復旧方法を確保してください。",
@@ -159,8 +159,8 @@ const TEXT = {
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
     warn: "Do not unplug the USB cable while writing.",
-    samples: "Compatibility note: MASHINA v0.9 does not provide Felucca user-sample playback. If changing from Felucca or another firmware, preserve your original WAV files and a complete backup before installation.",
-    dual: "MASHINA v0.9: six-track external MIDI routing, note/velocity zones, per-track tuning (±36 semitones / ±50 cents), ATMOS / BRASS / INDUSTRIAL synth engines, DRUM-X / DRUM-LAB, and 32 MIDI macros.",
+    samples: "Compatibility note: MASHINA v0.10 does not provide Felucca user-sample playback. If changing from Felucca or another firmware, preserve your original WAV files and a complete backup before installation.",
+    dual: "MASHINA v0.10: six-track external MIDI routing, note/velocity zones, per-track tuning (±36 semitones / ±50 cents), ATMOS / BRASS / INDUSTRIAL synth engines, DRUM-X / DRUM-LAB, and 32 MIDI macros.",
     install: "Install",
     firstTitle: "Switching from another firmware? Check compatibility first",
     firstText: "Installing over another custom firmware can prevent the FM1 from starting. Other custom firmwares should first return to official V15 using the section below. Do not proceed without a backup and a recovery plan.",
@@ -343,8 +343,8 @@ Object.assign(TEXT.ja, {
 TEXT.es = {
   intro: "Conectá el FM-1 por USB. (Funciona en Chrome o Edge en una computadora; en Android con Chrome puede funcionar. En iPhone/iPad no.)",
   warn: "No desconectes el cable USB mientras escribe.",
-  samples: "Compatibilidad: MASHINA v0.9 no reproduce samples de usuario de Felucca. Antes de cambiar de firmware, conservá tus WAV originales y un backup completo.",
-    dual: "MASHINA v0.9: seis pistas con canales MIDI independientes, zonas de notas y velocidad, transposición ±36 semitonos, ajuste fino ±50 cents, sintetizadores ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB y 32 macros MIDI.",
+  samples: "Compatibilidad: MASHINA v0.10 no reproduce samples de usuario de Felucca. Antes de cambiar de firmware, conservá tus WAV originales y un backup completo.",
+    dual: "MASHINA v0.10: seis pistas con canales MIDI independientes, zonas de notas y velocidad, transposición ±36 semitonos, ajuste fino ±50 cents, sintetizadores ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB y 32 macros MIDI.",
   install: "Instalar",
   firstTitle: "¿Venís de otro firmware? Primero comprobá la compatibilidad",
   firstText: "Instalar directamente sobre otro firmware custom puede dejar el FM1 sin arrancar. Desde Felucca, Skiff o baudgirl, volvé primero al V15 oficial. Conservá un backup y un método de recuperación.",
@@ -452,8 +452,8 @@ TEXT.es = {
 TEXT.ru = {
   "intro": "Подключите FM1 к компьютеру по USB (Chrome или Edge).",
   "warn": "Не отсоединяйте USB-кабель во время прошивки.",
-  "samples": "Совместимость: MASHINA v0.9 не воспроизводит пользовательские сэмплы Felucca. При смене прошивки сохраните исходные WAV-файлы и полную резервную копию.",
-  "dual": "MASHINA v0.9: шесть дорожек с независимыми MIDI-каналами, зоны нот и скорости нажатия, транспонирование ±36 полутонов, точная настройка ±50 центов, синтезаторы ATMOS/BRASS/INDUSTRIAL, DRUM-X/DRUM-LAB и 32 MIDI-макроса.",
+  "samples": "Совместимость: MASHINA v0.10 не воспроизводит пользовательские сэмплы Felucca. При смене прошивки сохраните исходные WAV-файлы и полную резервную копию.",
+  "dual": "MASHINA v0.10: шесть дорожек с независимыми MIDI-каналами, зоны нот и скорости нажатия, транспонирование ±36 полутонов, точная настройка ±50 центов, синтезаторы ATMOS/BRASS/INDUSTRIAL, DRUM-X/DRUM-LAB и 32 MIDI-макроса.",
   "install": "Установить",
   "firstTitle": "Переходите с другой прошивки? Сначала проверьте совместимость",
   "firstText": "Установка поверх другой пользовательской прошивки может помешать запуску FM1. Если установлена Felucca, Skiff или другая прошивка, сначала вернитесь на официальную V15 через раздел ниже. Сохраните резервную копию и подготовьте способ восстановления.",
@@ -579,7 +579,7 @@ TEXT.sr = {
   "intro": "Повежите FM1 са рачунаром преко USB кабла (Chrome или Edge).",
   "warn": "Не искључујте USB кабл током уписивања фирмвера.",
   "samples": "Компатибилност: MASHINA не репродукује корисничке Felucca семплове. Сачувајте оригиналне WAV датотеке и комплетну резервну копију пре промене фирмвера.",
-  "dual": "MASHINA v0.9: шест MIDI трака, зоне нота и јачине удара, транспозиција ±36 полустепена, фино штимовање ±50 центи, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB и 32 MIDI макроа.",
+  "dual": "MASHINA v0.10: шест MIDI трака, зоне нота и јачине удара, транспозиција ±36 полустепена, фино штимовање ±50 центи, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND и 32 MIDI макроа.",
   "install": "Инсталирај",
   "firstTitle": "Прелазите са другог фирмвера? Прво проверите компатибилност",
   "firstText": "Инсталирање преко некомпатибилног фирмвера може спречити покретање FM1. За друге фирмвере, попут Felucca или Skiff, прво се вратите на званични V15. Припремите резервну копију и начин опоравка.",
@@ -705,7 +705,7 @@ TEXT.hi = {
   "intro": "FM1 को USB से कंप्यूटर में जोड़ें (Chrome या Edge का उपयोग करें)।",
   "warn": "फ़र्मवेयर लिखे जाने के दौरान USB केबल न निकालें।",
   "samples": "अनुकूलता: MASHINA Felucca के उपयोगकर्ता सैंपल नहीं चलाता। फ़र्मवेयर बदलने से पहले मूल WAV फ़ाइलें और पूरा बैकअप सुरक्षित रखें।",
-  "dual": "MASHINA v0.9: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB और 32 MIDI मैक्रो।",
+  "dual": "MASHINA v0.10: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND और 32 MIDI मैक्रो।",
   "install": "इंस्टॉल करें",
   "firstTitle": "दूसरे फ़र्मवेयर से आ रहे हैं? पहले अनुकूलता जाँचें",
   "firstText": "किसी असंगत कस्टम फ़र्मवेयर के ऊपर सीधे इंस्टॉल करने से FM1 चालू नहीं हो सकता। Felucca, Skiff या दूसरे फ़र्मवेयर से आने पर नीचे दिए गए विकल्प से पहले आधिकारिक V15 पर लौटें। बैकअप और रिकवरी की योजना रखें।",
@@ -839,6 +839,11 @@ for (const L of Object.values(TEXT)) {
 const LANGS = ["en", "es", "ja", "ru", "sr", "hi"];
 // A bare installer URL always opens in English; explicit ?lang= wins.
 let lang = "en";
+/* Shared translation and status state for all six installer languages.
+ * These must be initialized before applyLang() runs: without t(), the
+ * installer silently displays empty labels and cannot be used safely. */
+const t = (key) => TEXT[lang]?.[key] ?? TEXT.en[key] ?? key;
+let lastKey = null, lastArg = "", tipKey = null;
 try {
   const requested = new URLSearchParams(location.search).get("lang");
   if (LANGS.includes(requested)) lang = requested;
@@ -914,7 +919,7 @@ window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault
 
 /* (0.6.46) the version to install: the current one or one of the last few (make_site.py PREV_DIR) */
 const versions = meta.versions && meta.versions.length ? meta.versions : [{ version: meta.version, pkg: meta.pkg }];
-/* (0.9.9-beta1) each version's own package identity (the 0.6 line is FM-1_900, later ones FM-1_909): the device must
+/* (0.9.9-beta1) each version's own package identity (the 0.6 line is FM-1_900, later ones FM-1_910): the device must
  * report it after the install */
 const productOfVersion = (v) => v.product || meta.product;
 let product = meta.product;

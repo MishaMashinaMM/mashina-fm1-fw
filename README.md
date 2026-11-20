@@ -1,4 +1,4 @@
-# MASHINA — FM1 Performance Firmware v0.9
+# MASHINA — FM1 Performance Firmware v0.10
 
 **MASHINA** turns the **M-VAVE FM1** into a flexible, six-track sound module for **external MIDI keyboards, pad controllers and live performance**. Assign sounds to MIDI channels, split or layer a keyboard, reshape parameters while playing, and recall projects without relying on a song sequencer.
 
@@ -18,7 +18,7 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 | **Keyboard zones** | Independent MIDI note and velocity ranges per track. Build splits, overlapping layers or velocity-switched sounds from an external controller. |
 | **Pitch control** | Per-track transpose **−36 to +36 semitones** and fine tuning **−50 to +50 cents** on **GLO → MIX → TUNING**. Drum kits keep their original note mapping. |
 | **Expressive melodic engines** | Inherited JIANT synthesizers plus **ATMOS** (evolving pads), **BRASS** (synthetic winds) and **INDUSTRIAL** (heavy basses and leads). |
-| **Three 12-sound drum engines** | **DRUM-X** extends the original eight sounds with B2, S2, O2 and T2. **DRUM-LAB** provides independently synthesized drums; new **DRUM-AC** adds a separate acoustic-style 12-pad synthesis kit with individual sound editing, levels and kit-wide shaping. |
+| **Four 12-sound drum engines** | **DRUM-X** extends the original eight sounds with B2, S2, O2 and T2. **DRUM-LAB** provides independent synthesized percussion; **DRUM-AC** is an acoustic-style kit; **DRUM-IND** adds 12 noise-based, deliberately non-melodic industrial textures for MIDI-channel layering. |
 | **32 MIDI CC macros** | Learn an incoming CC and bind it to a track's parameter. Choose range or toggle, endpoints, reverse and bypass. Stored with each project. |
 | **MIDI Learn and live commands** | Additional learned destinations, MIDI routing overrides and MIDI-triggered sound randomization/restoration for live control. |
 | **Effects and EQ** | Inherited effects, plus shared **three-band EQ** before effects: **50 Hz**, **700 Hz** and **10 kHz**, each **±15 dB**. |
@@ -29,7 +29,7 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 
 MASHINA uses **eight shared synthesis voices** across its tracks and engines; it does not provide eight voices per track. The original song sequencer is disabled and its former hardware buttons have live-performance functions.
 
-## New: DRUM-AC acoustic-style kit
+## DRUM-AC acoustic-style kit
 
 **DRUM-AC** is the third percussion engine alongside DRUM-X and DRUM-LAB. It synthesizes all sounds directly in fixed-point DSP; **it does not use drum samples**. The 12 independently editable pads are **kick, snare, crash, closed hi-hat, open hi-hat, floor tom, low tom, mid tom, high tom, clap, ride bell and ride splash**. Kick, snare and clap use noise-excited impact models; toms add an independently adjustable short drumhead resonance; metallic cymbals use noise-excited damped resonant bands. The cymbal modelling remains an acoustic-style approximation, not a recording of a real cymbal.
 
@@ -63,6 +63,37 @@ For each tom, **TUNE = 0** removes the pitched drumhead resonance, while **TUNE 
 DRUM-AC includes **ACOUSTIC**, **DRY KIT** and **BIG ROOM** factory presets. Its independent pad edits, levels and kit-wide values are stored with a project. The kit shares the firmware's existing **eight-voice total polyphony**; it does not add twelve simultaneous voices or a separate CPU allocation.
 
 **Compatibility:** DRUM-AC is a new engine. Back up existing projects and presets before upgrading. Projects made with this engine may not be understood by older firmware. Older experimental DRUM-AC projects with non-neutral global multipliers may sound different because the eight global controls now use independent acoustic kit shaping.
+
+## New in v0.10: DRUM-IND and flicker-free EDIT controls
+
+**DRUM-IND** is the fourth 12-pad synthesized percussion engine, alongside DRUM-X, DRUM-LAB and DRUM-AC. It uses **no samples** and no fixed-pitch musical oscillators. Its noise-excited impacts, moving filtered bands, irregular gated bursts and sweeping textures are designed to **layer with other kits or melodic instruments**. Its name is separate from the older **INDUSTRIAL** melodic bass/lead engine.
+
+**DRUM-IND keyboard mapping:** the twelve notes **C through B repeat in every MIDI octave**. MIDI 36–47 are one example octave:
+
+| Key (example MIDI) | Sound | Character |
+| --- | --- | --- |
+| C (36) | **CLANG** | Dense metal-on-metal strike |
+| C♯ (37) | **ANVIL** | Heavy hammer/anvil impact |
+| D (38) | **METAL** | Bright, irregular sheet-metal resonance |
+| D♯ (39) | **SCRAPE** | Metal dragged over a rough surface |
+| E (40) | **WHISTLE** | Moving narrow-band noise whistle |
+| F (41) | **SCREECH** | Unstable friction squeal |
+| F♯ (42) | **BUZZ** | Abrasive electrical buzzing |
+| G (43) | **LIGHTNING** | Sharp electrical crack with rolling noise |
+| G♯ (44) | **ENGINE** | Slow uneven mechanical chug |
+| A (45) | **WHOOSH** | Swelling air rush |
+| A♯ (46) | **MOTOR** | Fast rotary mechanical noise |
+| B (47) | **EXPLOSION** | Broad blast and turbulent tail |
+
+These are synthetic interpretations, not recordings of machinery. WHISTLE, SCREECH and METAL use noise-excited resonant filtering; ENGINE and MOTOR use irregular noise pulses rather than pitched carriers. A sound can still have a recognizable spectral center, but none is deliberately tuned to a musical note. The note mapping is fixed, unlike the customizable DRUM-X/DRUM-LAB MIDI-map screens.
+
+**DRUM-IND editing:** press **EDIT**, then use **SELECT** to navigate. The first two kit-wide pages expose **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL**, each **0–200%** with **100% neutral**. These eight controls act independently of the pad values. **ATTACK** strongly shapes roughly the first 80 ms of a hit; **BRIGHT** applies broader spectral shaping after the original sound's limiting, so its effect is audible across all twelve models. SOUND 1–3 lets **K1** choose a pad and **K2–K4** edit its eight 0–127 settings across the pages: **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** adjust the twelve individual pad volumes (0–127). Parameters may act differently on different models; all 96 pad/parameter combinations have been tested for audio response.
+
+The factory sound presets are **STEEL YARD**, **PRESSURE** and **SCRAPHEAP**. Individual pad edits, levels, and independent kit-wide controls persist in projects. DRUM-IND shares MASHINA's existing **eight synthesis voices**; twelve pads do not mean twelve extra voices. Use duplicate MIDI RX channels across tracks to layer DRUM-IND with another kit.
+
+**EDIT screen fix:** DRUM-LAB, DRUM-AC and DRUM-IND no longer trigger an unnecessary full-screen LCD redraw on every knob movement. The four-cell EDIT view repaints only changed cells during normal editing, while full redraw remains available for navigation and wake-up. This UI fix does **not** change the existing drum sounds or stored parameter values. The corrected DRUM-IND and EDIT screen were **successfully tested on a physical FM1**; automated firmware, emulator, LCD regression and installer browser checks also passed. This is not a claim of exhaustive endurance or recovery testing.
+
+**Upgrading:** back up projects, user presets and settings first. Firmware before v0.10 does not include DRUM-IND and may not understand projects that use it. Keep a known-working recovery method available.
 
 ## External MIDI setup
 
@@ -100,7 +131,7 @@ The **[web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/ins
 
 The [web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) supports device management and backup/restore; some recent live controls are not yet exposed in its editing interface.
 
-**Version:** v0.9 · **FM1 firmware identity:** `FM-1_909`. Earlier MASHINA builds have been flashed and functionally checked on a physical FM1. The new DRUM-AC engine has passed development firmware/emulator builds but **its merged release has not yet been verified on a physical device**. This is not a claim of exhaustive performance, endurance or recovery testing.
+**Version:** v0.10 · **FM1 firmware identity:** `FM-1_910`. DRUM-IND and the EDIT screen no-flicker fix have been tested successfully on a physical FM1. Firmware/emulator and automated UI/audio tests also passed; this does not constitute exhaustive endurance or recovery testing.
 
 ## Build from source
 

@@ -1,0 +1,224 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# DRUM-IND development branch: isolated flashable hardware test installer.
+# Never deploys Pages, merges to main, tags releases or changes public v0.10.
+name: MASHINA DRUM-IND experimental web installer
+on:
+  push:
+    branches: [drum-industrial]
+    paths:
+      - '.github/workflows/drum-ind-web-installer.yml'
+      - 'firmware/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'web/make_site.py'
+      - 'web/index_pkg.html'
+      - 'web/fm1*.js'
+      - 'build.sh'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: drum-ind-installer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  firmware-installer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned host dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate assets and run live firmware regression tests (including DRUM-IND)
+        timeout-minutes: 10
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+          bash tests/run_live_drum_tests.sh
+      - name: Cache pinned JieLi toolchain and SDK files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: Prepare pinned JieLi SDK
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T="$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools"
+          [ -e "$HOME/.jieli/toolchain/pi32v2/bin/clang" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            cd "$HOME/fw-AC79_AIoT_SDK"
+            git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin
+            retry git checkout d179b4484759423312073f5fbb232501aa491047
+          fi
+          test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
+      - name: Build real FM1 firmware; verify flash and RAM limits
+        env:
+          FELUCCA_NO_SEQUENCER: '1'
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+        run: |
+          set -o pipefail
+          python3 tools/build.py --release 0.10 2>&1 | tee firmware-build.log
+          test -s build/felucca-0.10.fwsc
+          test -s build/felucca.bin
+      - name: Package isolated DRUM-IND web installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="0.10-drum-ind-${GITHUB_SHA::7}-preview"
+          OUT="build/drum-ind-web-installer"
+          python3 web/make_site.py build/felucca-0.10.fwsc "$VERSION" "$OUT"
+          test -s "$OUT/webapp/installer/index.html"
+          test -s "$OUT/firmware/felucca-$VERSION.fwsc"
+          # The public Pages workflow normally provides these at site root.
+          # The standalone ZIP must provide them itself.
+          cp web/mashina-nav.css web/mashina-nav.js "$OUT/"
+          python3 - "$OUT/webapp/installer/index.html" "$VERSION" <<'PY'
+          from pathlib import Path
+          import sys
+          page, version = Path(sys.argv[1]), sys.argv[2]
+          html = page.read_text(encoding="utf-8")
+          # Everything needed for the translated installer is already in
+          # the generated inline bundle. A classic script runs on file://
+          # too, allowing it to display a clear HTTP-server warning rather
+          # than leaving every data-t label blank. Flashing still requires HTTP.
+          assert html.count('<script type="module">') == 1
+          html = html.replace('<script type="module">', '<script>')
+          needle = '  <p><button id="go" disabled data-t="install"></button></p>'
+          assert html.count(needle) == 1, "Flashing button anchor changed - abort"
+          warning = (
+              '<p id="drum-ind-preview-warning" role="alert" '
+              'style="border:2px solid #ff9900;padding:12px;'
+              'font-weight:700;line-height:1.5">'
+              'EXPERIMENTAL DRUM-IND PREVIEW (' + version + '). '
+              'NOT PHYSICALLY TESTED. This is a REAL FM1 firmware flash. '
+              'Back up projects, presets and settings; keep a known-working '
+              'recovery method ready. The official v0.10 installer is separate.'
+              '</p>\n'
+          )
+          # Render this warning as static HTML if scripts are blocked.
+          # A failed init must NEVER look like an empty-but-usable flasher.
+          notice = (
+              '<div id="installer-startup-warning" role="alert" '
+              'style="border:2px solid #e43;padding:12px;'
+              'margin:14px 0;font-weight:700">'
+              'Installer has not initialized. DO NOT FLASH. '
+              'Use Chrome/Edge and serve the complete extracted ZIP over '
+              'http://localhost:8000/ (run: py -m http.server 8000). '
+              'If this message remains, stop and report the problem.'
+              '</div>\n'
+          )
+          html = html.replace(needle, warning + notice + needle)
+          # Never allow file:// flashing even if the browser permits fetch.
+          # The package must be loaded from the HTTP origin described above.
+          guard = (
+              'if (location.protocol !== "http:" && location.protocol !== "https:") {'
+              'document.getElementById("go").disabled = true;'
+              'document.getElementById("installer-startup-warning").textContent = '
+              '"Open the extracted installer at http://localhost:8000/webapp/installer/ '
+              'after running py -m http.server 8000. Do not use file://.";' 
+              'throw new Error("DRUM-IND installer requires HTTP");'
+              '}'
+          )
+          html = html.replace('const $ = (id) => document.getElementById(id);',
+                              guard + '\nconst $ = (id) => document.getElementById(id);')
+          html = html.replace('<title>MASHINA — Installer</title>',
+                              '<title>MASHINA — DRUM-IND Preview Installer</title>')
+          assert 'drum-ind-preview-warning' in html
+          assert 'installer-startup-warning' in html
+          assert 'channel":"preview"' in html or '"channel": "preview"' in html, "Expected preview metadata"
+          # Remove the static warning ONLY after the full installer script
+          # has reached its initialized state and applied translations.
+          bootstrap = 'applyLang();\n\n/* (0.9.11)'
+          assert html.count(bootstrap) == 1, "Translation bootstrap changed"
+          assert 'data-t="intro"' in html and 'data-t="install"' in html
+          html = html.replace(
+              bootstrap,
+              'applyLang();\n'
+              'if (!document.querySelector("[data-t=intro]").textContent.trim() '
+              '|| !document.getElementById("first-stock").textContent.trim() '
+              '|| !document.getElementById("go").textContent.trim()) {'
+              'throw new Error("Installer translations missing - do not flash");'
+              '}\n'
+              'document.getElementById("installer-startup-warning").remove();'
+              '\n\n/* (0.9.11)', 1)
+          page.write_text(html, encoding="utf-8")
+          PY
+          cp "$OUT/webapp/installer/index.html" "$OUT/webapp/installer-orange-v010/index.html"
+          printf '%s\n' "$GITHUB_SHA" > "$OUT/firmware/SOURCE_COMMIT"
+          (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
+          cp firmware-build.log "$OUT/firmware/BUILD-LOG.txt"
+          cat > "$OUT/READ-ME-FIRST.txt" <<'EOF'
+          MASHINA - DRUM-IND (experimental hardware test)
+          =================================================
+          This ZIP contains REAL flashable FM1 firmware, not an emulator.
+          Built from drum-industrial; exact commit in firmware/SOURCE_COMMIT.
+          Not physically tested. Does not modify the public main installer.
+
+          FIRST BACK UP projects, user presets and settings, and keep a
+          known-working recovery firmware/method available.
+
+          LOCAL WEB INSTALLER, WINDOWS / CHROME OR EDGE:
+          1. Extract the entire GitHub Actions artifact ZIP.
+          2. Open PowerShell in the extracted folder (where webapp/ exists).
+          3. Run: py -m http.server 8000
+          4. Open: http://localhost:8000/webapp/installer/
+          5. Check that all labels and buttons are readable. If ANY label is
+             blank or an initialization warning remains, DO NOT FLASH.
+          6. Use the installer's normal FM1 compatibility and safety checks.
+          7. Do not disconnect power or USB while flashing.
+
+          FIRST HARDWARE CHECKS:
+          - Boot and confirm MASHINA still runs normally.
+          - Select DRUM-IND and test all twelve instruments C through B.
+          - Verify each pad's SOUND 1-3 controls and LEVELS 1-3.
+          - Verify kit-wide ATTACK/BRIGHT at 0, 100 and 200 percent.
+          - Test shared-channel layering with DRUM-X/DRUM-AC.
+          - Save a project with different pad/global edits, reboot, recall.
+          - Watch CPU load and listen for clicks/glitches during dense hits.
+
+          Please do not merge into main before physical testing succeeds.
+          EOF
+          test -s "$OUT/READ-ME-FIRST.txt"
+      - name: Check generated browser script syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('build/drum-ind-web-installer/webapp/installer/index.html')
+          html=p.read_text(encoding='utf-8')
+          assert html.count('<script>') == 1
+          assert 'installer-startup-warning' in html
+          assert 'document.getElementById("installer-startup-warning").remove()' in html
+          start=html.index('<script>')+len('<script>')
+          end=html.index('</script>',start)
+          Path('build/drum-ind-web-installer/installer-script-check.js').write_text(
+              html[start:end],encoding='utf-8')
+          PY
+          node --check build/drum-ind-web-installer/installer-script-check.js
+      - name: Test complete installer UI in headless Chromium
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.58.2
+          npx playwright install --with-deps chromium
+          node tools/test_drum_ind_installer.cjs build/drum-ind-web-installer
+      - name: Upload DRUM-IND standalone browser installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-drum-ind-web-installer
+          path: build/drum-ind-web-installer/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Upload DRUM-IND raw firmware and build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-drum-ind-native-firmware
+          path: |
+            build/felucca-0.10.fwsc
+            build/felucca.bin
+            firmware-build.log
+          retention-days: 30
+          if-no-files-found: error
