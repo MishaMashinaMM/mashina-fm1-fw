@@ -63,7 +63,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     uint32_t slot = (uint32_t)(v - t->v), i, ph0, ph1, ph2, rng, age, inc;
     int32_t body, trans, step_b, step_t, lp, fast, wire;
     uint32_t tau_b, tau_t, mul_b, mul_t, kind;
-    int32_t tune, damp, strike, wire_amt, bright, metal, body_mix;
+    int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
     a = &ac_state[t - trk][slot];
@@ -76,6 +76,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     wire_amt = clamp(t->p[P_E4], 0, 127);
     bright = clamp(t->p[P_E5], 0, 127);
     metal = clamp(t->p[P_E6], 0, 127);
+    ring_amt = clamp(t->p[P_E7], 0, 127);
     inc = a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192);
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
@@ -103,13 +104,13 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             /* A quickly relaxing head with an inharmonic shell mode and
              * short beater strike. */
             uint32_t sweep = age < 2400u ? 2400u - age : 0u;
-            raw = (int32_t)(((int64_t)(s0 * 3 + s1) * body * (70 + body_mix)) >> 34);
+            raw = (int32_t)(((int64_t)(s0 * 3 + s1 * (1 + ring_amt / 32)) * body * (70 + body_mix)) >> 34);
             raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 32);
             ph0 += inc + (uint32_t)(((uint64_t)inc * sweep) >> 12);
             ph1 += (inc * 7u) / 5u;
         } else if (kind == AC_SNARE) {
             /* Two membrane modes plus a decaying snare-wire rattle. */
-            int32_t membrane = (s0 * 3 + s1 * 2) / 5;
+            int32_t membrane = (s0 * 3 + s1 * (1 + ring_amt / 24)) / (4 + ring_amt / 24);
             int32_t rattle = (white - wire) * wire_amt / 127;
             raw = (int32_t)(((int64_t)membrane * body * (60 + body_mix)) >> 31);
             raw += (int32_t)(((int64_t)rattle * body * (45 + wire_amt)) >> 32);
@@ -121,7 +122,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
              * Broadband splash dominates the attack; partials evolve into
              * the sustain. Crash is deliberately not a short electronic hat. */
             int32_t wash = (white - fast) / 2 + (fast - lp) / 2;
-            int32_t ring = (s0 + s1 + s2) / 3;
+            int32_t ring = (s0 + s1 * (1 + ring_amt / 48) + s2) / (3 + ring_amt / 48);
             raw = (int32_t)(((int64_t)wash * body * (120 + bright)) >> 32);
             raw += (int32_t)(((int64_t)ring * body * (35 + metal)) >> 33);
             raw += (int32_t)(((int64_t)(white - lp) * trans * (45 + strike)) >> 32);
@@ -155,7 +156,7 @@ static const engine_t ENG_DRUMAC = {
         {"WIRES", F_PCT, 0, 127, 92, 0, 0},
         {"BRIGHT", F_PCT, 0, 127, 87, 0, 0},
         {"METAL", F_PCT, 0, 127, 65, 0, 0},
-        {"ROOM", F_PCT, 0, 127, 64, 0, 0},
+        {"RING", F_PCT, 0, 127, 64, 0, 0},
     },
     .presets = AC_PRESETS,
     .npresets = NELEM(AC_PRESETS),
