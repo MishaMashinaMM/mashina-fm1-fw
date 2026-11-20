@@ -140,7 +140,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
 {
     uint32_t slot = (uint32_t)(v - t->v), i, ph0, ph1, ph2, rng, age, inc;
     int32_t body, trans, step_b, step_t, lp, fast, wire;
-    uint32_t tau_b, tau_t, mul_b, mul_t, kind;
+    uint32_t tau_b, tau_t, mul_b, mul_t, kind, lid;
+    int32_t level_gain;
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
@@ -158,6 +159,11 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     bright = ac_param_value(t, kind, 5);
     metal = ac_param_value(t, kind, 6);
     ring_amt = ac_param_value(t, kind, 7);
+    lid = kind < 8u ? P_LN0 + kind : P_LN8 + kind - 8u;
+    {   /* Quadratic pad LEVEL, identical to DRUM-LAB; calculated per block. */
+        int32_t level = clamp(t->p[lid], 0, 127);
+        level_gain = level == 127 ? 32768 : level * level * 32768 / 16129;
+    }
     inc = ac_is_metal(kind) ?
           a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192) : 0u;
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
@@ -222,9 +228,12 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t thud = low * (85 + body_mix) / 128 +
                            (mid - low) * (15 + ring_amt) / 128;
             int32_t rattle = (white - wire) * wire_amt / 127;
-            raw = (int32_t)(((int64_t)thud * body) >> 23);
-            raw += (int32_t)(((int64_t)rattle * body * (40 + wire_amt)) >> 30);
-            raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 31);
+            /* Membrane-forward snare: the old rattle/attack was much louder
+             * than the thud. Retain noise snap, but give the low-mid head a
+             * clear and independent body instead of an extended hiss. */
+            raw = (int32_t)(((int64_t)thud * body) >> 22);
+            raw += (int32_t)(((int64_t)rattle * body * (40 + wire_amt)) >> 33);
+            raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 33);
             if (metal != 65)
                 raw += (int32_t)(((int64_t)(mid - low) * body * (metal - 65)) >> 31);
             ph0 = (uint32_t)low;
@@ -249,6 +258,18 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                            (low - deep) * (22 + ring_amt) / 128;
             raw = (int32_t)(((int64_t)thud * body) >> 23);
             raw += (int32_t)(((int64_t)(white - fast) * trans * (25 + strike)) >> 32);
+            /* A touch of short, damped head pitch: 0.18 s maximum and
+             * deliberately much quieter than the aperiodic impact.
+             * TUNE adjusts this subtle component without turning the tom
+             * into the boing-like melodic drum we rejected for kick/snare. */
+            if (age < 8000u) {
+                int32_t semitone = clamp(35 + (int32_t)height * 4 + (tune - 64) / 16, 26, 65);
+                uint32_t tone_inc = pitch_inc((uint32_t)semitone * 16u);
+                int32_t head = sine_i(ph2);
+                raw += (int32_t)(((int64_t)head * body * (8000u - age) *
+                                  (64 + ring_amt)) >> 51);
+                ph2 += tone_inc;
+            }
             ph0 = (uint32_t)low;
             ph1 = (uint32_t)deep;
         } else if (kind == AC_CLAP) {
@@ -257,31 +278,40 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t slap = (white - fast) * (90 + bright) / 256;
             raw = (int32_t)(((int64_t)slap * body * (120 + burst / 7u)) >> 31);
             raw += (int32_t)(((int64_t)(white - lp) * trans * (25 + strike)) >> 32);
+            /* Hands and chest/body reflections below the clap's sharp slap. */
+            raw += (int32_t)(((int64_t)lp * body * (60 + body_mix)) >> 33);
         } else {
             int32_t s0 = sine_i(ph0), s1 = sine_i(ph1), s2 = sine_i(ph2);
-            /* A long metallic wash with several non-harmonic resonances.
-             * Broadband splash dominates the attack; partials evolve into
-             * the sustain. Crash is deliberately not a short electronic hat. */
+            /* Noise-driven cymbal plate: a multi-band metallic wash whose
+             * brightness fluctuates irregularly with several inharmonic
+             * modes. The modes modulate the noise rather than dominate the
+             * sustain as audible pure notes. This better approximates a
+             * struck vibrating plate without prerecorded samples. */
             int32_t wash = (white - fast) / 2 + (fast - lp) / 2;
+            int32_t upper = (white - fast);
+            int32_t lower = fast - lp;
+            int32_t flutter = 140 + (s0 + s1 / 2 + s2 / 3) / 700;
+            int32_t plate = (upper * (75 + bright) + lower * (50 + metal)) / 256;
+            int32_t changing = (int32_t)(((int64_t)plate * flutter) >> 7);
             int32_t ring = (s0 + s1 * (1 + ring_amt / 48) + s2) / (3 + ring_amt / 48);
-            raw = (int32_t)(((int64_t)wash * body * (120 + bright)) >> 32);
-            raw += (int32_t)(((int64_t)ring * body * (35 + metal)) >> 33);
-            raw += (int32_t)(((int64_t)(white - lp) * trans * (45 + strike)) >> 32);
             if (kind == AC_CRASH) {
-                /* SPLASH: 92 is exactly neutral for the approved crash sound. */
-                if (wire_amt != 92)
-                    raw += (int32_t)(((int64_t)(white - fast) * trans *
-                                      (wire_amt - 92)) >> 31);
+                /* Broad initial edge, then a long, restless wash. SPLASH
+                 * adds cymbal strike noise separately from sustained metal. */
+                raw = (int32_t)(((int64_t)changing * body * (110 + body_mix)) >> 31);
+                raw += (int32_t)(((int64_t)ring * body * (10 + metal / 6)) >> 35);
+                raw += (int32_t)(((int64_t)upper * trans * (45 + strike + wire_amt / 2)) >> 32);
             } else if (kind == AC_RIDE_BELL) {
-                /* Stick-defined ride bell: strengthen metallic partials,
-                 * suppress the broad cymbal wash. */
-                raw = (int32_t)(((int64_t)ring * body * (115 + metal)) >> 32) +
-                      (int32_t)(((int64_t)(white - fast) * trans * (20 + strike)) >> 31);
+                /* Bell retains a distinct hard metallic ping, but surrounded
+                 * by a textured, inharmonic noise tail rather than three
+                 * exposed stationary sine oscillators. */
+                raw = (int32_t)(((int64_t)changing * body * (45 + bright)) >> 32);
+                raw += (int32_t)(((int64_t)ring * body * (80 + metal)) >> 33);
+                raw += (int32_t)(((int64_t)upper * trans * (35 + strike)) >> 32);
             } else {
-                /* Ride splash: brighter, faster washy cymbal with a shorter body. */
-                raw = (int32_t)(((int64_t)wash * body * (145 + bright)) >> 31) +
-                      (int32_t)(((int64_t)ring * body * (25 + metal)) >> 34) +
-                      (int32_t)(((int64_t)(white - fast) * trans * (70 + strike)) >> 31);
+                /* Ride splash: washy bow strike with fast splash transient. */
+                raw = (int32_t)(((int64_t)changing * body * (130 + bright)) >> 31);
+                raw += (int32_t)(((int64_t)ring * body * (10 + metal / 6)) >> 35);
+                raw += (int32_t)(((int64_t)upper * trans * (75 + strike + wire_amt / 2)) >> 32);
             }
             ph0 += inc;
             ph1 += (uint32_t)(((uint64_t)inc * 6021u) >> 12);
@@ -289,12 +319,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
-        /* Reuse the same twelve LEVELS controls and their quadratic taper as
-         * DRUM-LAB. A default LEVEL=127 is precisely transparent. */
-        uint32_t lid = kind < 8u ? P_LN0 + kind : P_LN8 + kind - 8u;
-        int32_t level = clamp(t->p[lid], 0, 127);
-        int32_t gain = level == 127 ? 32768 : level * level * 32768 / 16129;
-        out[i] += voice_amp((int32_t)(((int64_t)raw * gain) >> 15), m, i);
+        out[i] += voice_amp((int32_t)(((int64_t)raw * level_gain) >> 15), m, i);
     }
     a->phase[0] = ph0; a->phase[1] = ph1; a->phase[2] = ph2;
     a->seed = rng; a->age = age;
