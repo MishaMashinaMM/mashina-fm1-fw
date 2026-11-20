@@ -104,7 +104,12 @@ int main(void){
             int32_t difference=(int32_t)(100u*(e0>e1?e0-e1:e1-e0)/
                                            ((e0>e1?e0:e1)+1u));
             if(changed)audible++;
-            if(difference<2)weak++;
+            if(difference<2){
+                weak++;
+                printf("DRUM-IND SUBTLE pad=%u (%s) field=%u (%s), energy delta=%d%%\\n",
+                       (unsigned)pad,IND_NAMES[pad],(unsigned)field,
+                       IND_FIELDS[field],(int)difference);
+            }
             if(!changed){
                 char label[96];
                 snprintf(label,sizeof label,"pad %u field %u affects rendered audio",
