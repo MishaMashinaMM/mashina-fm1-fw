@@ -1,58 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="756" viewBox="0 0 1080 756" role="img" aria-labelledby="title description">
-<title id="title">MASHINA v0.9 overview</title>
-<desc id="description">An overview of MASHINA with BRASS and INDUSTRIAL melodic synthesis engines and two independent twelve-pad drum engines, SEQ MIDI mapping, PLAY performance options, and REC control of up to 32 MIDI CC macros per project. Eight voices are shared across all tracks. v0.8: independent note and velocity zones for six MIDI tracks. New in v0.9: dedicated six-row TUNING with per-track transpose ±36 semitones and FINE ±50 cents, separate from MIXER.</desc>
-<rect width="1080" height="756" rx="20" fill="#000000"/>
-<rect x="24" y="24" width="342" height="438" rx="20" fill="#000000" stroke="#ff9900" stroke-width="2"/>
-<text x="195" y="106" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="31" font-weight="bold" letter-spacing="1">JIANT LIVE</text>
-<text x="195" y="147" text-anchor="middle" fill="#ff9900" font-family="sans-serif" font-size="39" font-weight="bold" letter-spacing="2">DRUMS</text>
-<text x="195" y="184" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="13">LIVE FM1 PERFORMANCE FIRMWARE</text>
-<path d="M65 208 H325" stroke="#777777"/>
-<text x="195" y="241" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="13">orig: Juan Jiant</text>
-<text x="195" y="264" text-anchor="middle" fill="#ffffff" font-family="monospace" font-size="13">mod: Misha Mashina</text>
-<text x="195" y="313" text-anchor="middle" fill="#ff9900" font-family="monospace" font-size="17">v0.9</text>
-<rect x="53" y="339" width="284" height="68" rx="12" fill="#303030" stroke="#ff9900" stroke-width="1.5"/>
-<text x="195" y="368" text-anchor="middle" fill="#ff9900" font-family="sans-serif" font-size="21" font-weight="bold">32 MIDI MACROS</text>
-<text x="195" y="390" text-anchor="middle" fill="#ff9900" font-family="sans-serif" font-size="12">PER PROJECT · LIVE CC CONTROL</text>
-<text x="400" y="55" fill="#fff" font-family="sans-serif" font-size="25" font-weight="bold">Two independent 12-pad engines</text>
-<text x="400" y="83" fill="#ff9900" font-family="sans-serif" font-size="15">Editable per-pad synthesis · project MIDI routing</text>
-<rect x="398" y="108" width="306" height="112" rx="13" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<text x="416" y="138" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">DRUM-X</text>
-<text x="416" y="161" fill="#ff9900" font-family="sans-serif" font-size="13">Original eight + B2 / S2 / O2 / T2</text>
-<g fill="#ff9900">
-<rect x="416" y="180" width="19" height="16" rx="3"/><rect x="440" y="180" width="19" height="16" rx="3"/><rect x="464" y="180" width="19" height="16" rx="3"/><rect x="488" y="180" width="19" height="16" rx="3"/><rect x="512" y="180" width="19" height="16" rx="3"/><rect x="536" y="180" width="19" height="16" rx="3"/><rect x="560" y="180" width="19" height="16" rx="3"/><rect x="584" y="180" width="19" height="16" rx="3"/><rect x="608" y="180" width="19" height="16" rx="3"/><rect x="632" y="180" width="19" height="16" rx="3"/><rect x="656" y="180" width="19" height="16" rx="3"/><rect x="680" y="180" width="19" height="16" rx="3"/>
-</g>
-<rect x="723" y="108" width="331" height="112" rx="13" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<text x="741" y="138" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">DRUM-LAB</text>
-<text x="741" y="161" fill="#ff9900" font-family="sans-serif" font-size="13">12 patches · eight kit-wide modifiers</text>
-<g fill="#ff9900">
-<rect x="741" y="180" width="19" height="16" rx="3"/><rect x="766" y="180" width="19" height="16" rx="3"/><rect x="791" y="180" width="19" height="16" rx="3"/><rect x="816" y="180" width="19" height="16" rx="3"/><rect x="841" y="180" width="19" height="16" rx="3"/><rect x="866" y="180" width="19" height="16" rx="3"/><rect x="891" y="180" width="19" height="16" rx="3"/><rect x="916" y="180" width="19" height="16" rx="3"/><rect x="941" y="180" width="19" height="16" rx="3"/><rect x="966" y="180" width="19" height="16" rx="3"/><rect x="991" y="180" width="19" height="16" rx="3"/><rect x="1016" y="180" width="19" height="16" rx="3"/>
-</g>
-<rect x="398" y="240" width="308" height="78" rx="11" fill="#303030" stroke="#ff9900"/>
-<text x="416" y="269" fill="#fff" font-family="sans-serif" font-size="20" font-weight="bold">SEQ → MIDI MAP</text>
-<text x="416" y="294" fill="#ff9900" font-family="sans-serif" font-size="14">Note · pan · pitch per pad</text>
-<rect x="722" y="240" width="332" height="78" rx="11" fill="#303030" stroke="#ff9900"/>
-<text x="740" y="269" fill="#fff" font-family="sans-serif" font-size="20" font-weight="bold">PLAY → PERFORMANCE</text>
-<text x="740" y="294" fill="#ff9900" font-family="sans-serif" font-size="14">Velocity · choke · retrigger</text>
-<rect x="398" y="337" width="656" height="87" rx="13" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<rect x="416" y="354" width="68" height="53" rx="10" fill="#ff9900"/>
-<text x="450" y="385" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="18" font-weight="bold">REC</text>
-<text x="502" y="367" fill="#ffffff" font-family="sans-serif" font-size="19" font-weight="bold">32 MIDI CC MACROS</text>
-<text x="502" y="392" fill="#ff9900" font-family="sans-serif" font-size="14">Range / toggle · min–max · reverse · bypass</text>
-<text x="725" y="458" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="17" font-weight="bold">8 voices shared across all tracks</text>
-<rect x="398" y="479" width="320" height="75" rx="12" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<text x="414" y="504" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">BRASS · v0.7</text>
-<text x="414" y="526" fill="#ff9900" font-family="sans-serif" font-size="13">SAX ↔ TRUMPET morph · 12 controls</text>
-<text x="414" y="545" fill="#ff9900" font-family="sans-serif" font-size="12">6 presets · FAT / GRIND / METAL / CRUSH</text>
-<rect x="736" y="479" width="318" height="75" rx="12" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<text x="752" y="504" fill="#fff" font-family="sans-serif" font-size="19" font-weight="bold">INDUSTRIAL · v0.7</text>
-<text x="752" y="526" fill="#ff9900" font-family="sans-serif" font-size="13">Heavy bass &amp; leads · 12 controls</text>
-<text x="752" y="545" fill="#ff9900" font-family="sans-serif" font-size="12">6 presets · WAVE2 / MIX / SUB / MODE</text>
-<rect x="398" y="568" width="656" height="77" rx="12" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<text x="416" y="594" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">v0.8 · KEYBOARD ZONES</text>
-<text x="416" y="616" fill="#ff9900" font-family="sans-serif" font-size="14">6 tracks · NOTE MIN/MAX · VELOCITY MIN/MAX</text>
-<text x="416" y="635" fill="#ff9900" font-family="sans-serif" font-size="12">GLO → MIX → ZONES · splits, overlaps &amp; velocity layers</text>
-<rect x="398" y="657" width="656" height="77" rx="12" fill="#303030" stroke="#ff9900" stroke-width="2"/>
-<text x="416" y="683" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">NEW v0.9 · PER-TRACK TUNING</text>
-<text x="416" y="705" fill="#ff9900" font-family="sans-serif" font-size="14">TRN −36 to +36 semitones · FINE −50 to +50 cents</text>
-<text x="416" y="724" fill="#ff9900" font-family="sans-serif" font-size="12">GLO → MIX → TUNING · six-track pitch layers &amp; subtle detune</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="660" viewBox="0 0 1080 660" role="img" aria-labelledby="title description">
+<title id="title">MASHINA v0.9 — FM1 Performance Firmware</title>
+<desc id="description">MASHINA live-performance firmware for the M-VAVE FM1. Six independent MIDI-routed tracks, keyboard zones and tuning, 32 MIDI CC macros, ATMOS, BRASS and INDUSTRIAL synth engines, DRUM-X and DRUM-LAB, global equalizer, effects, and project recall. An abstract orange mechanical cog identifies the project.</desc>
+<rect width="1080" height="660" rx="18" fill="#080808"/>
+<rect x="18" y="18" width="1044" height="624" rx="18" fill="#0c0c0c" stroke="#424242" stroke-width="2"/>
+<path d="M 363 38 V 618" stroke="#373737" stroke-width="2"/>
+<text x="44" y="67" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="48" font-weight="800" letter-spacing="2">MASHINA</text>
+<text x="46" y="97" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="600" letter-spacing="1.8">FM1 PERFORMANCE FW</text>
+<g transform="translate(188 239)"><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(0)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(45)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(90)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(135)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(180)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(225)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(270)"/><rect x="-8" y="-93" width="16" height="30" rx="3" fill="#ff9900" transform="rotate(315)"/><circle r="73" fill="#ff9900"/><circle r="57" fill="#080808"/><circle r="48" fill="none" stroke="#656565" stroke-width="8" stroke-dasharray="75 18 37 18 46 18 26 64" transform="rotate(-31)"/><circle r="30" fill="none" stroke="#9e9e9e" stroke-width="8" stroke-dasharray="53 16 35 16 29 39" transform="rotate(22)"/><circle r="15" fill="#ff9900"/><circle r="9" fill="#080808"/><circle cx="47" cy="-18" r="3" fill="#ddd"/><circle cx="-44" cy="16" r="3" fill="#666"/></g>
+<text x="47" y="373" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="21" font-weight="700" letter-spacing="1">EXTERNAL MIDI</text>
+<text x="47" y="402" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="600" >LIVE SOUND MODULE</text>
+<text x="47" y="439" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="500" >Independent routing, splits,</text>
+<text x="47" y="462" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="500" >layers and real-time control.</text>
+<rect x="45" y="496" width="288" height="54" rx="10" fill="#282010" stroke="#ff9900" stroke-width="1.5"/>
+<text x="65" y="529" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" >v0.9  •  SIX TRACKS</text>
+<text x="47" y="584" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="500" >Misha Mashina</text>
+<text x="47" y="607" fill="#888" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="500" >Based on JIANT by Juan Jiant</text>
+<text x="391" y="66" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="23" font-weight="750" letter-spacing=".6">PERFORMANCE FEATURES</text>
+<text x="392" y="91" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="500" >Play, layer and shape sounds from your MIDI gear.</text>
+<rect x="392" y="116" width="318" height="121" rx="14" fill="#2a1d0b" stroke="#ff9900" stroke-width="1.5"/><text x="410" y="144" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" >6 MIDI-ROUTED TRACKS</text><text x="410" y="169" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Per-track RX channel, volume and pan</text><text x="410" y="190" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Keyboard zones • note / velocity splits</text><text x="410" y="211" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Transpose ±36 • fine tune ±50 cents</text>
+<rect x="727" y="116" width="322" height="121" rx="14" fill="#2a1d0b" stroke="#ff9900" stroke-width="1.5"/><text x="745" y="144" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" >32 MIDI CC MACROS</text><text x="745" y="169" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Range or toggle • reverse • bypass</text><text x="745" y="190" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >MIDI Learn and live CC commands</text><text x="745" y="211" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Map external knobs, pads and pedals</text>
+<rect x="392" y="252" width="318" height="126" rx="14" fill="#151515" stroke="#454545" stroke-width="1.5"/><text x="410" y="280" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" >MELODIC ENGINES</text><text x="410" y="305" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >ATMOS • evolving harmonic pads</text><text x="410" y="326" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >BRASS • expressive synthetic winds</text><text x="410" y="347" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >INDUSTRIAL • basses and leads</text>
+<rect x="727" y="252" width="322" height="126" rx="14" fill="#151515" stroke="#454545" stroke-width="1.5"/><text x="745" y="280" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" >DRUM ENGINES</text><text x="745" y="305" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >DRUM-X • 12 independent sounds</text><text x="745" y="326" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >DRUM-LAB • 12 synthesized pads</text><text x="745" y="347" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Pad mapping and performance controls</text>
+<rect x="392" y="394" width="318" height="126" rx="14" fill="#151515" stroke="#454545" stroke-width="1.5"/><text x="410" y="422" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" >SOUND SHAPING</text><text x="410" y="447" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Global 3-band EQ before effects</text><text x="410" y="468" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Synthesis, filters, modulation and FX</text><text x="410" y="489" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >8 shared synthesis voices</text>
+<rect x="727" y="394" width="322" height="126" rx="14" fill="#151515" stroke="#454545" stroke-width="1.5"/><text x="745" y="422" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" >LIVE WORKFLOW</text><text x="745" y="447" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Mixer, project save and recall</text><text x="745" y="468" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Panic mode and MIDI routing tools</text><text x="745" y="489" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="400" >Static orange / gray interface</text>
+<path d="M 393 546 H 1049" stroke="#383838"/>
+<text x="393" y="576" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="600" >Designed for external keyboards, pad controllers and live sets.</text>
+<text x="393" y="606" fill="#b5b5b5" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="500" >No song sequencer  •  GPL-3.0-only  •  M-VAVE FM1</text>
 </svg>
