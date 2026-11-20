@@ -7,17 +7,12 @@
   "use strict";
   const langs = [["en","English"],["es","Español"],["ja","日本語"],["ru","Русский"],["sr","Српски"],["hi","हिन्दी"]];
   const qs = new URLSearchParams(location.search);
-  let code = qs.get("lang");
-  if (!langs.some(x => x[0] === code)) {
-    try { code = localStorage.getItem("mashina-lang"); } catch (_) {}
-  }
-  if (!langs.some(x => x[0] === code)) {
-    const browser = (navigator.language || "en").toLowerCase();
-    code = browser.startsWith("sr") ? "sr" : browser.startsWith("hi") ? "hi" : langs.find(x => browser.startsWith(x[0]))?.[0] || "en";
-  }
+  // English is the canonical language of every bare page URL.
+  // Only an explicit ?lang= selection changes the displayed translation.
+  const requested = qs.get("lang");
+  const code = langs.some(x => x[0] === requested) ? requested : "en";
   const choose = (next, refresh = false) => {
     if (!langs.some(x => x[0] === next)) return;
-    try { localStorage.setItem("mashina-lang", next); } catch (_) {}
     const u = new URL(location.href); u.searchParams.set("lang", next);
     if (refresh) location.assign(u.href);
     else history.replaceState(null, "", u.pathname + u.search + u.hash);
