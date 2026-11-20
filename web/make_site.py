@@ -14,8 +14,7 @@
   src/                        not touched
 
   web/make_site.py build/felucca-X.Y.fwsc X.Y OUT_DIR [PREV_DIR]
-  web/make_site.py manual OUT_DIR   (JIANT 0.9.12) only the interactive manual, OUT_DIR/manual/: web/manual (its page,
-                                    scripts and the firmware's screens, tools/gen_manual.py), checked complete first
+  web/make_site.py manual OUT_DIR   generates the six-language MASHINA operating guide from docs/MASHINA_MANUAL*.md
 
 PREV_DIR (JIANT 0.6.46): earlier versions offered next to the current one (firmware/versions.json, the installer's
 version list): its versions.json ([{"version", "file"}]) and the packages it names, up to KEEP_OLD, one build per
@@ -85,8 +84,8 @@ def manual(out):
     """Publish the current MASHINA usage manual as a standalone responsive page.
 
     docs/MASHINA_MANUAL.md is the single source for the web and Markdown manuals.
-    The inherited JIANT interactive-manual assets remain in source history, but
-    they are not published as current MASHINA instructions.
+    Historical interactive-manual assets were retired; the operating manuals
+    remain the source of truth for all six site languages.
     """
     import markdown
     src = HERE / "manual" / "index.html"
