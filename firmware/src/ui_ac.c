@@ -3,6 +3,9 @@
  * SOUND 3: METAL/RING; SOUND 4 unused.
  * K1 selects instrument; K2..K4 change its own 0..127 controls.
  */
+static const char *const AC_GLOBAL_NAMES[8] = {
+    "TONE", "DAMP", "BODY", "ATTACK", "BRIGHT", "TEXTURE", "RING", "LEVEL"
+};
 static const char *const AC_FIELDS[8] = {
     "TUNE", "DAMP", "BODY", "HIT", "WIRES", "BRIGHT", "METAL", "RING"
 };
