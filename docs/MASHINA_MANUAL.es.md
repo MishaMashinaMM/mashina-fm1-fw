@@ -175,6 +175,39 @@ En EDIT del DRUM-X, **LEVELS 1–3** ajusta los niveles individuales de los doce
 
 Los multiplicadores del kit escalan los valores individuales sin reemplazarlos. Al **100%** son neutros; valores menores reducen el aspecto correspondiente del sonido.
 
+### DRUM-AC: kit de 12 pads de estilo acústico
+
+**DRUM-AC** es el tercer motor de batería y sintetiza todos sus sonidos **sin muestras**. Combina golpes con ruido, resonancia de membrana en los toms y bandas metálicas amortiguadas para los platos. Ofrece los presets **ACOUSTIC**, **DRY KIT** y **BIG ROOM**, sin modificar DRUM-X ni DRUM-LAB.
+
+**La distribución cromática se repite en todas las octavas.** Los números MIDI corresponden al ejemplo **36–47**; la misma nota musical en cualquier octava reproduce el mismo pad:
+
+| Tecla (MIDI) | Instrumento | Tecla (MIDI) | Instrumento |
+| --- | --- | --- | --- |
+| C (36) | Bombo | F♯ (42) | Hi-hat cerrado |
+| C♯ (37) | Crash | G (43) | Tom grave |
+| D (38) | Redoblante | G♯ (44) | Ride splash |
+| D♯ (39) | Palmas (clap) | A (45) | Tom medio |
+| E (40) | Campana de ride | A♯ (46) | Hi-hat abierto |
+| F (41) | Tom de piso | B (47) | Tom agudo |
+
+El hi-hat cerrado apaga la cola del abierto, incluso entre octavas, pero no interrumpe crash ni ride. DRUM-AC usa este mapa fijo; el cambio personalizado de notas de pads mediante SEQ de otros motores no se aplica aquí.
+
+**Páginas EDIT de DRUM-AC:**
+
+| Páginas | Función |
+| --- | --- |
+| **Las dos primeras páginas globales** | Ocho controles independientes para todo el kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL**. Rango **0–200%**, **100% neutro**. No reescriben los parámetros individuales. |
+| **SOUND 1–3** | Con **K1** elegís uno de los 12 pads; **K2–K4** editan sus ocho parámetros **0–127** repartidos en tres páginas: TUNE, DAMP, BODY, HIT, golpe específico, BRIGHT, carácter específico y RING/DECAY/TAIL. |
+| **LEVELS 1–3** | Volumen independiente **0–127** de los doce pads. |
+
+Al editar un pad, los nombres se adaptan al instrumento: **BEATER / TEXTURE** (bombo), **WIRES / TEXTURE** (redoblante), **SPLASH / METAL** (crash), **CHICK / DECAY** (hi-hats), **STICK / SHELL** (toms), **SNAP / TEXTURE / TAIL** (palmas), **STRIKE** (campana de ride) y **SPLASH** (ride splash). A diferencia de los ocho parámetros globales, los parámetros individuales no siempre tienen la misma función entre instrumentos.
+
+**Afinación de toms:** cada tom se regula por separado. **TUNE = 0** elimina la resonancia afinada de la membrana y deja el golpe sin tono; **1–127** agrega una resonancia de altura progresivamente mayor sin alterar el cuerpo de ruido. **SPLASH** modifica el ataque ruidoso y el lavado metálico de crash y ride splash.
+
+Los sonidos individuales, los volúmenes y los ocho controles globales se guardan en cada proyecto. DRUM-AC comparte las **ocho voces de síntesis** del firmware; no suma doce voces independientes. Los platos son aproximaciones sintetizadas, no grabaciones acústicas.
+
+**Al actualizar:** hacé una copia de seguridad. El firmware anterior puede no entender proyectos con DRUM-AC. Los proyectos experimentales con controles globales no neutros pueden sonar diferentes porque ahora esos controles tienen funciones comunes para todo el kit.
+
 ### SEQ: mapa MIDI de batería
 
 En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y OCT−/OCT+ cambia de banco.

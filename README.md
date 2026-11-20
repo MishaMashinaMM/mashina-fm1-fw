@@ -18,7 +18,7 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 | **Keyboard zones** | Independent MIDI note and velocity ranges per track. Build splits, overlapping layers or velocity-switched sounds from an external controller. |
 | **Pitch control** | Per-track transpose **−36 to +36 semitones** and fine tuning **−50 to +50 cents** on **GLO → MIX → TUNING**. Drum kits keep their original note mapping. |
 | **Expressive melodic engines** | Inherited JIANT synthesizers plus **ATMOS** (evolving pads), **BRASS** (synthetic winds) and **INDUSTRIAL** (heavy basses and leads). |
-| **Two 12-sound drum engines** | **DRUM-X** extends the original eight sounds with B2, S2, O2 and T2. **DRUM-LAB** offers twelve separately editable synthesized pads. |
+| **Three 12-sound drum engines** | **DRUM-X** extends the original eight sounds with B2, S2, O2 and T2. **DRUM-LAB** provides independently synthesized drums; new **DRUM-AC** adds a separate acoustic-style 12-pad synthesis kit with individual sound editing, levels and kit-wide shaping. |
 | **32 MIDI CC macros** | Learn an incoming CC and bind it to a track's parameter. Choose range or toggle, endpoints, reverse and bypass. Stored with each project. |
 | **MIDI Learn and live commands** | Additional learned destinations, MIDI routing overrides and MIDI-triggered sound randomization/restoration for live control. |
 | **Effects and EQ** | Inherited effects, plus shared **three-band EQ** before effects: **50 Hz**, **700 Hz** and **10 kHz**, each **±15 dB**. |
@@ -28,6 +28,41 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 | **Performance UI** | Black, white and gray with **orange #FF9900** accents, static MASHINA boot cog and streamlined held-button layers; no decorative animations. |
 
 MASHINA uses **eight shared synthesis voices** across its tracks and engines; it does not provide eight voices per track. The original song sequencer is disabled and its former hardware buttons have live-performance functions.
+
+## New: DRUM-AC acoustic-style kit
+
+**DRUM-AC** is the third percussion engine alongside DRUM-X and DRUM-LAB. It synthesizes all sounds directly in fixed-point DSP; **it does not use drum samples**. The 12 independently editable pads are **kick, snare, crash, closed hi-hat, open hi-hat, floor tom, low tom, mid tom, high tom, clap, ride bell and ride splash**. Kick, snare and clap use noise-excited impact models; toms add an independently adjustable short drumhead resonance; metallic cymbals use noise-excited damped resonant bands. The cymbal modelling remains an acoustic-style approximation, not a recording of a real cymbal.
+
+The instrument layout covers **all 12 semitones and repeats in every MIDI octave**, so the emulator keyboard or an external controller can play the whole kit without switching down to one specific octave:
+
+| Note name (any octave) | DRUM-AC pad | Note name (any octave) | DRUM-AC pad |
+| --- | --- | --- | --- |
+| C | Kick | F♯ | Closed hi-hat |
+| C♯ | Crash | G | Low tom |
+| D | Snare | G♯ | Ride splash |
+| D♯ | Clap | A | Mid tom |
+| E | Ride bell | A♯ | Open hi-hat |
+| F | Floor tom | B | High tom |
+
+**Closed hi-hat chokes open hi-hat**, even across octaves, without stopping crash or ride tails. The repeating note-to-pad layout is fixed in DRUM-AC; do not assume DRUM-X/DRUM-LAB's custom SEQ mapping features apply to it.
+
+### Editing DRUM-AC
+
+Select a track running DRUM-AC, then press **EDIT** and turn **SELECT** to move through pages.
+
+| EDIT pages | Purpose |
+| --- | --- |
+| **First two kit-wide pages** | Eight independent global sound controls: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL**. Each is **0–200%**; **100% is neutral**. They act consistently across the whole kit and do **not** overwrite or scale individual pad parameter values. |
+| **SOUND 1–3** | Use **K1** to choose one of the 12 instruments; **K2–K4** change the selected pad's own **0–127** sound parameters. The eight pad fields are TUNE, DAMP, BODY, HIT, a pad-specific strike control, BRIGHT, a pad-specific timbre control and RING (or DECAY/TAIL). |
+| **LEVELS 1–3** | Independent **0–127** volume for all 12 pads, with the same level taper as DRUM-LAB; project-persistent. |
+
+The pad-specific field names tell you what is being changed: **BEATER / TEXTURE** on kick; **WIRES / TEXTURE** on snare; **SPLASH / METAL** on crash; **CHICK / DECAY** on hi-hats; **STICK / SHELL** on toms; **SNAP / TEXTURE / TAIL** on clap; **STRIKE** on ride bell; and **SPLASH** on ride splash. Not every field produces the same synthesis effect on every instrument. In contrast, the eight **kit-wide** controls above have a common musical purpose across all 12 pads.
+
+For each tom, **TUNE = 0** removes the pitched drumhead resonance, while **TUNE = 1–127** adjusts that resonance from low to high, independently for the floor, low, mid and high toms. Changing TUNE does not retune the noise-based thud. **SPLASH** affects the noisy strike and metallic wash of the crash and ride splash.
+
+DRUM-AC includes **ACOUSTIC**, **DRY KIT** and **BIG ROOM** factory presets. Its independent pad edits, levels and kit-wide values are stored with a project. The kit shares the firmware's existing **eight-voice total polyphony**; it does not add twelve simultaneous voices or a separate CPU allocation.
+
+**Compatibility:** DRUM-AC is a new engine. Back up existing projects and presets before upgrading. Projects made with this engine may not be understood by older firmware. Older experimental DRUM-AC projects with non-neutral global multipliers may sound different because the eight global controls now use independent acoustic kit shaping.
 
 ## External MIDI setup
 
@@ -65,7 +100,7 @@ The **[web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/ins
 
 The [web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) supports device management and backup/restore; some recent live controls are not yet exposed in its editing interface.
 
-**Version:** v0.9 · **FM1 firmware identity:** `FM-1_909`. The MASHINA build has been flashed and functionally checked on a physical FM1, and the firmware regression and flash/RAM checks pass. This is not a claim of exhaustive endurance or recovery testing.
+**Version:** v0.9 · **FM1 firmware identity:** `FM-1_909`. Earlier MASHINA builds have been flashed and functionally checked on a physical FM1. The new DRUM-AC engine has passed development firmware/emulator builds but **its merged release has not yet been verified on a physical device**. This is not a claim of exhaustive performance, endurance or recovery testing.
 
 ## Build from source
 

@@ -1195,6 +1195,7 @@ static void edit_param(uint32_t slot, int32_t steps)
     }
     if (pg->graph == GR_DXSND) {                          /* EDIT > SOUND: the DRUM-X kit (ui_dx.c) */
         if (trk_eng(TSEL) == ENGI_DRUMLAB) lab_knob(pg, slot, steps);
+        else if (trk_eng(TSEL) == ENGI_DRUMAC) ac_knob(pg, slot, steps);
         else dx_knob(pg, slot, steps);
         return;
     }
@@ -1348,13 +1349,16 @@ static void edit_param(uint32_t slot, int32_t steps)
         fop_knob(slot, steps);
         return;
     }
-    if (pg->scope == SC_ENGINE && trk_eng(TSEL) == ENGI_DRUMLAB &&
+    if (pg->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
         pg->id[slot] >= P_E0 && pg->id[slot] < P_E0 + 8u) {
         uint32_t field = pg->id[slot] - P_E0, ti = song.sel;
         drumlab_global_ensure(ti);
         fm1_irq_off();
+        uint32_t is_ac = trk_eng(TSEL) == ENGI_DRUMAC;
+        uint32_t limit = is_ac ? 200u : 100u;
         drumlab_global[ti][field] = (uint8_t)clamp(
-            (int32_t)drumlab_global[ti][field] + accel(EN_K1 + slot, steps, 100), 0, 100);
+            (int32_t)drumlab_global[ti][field] +
+            accel(EN_K1 + slot, steps, (int32_t)limit), 0, (int32_t)limit);
         fm1_irq_on();
         ui.force = 1u;
         cm_knob_cap(TSEL, P_E0 + field);
@@ -3061,3 +3065,4 @@ timeout:
 
 #include "ui_dx.c"                                  /* EDIT > SOUND / SOUND 2: the DRUM-X kit */
 #include "ui_lab.c"                                 /* DRUM-LAB: independent electronic drum patches */
+#include "ui_ac.c"                                  /* DRUM-AC: kick/snare/crash individual editing */
