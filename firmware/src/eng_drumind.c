@@ -16,8 +16,8 @@ typedef struct {
 static ind_voice_t ind_state[NPART][NVOICE] __attribute__((section(".pool")));
 static uint8_t ind_patch[NPART][12][8] __attribute__((section(".pool")));
 static uint8_t ind_override[NPART][12] __attribute__((section(".pool")));
-static uint8_t ind_ready[NPART];
-static uint16_t ind_dirty[NPART];
+static uint8_t ind_ready[NPART] __attribute__((section(".pool")));
+static uint16_t ind_dirty[NPART] __attribute__((section(".pool")));
 static void ind_patch_reset(track_t *t)
 {
     uint32_t ti = (uint32_t)(t - trk);
