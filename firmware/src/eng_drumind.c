@@ -154,17 +154,20 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
         rough+=(int32_t)(((int64_t)(impulse-rough)*
                            clamp(2400+(crunch-64)*190,280,24000))>>15);
         int32_t bass=slow,body=lp-slow,hiss=white-mid,grit=impulse-rough;
-        /* Smoothly moving, moderately damped band-pass for WHISTLE and
-         * SCREECH: aperiodic narrow-band air/friction noise, NOT a sine. */
+        /* Moving, damped band-pass: whistle = narrow air jet, screech =
+         * friction, METAL = bright rattling plate resonances. Aperiodic
+         * noise excitation; no harmonic or fixed-pitch sine oscillators. */
         int32_t jet=0;
-        if(kind==IND_WHISTLE||kind==IND_SCREECH){
+        if(kind==IND_WHISTLE||kind==IND_SCREECH||kind==IND_METAL){
             uint32_t sweep=(age/(uint32_t)clamp(6+(127-motion)/9,6,24))%128u;
-            int32_t center=kind==IND_WHISTLE?4100:10500;
-            int32_t f=clamp(center+(int32_t)sweep*(kind==IND_WHISTLE?62:105)
+            int32_t center=kind==IND_WHISTLE?4100:
+                           kind==IND_METAL?8700:10500;
+            int32_t f=clamp(center+(int32_t)sweep*
+                 (kind==IND_WHISTLE?62:kind==IND_METAL?90:105)
                  +(grain-64)*75+kit[0]*20,900,26000);
             band_low+=(int32_t)(((int64_t)f*band)>>15);
             int32_t high=white-band_low-(int32_t)(((int64_t)
-                (kind==IND_WHISTLE?6700:11500)*band)>>15);
+                (kind==IND_WHISTLE?6700:kind==IND_METAL?9400:11500)*band)>>15);
             band+=(int32_t)(((int64_t)f*high)>>15);
             band_low=clamp(band_low,-65536,65536);
             band=clamp(band,-65536,65536);
@@ -178,7 +181,7 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
             /* Grainy glittering sheet metal; very bright and fragmented,
              * deliberately not the low-mid CLANG or ANVIL impulse. */
             pulse=85+(int32_t)(ind_random(&seed)&171u);
-            mix=hiss*3+grit*2+body/2;break;
+            mix=hiss*2+grit*2+jet*3+body/2;break;
         }
         case IND_SCRAPE:
             pulse=135+(int32_t)(ind_random(&seed)&127u);
