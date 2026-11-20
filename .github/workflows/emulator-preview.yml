@@ -66,12 +66,14 @@ jobs:
           required = ["index.html", "felucca.wasm", "worklet.js",
                       "stems.js", "sample-bank.js", "fm1backup.js",
                       "factory-voices.json", "factory-samples.json",
-                      "fonts/DotGothic16-subset.woff"]
+                      "fonts/DotGothic16-subset.woff",
+                      "mashina-nav.css", "mashina-nav.js",
+                      "mashina-emu-locale.js"]
           missing = [f for f in required if not (p/f).is_file() or (p/f).stat().st_size == 0]
           if missing:
               raise SystemExit("Preview missing: " + ", ".join(missing))
           page = (p/"index.html").read_text(encoding="utf-8")
-          if "ui-flash-optimization" not in page:
+          if 'id="emulator-build-label"' not in page or "ui-flash-optimization (preview)" not in page:
               raise SystemExit("Preview label not embedded")
           print("Preview ready:", (p/"felucca.wasm").stat().st_size,
                 "bytes WebAssembly")
