@@ -47,7 +47,21 @@ const {chromium} = require("playwright");
     page.on("pageerror",e=>errors.push(e.message));
     page.on("response",r=>{if(r.status()>=400)missing.push(r.url()+" -> "+r.status());});
     await page.goto("http://127.0.0.1:"+port+"/webapp/installer/",{waitUntil:"load"});
-    await page.waitForFunction(()=>document.getElementById("installer-startup-warning")===null,{timeout:10000});
+    try {
+      await page.waitForFunction(()=>document.getElementById("installer-startup-warning")===null,
+        null,{timeout:8000});
+    } catch (err) {
+      console.error("INSTALLER INIT FAILED",{
+        errors, missing,
+        banner:await page.locator("#installer-startup-warning").innerText().catch(()=>"(absent)"),
+        intro:await page.locator('[data-t="intro"]').innerText().catch(()=>"(absent)"),
+        status:await page.locator("#status").innerText().catch(()=>"(absent)"),
+        console:await page.evaluate(()=>({origin:location.origin,
+          ready:document.readyState,
+          textCount:[...document.querySelectorAll("[data-t]")].filter(x=>x.textContent.trim()).length}))
+      });
+      throw err;
+    }
     for (const selector of [
       '[data-t="intro"]','[data-t="warn"]','[data-t="firstTitle"]',
       '[data-t="firstText"]','#first-stock','[data-t="verLabel"]',
