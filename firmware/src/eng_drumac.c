@@ -2,32 +2,38 @@
  * MASHINA DRUM-AC: first acoustic percussion milestone.
  * Independent kick, snare and crash models, all generated in fixed point.
  * No sample data, no dependence on DRUM-X/DRUM-LAB patches.
- * MIDI: 36 kick, 38 snare, 49 crash; 42 is a crash preview shortcut.
+ * Twelve individually editable sounds, GM-compatible drum note assignments.
  */
-enum { AC_KICK, AC_SNARE, AC_CRASH };
+enum { AC_KICK, AC_SNARE, AC_CRASH, AC_HAT_C, AC_HAT_O,
+       AC_FLOOR, AC_TOM_L, AC_TOM_M, AC_TOM_H, AC_CLAP,
+       AC_RIDE_BELL, AC_RIDE_SPLASH, AC_NPAD };
+/* Keep the first three indices stable for project compatibility. */
+static const uint8_t AC_NOTES[AC_NPAD] = {
+    36, 38, 49, 42, 46, 41, 43, 45, 47, 39, 53, 51
+};
 typedef struct {
     uint32_t phase[3], inc, seed, age;
     int32_t body, transient, noise_lp, noise_fast, wires_lp;
     uint8_t kind, active;
 } ac_voice_t;
 static ac_voice_t ac_state[NPART][NVOICE];
-static uint8_t ac_patch[NPART][3][8] __attribute__((section(".pool")));
+static uint8_t ac_patch[NPART][AC_NPAD][8] __attribute__((section(".pool")));
 static uint8_t ac_ready[NPART];
-static uint8_t ac_dirty[NPART]; /* bit per instrument; saved sparsely with the project */
-static uint8_t ac_override[NPART][3] __attribute__((section(".pool"))); /* one bit per overridden field */
+static uint16_t ac_dirty[NPART]; /* 12 pad mask, sparse project storage */
+static uint8_t ac_override[NPART][AC_NPAD] __attribute__((section(".pool"))); /* one bit per overridden field */
 
 static void ac_patch_ensure(track_t *t)
 {
     uint32_t ti = (uint32_t)(t - trk), k, j;
     if (ti >= NPART || ac_ready[ti]) return;
-    for (k = 0; k < 3u; k++)
+    for (k = 0; k < AC_NPAD; k++)
         for (j = 0; j < 8u; j++)
             ac_patch[ti][k][j] = (uint8_t)clamp(t->p[P_E0 + j], 0, 127);
     ac_ready[ti] = 1u;
 }
 static uint8_t *ac_patch_of(track_t *t, uint32_t instrument)
 {
-    if ((uint32_t)(t - trk) >= NPART || instrument >= 3u) return 0;
+    if ((uint32_t)(t - trk) >= NPART || instrument >= AC_NPAD) return 0;
     ac_patch_ensure(t);
     return ac_patch[t - trk][instrument];
 }
@@ -52,7 +58,7 @@ static void ac_patch_set(track_t *t, uint32_t instrument, uint32_t field, uint32
     if (!p || field >= 8u) return;
     p[field] = (uint8_t)clamp(value, 0, 127);
     ac_override[t - trk][instrument] |= (uint8_t)(1u << field);
-    ac_dirty[t - trk] |= (uint8_t)(1u << instrument);
+    ac_dirty[t - trk] |= (uint16_t)(1u << instrument);
 }
 
 
@@ -65,9 +71,18 @@ static uint32_t ac_random(uint32_t *s)
 }
 static uint32_t ac_kind(uint32_t note)
 {
-    if (note == 38u) return AC_SNARE;
-    if (note == 49u || note == 42u) return AC_CRASH;
-    return AC_KICK;
+    uint32_t i;
+    for (i = 0; i < AC_NPAD; i++)
+        if (note == AC_NOTES[i]) return i;
+    return AC_NPAD;
+}
+static uint32_t ac_is_tom(uint32_t kind)
+{
+    return kind >= AC_FLOOR && kind <= AC_TOM_H;
+}
+static uint32_t ac_is_metal(uint32_t kind)
+{
+    return kind == AC_CRASH || kind == AC_RIDE_BELL || kind == AC_RIDE_SPLASH;
 }
 static void ac_note_on(track_t *t, voice_t *v)
 {
@@ -76,14 +91,14 @@ static void ac_note_on(track_t *t, voice_t *v)
     if (slot >= NVOICE) return;
     a = &ac_state[t - trk][slot];
     memset(a, 0, sizeof *a);
-    if (v->note != 36u && v->note != 38u && v->note != 42u && v->note != 49u)
-        return;
+    if (ac_kind(v->note) == AC_NPAD) return;
     a->kind = (uint8_t)ac_kind(v->note);
     a->seed = 0xB5297A4Du ^ ((uint32_t)v->note << 18) ^ (uint32_t)v->age;
     if (!a->seed) a->seed = 1;
     /* Only CRASH needs oscillator phases. KICK/SNARE use phase[0..1]
      * as two signed, noise-driven filter memories; neither has a pitch. */
-    a->inc = a->kind == AC_CRASH ? pitch_inc(75u * 16u) : 0u;
+    a->inc = ac_is_metal(a->kind) ?
+             pitch_inc((a->kind == AC_RIDE_BELL ? 88u : 75u) * 16u) : 0u;
     a->body = a->transient = 1 << 24;
     a->active = 1;
 }
@@ -128,14 +143,21 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     bright = ac_param_value(t, kind, 5);
     metal = ac_param_value(t, kind, 6);
     ring_amt = ac_param_value(t, kind, 7);
-    inc = kind == AC_CRASH ?
+    inc = ac_is_metal(kind) ?
           a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192) : 0u;
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
+            kind == AC_HAT_C ? 13000u + (uint32_t)body_mix * 700u :
+            kind == AC_HAT_O ? 150000u + (uint32_t)body_mix * 4300u :
+            ac_is_tom(kind) ? 110000u + (uint32_t)body_mix * 3200u :
+            kind == AC_CLAP ? 50000u + (uint32_t)body_mix * 1400u :
+            kind == AC_RIDE_BELL ? 250000u + (uint32_t)body_mix * 11000u :
+            kind == AC_RIDE_SPLASH ? 180000u + (uint32_t)body_mix * 8500u :
                                380000u + (uint32_t)body_mix * 16000u;
     tau_b = tau_b * (uint32_t)(180 - damp) / 116u;
     if (tau_b < 25000u) tau_b = 25000u;
-    tau_t = kind == AC_CRASH ? 85000u : kind == AC_SNARE ? 22000u : 9500u;
+    tau_t = ac_is_metal(kind) ? 85000u :
+            kind == AC_SNARE ? 22000u : kind == AC_CLAP ? 30000u : 9500u;
     mul_b = dlab_decay_long(n, tau_b);
     mul_t = dlab_decay_long(n, tau_t);
     body = a->body; trans = a->transient;
@@ -163,8 +185,15 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t thud = deep * (110 + body_mix) / 128 +
                            (low - deep) * (25 + ring_amt) / 128;
             int32_t beater = (white - fast) * (20 + strike) / 256;
+            /* BEATER neutral at 92; TEXTURE neutral at 65.
+             * Extra transient/low-mid colour only: no new pitched source. */
+            int32_t texture = metal - 65, beater_delta = wire_amt - 92;
             raw = (int32_t)(((int64_t)thud * body) >> 23);
             raw += (int32_t)(((int64_t)beater * trans) >> 23);
+            if (texture)
+                raw += (int32_t)(((int64_t)(low - deep) * body * texture) >> 31);
+            if (beater_delta)
+                raw += (int32_t)(((int64_t)(white - fast) * trans * beater_delta) >> 30);
             ph0 = (uint32_t)deep;
             ph1 = (uint32_t)low;
         } else if (kind == AC_SNARE) {
@@ -181,8 +210,38 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             raw = (int32_t)(((int64_t)thud * body) >> 23);
             raw += (int32_t)(((int64_t)rattle * body * (40 + wire_amt)) >> 30);
             raw += (int32_t)(((int64_t)(white - fast) * trans * (35 + strike)) >> 31);
+            if (metal != 65)
+                raw += (int32_t)(((int64_t)(mid - low) * body * (metal - 65)) >> 31);
             ph0 = (uint32_t)low;
             ph1 = (uint32_t)mid;
+        } else if (kind == AC_HAT_C || kind == AC_HAT_O) {
+            /* High-pass noise and moving band, no sine fundamentals.
+             * Short closed hat and ringing, wider open hat are separate pads. */
+            int32_t high = white - fast, mid = fast - lp;
+            int32_t shimmer = (high * (80 + bright) + mid * (30 + metal)) / 256;
+            raw = (int32_t)(((int64_t)shimmer * body) >> 24);
+            raw += (int32_t)(((int64_t)high * trans * (20 + strike)) >> 31);
+        } else if (ac_is_tom(kind)) {
+            /* Four distinct noise-excited drums: no musical boing or tuning sweep.
+             * Each body filter starts in a different low-frequency region. */
+            int32_t low = (int32_t)ph0, deep = (int32_t)ph1;
+            uint32_t height = kind - AC_FLOOR;
+            int32_t k1 = 600 + (int32_t)height * 540 + tune * 13;
+            int32_t k2 = 150 + (int32_t)height * 130 + tune * 3;
+            low += (int32_t)(((int64_t)(white - low) * k1) >> 15);
+            deep += (int32_t)(((int64_t)(low - deep) * k2) >> 15);
+            int32_t thud = deep * (100 + body_mix) / 128 +
+                           (low - deep) * (22 + ring_amt) / 128;
+            raw = (int32_t)(((int64_t)thud * body) >> 23);
+            raw += (int32_t)(((int64_t)(white - fast) * trans * (25 + strike)) >> 32);
+            ph0 = (uint32_t)low;
+            ph1 = (uint32_t)deep;
+        } else if (kind == AC_CLAP) {
+            /* Several tightly spaced hand-clap reflections followed by a noisy tail. */
+            uint32_t burst = age < 1320u ? 1320u - (age % 330u) : 0u;
+            int32_t slap = (white - fast) * (90 + bright) / 256;
+            raw = (int32_t)(((int64_t)slap * body * (120 + burst / 7u)) >> 31);
+            raw += (int32_t)(((int64_t)(white - lp) * trans * (25 + strike)) >> 32);
         } else {
             int32_t s0 = sine_i(ph0), s1 = sine_i(ph1), s2 = sine_i(ph2);
             /* A long metallic wash with several non-harmonic resonances.
@@ -193,6 +252,22 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             raw = (int32_t)(((int64_t)wash * body * (120 + bright)) >> 32);
             raw += (int32_t)(((int64_t)ring * body * (35 + metal)) >> 33);
             raw += (int32_t)(((int64_t)(white - lp) * trans * (45 + strike)) >> 32);
+            if (kind == AC_CRASH) {
+                /* SPLASH: 92 is exactly neutral for the approved crash sound. */
+                if (wire_amt != 92)
+                    raw += (int32_t)(((int64_t)(white - fast) * trans *
+                                      (wire_amt - 92)) >> 31);
+            } else if (kind == AC_RIDE_BELL) {
+                /* Stick-defined ride bell: strengthen metallic partials,
+                 * suppress the broad cymbal wash. */
+                raw = (int32_t)(((int64_t)ring * body * (115 + metal)) >> 32) +
+                      (int32_t)(((int64_t)(white - fast) * trans * (20 + strike)) >> 31);
+            } else {
+                /* Ride splash: brighter, faster washy cymbal with a shorter body. */
+                raw = (int32_t)(((int64_t)wash * body * (145 + bright)) >> 31) +
+                      (int32_t)(((int64_t)ring * body * (25 + metal)) >> 34) +
+                      (int32_t)(((int64_t)(white - fast) * trans * (70 + strike)) >> 31);
+            }
             ph0 += inc;
             ph1 += (uint32_t)(((uint64_t)inc * 6021u) >> 12);
             ph2 += (uint32_t)(((uint64_t)inc * (7900u + (uint32_t)metal * 11u)) >> 12);
