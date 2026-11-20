@@ -180,6 +180,27 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 
 **Upgrading:** back up your projects before flashing. Older firmware may not recognize projects containing DRUM-AC. Non-neutral global controls saved with earlier experimental DRUM-AC builds may sound different because the global parameters now have consistent kit-wide meanings.
 
+### DRUM-IND: non-tonal industrial percussion (v0.10)
+
+**DRUM-IND** is a fourth, independent, sample-free 12-pad engine, separate from the melodic **INDUSTRIAL** synthesizer. It uses noise excitation, moving resonant filters, rough transients and irregular mechanical pulses rather than tuned note oscillators. It is intended to layer with acoustic or electronic drum kits using the same incoming MIDI channel.
+
+**Fixed chromatic layout — repeats every octave:** the MIDI numbers below are examples from 36–47.
+
+| Key (MIDI) | Sound / character | Key (MIDI) | Sound / character |
+| --- | --- | --- | --- |
+| C (36) | **CLANG** — metal impact | F♯ (42) | **BUZZ** — abrasive electrical buzz |
+| C♯ (37) | **ANVIL** — heavy hammer | G (43) | **LIGHTNING** — crack and rolling noise |
+| D (38) | **METAL** — sheet-metal resonance | G♯ (44) | **ENGINE** — mechanical chug |
+| D♯ (39) | **SCRAPE** — metal friction | A (45) | **WHOOSH** — air sweep |
+| E (40) | **WHISTLE** — noisy jet whistle | A♯ (46) | **MOTOR** — rotary mechanical noise |
+| F (41) | **SCREECH** — unstable squeal | B (47) | **EXPLOSION** — blast and turbulent tail |
+
+**EDIT structure:** the first two pages control the whole kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (each **0–200%**, **100% neutral**). ATTACK changes roughly the first 80 ms of the hit; BRIGHT changes its high-frequency balance after the sound's limiting. The individual SOUND 1–3 pages use **K1** for pad selection and **K2–K4** for the eight **0–127** parameters **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** offer twelve independent pad volumes (**0–127**). The same parameter may act differently on different models; all 96 combinations were tested for audio response.
+
+Three presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. The note mapping is fixed and repeats every octave; the SEQ custom-note mapping of DRUM-X/DRUM-LAB does not apply.
+
+**v0.10 display fix:** DRUM-LAB, DRUM-AC and DRUM-IND EDIT knobs now redraw only changed parameter cells, avoiding the former full-screen flashing during rapid turns. This fix does not alter existing synthesis. The new engine and display fix were **verified on a physical FM1**; automated firmware, audio and UI tests passed. Back up projects before upgrading: older firmware may not recognize DRUM-IND projects.
+
 ### SEQ: drum MIDI mapping
 
 Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selects the pad, **OCT−/OCT+** switch pad banks.
@@ -302,4 +323,4 @@ Before flashing or changing to an earlier firmware, save a complete backup of pr
 
 ---
 
-MASHINA v0.9 · M-VAVE FM1 · Usage reference
+MASHINA v0.10 · M-VAVE FM1 · Usage reference
