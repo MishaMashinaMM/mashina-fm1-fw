@@ -19,6 +19,9 @@ on:
       - 'tools/check_installer_locales.py'
       - '.github/workflows/publish-docs.yml'
   workflow_dispatch:
+concurrency:
+  group: mashina-docs-pages
+  cancel-in-progress: true
 permissions:
   contents: read
   actions: read
