@@ -167,6 +167,7 @@ static void graph_proj(int ar)
     cv_text_r(236, 128, &AF_X, n ? b : "NO ROWS: OCT+ ADDS ONE", ar && ui.song_row >= song_end_row() ? T_THEME : T_DIM,
               T_SURF);
 }
+#if !FELUCCA_NO_SEQUENCER
 /* a being small at (cx, cy) radius r (px): engine e's species, its outline in heat c; 24 vertices (bg_outline's form,
  * its spikes and lobes, at a slot's size: a quarter of the lines) */
 static void lz_mini_being(uint32_t e, int32_t cx, int32_t cy, int32_t r, uint16_t c)
@@ -210,6 +211,7 @@ static void lz_track_being(void)
     sound_name(t, b);
     cv_free_text(42 - HALF_UP(text_w(&AF_X, b) < 76 ? text_w(&AF_X, b) : 76), 99, &AF_X, b, T_TEXT, T_SURF, 76);
 }
+#endif /* Legacy unused SAVE creature art */
 static void graph_sound(void)
 {
     uint32_t k;
