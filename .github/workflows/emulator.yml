@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-only
-# Jiant Live Drums site. All published binaries must be built from this repository's current main commit.
+# MASHINA site. All published binaries must be built from this repository's current main commit.
 # Pages: landing, emulator, installer, editor, manual. No inherited upstream STABLE/PREVIEW/CLASSIC builds.
 name: emulator
 on:
@@ -62,7 +62,7 @@ jobs:
               /cpu/wl82/tools/cfg/eq_cfg_hw.bin && retry git checkout d179b4484759423312073f5fbb232501aa491047
           fi
           test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
-      - name: the Drums package, installer and editor
+      - name: the MASHINA package, installer and editor
         if: steps.tc.outcome == 'success'
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
@@ -74,7 +74,7 @@ jobs:
           (cd build/site/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
           # Refuse to publish an unidentifiable or potentially cached earlier v0.9 binary.
           test -s build/site/webapp/installer-orange-v09/index.html
-          grep -q 'v0.9 · ORANGE UI · BUILD' build/site/webapp/installer-orange-v09/index.html
+          grep -q 'v0.9 · MASHINA · BUILD' build/site/webapp/installer-orange-v09/index.html
           grep -q 'cache: "no-store"' build/site/webapp/installer/index.html
           grep -q 'release=' build/site/webapp/installer/index.html
           test -s build/site/firmware/RELEASE_SHA256
