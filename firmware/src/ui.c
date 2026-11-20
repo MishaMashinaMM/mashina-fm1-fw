@@ -591,7 +591,9 @@ static int page_visible(uint32_t i)
         return !ui.home && ui.page == i;               /* SEQ pages' cycle (only where code put the screen) */
     if (PAGES[i].graph == GR_DXSND)  /* X-MOD belongs only to DRUM-X; LAB has four SOUND pages */
         return trk_eng(TSEL) == ENGI_DRUM ||
-               (trk_eng(TSEL) == ENGI_DRUMLAB && PAGES[i].title[0] != 'X');
+               (trk_eng(TSEL) == ENGI_DRUMLAB && PAGES[i].title[0] != 'X') ||
+               (trk_eng(TSEL) == ENGI_DRUMAC && PAGES[i].title[0] != 'X' &&
+                dx_pagen(&PAGES[i]) != 8u);
     if (PAGES[i].graph == GR_DXIMG) /* DRUM-X-specific KIT 3 / IMAGE */
         return trk_eng(TSEL) == ENGI_DRUM;
     if (PAGES[i].fam == FAM_EDIT && PAGES[i].scope == SC_TRACK &&
@@ -1455,6 +1457,7 @@ static void set_engine_of(track_t *t, uint32_t ei)
         t->p[P_E0 + i] = e->edit[i].def;
     apply_preset_to(t, 0);
     if (ei % NENGINES == ENGI_DRUMLAB) drumlab_global_reset((uint32_t)(t - trk));
+    if (ei % NENGINES == ENGI_DRUMAC) ac_patch_reset(t);
     fm1_irq_on();
     load_end(t);
 }
@@ -1471,6 +1474,7 @@ static uint32_t drum_elsewhere(const track_t *t)
 static void apply_preset(uint32_t pi)                 /* the selected track's sound (browsing, the editor, PROGRAM CHANGE) */
 {
     apply_preset_to(TSEL, pi);
+    if (trk_eng(TSEL) == ENGI_DRUMAC) ac_patch_reset(TSEL);
     if (trk_eng(TSEL) == ENGI_DRUMLAB) {                /* a new kit preset replaces its independent pad patches */
         uint32_t ti = (uint32_t)(TSEL - trk);
         if (ti < NPART) {
@@ -1806,6 +1810,8 @@ static void dx_knob(const page_t *pg, uint32_t k, int32_t s);
 static void dx_cards(const page_t *pg);
 static void lab_knob(const page_t *pg, uint32_t k, int32_t s);
 static void lab_cards(const page_t *pg);
+static void ac_knob(const page_t *pg, uint32_t k, int32_t s);
+static void ac_cards(const page_t *pg);
 static void dx_kit3_knob(uint32_t k, int32_t s);      /* (0.6.54) KIT 3: TONE's BP, FEEDBK */
 #define DX_KIT3(pg) ((pg)->graph == GR_DXIMG && (pg)->title[0] == 'K')   /* (0.6.58) GR_DXIMG: KIT 3, or STEREO (IMAGE) */
 static void dx_kit3_cards(void);
