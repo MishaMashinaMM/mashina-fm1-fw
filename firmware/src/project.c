@@ -1666,7 +1666,9 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         pos += 3u;
         for (t = 0; t < NPART; t++) if (mask & (1u << t)) {
             if ((q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC) || pos + 8u > room) return 0;
-            for (i = 0; i < 8u; i++) if (b[pos + i] > 100u) return 0;
+            for (i = 0; i < 8u; i++)
+                if (b[pos + i] > (q->t[t].engine == ENGI_DRUMAC ? 200u : 100u))
+                    return 0;
             memcpy(q->lab_global[t], b + pos, 8u);
             pos += 8u;
         }
