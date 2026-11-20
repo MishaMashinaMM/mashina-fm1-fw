@@ -602,10 +602,12 @@ static int page_visible(uint32_t i)
         (PAGES[i].id[0] >= P_LN8 && PAGES[i].id[0] <= P_LN11)))
         return trk_eng(TSEL) == ENGI_DRUM || trk_eng(TSEL) == ENGI_DRUMLAB;
     if (PAGES[i].graph == GR_FOCUS)                     /* (0.8.5) FOCUS: a synth's (FM6: OPERATOR, DRUM: SOUND) */
-        return trk_eng(TSEL) != ENGI_DRUM && trk_eng(TSEL) != ENGI_DRUMLAB && trk_eng(TSEL) != ENGI_FM6 &&
+        return trk_eng(TSEL) != ENGI_DRUM && trk_eng(TSEL) != ENGI_DRUMLAB &&
+               trk_eng(TSEL) != ENGI_DRUMAC && trk_eng(TSEL) != ENGI_FM6 &&
                !(FELUCCA_FM4 && trk_eng(TSEL) == ENGI_DIGITAL);
     if (PAGES[i].id[0] == P_ALLOC)                      /* (0.8.5) VOICE 2: not a kit's */
-        return trk_eng(TSEL) != ENGI_DRUM && trk_eng(TSEL) != ENGI_DRUMLAB;
+        return trk_eng(TSEL) != ENGI_DRUM && trk_eng(TSEL) != ENGI_DRUMLAB &&
+               trk_eng(TSEL) != ENGI_DRUMAC;
     if (PAGES[i].graph >= GR_FMOP && PAGES[i].graph <= GR_FMENV)   /* (0.6.10) OPERATOR, OP ENV, OPERATOR 2: FM6's */
         return trk_eng(TSEL) == ENGI_FM6;
     if (PAGES[i].fam == FAM_EDIT && PAGES[i].id[0] == P_WRDEP)   /* (0.7.8) ROTOR: WHEEL's */
