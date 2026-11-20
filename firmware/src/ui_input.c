@@ -1354,8 +1354,11 @@ static void edit_param(uint32_t slot, int32_t steps)
         uint32_t field = pg->id[slot] - P_E0, ti = song.sel;
         drumlab_global_ensure(ti);
         fm1_irq_off();
+        uint32_t is_ac = trk_eng(TSEL) == ENGI_DRUMAC;
+        uint32_t limit = is_ac ? 200u : 100u;
         drumlab_global[ti][field] = (uint8_t)clamp(
-            (int32_t)drumlab_global[ti][field] + accel(EN_K1 + slot, steps, 100), 0, 100);
+            (int32_t)drumlab_global[ti][field] +
+            accel(EN_K1 + slot, steps, (int32_t)limit), 0, (int32_t)limit);
         fm1_irq_on();
         ui.force = 1u;
         cm_knob_cap(TSEL, P_E0 + field);
