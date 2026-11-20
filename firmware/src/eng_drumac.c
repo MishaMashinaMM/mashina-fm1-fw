@@ -170,9 +170,11 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         /* TUNE adjusts the drumhead's real resonance, not the thud filter.
          * At 64, retain the approved tom's pitch and noise character.
          * Approximately a semitone per four points across a useful range. */
-        int32_t semitone = clamp(35 + (int32_t)(kind - AC_FLOOR) * 4 +
-                                 (tune - 64) / 4, 24, 81);
-        tom_tone_inc = pitch_inc((uint32_t)semitone * 16u);
+        int32_t pitch16 = clamp((35 + (int32_t)(kind - AC_FLOOR) * 4) * 16 +
+                                (tune - 64) * 4, 24 * 16, 81 * 16);
+        /* pitch_inc uses 1/16 semitone resolution: each knob step moves
+         * the drumhead by a quarter-semitone instead of stepping whole notes. */
+        tom_tone_inc = pitch_inc((uint32_t)pitch16);
     }
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
