@@ -837,18 +837,15 @@ for (const L of Object.values(TEXT)) {
   L.tip_stockError = L.tip_stockZip = L.tip_stockNotV15 = L.tip_stockOtherVer = L.tip_stockCustom = L.tip_stockModified = L.tip_stock;
 }
 const LANGS = ["en", "es", "ja", "ru", "sr", "hi"];
-const navLang = (navigator.language || "en").toLowerCase();
-let lang = navLang.startsWith("ja") ? "ja" : navLang.startsWith("es") ? "es" : navLang.startsWith("ru") ? "ru" : navLang.startsWith("sr") ? "sr" : navLang.startsWith("hi") ? "hi" : "en";
+// A bare installer URL always opens in English; explicit ?lang= wins.
+let lang = "en";
 try {
-  const saved = localStorage.getItem("mashina-lang");
-  if (LANGS.includes(saved)) lang = saved;
+  const requested = new URLSearchParams(location.search).get("lang");
+  if (LANGS.includes(requested)) lang = requested;
 } catch (_) {}
-try { const q = new URLSearchParams(location.search).get("lang"); if (LANGS.includes(q)) lang = q; } catch (_) {}
-const t = (k) => TEXT[lang][k] ?? TEXT.en[k] ?? k;
-let lastKey = null, lastArg = "", tipKey = null;
+
 function applyLang() {
   document.documentElement.lang = lang === "sr" ? "sr-Cyrl" : lang;
-  try { localStorage.setItem("mashina-lang", lang); } catch (_) {}
   const current = new URL(location.href);
   current.searchParams.set("lang", lang);
   history.replaceState(null, "", current.pathname + current.search + current.hash);
