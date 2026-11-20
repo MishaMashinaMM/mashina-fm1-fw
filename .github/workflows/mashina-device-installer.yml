@@ -77,7 +77,7 @@ jobs:
           html = html.replace('id="release-stamp" style=', 'id="release-stamp" style=')
           html = html.replace("v0.10 · MASHINA · BUILD /*BUILD_TAG*/", "MASHINA · DEVICE TEST · " + version)
           # Prominent warning above the flash action prevents confusing a
-          # still-unverified candidate with the previously tested stable v0.10.
+          # optional standalone package separate from the published stable v0.10.
           needle = '  <p><button id="go" disabled data-t="install"></button></p>'
           assert needle in html, "Installer button anchor changed; stop packaging"
           html = html.replace(needle,
@@ -97,7 +97,7 @@ jobs:
           =================================================
           Branch: main. Built from the source commit in firmware/SOURCE_COMMIT.
           This is REAL flashable firmware, NOT a browser emulator.
-          It is experimental and has already passed physical FM1 testing of DRUM-IND and the LCD redraw fix.
+          The DRUM-IND engine and EDIT display fix passed physical FM1 testing.
           The splash shows release v0.10 (no -atmos suffix), while the ZIP
           package name includes a source commit to distinguish this candidate.
           The stable public v0.10 installer and main branch are unchanged.
