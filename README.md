@@ -4,7 +4,7 @@
 
 Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan Jiant)](https://github.com/juanjiant-bit/JIANT) and the [Felucca firmware](https://github.com/hugelton/Felucca). Free software under **GPL-3.0-only**.
 
-![MASHINA FM1 Performance Firmware — MIDI routing, synths, drums and live controls](docs/jiant-live-drums-overview-32-macros.svg?v=mashina-1)
+![MASHINA FM1 Performance Firmware — MIDI routing, synths, drums and live controls](docs/mashina-overview.svg)
 
 **[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/)** · **[Emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** · **[Web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** · **[Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** · **[User manual](docs/JLD_MANUAL_V0.9.md)**
 
