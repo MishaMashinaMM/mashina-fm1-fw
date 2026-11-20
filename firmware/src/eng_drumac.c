@@ -58,23 +58,17 @@ static uint8_t ac_param_value(track_t *t, uint32_t instrument, uint32_t field)
 {
     uint8_t *patch = ac_patch_of(t, instrument);
     if (!patch || field >= 8u) return 0u;
-    /* The sound-level base patch never changes when a global knob moves.
-     * Global 100% is transparent, just as on DRUM-LAB. */
-    uint32_t value = patch[field];
-    uint32_t ti = (uint32_t)(t - trk);
-    if (drumlab_global_ready[ti])
-        value = value * drumlab_global[ti][field] / 100u;
-    return (uint8_t)value;
+    /* Kit-wide acoustic controls are a separate DSP stage. They must never
+     * multiply or rewrite a pad's independently editable 0..127 fields. */
+    return patch[field];
 }
 static void ac_patch_set(track_t *t, uint32_t instrument, uint32_t field, uint32_t value)
 {
     uint8_t *p = ac_patch_of(t, instrument);
     if (!p || field >= 8u) return;
-    /* Editor displays the effective value. Convert edits back into the
-     * independent pad value; don't rewrite the global kit multiplier. */
-    uint32_t ti = (uint32_t)(t - trk);
-    uint32_t g = drumlab_global_ready[ti] ? drumlab_global[ti][field] : 100u;
-    p[field] = (uint8_t)clamp(g ? (value * 100u + g / 2u) / g : value, 0, 127);
+    /* Pad edits are always stored directly; global tone, damping etc.
+     * are applied independently during synthesis. */
+    p[field] = (uint8_t)clamp(value, 0, 127);
     ac_override[t - trk][instrument] |= (uint8_t)(1u << field);
     ac_dirty[t - trk] |= (uint16_t)(1u << instrument);
 }
@@ -158,8 +152,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     int32_t plate_low[3] = {0, 0, 0}, plate_damp = 0;
     int32_t level_gain;
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
-    int32_t mod_delta[8];
-    uint32_t mod_render;
+    int32_t mod_delta[8], kit[8];
+    uint32_t mod_render, kit_timbre;
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
     a = &ac_state[t - trk][slot];
@@ -176,6 +170,17 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     bright = ac_param_value(t, kind, 5);
     metal = ac_param_value(t, kind, 6);
     ring_amt = ac_param_value(t, kind, 7);
+    /* All eight kit controls are centred at 100. Old project defaults
+     * therefore retain their sound exactly, while 0..200 permits either
+     * a decrease or an increase. Order:
+     * TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL. */
+    drumlab_global_ensure((uint32_t)(t - trk));
+    {
+        uint32_t field;
+        for (field = 0; field < 8u; field++)
+            kit[field] = clamp((int32_t)drumlab_global[t - trk][field], 0, 200) - 100;
+    }
+    kit_timbre = kit[0] || kit[2] || kit[3] || kit[4] || kit[5] || kit[6];
     /* Precompute signed distances once per render block, not per sample. */
     {
         int32_t values[8] = {tune, damp, body_mix, strike,
@@ -190,9 +195,11 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                   mod_delta[4] || mod_delta[5] || mod_delta[6] ||
                   mod_delta[7]);
     lid = kind < 8u ? P_LN0 + kind : P_LN8 + kind - 8u;
-    {   /* Quadratic pad LEVEL, identical to DRUM-LAB; calculated per block. */
+    {   /* Quadratic pad LEVEL, identical to DRUM-LAB; calculated per block.
+         * Global LEVEL is an independent 0..200% gain, 100% unchanged. */
         int32_t level = clamp(t->p[lid], 0, 127);
-        level_gain = level == 127 ? 32768 : level * level * 32768 / 16129;
+        int32_t pad_gain = level == 127 ? 32768 : level * level * 32768 / 16129;
+        level_gain = (int32_t)(((int64_t)pad_gain * (kit[7] + 100)) / 100);
     }
     ph0 = a->phase[0]; ph1 = a->phase[1]; ph2 = a->phase[2];
     if (ac_is_metal(kind)) {
@@ -231,6 +238,12 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             kind == AC_RIDE_SPLASH ? 180000u + (uint32_t)body_mix * 8500u :
                                380000u + (uint32_t)body_mix * 16000u;
     tau_b = tau_b * (uint32_t)(180 - damp) / 116u;
+    /* Kit DAMP shortens/extends the envelope, while kit RING adjusts the
+     * lingering resonance separately; neutral 100% changes nothing. */
+    {
+        int32_t damp_factor = clamp(256 - kit[1] * 2 + kit[6], 48, 512);
+        tau_b = (uint32_t)(((uint64_t)tau_b * (uint32_t)damp_factor) >> 8);
+    }
     /* Stronger tail/damp shaping, centred on the current factory preset.
      * At a zero delta the original decay is bit-for-bit unchanged. */
     {
@@ -462,6 +475,39 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                 ac_is_metal(kind)))
                 extra += (int32_t)(((int64_t)(mid + low) * body * ring_delta) >> 34);
             raw = (int32_t)clamp(raw + extra, -32768, 32767);
+        }
+        /* Independent kit-wide timbre stage, deliberately separate from
+         * the per-pad controls above. Each global function has the same
+         * musical meaning on all twelve sounds. All deltas are zero at 100;
+         * even the existing 0..127 pad patches are left untouched.
+         *
+         * TONE     shift the low/mid spectral balance
+         * BODY     more/less low-frequency thump or body of cymbal wash
+         * ATTACK   more/less initial stick, beater or hand transient
+         * BRIGHT   high-frequency energy
+         * TEXTURE  noisy/granular excitation independently of brightness
+         * RING     low-mid lingering resonance (also its decay above)
+         * DAMP     duration control above
+         * LEVEL    final gain below
+         */
+        if (kit_timbre) {
+            int32_t high = white - fast;
+            int32_t mid = fast - lp;
+            int32_t bass = lp;
+            int64_t extra = 0;
+            if (kit[0])
+                extra += ((int64_t)(mid - bass) * body * kit[0]) >> 31;
+            if (kit[2])
+                extra += ((int64_t)bass * body * kit[2]) >> 30;
+            if (kit[3])
+                extra += ((int64_t)high * trans * kit[3]) >> 30;
+            if (kit[4])
+                extra += ((int64_t)high * body * kit[4]) >> 31;
+            if (kit[5])
+                extra += ((int64_t)(white - wire) * body * kit[5]) >> 31;
+            if (kit[6])
+                extra += ((int64_t)(mid + bass) * body * kit[6]) >> 32;
+            raw = (int32_t)clamp((int64_t)raw + extra, -32768, 32767);
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
