@@ -33,5 +33,16 @@ assert.doesNotMatch(emulator, /withSampleBank|encodeSampleBank|sampleKit:|factor
 assert.match(workflow, /python3 tools\/build\.py/, 'site must package MASHINA firmware');
 assert.match(workflow, /(?:sh|bash) web\/emu\/build\.sh/, 'site must build the MASHINA emulator');
 assert.doesNotMatch(workflow, /\bweb\/(?:STABLE|PREVIEW|CLASSIC)\b/, 'site must not publish pinned upstream firmware');
-assert.match(readme, /physical FM1/, 'README must describe device validation');
+const translations = read('web/mashina-translations.js');
+assert.match(home, /What MASHINA adds to JIANT/, 'homepage should introduce MASHINA additions without a changelog');
+assert.match(home, /Four 12-sound drum engines/, 'homepage must describe all four drum engines');
+assert.match(home, /data-i18n="projectTitle"/, 'homepage should cover live projects');
+for (const name of ['DRUM-X', 'DRUM-LAB', 'DRUM-AC', 'DRUM-IND']) {
+  assert.match(readme, new RegExp(name), 'README must name all drum engines');
+}
+for (const lang of ['en', 'es', 'ja', 'ru', 'sr', 'hi']) {
+  assert.match(translations, new RegExp('"'+lang+'"\\s*:\\s*\\{'), 'homepage missing '+lang+' translation');
+}
+assert.equal((translations.match(/DRUM-IND/g)||[]).length, 6, 'homepage must describe DRUM-IND in all six languages');
+assert.doesNotMatch(readme, /New in v0\\.10|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
 console.log('PASS: MASHINA site pages, links, metadata and build source');
