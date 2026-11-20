@@ -13,6 +13,11 @@ static uint64_t ind_energy(uint32_t note, int32_t *peak) {
     int32_t out[CTL];
     uint64_t energy=0;
     host_tracks_init();
+    /* host_tracks_init restores parameters, but intentionally does not kill
+     * active voices; isolate each pad for a meaningful single-hit measurement. */
+    memset(t->v,0,sizeof t->v);
+    ind_patch_reset(t);
+    drumlab_global_reset(0);
     host_preset(t,ENGI_DRUMIND,0);
     t->p[P_ATK]=0;t->p[P_SUS]=127;
     trk_note_on(t,note,110);
@@ -34,6 +39,11 @@ static uint64_t ind_digest(uint32_t pad, uint32_t field, uint32_t value,
     uint64_t h=1469598103934665603ull;
     *energy=0;
     host_tracks_init();
+    /* host_tracks_init restores parameters, but intentionally does not kill
+     * active voices; isolate each pad for a meaningful single-hit measurement. */
+    memset(t->v,0,sizeof t->v);
+    ind_patch_reset(t);
+    drumlab_global_reset(0);
     host_preset(t,ENGI_DRUMIND,0);
     t->p[P_ATK]=0;t->p[P_SUS]=127;
     ind_patch_set(t,pad,field,value);
