@@ -145,7 +145,30 @@ WAVE/MIX はオシレーターの混合、CUT/RES はフィルター、GRIND/MET
 
 トラックと音源を選び、**EDIT** を開きます。SELECT で EDIT ページを移動し、K1〜K4 で調整します。
 
-**ATMOS** は変化するパッド音。**BREATH / MOTION / FLOW / SPREAD** で動きとテクスチャーを作ります。**BRASS** は合成管楽器。**TYPE 0** がサックス、**64** が中間、**127** がトランペットです。ほかに PRESS、BUZZ、BREATH、BODY、FORMNT、GROWL、ATTACK、FAT、GRIND、METAL、CRUSH があります。**INDUSTRIAL** は WAVE、FAT、GRIND、METAL、CRUSH、FEED、CUT、RES、WAVE2、MIX、SUB、MODE を持つ強いベース／リード音源です。
+### JIANT から継承した音源
+
+次の 8 音源も MASHINA で使用できます。まずプリセットを選び、EDIT で音を変えてください。
+
+| 音源 | 特徴と主な操作 |
+| --- | --- |
+| **ANALOG** | 減算方式のベース、リード、プラック、パッド。オシレーター、デチューン、フィルター、ドライブで調整。 |
+| **PHASE** | 位相歪みによるブラス、ベル、鍵盤、ベース。DCW と ENV が発音中の波形を変化させます。 |
+| **LOFI** | チップ音、ウェーブテーブル、バイトビート、レトロゲーム風の音。CHIP、WAVE、DUTY、SWEEP、ビット劣化。 |
+| **VOICE** | 歌う母音、コーラス、ロボット声、言葉のような音。VOWEL、VOWEL2、TALK でフォルマントを調整。 |
+| **WHEEL** | ドローバー式トーンホイール・オルガン。パーカッション、キークリック、ドライブ、ローター効果。 |
+| **NOISE** | 風、雨、クラックル、金属音、シフトレジスター風ノイズ。MODE、COLOR、FREQ、PEAK で調整。 |
+| **FM6** | 6 オペレーター FM。エレピ、ベル、ベース、デジタルリード。アルゴリズムとオペレーター・エンベロープ。 |
+| **ANIMAL** | 鳥、昆虫、カエル、羽音などの合成音。モード別に音程、リズム、共鳴を調整します。 |
+
+**DRUM-X** は元のドラム音源を 12 音に拡張したものです。ほかのドラム音源とともに後述します。
+
+### MASHINA の追加メロディー音源
+
+**ATMOS — 動き続けるパッドと質感。** **SOFT CLOUD**、**BREATHING**、**GLASS TIDE** から始めてください。**WAVE** は基本波形、**MORPH/DENSITY/DRIFT** はレイヤーの変化、**CUT/RES** はフィルター、**TEXTURE/SHIMMER** は音色の輝きを設定します。**BREATH** は音量の揺れ、**MOTION** はその速さ、**FLOW** は時間的な音色変化、**SPREAD** はオシレーター間の広がりを調整します。重ねた和音では控えめな動きが使いやすくなります。
+
+**BRASS — 電子的なサックスやトランペット。** 本物の管楽器の完全な再現ではなく、個性的な合成音です。**TYPE 0** はサックス寄り、**127** はトランペット寄りで、中間は混合音色です。**PRESS** は勢い、**BUZZ** はざらつき、**BREATH** は息成分、**BODY/FORMNT** は共鳴、**GROWL** は唸り、**ATTACK** は立ち上がりを調整します。3 ページ目の **FAT/GRIND/METAL/CRUSH** で極端な合成管楽器音も作れます。**TENOR SAX**、**SAX GROWL**、**BRASS LEAD** を試してください。
+
+**INDUSTRIAL — 強いベースとリード。** DRUM-IND と違い、演奏した音程に従うメロディー音源です。**WAVE** は基本波形、**FAT** は厚み、**GRIND/METAL/CRUSH/FEED** は歪み、**CUT/RES** はフィルターを調整します。3 ページ目の **WAVE2/MIX/SUB/MODE** で第二オシレーターと低音を追加します。**IRON BASS**、**SUB MACHINE**、**STEEL LEAD**、**GEAR LEAD** から始めてください。
 
 **DRUM-X** は独立した 12 音: BD 36、SD 38、CP 39、CH 42、OH 46、TM 45、RM 37、BL 56、B2 41、S2 40、O2 43、T2 44。**DRUM-LAB** は初期設定で MIDI **36–47** の 12 パッドを個別編集できます。
 
