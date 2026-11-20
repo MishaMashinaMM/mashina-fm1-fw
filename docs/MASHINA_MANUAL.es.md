@@ -208,6 +208,27 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 
 **Al actualizar:** hacé una copia de seguridad. El firmware anterior puede no entender proyectos con DRUM-AC. Los proyectos experimentales con controles globales no neutros pueden sonar diferentes porque ahora esos controles tienen funciones comunes para todo el kit.
 
+### DRUM-IND: percusión industrial sin afinación musical (v0.10)
+
+**DRUM-IND** es el cuarto motor de 12 pads sintetizados, **sin muestras**, independiente del sintetizador melódico **INDUSTRIAL**. Utiliza ruido, filtros resonantes móviles, golpes irregulares y pulsos mecánicos en vez de osciladores afinados. Está pensado para superponerlo con otras baterías mediante el mismo canal MIDI.
+
+**Distribución cromática fija, repetida en todas las octavas.** Los números MIDI 36–47 son un ejemplo.
+
+| Tecla (MIDI) | Sonido / carácter | Tecla (MIDI) | Sonido / carácter |
+| --- | --- | --- | --- |
+| C (36) | **CLANG** — choque metálico | F♯ (42) | **BUZZ** — zumbido eléctrico |
+| C♯ (37) | **ANVIL** — golpe de martillo | G (43) | **LIGHTNING** — descarga y crujidos |
+| D (38) | **METAL** — resonancia de chapa | G♯ (44) | **ENGINE** — máquina irregular |
+| D♯ (39) | **SCRAPE** — metal raspado | A (45) | **WHOOSH** — ráfaga de aire |
+| E (40) | **WHISTLE** — silbido de aire | A♯ (46) | **MOTOR** — motor giratorio |
+| F (41) | **SCREECH** — chirrido estridente | B (47) | **EXPLOSION** — explosión y cola turbulenta |
+
+**Páginas EDIT:** las dos primeras ofrecen ocho controles independientes para todo el kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (cada uno **0–200%**, con **100% neutro**). ATTACK modifica aproximadamente los primeros 80 ms; BRIGHT modifica el balance de agudos después de limitar el sonido. En **SOUND 1–3**, **K1** selecciona el pad y **K2–K4** editan ocho parámetros individuales (**0–127**): **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** permiten doce niveles independientes (**0–127**). Los controles pueden actuar de forma distinta en cada sonido; se comprobó la respuesta de las 96 combinaciones de pad y parámetro.
+
+Presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. Su asignación MIDI es fija; la reasignación SEQ de DRUM-X/DRUM-LAB no se aplica.
+
+**Corrección de pantalla en v0.10:** al girar mandos EDIT en DRUM-LAB, DRUM-AC o DRUM-IND solo se redibujan las celdas modificadas, sin el parpadeo de pantalla completa. No se alteran los sonidos existentes. El nuevo motor y la corrección de pantalla se **probaron con éxito en un FM1 físico**; también pasaron las pruebas automatizadas. Haz una copia de seguridad antes de actualizar: el firmware antiguo podría no reconocer proyectos DRUM-IND.
+
 ### SEQ: mapa MIDI de batería
 
 En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y OCT−/OCT+ cambia de banco.
@@ -341,4 +362,4 @@ Antes de cambiar o retroceder la versión, guardá una **copia completa de proye
 
 ---
 
-MASHINA v0.9 · M-VAVE FM1
+MASHINA v0.10 · M-VAVE FM1
