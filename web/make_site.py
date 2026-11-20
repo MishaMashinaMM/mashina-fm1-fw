@@ -18,9 +18,8 @@
 
 PREV_DIR (JIANT 0.6.46): earlier versions offered next to the current one (firmware/versions.json, the installer's
 version list): its versions.json ([{"version", "file"}]) and the packages it names, up to KEEP_OLD, one build per
-version. Since 0.9.9-beta1 the workflow builds them from the commits listed in web/CLASSIC (never from the live site),
-and each version keeps its own package identity (FM-1_900 for the 0.6 line, FM-1_909 later): the installer checks the
-package it loads against the identity listed for that version.
+version. The MASHINA main workflow publishes only the current release. The optional PREV_DIR parameter remains available
+for explicit local packaging, where each package keeps its own identity and is validated before inclusion.
 
 The package must be one made by tools/fm1pkg_make.py (Felucca's own loader, no vendor files).
 Its identity (FM-1_9xx) is read from the package; the device must report it after
@@ -36,7 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BLOCKS, BLK, KEEP = 20, 0x30, 0x2F
-KEEP_OLD = 8                                    # (0.9.9-beta4) the milestones in web/CLASSIC
+KEEP_OLD = 8  # limit for optional, explicitly supplied previous release packages
 SAFE = re.compile(r"felucca-[A-Za-z0-9.-]+\.fwsc")
 
 

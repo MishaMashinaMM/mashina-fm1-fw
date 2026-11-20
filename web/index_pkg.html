@@ -881,7 +881,7 @@ let lastError = null, lastUp = null, permission = "";
 log(`page ${location.href}`);
 log(`installer ${meta.version} ${meta.product} | build ${meta.source_commit || "unknown"} | binary ${meta.release_hash || "unknown"} | ${env.browser} ${env.os} | webmidi ${env.webmidi ? "yes" : "NO"}`);
 
-/* (0.9.11) the channel: web/STABLE's approved version (webapp/installer) or main's preview (preview/webapp/installer) */
+/* Release channel: current MASHINA package metadata supplied by the site builder. */
 const preview = meta.channel ? meta.channel === "preview" : /-preview$/.test(meta.version);
 function showChannel() {
   const p = $("channel"); p.textContent = t(preview ? "chPreview" : "chStable") + " ";
@@ -955,7 +955,7 @@ async function loadVersion(i) {
   }
 }
 /* (0.8.5) a release's notice before it is written: 0.8.5 (the DRUM-X octaves change how some drum notes sound), on
- * either installer (the preview's and web/STABLE's) whenever the version picked is 0.8.5; never on the landing page */
+ * the installer when the selected version is 0.8.5; not shown on the homepage. */
 function releaseNotice(version) {
   return /^v?0\.8\.5(?![0-9])/.test(String(version)) ? "n085" : "";
 }
