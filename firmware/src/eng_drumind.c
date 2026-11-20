@@ -130,7 +130,7 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
     const int32_t mid_k=clamp((int32_t)IND_PROFILE[kind][1]+(grain-64)*85+kit[0]*60,250,19000);
     const int32_t high_k=clamp((int32_t)IND_PROFILE[kind][2]+(air-64)*150+kit[4]*75,1100,30500);
     const uint32_t duration=(uint32_t)clamp((int32_t)IND_PROFILE[kind][3]*1000+
-       (tail-64)*7200-(damp-64)*6500-kit[1]*4000+kit[6]*2000,24000,1800000);
+       (tail-64)*12000-(damp-64)*11500-kit[1]*4500+kit[6]*2000,24000,1800000);
     const uint32_t mul_b=dlab_decay_long(n,duration);
     const uint32_t mul_t=dlab_decay_long(n,(uint32_t)clamp(36000-(hit-64)*260,13000,57000));
     int32_t amp=a->amp,trans=a->hit,lp=a->lp,mid=a->mid,slow=a->slow,rough=a->rough;
@@ -225,11 +225,29 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
         raw+=((int64_t)bass*amp*bodymix)>>33;
         raw+=((int64_t)hiss*amp*brightness)>>35;
         raw+=((int64_t)(hiss+grit)*trans*attack)>>33;
-        /* MOTION works on all models, not just the pulsing ones: random
-         * scattering changes the initial crack and the sustained density. */
-        if(kind==IND_CLANG||kind==IND_ANVIL||kind==IND_SCRAPE||kind==IND_WHOOSH){
-            int32_t movement=(int32_t)(ind_random(&seed)&255u)-128;
-            raw+=((int64_t)movement*(motion-64)*hiss*amp)>>40;
+        /* Make formerly weak controls materially shape the actual sound.
+         * New additives are ZERO at each preset's own seed values, keeping
+         * approved CLANG/ANVIL/SCRAPE/WHOOSH baseline characters intact.
+         * Grain scatters short high-frequency fragments; weight changes
+         * force/body; crunch exposes air grit. Motion adjusts irregular
+         * impulse density on all 12 instruments, not only the motors. */
+        {
+            int32_t grain_change=grain-t->p[P_E0];
+            int32_t weight_change=weight-t->p[P_E2];
+            int32_t motion_change=motion-t->p[P_E4];
+            int32_t crunch_change=crunch-t->p[P_E6];
+            if(grain_change && (kind==IND_SCRAPE || kind==IND_EXPLOSION))
+                raw+=((int64_t)grit*amp*grain_change)>>32;
+            if(weight_change && (kind==IND_SCREECH || kind==IND_EXPLOSION))
+                raw+=((int64_t)(bass+body)*amp*weight_change)>>32;
+            if(crunch_change && kind==IND_WHOOSH)
+                raw+=((int64_t)grit*amp*crunch_change)>>32;
+            if(motion_change && (kind==IND_CLANG || kind==IND_ANVIL ||
+                 kind==IND_METAL || kind==IND_SCRAPE || kind==IND_WHOOSH)){
+                int32_t scatter=(int32_t)(ind_random(&seed)&255u)-128;
+                raw+=((int64_t)(hiss+grit)*amp*motion_change)>>33;
+                raw+=((int64_t)scatter*motion_change*hiss*amp)>>39;
+            }
         }
         raw=clamp(raw,-32768,32767);
         out[i]+=voice_amp((int32_t)((raw*gain)>>15),m,i);
