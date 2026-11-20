@@ -97,27 +97,30 @@ Use TRN to shift one layer up or down and FINE to thicken two sounds played in u
 
 Select the track, choose a sound/engine with the preset controls, then open **EDIT**. Turn **SELECT** to access the available EDIT pages; K1–K4 adjust the labels shown on each page. Use ENV, LFO, FX, SCL and ARP for further shaping.
 
-**ATMOS** makes slowly evolving harmonic pads. Its controls include **BREATH** (amplitude movement), **MOTION** (speed of movement), **FLOW** (timbre movement) and **SPREAD** (oscillator separation). Start from a pad preset and increase the movement controls gradually.
+### Existing JIANT sound engines
 
-**BRASS** creates expressive synthetic wind sounds. Its **TYPE** control morphs continuously from saxophone (**0**) through hybrids (around **64**) to trumpet (**127**).
+These engines are available alongside MASHINA's additions. Each has its own factory presets and EDIT parameters.
 
-| BRASS page | K1 | K2 | K3 | K4 |
-| --- | --- | --- | --- | --- |
-| **EDIT 1** | TYPE | PRESS | BUZZ | BREATH |
-| **EDIT 2** | BODY | FORMNT | GROWL | ATTACK |
-| **EDIT 3** | FAT | GRIND | METAL | CRUSH |
+| Engine | Sound and main controls |
+| --- | --- |
+| **ANALOG** | Classic subtractive sounds: warm basses, sharp leads, plucks and pads. Mix oscillators, detune them, then use drive and the filter for tone shaping. |
+| **PHASE** | Phase-distortion synthesis for brassy stabs, glassy bells, resonant keys and growling bass. DCW and its envelope reshape the waveform while the note plays. |
+| **LOFI** | Chip-style tones, wave-table sounds and bytebeat textures, from clean pulse leads to gritty game-console effects. Explore CHIP, WAVE, DUTY, sweep and bit reduction. |
+| **VOICE** | Sung vowels, choirs, speech-like leads and robot-voice sounds. VOWEL, VOWEL2 and TALK move between formants; some presets articulate words. |
+| **WHEEL** | Tonewheel-style additive organ with drawbar registrations, percussion, key click, drive and rotary-speaker color. Useful for organs, reedy bass and sustained chords. |
+| **NOISE** | Filtered noise, crackles, wind, rain, metallic hits and retro shift-register effects. MODE chooses the noise character; COLOR, FREQ and PEAK shape the result. |
+| **FM6** | Six-operator FM for electric pianos, bells, mallets, basses, complex pads and digital leads. Choose factory patches first; algorithms and operator envelopes provide deeper editing. |
+| **ANIMAL** | Synthetic calls and nature-inspired sounds such as birds, insects, frogs and wing buzzes. Choose a preset or a sound-producing mode and shape pitch, rhythm and resonances. |
 
-The EDIT 3 controls add deliberate detuning, distortion or digital coloration. Leave them near zero for a cleaner wind-like tone.
+**DRUM-X** is the expanded version of JIANT's drum engine. It is described together with the other drum kits in section 4.
 
-**INDUSTRIAL** makes hard-edged basses and leads:
+### Additional MASHINA melodic engines
 
-| INDUSTRIAL page | K1 | K2 | K3 | K4 |
-| --- | --- | --- | --- | --- |
-| **EDIT 1** | WAVE | FAT | GRIND | METAL |
-| **EDIT 2** | CRUSH | FEED | CUT | RES |
-| **EDIT 3** | WAVE2 | MIX | SUB | MODE |
+**ATMOS — moving pads and evolving textures.** Start with **SOFT CLOUD** for a subtle layered pad, **BREATHING** for slow swells or **GLASS TIDE** for a brighter texture. Its basic EDIT controls include **WAVE** (oscillator shape), **MORPH**, **DENSITY**, **DRIFT**, **CUT**, **RES**, **TEXTURE** and **SHIMMER**. The additional **BREATH** control adds volume movement, **MOTION** sets its pace, **FLOW** moves the tone over time and **SPREAD** separates the oscillators. Increase these gradually to keep stacked chords clear.
 
-Use WAVE/MIX to blend oscillators, CUT/RES to shape the filter and GRIND/METAL/CRUSH for a more aggressive sound.
+**BRASS — playable synthetic sax, horn and trumpet.** This engine is intentionally electronic rather than a realistic acoustic imitation. **TYPE** sweeps between sax-like (**0**) and trumpet-like (**127**) character, with hybrid sounds between them. **PRESS** changes playing intensity, **BUZZ** adds a reed/lip-like edge, **BREATH** adds air, and **BODY/FORMNT** control resonant color. Use **GROWL** for rougher tone and **ATTACK** for the start of a note. A third EDIT page provides **FAT**, **GRIND**, **METAL** and **CRUSH** for detuned or aggressive synthetic brass. Try **TENOR SAX**, **SAX GROWL** or **BRASS LEAD** as starting points.
+
+**INDUSTRIAL — powerful melodic basses and leads.** Unlike the DRUM-IND percussion kit, this engine follows the notes you play. **WAVE** chooses the main oscillator; **FAT** thickens it, **GRIND/METAL/CRUSH** add increasingly hard-edged color, and **FEED** introduces additional grit. **CUT/RES** shape the filter. On the third EDIT page **WAVE2**, **MIX**, **SUB** and **MODE** combine a second oscillator and low-end weight. For tight bass begin with **IRON BASS** or **SUB MACHINE**; for sharp leads try **STEEL LEAD** or **GEAR LEAD**.
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
