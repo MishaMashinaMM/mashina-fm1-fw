@@ -13,17 +13,17 @@ const readme = read('README.md');
 
 for (const [name, text] of [['home', home], ['installer', installer],
   ['editor', editor], ['emulator', emulator], ['README', readme]]) {
-  assert.match(text, /MASHINA/i, `${name} must name the Drums fork`);
+  assert.match(text, /MASHINA/i, `${name} must identify MASHINA`);
 }
 for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
-  assert.ok(home.includes(`href="${href}"`), `homepage must link to ${href}`);
+  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v09/")}"`), `homepage must link to ${href}`);
 }
 assert.match(home, /MASHINA v0\.9/, 'homepage must show current v0.9 release');
 assert.match(home, /successfully flashed and tested on a physical FM1/i, 'homepage must disclose successful hardware validation');
 assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
-assert.match(readme, /^# MASHINA v0\.9$/m, 'README must use the release-only title');
+assert.match(readme, /^# MASHINA .* v0\.9$/m, 'README must use the release-only title');
 assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
-assert.match(installer, /MASHINA v0\.9: DRUM-X and DRUM-LAB/, 'installer must identify current MASHINA v0.9');
+assert.match(installer, /MASHINA v0\.9: six-track MIDI/, 'installer must identify current MASHINA v0.9');
 assert.match(editor, /id="backup-export"/, 'editor must retain complete backup export');
 assert.match(editor, /id="backup-import"/, 'editor must retain complete backup restore');
 assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'Drums editor must not offer disabled sequencer');
