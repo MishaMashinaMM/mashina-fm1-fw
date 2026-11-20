@@ -1,0 +1,127 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Branch-only experimental OTA package. Never deploy Pages or update main.
+name: v0.6 transpose test installer
+
+on:
+  push:
+    branches: [transpose]
+    paths:
+      - 'firmware/src/**'
+      - 'firmware/hal/**'
+      - 'firmware/loader/**'
+      - 'tools/**'
+      - 'tests/**'
+      - 'web/make_site.py'
+      - 'web/index_pkg.html'
+      - '.github/workflows/transpose-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: transpose-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  firmware-installer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install host dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Verify GLO navigation, mixer and transpose
+        timeout-minutes: 5
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+          mkdir -p build/host/transpose
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DUI_TEST_GLO_NAV_ONLY=1 -Ibuild/gen -Ifirmware/src -o build/host/transpose/glo tests/ui_test.c -lm
+          timeout 60s build/host/transpose/glo
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DUI_TEST_MIXER_ONLY=1 -Ibuild/gen -Ifirmware/src -o build/host/transpose/mixer tests/ui_test.c -lm
+          timeout 60s build/host/transpose/mixer
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DTRANSPOSE_ONLY=1 -Ibuild/gen -Ifirmware/src -o build/host/transpose/midi tests/midi_control_test.c -lm
+          timeout 60s build/host/transpose/midi
+      - name: Cache JieLi toolchain and pinned SDK files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: Prepare pinned JieLi toolchain and SDK
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T="$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools"
+          [ -e "$HOME/.jieli/toolchain/pi32v2/bin/clang" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            cd "$HOME/fw-AC79_AIoT_SDK"
+            git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin
+            retry git checkout d179b4484759423312073f5fbb232501aa491047
+          fi
+          test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
+      - name: Build v0.6 preview firmware and check flash/RAM layout
+        env:
+          FELUCCA_NO_SEQUENCER: '1'
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+        run: |
+          set -o pipefail
+          python3 tools/build.py 2>&1 | tee firmware-build.log
+          test -s build/felucca.fwsc
+          test -s build/felucca.bin
+      - name: Create standalone preview web installer and checksums
+        run: |
+          VERSION="v0.6-transpose-${GITHUB_SHA::7}-preview"
+          python3 web/make_site.py build/felucca.fwsc "$VERSION" build/v06-test-installer
+          test -s build/v06-test-installer/webapp/installer/index.html
+          test -s "build/v06-test-installer/firmware/felucca-$VERSION.fwsc"
+          printf '%s\n' "$GITHUB_SHA" > build/v06-test-installer/firmware/SOURCE_COMMIT
+          (cd build/v06-test-installer/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
+          cp firmware-build.log build/v06-test-installer/firmware/BUILD-LOG.txt
+          cat > build/v06-test-installer/READ-ME-FIRST.txt <<'EOF'
+          JIANT LIVE DRUMS v0.6 transpose - EXPERIMENTAL DEVICE TEST
+          ---------------------------------------------------------
+          This is a real FM1 firmware installer. Installation changes the
+          firmware on your device. It has NOT yet been hardware-tested.
+          Keep a backup of your project and sounds before flashing.
+
+          Test on Windows with Chrome or Edge and a supported FM1 USB connection:
+          1. Extract the entire ZIP archive (including the firmware folder).
+          2. Open PowerShell in this extracted folder.
+          3. Run: py -m http.server 8000
+          4. Visit http://localhost:8000/webapp/installer/ in Chrome/Edge.
+          5. Follow the installer prompts. Do not disconnect during flashing.
+
+          v0.6 test areas:
+          - GLO opens at MIX > MIXER, without MANO/RIELES LIVE pages.
+          - K4 per-track transpose -24..+24 for melodic tracks; drums unchanged.
+          - Keyboard and external MIDI pitches both respond to transpose.
+          - Notes release correctly when TRN is changed while keys are held.
+          - Presets rotary on MIXER controls master DJ Filter.
+
+          The public v0.5 website and installer are NOT changed by this artifact.
+          Stop the local server with Ctrl+C.
+          EOF
+      - name: Upload standalone web installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: jiant-live-drums-v06-transpose-test-installer
+          path: build/v06-test-installer/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload raw firmware and build report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jiant-live-drums-v06-transpose-firmware
+          path: |
+            build/felucca.fwsc
+            build/felucca.bin
+            firmware-build.log
+          if-no-files-found: error
+          retention-days: 14
