@@ -995,7 +995,7 @@ static uint32_t proj_packed_size(const project_t *q)
     }
     {   /* optional global DRUM-LAB multipliers ('K' 'G') */
         uint32_t count = 0;
-        for (t = 0; t < NPART; t++) if (q->t[t].engine == ENGI_DRUMLAB)
+        for (t = 0; t < NPART; t++) if (q->t[t].engine == ENGI_DRUMLAB || q->t[t].engine == ENGI_DRUMAC)
             for (i = 0; i < 8u; i++) if (q->lab_global[t][i] != 100u) { count++; break; }
         if (count) n += 3u + count * 8u;
     }
@@ -1220,7 +1220,7 @@ static int proj_pack(project_store_t *out, const project_t *q)
     }
     {   /* Stage 25E: kit-level multipliers, only non-neutral tracks. */
         uint32_t mask = 0;
-        for (t = 0; t < NPART; t++) if (q->t[t].engine == ENGI_DRUMLAB)
+        for (t = 0; t < NPART; t++) if (q->t[t].engine == ENGI_DRUMLAB || q->t[t].engine == ENGI_DRUMAC)
             for (i = 0; i < 8u; i++) if (q->lab_global[t][i] != 100u) { mask |= 1u << t; break; }
         if (mask) {
             b[pos++] = 'K'; b[pos++] = 'G'; b[pos++] = (uint8_t)mask;
@@ -1665,7 +1665,7 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         if (!mask || (mask >> NPART)) return 0;
         pos += 3u;
         for (t = 0; t < NPART; t++) if (mask & (1u << t)) {
-            if (q->t[t].engine != ENGI_DRUMLAB || pos + 8u > room) return 0;
+            if ((q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC) || pos + 8u > room) return 0;
             for (i = 0; i < 8u; i++) if (b[pos + i] > 100u) return 0;
             memcpy(q->lab_global[t], b + pos, 8u);
             pos += 8u;
@@ -2134,7 +2134,7 @@ static void project_capture(project_t *p)
         memcpy(p->perf_sound[i], drum_perf_sound[i], 12u);
         memcpy(p->perf_choke[i], drum_perf_choke[i], 12u);
         memcpy(p->perf_retrigger[i], drum_retrigger[i], 12u);
-        if (trk[i].eng_req == ENGI_DRUMLAB) {
+        if (trk[i].eng_req == ENGI_DRUMLAB || trk[i].eng_req == ENGI_DRUMAC) {
             drumlab_global_ensure(i);
             memcpy(p->lab_global[i], drumlab_global[i], 8u);
         } else for (uint32_t j = 0; j < 8u; j++) p->lab_global[i][j] = 100u;
@@ -2407,6 +2407,8 @@ static void sound_put(project_t *p, uint32_t k)
     if (e == ENGI_DRUMAC) {
         uint32_t ti = k % NTRK, lane;
         ac_patch_reset(t);
+        memcpy(drumlab_global[ti], p->lab_global[ti], 8u);
+        drumlab_global_ready[ti] = 1u;
         ac_patch_ensure(t);
         for (lane = 0; lane < AC_NPAD; lane++)
             if (p->lab_mask[ti] & (1u << lane)) {
