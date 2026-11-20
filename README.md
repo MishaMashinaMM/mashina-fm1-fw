@@ -1,4 +1,4 @@
-# MASHINA — FM1 Performance Firmware
+# MASHINA — FM1 Performance Firmware v0.9
 
 **MASHINA** turns the **M-VAVE FM1** into a flexible, six-track sound module for **external MIDI keyboards, pad controllers and live performance**. Assign sounds to MIDI channels, split or layer a keyboard, reshape parameters while playing, and recall projects without relying on a song sequencer.
 
