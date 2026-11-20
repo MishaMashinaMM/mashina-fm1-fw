@@ -261,12 +261,17 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
          * boosted strongly. 100% reproduces the old sample exactly.
          * Track the low-pass state even while neutral, so a live MIDI
          * macro can move BRIGHT without a sudden first-sample jump. */
-        if (kit[4] != 0) {
-            int64_t upper=raw-bright_lp;
-            if (kit[4]<0) raw+=(upper*kit[4])/100;
-            else raw+=(upper*kit[4]*2)/100;
-        }
-        bright_lp+=(int32_t)(((raw>32767?32767:raw< -32768?-32768:raw)-bright_lp)*3500>>15);
+        /* The industrial noise generators can exceed 16-bit before their
+         * established clipper. Work on the actually audible signal, not the
+         * oversized raw sum, or all BRIGHT settings clip to the same output. */
+        raw=clamp(raw,-32768,32767);
+        int32_t source=(int32_t)raw;
+        int32_t upper=source-bright_lp;
+        if (kit[4]<0) raw+=((int64_t)upper*kit[4])/100;
+        else if(kit[4]>0) raw+=((int64_t)upper*kit[4]*2)/100;
+        /* Filter the pre-EQ source so repeated live BRIGHT moves don't
+         * feed the boosted high band back into the low-pass baseline. */
+        bright_lp+=(int32_t)(((int64_t)(source-bright_lp)*3500)>>15);
         /* ATTACK acts on the complete output of every industrial sound,
          * not merely the existing short noise transient. During the first
          * ~80 ms, 0% softens the hit towards silence, while 200% roughly
