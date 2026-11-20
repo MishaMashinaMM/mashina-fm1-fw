@@ -79,9 +79,14 @@ footer { margin-top: 12px; font-size: 12px; }
 footer nav a { margin: 0 6px; }
 footer small { font-size: 11px; opacity: .8; }
 </style>
+<link rel="stylesheet" href="../mashina-nav.css">
+<script defer src="../mashina-nav.js"></script>
+<script defer src="../mashina-emu-locale.js"></script>
 </head>
 <body>
 <main>
+<nav id="mashina-langs"></nav>
+<div class="mashina-site-header"><a class="mashina-brand" href="https://github.com/MishaMashinaMM/mashina-fm1-fw"><strong>MASHINA</strong><span>FM1 PERFORMANCE FW</span></a></div>
 <div class="keys" id="backup-controls">
   <label>Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json): <input id="backup-file" type="file" accept=".json,application/json"></label>
   <span>Optional: select before Switch on. The backup is validated and loaded into an isolated session; existing browser saves and your original file are not changed.</span>
