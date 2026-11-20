@@ -157,7 +157,7 @@ static uint32_t nav_cur(void)
 #if FELUCCA_NO_SEQUENCER
         /* MASHINA exposes only CONTROLS and MACROS. Resolve any saved
          * level-1 HOME state to the equivalent first-level numeric page. */
-        return ui.hset[ui.hlv ? 1 : 0] & 1u;
+        return ui.hset[0] & 1u;
 #else
         return gen_on() ? 4u + gen_page() : (ui.hlv ? 2u : 0u) + (ui.hset[ui.hlv ? 1 : 0] & 1u);
 #endif
