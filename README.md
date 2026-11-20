@@ -29,6 +29,12 @@ MASHINA has **eight shared synthesis voices in total**, not eight per track. It 
 
 For drum note layouts, sound parameters, MIDI mappings, hardware controls and complete operating instructions, see the **[User Manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)** (available in English, Serbian, Spanish, Russian, Japanese and Hindi).
 
+## Made for live performance
+
+**MASHINA puts the FM1 under your hands instead of behind menus.** Use a MIDI keyboard or pad controller to play several tracks at once, build splits and layers, and change the sound as you perform. Assign knobs, sliders or pedals to the parameters that matter to you, then reshape tones, trigger variations and balance tracks without interrupting the music.
+
+**Your setup stays flexible from song to song.** Combine melodic and percussion engines, give each track its own MIDI channel and playing range, and save complete configurations as projects for quick recall on stage. The mixer, streamlined controls and panic shortcut keep essential performance functions close at hand. MASHINA works equally well as the centerpiece of a compact MIDI rig or as an additional sound module in a larger setup.
+
 ## Install or try in a browser
 
 Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** to install MASHINA with a compatible desktop browser, or **[try the emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** without flashing your device. The **[web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** supports device management and backup/restore.
