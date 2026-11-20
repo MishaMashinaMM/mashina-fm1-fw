@@ -20,6 +20,9 @@ typedef struct {
     uint8_t kind, active;
 } ac_voice_t;
 static ac_voice_t ac_state[NPART][NVOICE];
+/* Three damped, independently noise-excited cymbal-plate bandpass modes.
+ * State lives in POOL, not the FM1's tightly constrained audio .bss. */
+static int32_t ac_plate_band[NPART][NVOICE][3] __attribute__((section(".pool")));
 static uint8_t ac_patch[NPART][AC_NPAD][8] __attribute__((section(".pool")));
 static uint8_t ac_ready[NPART];
 static uint16_t ac_dirty[NPART]; /* 12 pad mask, sparse project storage */
@@ -106,14 +109,15 @@ static void ac_note_on(track_t *t, voice_t *v)
     if (slot >= NVOICE) return;
     a = &ac_state[t - trk][slot];
     memset(a, 0, sizeof *a);
+    if (ac_is_metal(ac_kind(v->note)))
+        memset(ac_plate_band[t - trk][slot], 0, sizeof ac_plate_band[0][0]);
     if (ac_kind(v->note) == AC_NPAD) return;
     a->kind = (uint8_t)ac_kind(v->note);
     a->seed = 0xB5297A4Du ^ ((uint32_t)v->note << 18) ^ (uint32_t)v->age;
     if (!a->seed) a->seed = 1;
     /* Only CRASH needs oscillator phases. KICK/SNARE use phase[0..1]
      * as two signed, noise-driven filter memories; neither has a pitch. */
-    a->inc = ac_is_metal(a->kind) ?
-             pitch_inc((a->kind == AC_RIDE_BELL ? 88u : 75u) * 16u) : 0u;
+    a->inc = 0;  /* Plate filters are noise-excited, not pitched oscillators. */
     a->body = a->transient = 1 << 24;
     a->active = 1;
 }
@@ -138,9 +142,11 @@ static int32_t ac_amp(track_t *t, voice_t *v, int32_t adsr)
 static void ac_render(track_t *t, voice_t *v, int32_t *out,
                       uint32_t n, const vmod_t *m)
 {
-    uint32_t slot = (uint32_t)(v - t->v), i, ph0, ph1, ph2, rng, age, inc;
+    uint32_t slot = (uint32_t)(v - t->v), i, ph0, ph1, ph2, rng, age;
     int32_t body, trans, step_b, step_t, lp, fast, wire;
     uint32_t tau_b, tau_t, mul_b, mul_t, kind, lid, tom_tone_inc = 0;
+    int32_t *plate_bands = 0, plate_coef[3] = {0, 0, 0};
+    int32_t plate_low[3] = {0, 0, 0}, plate_damp = 0;
     int32_t level_gain;
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
     ac_voice_t *a;
@@ -164,17 +170,31 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         int32_t level = clamp(t->p[lid], 0, 127);
         level_gain = level == 127 ? 32768 : level * level * 32768 / 16129;
     }
-    inc = ac_is_metal(kind) ?
-          a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192) : 0u;
+    if (ac_is_metal(kind)) {
+        /* Inharmonic plate modes: different fixed central bands for bow,
+         * bell and crash. TUNE moves the bands, not a musical fundamental.
+         * Coefficients run in a bounded, stable part of the SVF range. */
+        int32_t colour = (tune - 64) * 18;
+        plate_coef[0] = clamp(6000 + colour, 3000, 10500);
+        plate_coef[1] = clamp(12200 + colour * 2, 6500, 19000);
+        plate_coef[2] = clamp(19000 + colour * 2, 13000, 26000);
+        plate_damp = kind == AC_RIDE_BELL ? 6800 : 15000;
+        plate_bands = ac_plate_band[t - trk][slot];
+        plate_low[0] = (int32_t)ph0;
+        plate_low[1] = (int32_t)ph1;
+        plate_low[2] = (int32_t)ph2;
+    }
     if (ac_is_tom(kind)) {
-        /* TUNE adjusts the drumhead's real resonance, not the thud filter.
-         * At 64, retain the approved tom's pitch and noise character.
-         * Approximately a semitone per four points across a useful range. */
-        int32_t pitch16 = clamp((35 + (int32_t)(kind - AC_FLOOR) * 4) * 16 +
-                                (tune - 64) * 4, 24 * 16, 81 * 16);
-        /* pitch_inc uses 1/16 semitone resolution: each knob step moves
-         * the drumhead by a quarter-semitone instead of stepping whole notes. */
-        tom_tone_inc = pitch_inc((uint32_t)pitch16);
+        /* TUNE=0 removes all pitched resonance. TUNE=1 starts very low,
+         * then rises continuously across nearly five octaves. A slight
+         * per-tom offset preserves distinct natural sizes, but every tom
+         * can be tuned independently across almost the entire range. */
+        if (tune > 0) {
+            int32_t pitch16 = clamp(27 * 16 + (tune - 1) * 6 +
+                                  (int32_t)(kind - AC_FLOOR) * 32,
+                                  26 * 16, 83 * 16);
+            tom_tone_inc = pitch_inc((uint32_t)pitch16);
+        }
     }
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
@@ -280,14 +300,13 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                            (low - deep) * (22 + ring_amt) / 128;
             raw = (int32_t)(((int64_t)thud * body) >> 23);
             raw += (int32_t)(((int64_t)(white - fast) * trans * (25 + strike)) >> 32);
-            /* A touch of short, damped head pitch: 0.18 s maximum and
-             * deliberately much quieter than the aperiodic impact.
-             * TUNE adjusts this subtle component without turning the tom
-             * into the boing-like melodic drum we rejected for kick/snare. */
-            if (age < 8000u) {
+            /* The noise impact stays exactly as before. At nonzero TUNE
+             * a strong but time-limited membrane resonance is added. The
+             * previous >>49 attenuation made pitch almost inaudible. */
+            if (tom_tone_inc && age < 13000u) {
                 int32_t head = sine_i(ph2);
-                raw += (int32_t)(((int64_t)head * body * (8000u - age) *
-                                  (64 + ring_amt)) >> 49);
+                raw += (int32_t)(((int64_t)head * body *
+                                  (13000u - age) * (75 + ring_amt)) >> 48);
                 ph2 += tom_tone_inc;
             }
             ph0 = (uint32_t)low;
@@ -301,55 +320,66 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             /* Hands and chest/body reflections below the clap's sharp slap. */
             raw += (int32_t)(((int64_t)lp * body * (60 + body_mix)) >> 33);
         } else {
-            int32_t s0 = sine_i(ph0), s1 = sine_i(ph1), s2 = sine_i(ph2);
-            /* A different physical-model approximation: three inharmonic
-             * modes excite one another via ring modulation. Instead of
-             * exposing the three sine tones as the cymbal sound, their
-             * pairwise products make a dense non-harmonic plate cluster.
-             * A decaying noisy stick impact excites several spectral bands;
-             * the diffuse wash stays strong long after the short attack.
-             * Only the bell retains a small direct partial for its ping. */
-            int32_t upper = white - fast;
-            int32_t lower = fast - lp;
-            int32_t band = (upper * (55 + bright) + lower * (75 + metal)) / 256;
-            int32_t partial01 = (int32_t)(((int64_t)s0 * s1) >> 15);
-            int32_t partial12 = (int32_t)(((int64_t)s1 * s2) >> 15);
-            int32_t partial20 = (int32_t)(((int64_t)s2 * s0) >> 15);
-            int32_t cluster = (partial01 + partial12 + partial20) / 3;
-            /* AM turbulence gives a soft evolving wash rather than a
-             * stationary pitched synth chord; no added voice storage. */
-            int32_t wash = (int32_t)(((int64_t)band *
-                                      (155 + (cluster >> 9))) >> 8);
-            if (kind == AC_CRASH) {
-                int32_t splash = (45 + strike + wire_amt / 2);
-                raw = (int32_t)(((int64_t)wash * body * (110 + body_mix)) >> 32);
-                raw += (int32_t)(((int64_t)cluster * body * (40 + metal)) >> 34);
-                raw += (int32_t)(((int64_t)upper * trans * splash) >> 31);
-            } else if (kind == AC_RIDE_BELL) {
-                /* Bell is deliberately more focused, with a short clear
-                 * stick ping over the metal cluster and moving noise. */
-                int32_t ping = (s0 + s1 / 3) / 2;
-                raw = (int32_t)(((int64_t)wash * body * (45 + bright)) >> 32);
-                raw += (int32_t)(((int64_t)cluster * body * (90 + metal)) >> 33);
-                raw += (int32_t)(((int64_t)ping * trans * (90 + ring_amt)) >> 32);
-            } else {
-                /* Ride splash: more bow/wash than the bell, but less
-                 * explosive than a crash, with a crisp stick attack. */
-                raw = (int32_t)(((int64_t)wash * body * (105 + bright)) >> 32);
-                raw += (int32_t)(((int64_t)cluster * body * (35 + metal)) >> 34);
-                raw += (int32_t)(((int64_t)upper * trans *
-                                  (65 + strike + wire_amt / 2)) >> 31);
+            /* Acoustic cymbal experiment: excite three damped, inharmonic
+             * noise bandpass modes instead of oscillators/ring modulation.
+             * Each band receives a slightly different stochastic excitation,
+             * producing broad, shifting plate energy rather than a chord.
+             * The broad hiss and stick strike have their own envelopes. */
+            int32_t bands[3];
+            int32_t input[3] = {white - lp, white - fast, fast - lp};
+            uint32_t k;
+            for (k = 0; k < 3u; k++) {
+                int32_t band = plate_bands[k], low = plate_low[k];
+                int32_t f = plate_coef[k];
+                low += (int32_t)(((int64_t)f * band) >> 15);
+                /* Damped state-variable bandpass, bounded to avoid a
+                 * runaway resonance on aggressive cymbal settings. */
+                int32_t high = input[k] - low -
+                               (int32_t)(((int64_t)plate_damp * band) >> 15);
+                band += (int32_t)(((int64_t)f * high) >> 15);
+                low = clamp(low, -131072, 131072);
+                band = clamp(band, -131072, 131072);
+                plate_low[k] = low;
+                plate_bands[k] = band;
+                bands[k] = band;
             }
-            /* Slightly irregular phase increments keep repeated hits from
-             * locking into the exact same periodic pattern. */
-            uint32_t jitter = (uint32_t)(white + 32768) & 1023u;
-            ph0 += inc + (uint32_t)(((uint64_t)inc * jitter) >> 17);
-            ph1 += (uint32_t)(((uint64_t)inc * 6021u) >> 12);
-            ph2 += (uint32_t)(((uint64_t)inc * (7900u + (uint32_t)metal * 11u)) >> 12);
+            int32_t upper = white - fast;
+            int32_t broad = (white - lp) / 2 + upper / 2;
+            int32_t plate = bands[0] * (60 + metal) / 256 +
+                            bands[1] * (75 + bright) / 256 +
+                            bands[2] * (35 + ring_amt) / 256;
+            if (kind == AC_CRASH) {
+                /* SPLASH is deliberately strong: 0 = rounded, mostly plate;
+                 * 127 = explosive upper-frequency attack and spray.
+                 * Unlike the previous model it changes spectral balance as
+                 * well as attack gain, so the range is clearly audible. */
+                int32_t splash = wire_amt;
+                raw = (int32_t)(((int64_t)plate * body * (110 + body_mix)) >> 31);
+                raw += (int32_t)(((int64_t)broad * body * (35 + splash * 2)) >> 32);
+                raw += (int32_t)(((int64_t)upper * trans * (25 + splash * 5)) >> 31);
+            } else if (kind == AC_RIDE_BELL) {
+                /* A more focused bell, emphasising the mid plate resonance
+                 * with a hard stick impulse. */
+                raw = (int32_t)(((int64_t)(bands[0] + bands[1] * 2) *
+                                 body * (80 + metal)) >> 32);
+                raw += (int32_t)(((int64_t)upper * trans * (45 + strike)) >> 31);
+            } else {
+                /* Ride splash: lighter than the crash and longer than a
+                 * single stick strike, with a separate broad wash. */
+                raw = (int32_t)(((int64_t)plate * body * (95 + bright)) >> 31);
+                raw += (int32_t)(((int64_t)broad * body * (60 + wire_amt * 2)) >> 32);
+                raw += (int32_t)(((int64_t)upper * trans *
+                                  (40 + wire_amt * 3)) >> 31);
+            }
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
         out[i] += voice_amp((int32_t)(((int64_t)raw * level_gain) >> 15), m, i);
+    }
+    if (ac_is_metal(kind)) {
+        ph0 = (uint32_t)plate_low[0];
+        ph1 = (uint32_t)plate_low[1];
+        ph2 = (uint32_t)plate_low[2];
     }
     a->phase[0] = ph0; a->phase[1] = ph1; a->phase[2] = ph2;
     a->seed = rng; a->age = age;
