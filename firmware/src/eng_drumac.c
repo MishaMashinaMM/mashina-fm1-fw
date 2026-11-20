@@ -300,37 +300,48 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             raw += (int32_t)(((int64_t)lp * body * (60 + body_mix)) >> 33);
         } else {
             int32_t s0 = sine_i(ph0), s1 = sine_i(ph1), s2 = sine_i(ph2);
-            /* Noise-driven cymbal plate: a multi-band metallic wash whose
-             * brightness fluctuates irregularly with several inharmonic
-             * modes. The modes modulate the noise rather than dominate the
-             * sustain as audible pure notes. This better approximates a
-             * struck vibrating plate without prerecorded samples. */
-            int32_t upper = (white - fast);
+            /* A different physical-model approximation: three inharmonic
+             * modes excite one another via ring modulation. Instead of
+             * exposing the three sine tones as the cymbal sound, their
+             * pairwise products make a dense non-harmonic plate cluster.
+             * A decaying noisy stick impact excites several spectral bands;
+             * the diffuse wash stays strong long after the short attack.
+             * Only the bell retains a small direct partial for its ping. */
+            int32_t upper = white - fast;
             int32_t lower = fast - lp;
-            int32_t flutter = 140 + (s0 + s1 / 2 + s2 / 3) / 700;
-            int32_t plate = (upper * (75 + bright) + lower * (50 + metal)) / 256;
-            int32_t changing = (int32_t)(((int64_t)plate * flutter) >> 7);
-            int32_t ring = (s0 + s1 * (1 + ring_amt / 48) + s2) / (3 + ring_amt / 48);
+            int32_t band = (upper * (55 + bright) + lower * (75 + metal)) / 256;
+            int32_t partial01 = (int32_t)(((int64_t)s0 * s1) >> 15);
+            int32_t partial12 = (int32_t)(((int64_t)s1 * s2) >> 15);
+            int32_t partial20 = (int32_t)(((int64_t)s2 * s0) >> 15);
+            int32_t cluster = (partial01 + partial12 + partial20) / 3;
+            /* AM turbulence gives a soft evolving wash rather than a
+             * stationary pitched synth chord; no added voice storage. */
+            int32_t wash = (int32_t)(((int64_t)band *
+                                      (155 + (cluster >> 9))) >> 8);
             if (kind == AC_CRASH) {
-                /* Broad initial edge, then a long, restless wash. SPLASH
-                 * adds cymbal strike noise separately from sustained metal. */
-                raw = (int32_t)(((int64_t)changing * body * (110 + body_mix)) >> 33);
-                raw += (int32_t)(((int64_t)ring * body * (10 + metal / 6)) >> 35);
-                raw += (int32_t)(((int64_t)upper * trans * (45 + strike + wire_amt / 2)) >> 32);
+                int32_t splash = (45 + strike + wire_amt / 2);
+                raw = (int32_t)(((int64_t)wash * body * (110 + body_mix)) >> 32);
+                raw += (int32_t)(((int64_t)cluster * body * (40 + metal)) >> 34);
+                raw += (int32_t)(((int64_t)upper * trans * splash) >> 31);
             } else if (kind == AC_RIDE_BELL) {
-                /* Bell retains a distinct hard metallic ping, but surrounded
-                 * by a textured, inharmonic noise tail rather than three
-                 * exposed stationary sine oscillators. */
-                raw = (int32_t)(((int64_t)changing * body * (45 + bright)) >> 32);
-                raw += (int32_t)(((int64_t)ring * body * (80 + metal)) >> 33);
-                raw += (int32_t)(((int64_t)upper * trans * (35 + strike)) >> 32);
+                /* Bell is deliberately more focused, with a short clear
+                 * stick ping over the metal cluster and moving noise. */
+                int32_t ping = (s0 + s1 / 3) / 2;
+                raw = (int32_t)(((int64_t)wash * body * (45 + bright)) >> 32);
+                raw += (int32_t)(((int64_t)cluster * body * (90 + metal)) >> 33);
+                raw += (int32_t)(((int64_t)ping * trans * (90 + ring_amt)) >> 32);
             } else {
-                /* Ride splash: washy bow strike with fast splash transient. */
-                raw = (int32_t)(((int64_t)changing * body * (130 + bright)) >> 33);
-                raw += (int32_t)(((int64_t)ring * body * (10 + metal / 6)) >> 35);
-                raw += (int32_t)(((int64_t)upper * trans * (75 + strike + wire_amt / 2)) >> 32);
+                /* Ride splash: more bow/wash than the bell, but less
+                 * explosive than a crash, with a crisp stick attack. */
+                raw = (int32_t)(((int64_t)wash * body * (105 + bright)) >> 32);
+                raw += (int32_t)(((int64_t)cluster * body * (35 + metal)) >> 34);
+                raw += (int32_t)(((int64_t)upper * trans *
+                                  (65 + strike + wire_amt / 2)) >> 31);
             }
-            ph0 += inc;
+            /* Slightly irregular phase increments keep repeated hits from
+             * locking into the exact same periodic pattern. */
+            uint32_t jitter = (uint32_t)(white + 32768) & 1023u;
+            ph0 += inc + (uint32_t)(((uint64_t)inc * jitter) >> 17);
             ph1 += (uint32_t)(((uint64_t)inc * 6021u) >> 12);
             ph2 += (uint32_t)(((uint64_t)inc * (7900u + (uint32_t)metal * 11u)) >> 12);
         }
