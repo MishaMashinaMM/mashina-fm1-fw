@@ -1,0 +1,69 @@
+name: Measure MASHINA firmware flash size
+
+on:
+  push:
+    branches: [ui-flash-optimization]
+    paths:
+      - '.github/workflows/flash-size.yml'
+      - 'firmware/**'
+      - 'tools/**'
+      - 'build.sh'
+  workflow_dispatch:
+
+jobs:
+  measure:
+    name: ${{ matrix.ref }} firmware size
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ref: [main, ui-flash-optimization]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+
+      - name: Install build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl xz-utils
+          python3 -m pip install --break-system-packages Pillow fonttools
+
+      - name: Install JieLi compiler
+        run: |
+          sh tools/get_toolchain.sh "$HOME/.jieli"
+          test -x "$HOME/.jieli/toolchain/pi32v2/bin/clang"
+
+      - name: Get pinned AC79 SDK
+        run: |
+          git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
+            https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+          test -f "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/uboot.boot"
+
+      - name: Build flash image
+        run: |
+          set -o pipefail
+          FELUCCA_NO_SEQUENCER=1 bash build.sh 2>&1 | tee flash-build.log
+
+      - name: Record size
+        if: success()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from tools.fm1pkg_make import APP_SLOT
+          n = Path("build/felucca.bin").stat().st_size
+          Path("flash-size.txt").write_text(
+              f"ref=${{ matrix.ref }}\nsize_bytes={n}\nslot_bytes={APP_SLOT}\nfree_bytes={APP_SLOT - n}\n")
+          print(Path("flash-size.txt").read_text())
+          PY
+
+      - name: Upload measurement and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flash-size-${{ matrix.ref }}
+          path: |
+            flash-size.txt
+            flash-build.log
+          if-no-files-found: ignore
