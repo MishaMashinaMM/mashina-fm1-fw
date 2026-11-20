@@ -102,6 +102,15 @@ static uint32_t ac_is_metal(uint32_t kind)
 {
     return kind == AC_CRASH || kind == AC_RIDE_BELL || kind == AC_RIDE_SPLASH;
 }
+/* Centre newly extended modulation at the preset's original field value.
+ * Its 0 delta produces precisely the existing sound; projects and individual
+ * pad overrides keep the same stored values and MIDI behaviour. */
+static int32_t ac_mod_delta(track_t *t, uint32_t kind, uint32_t field, int32_t value)
+{
+    int32_t origin = kind == AC_SNARE && field == 4u ?
+                     43 : clamp(t->p[P_E0 + field], 0, 127);
+    return value - origin;
+}
 static void ac_note_on(track_t *t, voice_t *v)
 {
     uint32_t slot = (uint32_t)(v - t->v);
@@ -149,6 +158,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     int32_t plate_low[3] = {0, 0, 0}, plate_damp = 0;
     int32_t level_gain;
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
+    int32_t mod_delta[8];
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
     a = &ac_state[t - trk][slot];
@@ -165,6 +175,14 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     bright = ac_param_value(t, kind, 5);
     metal = ac_param_value(t, kind, 6);
     ring_amt = ac_param_value(t, kind, 7);
+    /* Precompute signed distances once per render block, not per sample. */
+    {
+        int32_t values[8] = {tune, damp, body_mix, strike,
+                             wire_amt, bright, metal, ring_amt};
+        uint32_t field;
+        for (field = 0u; field < 8u; field++)
+            mod_delta[field] = ac_mod_delta(t, kind, field, values[field]);
+    }
     lid = kind < 8u ? P_LN0 + kind : P_LN8 + kind - 8u;
     {   /* Quadratic pad LEVEL, identical to DRUM-LAB; calculated per block. */
         int32_t level = clamp(t->p[lid], 0, 127);
@@ -207,6 +225,14 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             kind == AC_RIDE_SPLASH ? 180000u + (uint32_t)body_mix * 8500u :
                                380000u + (uint32_t)body_mix * 16000u;
     tau_b = tau_b * (uint32_t)(180 - damp) / 116u;
+    /* Stronger tail/damp shaping, centred on the current factory preset.
+     * At a zero delta the original decay is bit-for-bit unchanged. */
+    {
+        int32_t decay_factor = clamp(256 - mod_delta[1] * 3 +
+                                   mod_delta[7] * (ac_is_metal(kind) || kind == AC_HAT_O ? 2 : 1),
+                                   48, 576);
+        tau_b = (uint32_t)(((uint64_t)tau_b * (uint32_t)decay_factor) >> 8);
+    }
     if (tau_b < 25000u) tau_b = 25000u;
     tau_t = ac_is_metal(kind) ? 85000u :
             kind == AC_SNARE ? 22000u : kind == AC_CLAP ? 30000u : 9500u;
@@ -371,6 +397,62 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                 raw += (int32_t)(((int64_t)upper * trans *
                                   (40 + wire_amt * 3)) >> 34);
             }
+        }
+        /* Modulation range extension. This layer deliberately has no
+         * contribution at the patch's existing neutral/preset settings.
+         * All eight fields now have a distinct audible role, including
+         * previously inert cymbal TUNE/RING, tom STICK/SHELL, hat CHICK/
+         * DECAY and clap SNAP/TEXTURE/TAIL. Use the same existing noise,
+         * head and strike states: no additional synth engine or voices. */
+        {
+            int32_t high = white - fast;
+            int32_t mid = fast - lp;
+            int32_t low = lp;
+            int32_t extra = 0;
+            int32_t tune_delta = mod_delta[0];
+            int32_t body_delta = mod_delta[2];
+            int32_t hit_delta = mod_delta[3];
+            int32_t aux_delta = mod_delta[4];
+            int32_t bright_delta = mod_delta[5];
+            int32_t texture_delta = mod_delta[6];
+            int32_t ring_delta = mod_delta[7];
+            /* TUNE: body colour for untuned kick/snare/clap, plate spectrum
+             * for cymbals; toms already have a separate true-pitch path. */
+            if (!ac_is_tom(kind))
+                extra += (int32_t)(((int64_t)mid * body * tune_delta) >> 34);
+            /* BODY: change thump/wash strength rather than merely the decay.
+             * Preserve the existing low-frequency kick and snare generators. */
+            extra += (int32_t)(((int64_t)low * body * body_delta) >> 33);
+            /* HIT: independently emphasise or soften the initial transient. */
+            extra += (int32_t)(((int64_t)high * trans * hit_delta) >> 33);
+            /* WIRES / BEATER / SPLASH / STICK / CHICK / SNAP:
+             * For pads where field 5 was previously unused, make it an
+             * unmistakable initial strike and short rattle control. */
+            if (kind == AC_HAT_C || kind == AC_HAT_O ||
+                ac_is_tom(kind) || kind == AC_CLAP || kind == AC_RIDE_BELL)
+                extra += (int32_t)(((int64_t)high * trans * aux_delta) >> 32);
+            /* SPLASH is more than a volume knob: also vary crash and ride
+             * attack-to-wash balance around the exact original sound. */
+            if (kind == AC_CRASH || kind == AC_RIDE_SPLASH) {
+                extra += (int32_t)(((int64_t)high * trans * aux_delta) >> 33);
+                extra += (int32_t)(((int64_t)mid * body * aux_delta) >> 34);
+            }
+            /* BRIGHT: strong upper-band emphasis on all sounds. The snare
+             * already has a bright transient; this adds sustained spectral
+             * contrast without overwriting its approved default. */
+            extra += (int32_t)(((int64_t)high * body * bright_delta) >> 34);
+            /* METAL/TEXTURE/SHELL: previously ineffective for tom and clap;
+             * on cymbals modify the noisy metal sheet, not just its resonator. */
+            if (ac_is_tom(kind) || kind == AC_CLAP ||
+                kind == AC_HAT_C || kind == AC_HAT_O || ac_is_metal(kind))
+                extra += (int32_t)(((int64_t)mid * body * texture_delta) >> 33);
+            /* RING/TAIL: separate body-band tail coloration on pads whose
+             * earlier RING scarcely affected the sound, especially hats
+             * and clap. Decay is also modulated above. */
+            if (kind == AC_HAT_C || kind == AC_HAT_O || kind == AC_CLAP ||
+                ac_is_metal(kind))
+                extra += (int32_t)(((int64_t)(mid + low) * body * ring_delta) >> 34);
+            raw = (int32_t)clamp((int64_t)raw + extra, -32768, 32767);
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
