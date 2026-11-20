@@ -2,14 +2,17 @@
  * MASHINA DRUM-AC: first acoustic percussion milestone.
  * Independent kick, snare and crash models, all generated in fixed point.
  * No sample data, no dependence on DRUM-X/DRUM-LAB patches.
- * Twelve individually editable sounds, GM-compatible drum note assignments.
+ * Twelve individually editable sounds in one repeated chromatic octave.
+ * Any MIDI note triggers the instrument at the same semitone in C2..B2.
  */
 enum { AC_KICK, AC_SNARE, AC_CRASH, AC_HAT_C, AC_HAT_O,
        AC_FLOOR, AC_TOM_L, AC_TOM_M, AC_TOM_H, AC_CLAP,
        AC_RIDE_BELL, AC_RIDE_SPLASH, AC_NPAD };
-/* Keep the first three indices stable for project compatibility. */
+/* Keep pad indices stable for project compatibility. The canonical octave
+ * covers each semitone exactly once, so the keyboard can repeat the entire
+ * 12-pad kit at every octave (the same behavior as DRUM-LAB). */
 static const uint8_t AC_NOTES[AC_NPAD] = {
-    36, 38, 49, 42, 46, 41, 43, 45, 47, 39, 53, 51
+    36, 38, 37, 42, 46, 41, 43, 45, 47, 39, 40, 44
 };
 typedef struct {
     uint32_t phase[3], inc, seed, age;
@@ -71,9 +74,9 @@ static uint32_t ac_random(uint32_t *s)
 }
 static uint32_t ac_kind(uint32_t note)
 {
-    uint32_t i;
+    uint32_t i, slot = 36u + note % 12u;
     for (i = 0; i < AC_NPAD; i++)
-        if (note == AC_NOTES[i]) return i;
+        if (slot == AC_NOTES[i]) return i;
     return AC_NPAD;
 }
 static uint32_t ac_is_tom(uint32_t kind)
