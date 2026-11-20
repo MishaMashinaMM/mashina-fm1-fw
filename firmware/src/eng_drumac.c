@@ -140,7 +140,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
 {
     uint32_t slot = (uint32_t)(v - t->v), i, ph0, ph1, ph2, rng, age, inc;
     int32_t body, trans, step_b, step_t, lp, fast, wire;
-    uint32_t tau_b, tau_t, mul_b, mul_t, kind, lid;
+    uint32_t tau_b, tau_t, mul_b, mul_t, kind, lid, tom_tone_inc = 0;
     int32_t level_gain;
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
     ac_voice_t *a;
@@ -166,6 +166,11 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     }
     inc = ac_is_metal(kind) ?
           a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192) : 0u;
+    if (ac_is_tom(kind)) {
+        int32_t semitone = clamp(35 + (int32_t)(kind - AC_FLOOR) * 4 +
+                                 (tune - 64) / 16, 26, 65);
+        tom_tone_inc = pitch_inc((uint32_t)semitone * 16u);
+    }
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
             kind == AC_HAT_C ? 13000u + (uint32_t)body_mix * 700u :
@@ -263,12 +268,10 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
              * TUNE adjusts this subtle component without turning the tom
              * into the boing-like melodic drum we rejected for kick/snare. */
             if (age < 8000u) {
-                int32_t semitone = clamp(35 + (int32_t)height * 4 + (tune - 64) / 16, 26, 65);
-                uint32_t tone_inc = pitch_inc((uint32_t)semitone * 16u);
                 int32_t head = sine_i(ph2);
                 raw += (int32_t)(((int64_t)head * body * (8000u - age) *
                                   (64 + ring_amt)) >> 51);
-                ph2 += tone_inc;
+                ph2 += tom_tone_inc;
             }
             ph0 = (uint32_t)low;
             ph1 = (uint32_t)deep;
@@ -297,7 +300,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             if (kind == AC_CRASH) {
                 /* Broad initial edge, then a long, restless wash. SPLASH
                  * adds cymbal strike noise separately from sustained metal. */
-                raw = (int32_t)(((int64_t)changing * body * (110 + body_mix)) >> 31);
+                raw = (int32_t)(((int64_t)changing * body * (110 + body_mix)) >> 33);
                 raw += (int32_t)(((int64_t)ring * body * (10 + metal / 6)) >> 35);
                 raw += (int32_t)(((int64_t)upper * trans * (45 + strike + wire_amt / 2)) >> 32);
             } else if (kind == AC_RIDE_BELL) {
@@ -309,7 +312,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
                 raw += (int32_t)(((int64_t)upper * trans * (35 + strike)) >> 32);
             } else {
                 /* Ride splash: washy bow strike with fast splash transient. */
-                raw = (int32_t)(((int64_t)changing * body * (130 + bright)) >> 31);
+                raw = (int32_t)(((int64_t)changing * body * (130 + bright)) >> 33);
                 raw += (int32_t)(((int64_t)ring * body * (10 + metal / 6)) >> 35);
                 raw += (int32_t)(((int64_t)upper * trans * (75 + strike + wire_amt / 2)) >> 32);
             }
