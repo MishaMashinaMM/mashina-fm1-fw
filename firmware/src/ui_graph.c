@@ -69,7 +69,31 @@ static uint16_t heat_y(int32_t y, int32_t y0, int32_t y1, uint16_t c)
 {
     return settings.palette == UI_JIANT_INDEX && y1 > y0 ? heat_col(24 + (y1 - y) * 232 / (y1 - y0)) : c;
 }
-#include "ui_being.c"                                /* (JIANT 0.5) the beings: the engine pages' creatures */
+#if !FELUCCA_NO_SEQUENCER
+#include "ui_being.c"
+#else
+/* Only the generic audio-level helper is still used by legacy FX status
+ * screens. All creature genomes, morphing and colony drawing are excluded. */
+static int32_t bg_sin(uint32_t ang) { return sine_i(ang << 16); }
+static int32_t bg_energy(void)
+{
+    static int32_t e;
+    static uint32_t fr = 0xFFFFFFFFu;
+    uint32_t w = scope_w, i;
+    int32_t pk = 0, v;
+    if (fr == ui.frame) return e;
+    fr = ui.frame;
+    for (i = 1; i <= 256u; i += 2u) {
+        v = scope_buf[(w - i) & (SCOPE_N - 1u)];
+        if (v < 0) v = -v;
+        if (v > pk) pk = v;
+    }
+    v = pk * 256 / 12000;
+    if (v > 256) v = 256;
+    e += v > e ? (v - e) * 3 / 4 : (v - e) / 6;
+    return e;
+}
+#endif                                /* (JIANT 0.5) the beings: the engine pages' creatures */
 #if !FELUCCA_NO_SEQUENCER
 #include "ui_engvis.c"
 #endif                               /* (0.9.4) VOICE's head, ANIMAL's creature, DRUM-X's kit */
