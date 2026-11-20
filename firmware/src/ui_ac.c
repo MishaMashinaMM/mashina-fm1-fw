@@ -13,11 +13,27 @@ static const char *const AC_PAD_NAMES[AC_NPAD] = {
 };
 static const char *ac_field_name(uint32_t pad, uint32_t field)
 {
-    if (field == 4u)
-        return pad == AC_KICK ? "BEATER" :
-               (pad == AC_CRASH || pad == AC_RIDE_SPLASH) ? "SPLASH" : AC_FIELDS[field];
-    if (field == 6u && (pad == AC_KICK || pad == AC_SNARE))
-        return "TEXTURE";
+    if (field == 0u && (pad == AC_HAT_C || pad == AC_HAT_O ||
+                         pad == AC_CLAP || ac_is_metal(pad)))
+        return "TONE";
+    if (field == 4u) {
+        if (pad == AC_KICK) return "BEATER";
+        if (pad == AC_SNARE) return "WIRES";
+        if (pad == AC_CRASH || pad == AC_RIDE_SPLASH) return "SPLASH";
+        if (pad == AC_HAT_C || pad == AC_HAT_O) return "CHICK";
+        if (ac_is_tom(pad)) return "STICK";
+        if (pad == AC_CLAP) return "SNAP";
+        return "STRIKE";  /* ride bell */
+    }
+    if (field == 6u) {
+        if (pad == AC_KICK || pad == AC_SNARE || pad == AC_CLAP)
+            return "TEXTURE";
+        if (ac_is_tom(pad)) return "SHELL";
+    }
+    if (field == 7u) {
+        if (pad == AC_HAT_C || pad == AC_HAT_O) return "DECAY";
+        if (pad == AC_CLAP) return "TAIL";
+    }
     return AC_FIELDS[field];
 }
 static const char *ac_level_name(uint32_t lane)
