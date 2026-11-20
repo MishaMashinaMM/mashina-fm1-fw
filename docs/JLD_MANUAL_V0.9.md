@@ -1,8 +1,8 @@
-# JIANT LIVE DRUMS v0.9 — User Manual
+# MASHINA v0.9 — FM1 Performance Firmware User Manual
 
-This is the **JIANT LIVE DRUMS (JLD) v0.9** user manual for the M-VAVE FM1, covering live controls, MIDI performance, **Keyboard Zones (note and velocity ranges)**, drum kits, sound engines, project management and the v0.7 **BRASS** and **INDUSTRIAL** synthesizers. This fork disables the original JIANT sequencer. The firmware and its [README](../README.md) are the authoritative implementation references; diagrams below are annotated schematics, not photographs of the physical screen.
+This is the **MASHINA v0.9** user manual for the M-VAVE FM1, a live sound module designed primarily for external MIDI controllers, covering live controls, MIDI performance, **Keyboard Zones (note and velocity ranges)**, drum kits, sound engines, project management and the v0.7 **BRASS** and **INDUSTRIAL** synthesizers. This fork disables the original JIANT sequencer. The firmware and its [README](../README.md) are the authoritative implementation references; diagrams below are annotated schematics, not photographs of the physical screen.
 
-> **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/jiant-live-drums/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
+> **Canonical location:** [`docs/JLD_MANUAL_V0.9.md`](JLD_MANUAL_V0.9.md). The former v0.3 filename links here for backward compatibility. The [web interactive manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/) is inherited from original JIANT and does not fully describe these Drums-specific pages.
 
 > **v0.9 orange UI — FM1 device-tested (November 18, 2026):** The updated black/white/gray/orange interface was successfully flashed to an FM1, and the owner reported everything working correctly. Earlier on the same date, the v0.9 MIDI Zones/TUNING feature build was tested with a Korg X5D. Firmware identity remains `FM-1_909`. Physical validation confirms the installation and tested functions, not an exhaustive endurance/recovery guarantee. Back up projects and presets before firmware changes.
 
@@ -196,7 +196,7 @@ These commands **select**, rather than toggle, CH1/CH2. For example, CC88=0 alwa
 
 Use a value **≥64** to trigger, then **0–63** to re-arm (a brief debounce also accepts repeated high-only presses). These CCs are reserved from normal routing, MIDI Learn and REC macros, but **only channels 13–15 execute them**. Save a melodic sound before experimenting; randomization does not replace the saved project unless you save again. DRUM-X and DRUM-LAB are excluded. CC87 restores parameters in-place, **not** an engine change, and does not cut active notes or effects.
 
-## 3. JLD live drum screens
+## 3. MASHINA drum performance screens
 
 ![SEQ, PLAY and REC interface schematics drawn from their screen-layout code](jld-live-screens.svg)
 
@@ -336,7 +336,7 @@ Navigate to **SAVE → LIBRARY → TOOLS**. The four actions are mapped directly
 
 **CLEAR SLOT is destructive** once confirmed. The LIBRARY overview indicates saved/empty slots; it was corrected in v0.4 to use the same saved-project validation as loading.
 
-The [JLD web editor](https://mishamashinamm.github.io/jiant-live-drums/webapp/editor/) offers device backup and restore. **Make a full backup before flashing**; do not confuse exporting a sound preset with backing up all device data. The [dedicated installer](https://mishamashinamm.github.io/jiant-live-drums/webapp/installer/) is separate from the editor.
+The [MASHINA web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) offers device backup and restore. **Make a full backup before flashing**; do not confuse exporting a sound preset with backing up all device data. The [dedicated installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) is separate from the editor.
 
 ## 8. Useful live setups
 
