@@ -2,7 +2,7 @@
 
 **MASHINA** is performance-focused firmware for the **M-VAVE FM1**: a six-track sound module for external MIDI keyboards, pads and controllers, with flexible routing, keyboard zones, melodic synthesis, drum engines, effects, 32 MIDI macros and live project recall. Developed by **Misha Mashina**, based on **JIANT by Juan Jiant** (originally based on Felucca).
 
-[![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-777777.svg)](LICENSE)
+**Repository migration:** This is the official MASHINA repository, created from the physically tested `atmos` development branch on November 20, 2026. The previous project, [jiant-live-drums](https://github.com/MishaMashinaMM/jiant-live-drums), remains as the historical development archive. The code, assets and historical source attribution were preserved.\n\n[![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-777777.svg)](LICENSE)
 [![UI v0.9: FM1 tested](https://img.shields.io/badge/v0.9_UI-FM1_device_tested-ff9900.svg)](#v09-orange-ui-device-tested)
 
 ![JIANT LIVE DRUMS v0.9: six-track zones, transpose ±36 semitones and fine tuning ±50 cents, BRASS and INDUSTRIAL, two 12-pad drum engines and 32 MIDI macros](docs/jiant-live-drums-overview-32-macros.svg?v=0.9-ui)
