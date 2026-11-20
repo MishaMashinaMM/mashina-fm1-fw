@@ -289,7 +289,12 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
-        out[i] += voice_amp(raw, m, i);
+        /* Reuse the same twelve LEVELS controls and their quadratic taper as
+         * DRUM-LAB. A default LEVEL=127 is precisely transparent. */
+        uint32_t lid = kind < 8u ? P_LN0 + kind : P_LN8 + kind - 8u;
+        int32_t level = clamp(t->p[lid], 0, 127);
+        int32_t gain = level == 127 ? 32768 : level * level * 32768 / 16129;
+        out[i] += voice_amp((int32_t)(((int64_t)raw * gain) >> 15), m, i);
     }
     a->phase[0] = ph0; a->phase[1] = ph1; a->phase[2] = ph2;
     a->seed = rng; a->age = age;
