@@ -8,7 +8,7 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 
 ### MASHINA online
 
-[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [User manual](https://github.com/MishaMashinaMM/mashina-fm1-fw/blob/main/docs/JLD_MANUAL_V0.9.md)
+[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [User manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)
 
 ## What MASHINA does
 
@@ -55,7 +55,7 @@ For example, assign T1 and T2 to the same incoming MIDI channel and give them ov
 
 **CC macros:** open **REC**, press **OCT+**, send a CC from the controller, then navigate to the track/parameter you want to control and turn its knob. Back in REC, edit its range/toggle endpoints and other options; save the project afterward.
 
-See the **[MASHINA user manual](docs/JLD_MANUAL_V0.9.md)** for further control mappings, project behavior, engine details, and MIDI command values. Its historical `JLD_` filename is retained so existing links continue to work.
+See the **[MASHINA user manual](docs/MASHINA_MANUAL.md)** for further control mappings, project behavior, engine details, and MIDI command values. The online version contains the same current controls and instructions.
 
 ## Install or try in a browser
 
@@ -74,8 +74,8 @@ This repository's **`main` branch** is the MASHINA source of truth. GitHub Actio
 - [Build and deployment workflow](.github/workflows/emulator.yml)
 - [Firmware build script](tools/build.py)
 - [Firmware and live regression tests](tests/run_live_drum_tests.sh)
-- [Interactive upstream manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/) — **inherited JIANT reference**, not an exact guide to MASHINA's revised pages
-- [MASHINA manual](docs/JLD_MANUAL_V0.9.md) — describes its current live controls
+- [Online MASHINA manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/) — operating instructions for MIDI, sounds, drums and live controls
+- [MASHINA manual](docs/MASHINA_MANUAL.md) — describes its current live controls
 
 ## Origins, authors and licensing
 
