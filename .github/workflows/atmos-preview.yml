@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # Branch-only ATMOS validation. Never deploy Pages or release firmware.
-name: ATMOS emulator preview
+name: MASHINA emulator manual preview
 on:
-  push:
-    branches: [atmos]
   workflow_dispatch:
 permissions:
   contents: read
@@ -41,7 +39,7 @@ jobs:
       - name: Package browser preview
         run: |
           cat > build/emu/START-HERE.txt <<'EOF'
-          Jiant Live Drums v0.9 - ATMOS experimental emulator
+          MASHINA v0.9 - manually triggered emulator preview
           Browser emulator only; do NOT flash.
 
           Unzip this artifact, run python -m http.server 8000 in the extracted
@@ -54,7 +52,7 @@ jobs:
           (cd build/emu && sha256sum felucca.wasm > WASM-SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: jiant-live-drums-atmos-emulator
+          name: mashina-fm1-emulator-preview
           path: build/emu/
           if-no-files-found: error
           retention-days: 14
