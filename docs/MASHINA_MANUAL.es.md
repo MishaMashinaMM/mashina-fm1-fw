@@ -208,7 +208,7 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 
 **Al actualizar:** hacé una copia de seguridad. El firmware anterior puede no entender proyectos con DRUM-AC. Los proyectos experimentales con controles globales no neutros pueden sonar diferentes porque ahora esos controles tienen funciones comunes para todo el kit.
 
-### DRUM-IND: percusión industrial sin afinación musical (v0.10)
+### DRUM-IND: percusión industrial sin afinación musical
 
 **DRUM-IND** es el cuarto motor de 12 pads sintetizados, **sin muestras**, independiente del sintetizador melódico **INDUSTRIAL**. Utiliza ruido, filtros resonantes móviles, golpes irregulares y pulsos mecánicos en vez de osciladores afinados. Está pensado para superponerlo con otras baterías mediante el mismo canal MIDI.
 
@@ -227,7 +227,7 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 
 Presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. Su asignación MIDI es fija; la reasignación SEQ de DRUM-X/DRUM-LAB no se aplica.
 
-**Corrección de pantalla en v0.10:** al girar mandos EDIT en DRUM-LAB, DRUM-AC o DRUM-IND solo se redibujan las celdas modificadas, sin el parpadeo de pantalla completa. No se alteran los sonidos existentes. El nuevo motor y la corrección de pantalla se **probaron con éxito en un FM1 físico**; también pasaron las pruebas automatizadas. Haz una copia de seguridad antes de actualizar: el firmware antiguo podría no reconocer proyectos DRUM-IND.
+**Compatibilidad:** guardá una copia de seguridad antes de cambiar el firmware. Las versiones anteriores pueden no reconocer proyectos con DRUM-IND.
 
 ### SEQ: mapa MIDI de batería
 
