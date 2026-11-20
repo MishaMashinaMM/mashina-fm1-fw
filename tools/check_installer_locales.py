@@ -8,8 +8,7 @@ html = Path("web/index_pkg.html").read_text(encoding="utf-8")
 english = html.split("  en: {", 1)[1].split("TEXT.es = {", 1)[0]
 english_keys = set(re.findall(r"(?m)^\s*([A-Za-z_][\w]*):", english)) - {"en"}
 for lang, name in [("ru", "Русский"), ("sr", "Српски"), ("hi", "हिन्दी")]:
-    blob = html.split(f"TEXT.{lang} = ", 1)[1].split(";\\n", 1)[0]
-    strings = json.loads(blob)
+    strings = json.JSONDecoder().raw_decode(html.split(f"TEXT.{lang} = ", 1)[1])[0]
     missing = sorted(english_keys - set(strings))
     assert not missing, f"Untranslated installer strings ({lang}): {missing}"
     assert all(isinstance(v, str) and v.strip() for v in strings.values())
