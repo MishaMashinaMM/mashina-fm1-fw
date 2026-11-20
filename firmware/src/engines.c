@@ -15,6 +15,7 @@
 #include "eng_drum.c"           /* DRUM: the 8-lane DRUM-X kit (drumx_voice.c) */
 #include "eng_drumlab.c"        /* Stage 20A: independent electronic percussion */
 #include "eng_drumac.c"         /* DRUM-AC: independent synthesized acoustic kit */
+#include "eng_drumind.c"        /* DRUM-IND: non-tonal noise-driven factory kit */
 #include "eng_noise.c"
 #include "eng_fm6.c"            /* FM6: 6-operator FM, msfa ported (fm6_core.c, Apache-2.0) */
 #include "eng_animal.c"         /* (JIANT 0.8.3) ANIMAL: animal calls (CMOS PULSE WHSTL WING GLOTT) */
@@ -74,6 +75,7 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_BRASS,                  /* 17: reed/brass lead synth, append-only */
     &ENG_ATMOS,                  /* 18: polyphonic evolving pad synth */
     &ENG_DRUMAC,                 /* 19: append-only acoustic drum engine */
+    &ENG_DRUMIND,                /* 20: append-only industrial percussion */
 };
 
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
@@ -98,6 +100,7 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     ENGI_BRASS,                  /* append after INDUSTRIAL */
     ENGI_ATMOS,                  /* append: preserve earlier Program Changes */
     ENGI_DRUMAC,                 /* append: preserve earlier Program Changes */
+    ENGI_DRUMIND,                /* append: keep all previous Program Changes */
 #if FELUCCA_FM4
     ENGI_DIGITAL,                /* DIGITAL (retired, FELUCCA_FM4 builds only): after the rest */
 #endif
