@@ -1,16 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-only
-# MASHINA / ATMOS branch: physical FM1 device-test installer.
+# MASHINA main: optional standalone FM1 test installer.
 # This workflow does NOT publish Pages, merge, tag, or replace stable v0.9.
 name: MASHINA v0.9 device-test installer
 on:
-  push:
-    branches: [atmos]
-    paths:
-      - '.github/workflows/mashina-device-installer.yml'
-      - 'firmware/**'
-      - 'tools/**'
-      - 'tests/**'
-      - 'web/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -77,13 +69,13 @@ jobs:
           html = p.read_text(encoding="utf-8")
           # Branding is limited to this generated test installer; the public
           # v0.9 web source, translations and installer safety logic stay intact.
-          html = html.replace("<title>JIANT LIVE DRUMS — Installer</title>",
+          html = html.replace("<title>MASHINA — Installer</title>",
                               "<title>MASHINA — FM1 Device-Test Installer</title>")
-          html = html.replace('aria-label="JIANT LIVE DRUMS home">JIANT<span class="fm"> LIVE DRUMS</span>',
+          html = html.replace('aria-label="MASHINA home">MASHINA<span class="fm"> FM1 PERFORMANCE FW</span>',
                               'aria-label="MASHINA source repository">MASHINA<span class="fm"> FM1 PERFORMANCE FW</span>')
-          html = html.replace("JIANT LIVE DRUMS source</a>", "MASHINA source</a>")
+          html = html.replace("MASHINA source</a>", "MASHINA source</a>")
           html = html.replace('id="release-stamp" style=', 'id="release-stamp" style=')
-          html = html.replace("v0.9 · ORANGE UI · BUILD /*BUILD_TAG*/", "MASHINA · DEVICE TEST · " + version)
+          html = html.replace("v0.9 · MASHINA · BUILD /*BUILD_TAG*/", "MASHINA · DEVICE TEST · " + version)
           # Prominent warning above the flash action prevents confusing a
           # still-unverified candidate with the previously tested stable v0.9.
           needle = '  <p><button id="go" disabled data-t="install"></button></p>'
@@ -103,7 +95,7 @@ jobs:
           cat > "$OUT/READ-ME-FIRST.txt" <<'EOF'
           MASHINA - FM1 PERFORMANCE FW / v0.9 DEVICE TEST
           =================================================
-          Branch: atmos. Built from the source commit in firmware/SOURCE_COMMIT.
+          Branch: main. Built from the source commit in firmware/SOURCE_COMMIT.
           This is REAL flashable firmware, NOT a browser emulator.
           It is experimental and has not yet been physically tested.
           The splash shows release v0.9 (no -atmos suffix), while the ZIP
@@ -144,14 +136,14 @@ jobs:
       - name: Upload standalone MASHINA browser flasher
         uses: actions/upload-artifact@v4
         with:
-          name: mashina-v09-atmos-device-test-web-installer
+          name: mashina-v09-main-device-test-web-installer
           path: build/mashina-device-test/
           if-no-files-found: error
           retention-days: 14
       - name: Upload raw firmware and full build log
         uses: actions/upload-artifact@v4
         with:
-          name: mashina-v09-atmos-firmware-build
+          name: mashina-v09-main-firmware-build
           path: |
             build/felucca-0.9.fwsc
             build/felucca.bin
