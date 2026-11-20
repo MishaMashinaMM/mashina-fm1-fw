@@ -43,6 +43,14 @@ const {chromium} = require("playwright");
   const browser = await chromium.launch({headless:true,args:["--no-sandbox"]});
   try {
     const page = await browser.newPage();
+    /* Headless Chrome does not offer Web MIDI on GitHub runners. Advertise
+     * API presence only, so this test can check that the real local firmware
+     * package loads and the button becomes labeled/enabled. Never press it. */
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator,"requestMIDIAccess",{
+        configurable:true,value:async()=>({inputs:new Map(),outputs:new Map()})
+      });
+    });
     const errors=[], missing=[];
     page.on("pageerror",e=>errors.push(e.message));
     page.on("response",r=>{if(r.status()>=400)missing.push(r.url()+" -> "+r.status());});
