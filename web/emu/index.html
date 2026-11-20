@@ -88,49 +88,49 @@ footer small { font-size: 11px; opacity: .8; }
 <nav id="mashina-langs"></nav>
 <div class="mashina-site-header"><a class="mashina-brand" href="https://github.com/MishaMashinaMM/mashina-fm1-fw"><strong>MASHINA</strong><span>FM1 PERFORMANCE FW</span></a></div>
 <div class="keys" id="backup-controls">
-  <label>Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json): <input id="backup-file" type="file" accept=".json,application/json"></label>
-  <span>Optional: select before Switch on. The backup is validated and loaded into an isolated session; existing browser saves and your original file are not changed.</span>
-  <p id="backup-status" role="status">No backup selected — normal emulator.</p>
+  <label><span data-ml="backup">Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json):</span> <input id="backup-file" type="file" accept=".json,application/json"></label>
+  <span data-ml="optional">Optional: select before Switch on. The backup is validated and loaded into an isolated session; existing browser saves and your original file are not changed.</span>
+  <p id="backup-status" role="status" data-ml="none">No backup selected — normal emulator.</p>
 </div>
 <div class="device" id="device">
   <svg id="panel" viewBox="0 0 1000 624" aria-hidden="true"></svg>
   <canvas id="screen" width="240" height="240" role="img" aria-label="The screen"></canvas>
-  <div class="start" id="start"><button id="go" type="button">Switch on</button><p id="status" hidden></p></div>
+  <div class="start" id="start"><button id="go" type="button" data-ml="on">Switch on</button><p id="status" hidden></p></div>
 </div>
 
 
 <details class="midi-test" id="midi-test">
-  <summary>MIDI test input (channels 1–16, no external keyboard required)</summary>
+  <summary data-ml="midi">MIDI test input (channels 1–16, no external keyboard required)</summary>
   <div class="controls">
-    <label>Channel <input id="midi-test-channel" type="number" min="1" max="16" value="1"></label>
-    <label>Note <input id="midi-test-note" type="number" min="0" max="127" value="60"></label>
-    <label>Velocity <input id="midi-test-velocity" type="number" min="1" max="127" value="100"></label>
+    <label><span data-ml="channel">Channel</span> <input id="midi-test-channel" type="number" min="1" max="16" value="1"></label>
+    <label><span data-ml="note">Note</span> <input id="midi-test-note" type="number" min="0" max="127" value="60"></label>
+    <label><span data-ml="velocity">Velocity</span> <input id="midi-test-velocity" type="number" min="1" max="127" value="100"></label>
     <button id="midi-test-on" type="button" disabled>Note On</button>
     <button id="midi-test-off" type="button" disabled>Note Off</button>
     <button id="midi-test-pulse" type="button" disabled>Play 200 ms</button>
     <button id="midi-test-panic" type="button" disabled>All Notes Off</button>
   </div>
   <div class="controls">
-    <label>Channel <input id="midi-test-channel-2" type="number" min="1" max="16" value="2"></label>
-    <label>Note <input id="midi-test-note-2" type="number" min="0" max="127" value="60"></label>
-    <label>Velocity <input id="midi-test-velocity-2" type="number" min="1" max="127" value="100"></label>
+    <label><span data-ml="channel">Channel</span> <input id="midi-test-channel-2" type="number" min="1" max="16" value="2"></label>
+    <label><span data-ml="note">Note</span> <input id="midi-test-note-2" type="number" min="0" max="127" value="60"></label>
+    <label><span data-ml="velocity">Velocity</span> <input id="midi-test-velocity-2" type="number" min="1" max="127" value="100"></label>
     <button id="midi-test-on-2" type="button" disabled>Note On</button>
     <button id="midi-test-off-2" type="button" disabled>Note Off</button>
   </div>
   <div class="controls">
-    <label>Channel <input id="midi-test-channel-3" type="number" min="1" max="16" value="3"></label>
-    <label>Note <input id="midi-test-note-3" type="number" min="0" max="127" value="60"></label>
-    <label>Velocity <input id="midi-test-velocity-3" type="number" min="1" max="127" value="100"></label>
+    <label><span data-ml="channel">Channel</span> <input id="midi-test-channel-3" type="number" min="1" max="16" value="3"></label>
+    <label><span data-ml="note">Note</span> <input id="midi-test-note-3" type="number" min="0" max="127" value="60"></label>
+    <label><span data-ml="velocity">Velocity</span> <input id="midi-test-velocity-3" type="number" min="1" max="127" value="100"></label>
     <button id="midi-test-on-3" type="button" disabled>Note On</button>
     <button id="midi-test-off-3" type="button" disabled>Note Off</button>
   </div>
   <div class="controls">
-    <label>CC number <input id="midi-test-cc" type="number" min="0" max="127" value="30"></label>
-    <label>CC value <input id="midi-test-cc-value" type="number" min="0" max="127" value="64"></label>
+    <label><span data-ml="ccNum">CC number</span> <input id="midi-test-cc" type="number" min="0" max="127" value="30"></label>
+    <label><span data-ml="ccVal">CC value</span> <input id="midi-test-cc-value" type="number" min="0" max="127" value="64"></label>
     <button id="midi-test-send-cc" type="button" disabled>Send CC</button>
   </div>
   <div class="pads" id="midi-test-pads" aria-label="Selected track drum MIDI assignments"></div>
-  <p id="midi-test-pad-status">Select a DRUM-X or DRUM-LAB track to use its MIDI note assignments. Set Channel to that track's RX channel. All Notes Off sends CC123 on every channel.</p>
+  <p id="midi-test-pad-status" data-ml="drums">Select a DRUM-X or DRUM-LAB track to use its MIDI note assignments. Set Channel to that track's RX channel. All Notes Off sends CC123 on every channel.</p>
 </details>
 <p class="keys">
   <span><kbd>Z</kbd>–<kbd>'</kbd> <kbd>Q</kbd>–<kbd>O</kbd> keys</span>
@@ -138,7 +138,7 @@ footer small { font-size: 11px; opacity: .8; }
   <span><kbd>[</kbd> <kbd>]</kbd> OCT</span>
   <span><kbd>↑</kbd> <kbd>↓</kbd> SELECT</span>
   <span><kbd>←</kbd> <kbd>→</kbd> ALGORITHM</span>
-  <span><kbd>Shift</kbd>-click holds a button</span>
+  <span><kbd>Shift</kbd><span data-ml="shift">-click holds a button</span></span>
 </p>
 
 
