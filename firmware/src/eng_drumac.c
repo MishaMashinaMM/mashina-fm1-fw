@@ -11,7 +11,7 @@ typedef struct {
     uint8_t kind, active;
 } ac_voice_t;
 static ac_voice_t ac_state[NPART][NVOICE];
-static uint8_t ac_patch[NPART][3][8];
+static uint8_t ac_patch[NPART][3][8] __attribute__((section(".pool")));
 static uint8_t ac_ready[NPART];
 static uint8_t ac_dirty[NPART]; /* bit per instrument; saved sparsely with the project */
 
