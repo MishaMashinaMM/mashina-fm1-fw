@@ -32,6 +32,9 @@ static void ac_patch_ensure(track_t *t)
     for (k = 0; k < AC_NPAD; k++)
         for (j = 0; j < 8u; j++)
             ac_patch[ti][k][j] = (uint8_t)clamp(t->p[P_E0 + j], 0, 127);
+    /* Give the acoustic snare a membrane-first default rather than a
+     * maximum-rattle starting point. All other saved edits stay untouched. */
+    ac_patch[ti][AC_SNARE][4] = 43u;
     ac_ready[ti] = 1u;
 }
 static uint8_t *ac_patch_of(track_t *t, uint32_t instrument)
@@ -52,14 +55,23 @@ static uint8_t ac_param_value(track_t *t, uint32_t instrument, uint32_t field)
 {
     uint8_t *patch = ac_patch_of(t, instrument);
     if (!patch || field >= 8u) return 0u;
-    return (ac_override[t - trk][instrument] & (1u << field)) ?
-           patch[field] : (uint8_t)clamp(t->p[P_E0 + field], 0, 127);
+    /* The sound-level base patch never changes when a global knob moves.
+     * Global 100% is transparent, just as on DRUM-LAB. */
+    uint32_t value = patch[field];
+    uint32_t ti = (uint32_t)(t - trk);
+    if (drumlab_global_ready[ti])
+        value = value * drumlab_global[ti][field] / 100u;
+    return (uint8_t)value;
 }
 static void ac_patch_set(track_t *t, uint32_t instrument, uint32_t field, uint32_t value)
 {
     uint8_t *p = ac_patch_of(t, instrument);
     if (!p || field >= 8u) return;
-    p[field] = (uint8_t)clamp(value, 0, 127);
+    /* Editor displays the effective value. Convert edits back into the
+     * independent pad value; don't rewrite the global kit multiplier. */
+    uint32_t ti = (uint32_t)(t - trk);
+    uint32_t g = drumlab_global_ready[ti] ? drumlab_global[ti][field] : 100u;
+    p[field] = (uint8_t)clamp(g ? (value * 100u + g / 2u) / g : value, 0, 127);
     ac_override[t - trk][instrument] |= (uint8_t)(1u << field);
     ac_dirty[t - trk] |= (uint16_t)(1u << instrument);
 }
