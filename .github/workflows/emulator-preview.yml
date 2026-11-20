@@ -47,7 +47,7 @@ jobs:
           FELUCCA_NO_SEQUENCER=1 bash build.sh 2>&1 | tee firmware-build.log
 
       - name: Install Emscripten
-        uses: mymindstorm/setup-emsdk@v14
+        uses: emscripten-core/setup-emsdk@v15
         with:
           version: '4.0.15'
           actions-cache-folder: emsdk-cache
