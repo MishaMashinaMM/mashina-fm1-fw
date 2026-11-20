@@ -243,6 +243,8 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
                 raw+=((int64_t)grit*amp*grain_change)>>32;
             if(weight_change && (kind==IND_SCREECH || kind==IND_EXPLOSION))
                 raw+=((int64_t)(bass+body)*amp*weight_change)>>32;
+            if(weight_change && kind==IND_EXPLOSION)
+                raw=(raw*clamp(256+weight_change*2,60,450))>>8;
             if(crunch_change && kind==IND_WHOOSH)
                 raw+=((int64_t)grit*amp*crunch_change)>>32;
             if(motion_change && (kind==IND_CLANG || kind==IND_ANVIL ||
