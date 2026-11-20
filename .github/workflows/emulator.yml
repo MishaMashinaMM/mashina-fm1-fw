@@ -26,7 +26,7 @@ jobs:
       - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
       - name: Verify MASHINA website, project links and published UI
         run: node web/drums_site_test.mjs
-      - name: Check all four installer languages and manual content
+      - name: Check all six installer languages and manual content
         run: python3 tools/check_installer_locales.py
       - name: generated headers (fonts, icons, palettes, shapes, tables, samples)
         run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
@@ -124,6 +124,8 @@ jobs:
           python3 web/make_site.py manual build/pages
       - name: Verify all README navigation links exist in the generated site
         run: python3 tools/check_pages_links.py
+      - name: Verify six-language navigation on all five published pages
+        run: python3 tools/check_site_languages.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/pages
