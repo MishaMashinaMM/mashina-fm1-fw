@@ -18,7 +18,7 @@
 #define FELUCCA_FM4 0            /* the DIGITAL engine (eng_digital.c, four-operator FM): kept in the tree, not built
                                   * by default; replaced by FM6, its sounds convert (fm4_convert.c) */
 #endif
-#define NENGINES 20              /* append-only: engine 19 DRUM-AC */
+#define NENGINES 21              /* append-only: engine 20 DRUM-IND */
 #define ENGI_DIGITAL 1u          /* reserved without FELUCCA_FM4: never selectable (eng_ok), its sounds load as FM6 */
 #define NENG_SHOWN (NENGINES - !FELUCCA_FM4 - 5)   /* the engines one can pick: PRESETS, the EDIT layer, the editor,
                                                 * in the display order of engines.c ENGINE_ORDER (PHYS 9, and in
@@ -225,7 +225,8 @@ static void params_by_count(int16_t *out, const int16_t *in, uint32_t np, const 
 #define ENGI_INDUSTRIAL 16u      /* dedicated playable heavy bass/lead engine */
 #define ENGI_BRASS 17u           /* playable sax/trumpet wind synth */
 #define ENGI_ATMOS 18u           /* evolving polyphonic pad synth */
-#define ENGI_DRUMAC 19u          /* synthesized acoustic kick, snare and crash */
+#define ENGI_DRUMAC 19u          /* synthesized acoustic drum kit */
+#define ENGI_DRUMIND 20u         /* non-tonal industrial percussion kit */
 #define ENGI_PHASE 2u            /* (0.9.9: named for the power-on parts and the display order, engines.c) */
 #define ENGI_LOFI 3u
 #define ENGI_VOICE 5u            /* eng_formant.c ENG_FORMANT */
