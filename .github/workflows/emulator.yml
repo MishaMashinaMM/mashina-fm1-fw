@@ -119,6 +119,8 @@ jobs:
           cp docs/navigation-map.png docs/navigation-map.svg docs/navigation-map.es.png docs/navigation-map.es.svg build/pages/docs/
           # (0.9.12) the interactive manual (web/manual: the panel, every command, the map, what's new) at manual/
           python3 web/make_site.py manual build/pages
+      - name: Verify all README navigation links exist in the generated site
+        run: python3 tools/check_pages_links.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build/pages
