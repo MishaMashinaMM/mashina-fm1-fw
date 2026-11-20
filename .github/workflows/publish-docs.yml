@@ -1,0 +1,97 @@
+# Publish current user-facing pages without rebuilding the firmware.
+# Reuses the most recent successful main-branch Pages bundle so firmware,
+# installer, editor and emulator files remain exactly as originally released.
+name: Publish MASHINA documentation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'docs/MASHINA_MANUAL*.md'
+      - 'web/drums-home.html'
+      - 'web/mashina-translations.js'
+      - 'web/mashina-nav.js'
+      - 'web/mashina-manual-locale.js'
+      - 'web/manual/index.html'
+      - 'web/make_site.py'
+      - 'tools/check_site_languages.py'
+      - 'tools/check_pages_links.py'
+      - 'tools/check_installer_locales.py'
+      - '.github/workflows/publish-docs.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install Markdown==3.9
+      - name: Reuse published firmware and application files from last successful main Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/pages
+          found=0
+          while IFS= read -r runid; do
+            [ -n "$runid" ] || continue
+            mkdir -p /tmp/mashina-last-pages
+            rm -f /tmp/mashina-last-pages/*
+            if ! gh run download "$runid" -n github-pages -D /tmp/mashina-last-pages >/dev/null 2>&1; then
+              continue
+            fi
+            if [ -f /tmp/mashina-last-pages/artifact.tar ]; then
+              tar -xf /tmp/mashina-last-pages/artifact.tar -C build/pages
+            else
+              continue
+            fi
+            if [ ! -f build/pages/firmware/versions.json ]; then
+              rm -rf build/pages
+              mkdir -p build/pages
+              continue
+            fi
+            if python3 - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.loads(Path("build/pages/firmware/versions.json").read_text())
+          assert a and a[0]["version"].removeprefix("v") == "0.10"
+          assert (Path("build/pages/firmware") / a[0]["file"]).is_file()
+          PY
+            then
+              found=1
+              echo "Reusing successful v0.10 Pages artifact from run $runid"
+              break
+            fi
+            rm -rf build/pages
+            mkdir -p build/pages
+          done < <(gh run list --workflow emulator.yml --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId')
+          if [ "$found" != 1 ]; then
+            echo "::error::No successful v0.10 Pages artifact found. Do not publish an older firmware beneath updated docs."
+            exit 1
+          fi
+      - name: Refresh home and six-language manuals
+        run: |
+          cp web/drums-home.html build/pages/index.html
+          cp web/mashina-nav.js web/mashina-translations.js web/mashina-manual-locale.js build/pages/
+          python3 web/make_site.py manual build/pages
+          python3 tools/check_pages_links.py
+          python3 tools/check_site_languages.py
+          python3 tools/check_installer_locales.py
+          node web/drums_site_test.mjs
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+      - id: deployment
+        uses: actions/deploy-pages@v4
