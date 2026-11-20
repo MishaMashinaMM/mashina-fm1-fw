@@ -11,6 +11,40 @@ typedef struct {
     uint8_t kind, active;
 } ac_voice_t;
 static ac_voice_t ac_state[NPART][NVOICE];
+static uint8_t ac_patch[NPART][3][8];
+static uint8_t ac_ready[NPART];
+static uint8_t ac_dirty[NPART]; /* bit per instrument; saved sparsely with the project */
+
+static void ac_patch_ensure(track_t *t)
+{
+    uint32_t ti = (uint32_t)(t - trk), k, j;
+    if (ti >= NPART || ac_ready[ti]) return;
+    for (k = 0; k < 3u; k++)
+        for (j = 0; j < 8u; j++)
+            ac_patch[ti][k][j] = (uint8_t)clamp(t->p[P_E0 + j], 0, 127);
+    ac_ready[ti] = 1u;
+}
+static uint8_t *ac_patch_of(track_t *t, uint32_t instrument)
+{
+    if ((uint32_t)(t - trk) >= NPART || instrument >= 3u) return 0;
+    ac_patch_ensure(t);
+    return ac_patch[t - trk][instrument];
+}
+static void ac_patch_reset(track_t *t)
+{
+    uint32_t ti = (uint32_t)(t - trk);
+    if (ti >= NPART) return;
+    ac_ready[ti] = 0;
+    ac_dirty[ti] = 0;
+}
+static void ac_patch_set(track_t *t, uint32_t instrument, uint32_t field, uint32_t value)
+{
+    uint8_t *p = ac_patch_of(t, instrument);
+    if (!p || field >= 8u) return;
+    p[field] = (uint8_t)clamp(value, 0, 127);
+    ac_dirty[t - trk] |= (uint8_t)(1u << instrument);
+}
+
 
 static uint32_t ac_random(uint32_t *s)
 {
@@ -69,14 +103,18 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     a = &ac_state[t - trk][slot];
     if (!a->active) return;
     kind = a->kind;
-    tune = clamp(t->p[P_E0], 0, 127);
-    damp = clamp(t->p[P_E1], 0, 127);
-    body_mix = clamp(t->p[P_E2], 0, 127);
-    strike = clamp(t->p[P_E3], 0, 127);
-    wire_amt = clamp(t->p[P_E4], 0, 127);
-    bright = clamp(t->p[P_E5], 0, 127);
-    metal = clamp(t->p[P_E6], 0, 127);
-    ring_amt = clamp(t->p[P_E7], 0, 127);
+    /* All three instrument patches are independent; changing one pad never
+     * changes the others. Initial values exactly match the old global kit. */
+    const uint8_t *patch = ac_patch_of(t, kind);
+    if (!patch) return;
+    tune = patch[0];
+    damp = patch[1];
+    body_mix = patch[2];
+    strike = patch[3];
+    wire_amt = patch[4];
+    bright = patch[5];
+    metal = patch[6];
+    ring_amt = patch[7];
     inc = a->inc + (uint32_t)(((int64_t)a->inc * (tune - 64)) / 192);
     tau_b = kind == AC_KICK ? 160000u + (uint32_t)body_mix * 2800u :
             kind == AC_SNARE ? 80000u + (uint32_t)body_mix * 2100u :
