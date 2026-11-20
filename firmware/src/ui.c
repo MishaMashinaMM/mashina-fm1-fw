@@ -1819,6 +1819,7 @@ static void lab_knob(const page_t *pg, uint32_t k, int32_t s);
 static void lab_cards(const page_t *pg);
 static void ac_knob(const page_t *pg, uint32_t k, int32_t s);
 static void ac_cards(const page_t *pg);
+static const char *ac_level_name(uint32_t lane);
 static void dx_kit3_knob(uint32_t k, int32_t s);      /* (0.6.54) KIT 3: TONE's BP, FEEDBK */
 #define DX_KIT3(pg) ((pg)->graph == GR_DXIMG && (pg)->title[0] == 'K')   /* (0.6.58) GR_DXIMG: KIT 3, or STEREO (IMAGE) */
 static void dx_kit3_cards(void);
