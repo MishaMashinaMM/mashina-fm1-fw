@@ -90,30 +90,39 @@ def manual(out):
     """
     import markdown
     src = HERE / "manual" / "index.html"
-    md = HERE.parent / "docs" / "MASHINA_MANUAL.md"
-    dst = Path(out) / "manual"
-    dst.mkdir(parents=True, exist_ok=True)
     template = src.read_text(encoding="utf-8")
     marker = "<!--MASHINA_MANUAL_CONTENT-->"
     if template.count(marker) != 1:
-        raise SystemExit("MASHINA manual template must contain one content marker")
-    source = md.read_text(encoding="utf-8")
-    content = markdown.markdown(source, extensions=["tables", "toc", "fenced_code"],
-                                extension_configs={"toc": {"toc_depth": "2-3"}})
-    # Build an in-page table of contents with the same anchors as the headings.
-    import re as _re
-    toc = []
-    for lvl, anchor, label in _re.findall(
-        r'<h([23]) id="([^"]+)">([^<]+)</h[23]>', content
-    ):
-        indent = " style='margin-left:16px'" if lvl == "3" else ""
-        toc.append(f'<li{indent}><a href="#{anchor}">{label}</a></li>')
-    toc_html = '<nav id="toc" aria-label="Contents"><strong>Contents</strong><ul>' + "".join(toc) + '</ul></nav>'
-    content = content.replace("</h1>", "</h1>" + toc_html, 1)
-    html = template.replace(marker, content)
-    for forbidden in ("JIANT", "JLD", "Juan Jiant", "development process"):
-        if forbidden.lower() in content.lower():
-            raise SystemExit(f"manual includes non-user-facing reference: {forbidden}")
+        raise SystemExit("MASHINA manual template must contain exactly one content marker")
+
+    all_articles = []
+    for lang in ("en", "es", "ja", "ru", "sr", "hi"):
+        name = "MASHINA_MANUAL.md" if lang == "en" else f"MASHINA_MANUAL.{lang}.md"
+        md = HERE.parent / "docs" / name
+        source = md.read_text(encoding="utf-8")
+        content = markdown.markdown(source, extensions=["tables", "toc", "fenced_code"],
+                                    extension_configs={"toc": {"toc_depth": "2-3"}})
+        # Scope heading anchors to the language to avoid duplicate IDs.
+        import re as _re
+        content = _re.sub(r' id="([^"]+)"', lambda m: f' id="{lang}-{m.group(1)}"', content)
+        content = _re.sub(r'href="#([^"]+)"', lambda m: f'href="#{lang}-{m.group(1)}"', content)
+        toc = []
+        for lvl, anchor, label in _re.findall(
+            r'<h([23]) id="([^"]+)">([^<]+)</h[23]>', content
+        ):
+            indent = " style='margin-left:16px'" if lvl == "3" else ""
+            toc.append(f'<li{indent}><a href="#{anchor}">{label}</a></li>')
+        titles = {"en": "Contents", "es": "Contenido", "ja": "目次",
+                  "ru": "Содержание", "sr": "Садржај", "hi": "विषय-सूची"}
+        toc_html = '<nav id="toc" aria-label="Contents"><strong>' + titles[lang] + '</strong><ul>' + "".join(toc) + '</ul></nav>'
+        content = content.replace("</h1>", "</h1>" + toc_html, 1)
+        for forbidden in ("JIANT", "JLD", "Juan Jiant", "development process"):
+            if forbidden.lower() in content.lower():
+                raise SystemExit(f"{name} includes non-user-facing reference: {forbidden}")
+        visible = " data-active" if lang == "en" else ""
+        locale = "sr-Cyrl" if lang == "sr" else lang
+        all_articles.append(f'<article lang="{locale}" data-manual-lang="{lang}"{visible}>\\n{content}\\n</article>')
+    html = template.replace(marker, "\\n".join(all_articles))
     (dst / "index.html").write_text(html, encoding="utf-8")
     print(f"site: {dst}: MASHINA user manual ({len(html)} B)")
 
