@@ -36,11 +36,12 @@ int main(void)
 {
     int bad = 0;
     uint64_t a, b, ea, eb;
-    bad += atmos_check("append-only engine ID 18, DRUM-AC appended at 19",
+    bad += atmos_check("append-only engine IDs: ATMOS 18, DRUM-AC 19, DRUM-IND 20",
                        ENGI_ATMOS == 18u && ENGI_DRUMAC == 19u &&
-                       NENGINES == 20u &&
+                       ENGI_DRUMIND == 20u && NENGINES == 21u &&
                        ENGINES[18] == &ENG_ATMOS &&
-                       ENGINES[19] == &ENG_DRUMAC);
+                       ENGINES[19] == &ENG_DRUMAC &&
+                       ENGINES[20] == &ENG_DRUMIND);
     bad += atmos_check("12 edit controls and six presets", NELEM(ATMOS_EXTRA) == 4u &&
                        ENG_ATMOS.npresets == 6u &&
                        NELEM(ATMOS_EXTRA_PRESETS) == ENG_ATMOS.npresets);
