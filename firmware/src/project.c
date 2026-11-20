@@ -945,7 +945,7 @@ static uint32_t proj_packed_size(const project_t *q)
     {   /* optional sparse DRUM-LAB patch-bank block ('L' 'B', track mask, 12-bit pad mask per track) */
         uint32_t count = 0;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUMLAB && q->lab_mask[t])
+            if ((q->t[t].engine == ENGI_DRUMLAB || q->t[t].engine == ENGI_DRUMAC) && q->lab_mask[t])
                 count += 2u + 10u * proj_bits(q->lab_mask[t] & 0x0FFFu);
         if (count) n += 3u + count;
     }
@@ -1111,7 +1111,7 @@ static int proj_pack(project_store_t *out, const project_t *q)
     {   /* Stage 20B: only modified DRUM-LAB pads consume project capacity. */
         uint32_t mask = 0;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUMLAB && q->lab_mask[t]) mask |= 1u << t;
+            if ((q->t[t].engine == ENGI_DRUMLAB || q->t[t].engine == ENGI_DRUMAC) && q->lab_mask[t]) mask |= 1u << t;
         if (mask) {
             b[pos++] = 'L'; b[pos++] = 'B'; b[pos++] = (uint8_t)mask;
             for (t = 0; t < NPART; t++) {
@@ -1541,7 +1541,7 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         for (t = 0; t < NPART; t++) {
             uint16_t lanes;
             if (!(mask & (1u << t))) continue;
-            if (pos + 2u > room || q->t[t].engine != ENGI_DRUMLAB) return 0;
+            if (pos + 2u > room || q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC) return 0;
             lanes = (uint16_t)(b[pos] | b[pos + 1u] << 8); pos += 2u;
             if (!lanes || (lanes & 0xF000u)) return 0;
             q->lab_mask[t] = lanes;
@@ -2118,7 +2118,8 @@ static void project_capture(project_t *p)
                 p->lab_type_present[i] = 1u;
                 break;
             }
-        p->lab_mask[i] = trk[i].eng_req == ENGI_DRUMLAB ? drumlab_kit_dirty[i] : 0u;
+        p->lab_mask[i] = trk[i].eng_req == ENGI_DRUMLAB ? drumlab_kit_dirty[i] :
+                         trk[i].eng_req == ENGI_DRUMAC ? ac_dirty[i] : 0u;
         p->lab_note_on[i] = trk[i].eng_req == ENGI_DRUMLAB ? drumlab_midi_custom[i] : 0u;
         if (p->lab_note_on[i])
             memcpy(p->lab_note[i], drumlab_midi_note[i], 12u);
@@ -2138,10 +2139,19 @@ static void project_capture(project_t *p)
             memcpy(p->lab_global[i], drumlab_global[i], 8u);
         } else for (uint32_t j = 0; j < 8u; j++) p->lab_global[i][j] = 100u;
         if (!p->lab_mask[i]) continue;
-        drumlab_kit_ensure(&trk[i]);
-        for (lane = 0; lane < 12u; lane++)
-            if (p->lab_mask[i] & (1u << lane))
-                memcpy(p->lab_patch[i][lane], &drumlab_kit[i][lane].pitch, 10u);
+        if (trk[i].eng_req == ENGI_DRUMAC) {
+            ac_patch_ensure(&trk[i]);
+            for (lane = 0; lane < 3u; lane++)
+                if (p->lab_mask[i] & (1u << lane)) {
+                    memcpy(p->lab_patch[i][lane], ac_patch[i][lane], 8u);
+                    p->lab_patch[i][lane][8] = p->lab_patch[i][lane][9] = 0u;
+                }
+        } else {
+            drumlab_kit_ensure(&trk[i]);
+            for (lane = 0; lane < 12u; lane++)
+                if (p->lab_mask[i] & (1u << lane))
+                    memcpy(p->lab_patch[i][lane], &drumlab_kit[i][lane].pitch, 10u);
+        }
     }
     memcpy(p->dx_snd12, dx_snd12, sizeof p->dx_snd12);
     memcpy(p->dx_lay12, dx_lay12, sizeof p->dx_lay12);
@@ -2393,6 +2403,16 @@ static void sound_put(project_t *p, uint32_t k)
             drumlab_kit[ti][lane].kind = p->lab_type_present[ti] ?
                 p->lab_kind[ti][lane] : drumlab_default_kind(lane);
     }
+    if (e == ENGI_DRUMAC) {
+        uint32_t ti = k % NTRK, lane;
+        ac_patch_reset(t);
+        ac_patch_ensure(t);
+        for (lane = 0; lane < 3u; lane++)
+            if (p->lab_mask[ti] & (1u << lane)) {
+                memcpy(ac_patch[ti][lane], p->lab_patch[ti][lane], 8u);
+                ac_dirty[ti] |= (uint8_t)(1u << lane);
+            }
+    }
     if (e == ENGI_DRUM) {
         uint32_t ti = k % NTRK;
         drum_midi_custom[ti] = p->dx_note_on[ti];
@@ -2588,6 +2608,16 @@ static int project_restore_runtime(const project_t *input)
             memcpy(drumlab_midi_note[k], p->lab_note[k], 12u);
         drumlab_kit_ready[k] = 0;
         drumlab_kit_dirty[k] = p->t[k].engine == ENGI_DRUMLAB ? p->lab_mask[k] : 0u;
+        if (p->t[k].engine == ENGI_DRUMAC) {
+            ac_patch_reset(&trk[k]);
+            ac_patch_ensure(&trk[k]);
+            for (lane = 0; lane < 3u; lane++)
+                if (p->lab_mask[k] & (1u << lane)) {
+                    memcpy(ac_patch[k][lane], p->lab_patch[k][lane], 8u);
+                    ac_dirty[k] |= (uint8_t)(1u << lane);
+                }
+            continue;
+        }
         if (p->t[k].engine != ENGI_DRUMLAB) continue;
         drumlab_kit_ensure(&trk[k]);
         for (lane = 0; lane < 12u; lane++)
