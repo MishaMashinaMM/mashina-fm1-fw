@@ -1476,6 +1476,7 @@ static void draw_columns(void)
     if (cur_page()->graph == GR_DXSND) {               /* EDIT > SOUND (ui_dx.c) */
         if (trk_eng(TSEL) == ENGI_DRUMLAB) lab_cards(cur_page());
         else if (trk_eng(TSEL) == ENGI_DRUMAC) ac_cards(cur_page());
+        else if (trk_eng(TSEL) == ENGI_DRUMIND) ind_cards(cur_page());
         else dx_cards(cur_page());
         return;
     }
@@ -1960,11 +1961,11 @@ static void draw_columns(void)
             draw_act_column(c, d->label, T_THEME, ICON_AUTO);
             continue;
         }
-        if (cur_page()->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
+        if (cur_page()->scope == SC_ENGINE && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND) &&
             cur_page()->id[c] >= P_E0 && cur_page()->id[c] < P_E0 + 8u) {
             uint32_t field = cur_page()->id[c] - P_E0;
             drumlab_global_ensure(song.sel);
-            uint32_t acoustic = trk_eng(TSEL) == ENGI_DRUMAC;
+            uint32_t acoustic = trk_eng(TSEL) == ENGI_DRUMAC || trk_eng(TSEL) == ENGI_DRUMIND;
             int32_t value = drumlab_global[song.sel][field];
             fmt_int(val, value);
             draw_column(c, acoustic ? ac_global_name(field) : d->label,
@@ -1991,7 +1992,9 @@ static void draw_columns(void)
         if (cur_page()->scope == SC_TRACK && (trk_eng(TSEL) == ENGI_DRUMLAB || trk_eng(TSEL) == ENGI_DRUMAC) &&
             ((id >= P_LN0 && id <= P_LN7) || (id >= P_LN8 && id <= P_LN11))) {
             uint32_t lane = id <= P_LN7 ? id - P_LN0 : id - P_LN8 + 8u;
-            if (trk_eng(TSEL) == ENGI_DRUMAC) {
+            if (trk_eng(TSEL) == ENGI_DRUMIND) {
+                label = ind_level_name(lane);
+            } else if (trk_eng(TSEL) == ENGI_DRUMAC) {
                 label = ac_level_name(lane);
             } else {
                 dlab_patch_t *patch = drumlab_patch_of(TSEL, 36u + lane);
