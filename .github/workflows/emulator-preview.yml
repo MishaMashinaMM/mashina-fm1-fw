@@ -2,7 +2,7 @@ name: MASHINA development emulator preview
 
 on:
   push:
-    branches: [ui-flash-optimization, drum-acoustic]
+    branches: [ui-flash-optimization, drum-acoustic, drum-industrial]
     paths:
       - '.github/workflows/emulator-preview.yml'
       - 'firmware/**'
@@ -104,7 +104,7 @@ jobs:
           if missing:
               raise SystemExit("Preview missing: " + ", ".join(missing))
           page = (p/"index.html").read_text(encoding="utf-8")
-          if 'id="emulator-build-label"' not in page or "drum-acoustic (preview)" not in page:
+          if 'id="emulator-build-label"' not in page or "${{ github.ref_name }} (preview)" not in page:
               raise SystemExit("Preview label not embedded")
           print("Preview ready:", (p/"felucca.wasm").stat().st_size,
                 "bytes WebAssembly")
@@ -135,7 +135,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: mashina-drum-acoustic-emulator-preview
+          name: mashina-industrial-emulator-preview
           path: build/emu/
           if-no-files-found: error
           retention-days: 30
@@ -144,7 +144,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mashina-drum-acoustic-emulator-build-logs
+          name: mashina-industrial-emulator-build-logs
           path: |
             firmware-build.log
             emulator-build.log
