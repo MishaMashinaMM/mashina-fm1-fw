@@ -18,8 +18,8 @@ for (const [name, text] of [['home', home], ['installer', installer],
 for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
   assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v09/")}"`), `homepage must link to ${href}`);
 }
-assert.match(home, /MASHINA v0\.9/, 'homepage must show current v0.9 release');
-assert.match(home, /device-tested on FM1/i, 'homepage must disclose successful hardware validation');
+assert.match(home, /<strong>MASHINA<\/strong><span>FM1 PERFORMANCE FW<\/span>/, 'homepage must have a two-line MASHINA wordmark');
+assert.match(home, /data-i18n="safety"/, 'homepage must retain firmware backup warning');
 assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
 assert.match(readme, /^# MASHINA .* v0\.9$/m, 'README must use the release-only title');
 assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
