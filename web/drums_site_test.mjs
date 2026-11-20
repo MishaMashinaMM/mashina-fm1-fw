@@ -21,9 +21,9 @@ for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
 assert.match(home, /<strong>MASHINA<\/strong><span>FM1 PERFORMANCE FW<\/span>/, 'homepage must have a two-line MASHINA wordmark');
 assert.match(home, /data-i18n="safety"/, 'homepage must retain firmware backup warning');
 assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
-assert.match(readme, /^# MASHINA .* v0\.9$/m, 'README must use the release-only title');
+assert.match(readme, /^# MASHINA .* v0\.10$/m, 'README must use the release-only title');
 assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
-assert.match(installer, /MASHINA v0\.9: six-track (?:external )?MIDI/, 'installer must identify the current MASHINA external MIDI performance features');
+assert.match(installer, /MASHINA v0\.10: six-track (?:external )?MIDI/, 'installer must identify the current MASHINA external MIDI performance features');
 assert.match(editor, /id="backup-export"/, 'editor must retain complete backup export');
 assert.match(editor, /id="backup-import"/, 'editor must retain complete backup restore');
 assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'MASHINA editor must not offer disabled sequencer');
