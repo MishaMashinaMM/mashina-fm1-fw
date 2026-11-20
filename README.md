@@ -1,8 +1,8 @@
 # MASHINA — FM1 Performance Firmware v0.10
 
-**MASHINA** turns the **M-VAVE FM1** into a flexible, six-track sound module for **external MIDI keyboards, pad controllers and live performance**. Assign sounds to MIDI channels, split or layer a keyboard, reshape parameters while playing, and recall projects without relying on a song sequencer.
+**MASHINA** turns the **M-VAVE FM1** into a six-track sound module designed for **external MIDI keyboards, pad controllers and live performance**. Play multiple sounds together, split a keyboard into zones, shape sounds while performing and recall projects quickly.
 
-Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan Jiant)](https://github.com/juanjiant-bit/JIANT) and the [Felucca firmware](https://github.com/hugelton/Felucca). Free software under **GPL-3.0-only**.
+Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan Jiant)](https://github.com/juanjiant-bit/JIANT) and [Felucca](https://github.com/hugelton/Felucca). Free software under **GPL-3.0-only**.
 
 ![MASHINA FM1 Performance Firmware — MIDI routing, synths, drums and live controls](docs/mashina-overview.svg)
 
@@ -10,133 +10,39 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 
 [Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [User manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)
 
-## What MASHINA does
+## What MASHINA adds to JIANT
 
-| Feature | Description |
+MASHINA retains JIANT's sound-making capabilities while expanding the FM1 for hands-on MIDI performance:
+
+| Feature | What's included |
 | --- | --- |
-| **Six independent tracks** | Assign MIDI receive channels 1–16 to T1–T6; duplicate channels to layer multiple instruments. Per-track volume, pan and project-persistent routing. |
-| **Keyboard zones** | Independent MIDI note and velocity ranges per track. Build splits, overlapping layers or velocity-switched sounds from an external controller. |
-| **Pitch control** | Per-track transpose **−36 to +36 semitones** and fine tuning **−50 to +50 cents** on **GLO → MIX → TUNING**. Drum kits keep their original note mapping. |
-| **Expressive melodic engines** | Inherited JIANT synthesizers plus **ATMOS** (evolving pads), **BRASS** (synthetic winds) and **INDUSTRIAL** (heavy basses and leads). |
-| **Four 12-sound drum engines** | **DRUM-X** extends the original eight sounds with B2, S2, O2 and T2. **DRUM-LAB** provides independent synthesized percussion; **DRUM-AC** is an acoustic-style kit; **DRUM-IND** adds 12 noise-based, deliberately non-melodic industrial textures for MIDI-channel layering. |
-| **32 MIDI CC macros** | Learn an incoming CC and bind it to a track's parameter. Choose range or toggle, endpoints, reverse and bypass. Stored with each project. |
-| **MIDI Learn and live commands** | Additional learned destinations, MIDI routing overrides and MIDI-triggered sound randomization/restoration for live control. |
-| **Effects and EQ** | Inherited effects, plus shared **three-band EQ** before effects: **50 Hz**, **700 Hz** and **10 kHz**, each **±15 dB**. |
-| **Mixer and note activity** | Six-row mixer with per-track MIDI ownership/activity indicators and direct access to routing, zones and tuning. |
-| **Live project management** | Save, recall and clear project slots; use Live Recall shortcuts to switch projects during a performance. |
-| **Panic mode** | Immediately stop all voices and effects, clearing held-note and sustain state. |
-| **Performance UI** | Black, white and gray with **orange #FF9900** accents, static MASHINA boot cog and streamlined held-button layers; no decorative animations. |
+| **Additional melodic engines** | **ATMOS** for evolving pads, **BRASS** for synthetic wind sounds and **INDUSTRIAL** for aggressive basses and leads. |
+| **Expanded drums** | **DRUM-X** with 12 sounds, plus three additional 12-sound kits: **DRUM-LAB** (electronic percussion), **DRUM-AC** (acoustic-style drums) and **DRUM-IND** (metallic, mechanical and industrial effects). |
+| **Flexible MIDI routing** | Assign independent MIDI receive channels to six tracks; layer sounds, build keyboard splits and set note and velocity zones. |
+| **Track tuning** | Transpose each track by up to three octaves and adjust fine tuning independently. |
+| **Live MIDI control** | 32 assignable MIDI CC macros, MIDI Learn, performance commands and MIDI-triggered sound variations. |
+| **Live mixer and sound shaping** | Six-track mixer with note activity indicators, individual track controls and shared three-band EQ. |
+| **Project management** | Save and clear project slots, retain performance settings and use quick project recall during a set. |
+| **Performance interface** | Streamlined, animation-free orange-and-gray UI, repurposed hardware controls and panic mode for immediate silence. |
 
-MASHINA uses **eight shared synthesis voices** across its tracks and engines; it does not provide eight voices per track. The original song sequencer is disabled and its former hardware buttons have live-performance functions.
+MASHINA has **eight shared synthesis voices in total**, not eight per track. It is focused on live playing; the original song sequencer is disabled.
 
-## DRUM-AC acoustic-style kit
-
-**DRUM-AC** is a 12-sound acoustic-style percussion kit alongside DRUM-X and DRUM-LAB. All sounds are synthesized, without samples. The 12 independently editable pads are **kick, snare, crash, closed hi-hat, open hi-hat, floor tom, low tom, mid tom, high tom, clap, ride bell and ride splash**. Each pad has its own editable sound and volume, so you can shape individual drums and cymbals.
-
-The instrument layout covers **all 12 semitones and repeats in every MIDI octave**, so the emulator keyboard or an external controller can play the whole kit without switching down to one specific octave:
-
-| Note name (any octave) | DRUM-AC pad | Note name (any octave) | DRUM-AC pad |
-| --- | --- | --- | --- |
-| C | Kick | F♯ | Closed hi-hat |
-| C♯ | Crash | G | Low tom |
-| D | Snare | G♯ | Ride splash |
-| D♯ | Clap | A | Mid tom |
-| E | Ride bell | A♯ | Open hi-hat |
-| F | Floor tom | B | High tom |
-
-**Closed hi-hat chokes open hi-hat**, even across octaves, without stopping crash or ride tails. The repeating note-to-pad layout is fixed in DRUM-AC; do not assume DRUM-X/DRUM-LAB's custom SEQ mapping features apply to it.
-
-### Editing DRUM-AC
-
-Select a track running DRUM-AC, then press **EDIT** and turn **SELECT** to move through pages.
-
-| EDIT pages | Purpose |
-| --- | --- |
-| **First two kit-wide pages** | Eight independent global sound controls: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL**. Each is **0–200%**; **100% is neutral**. They act consistently across the whole kit and do **not** overwrite or scale individual pad parameter values. |
-| **SOUND 1–3** | Use **K1** to choose one of the 12 instruments; **K2–K4** change the selected pad's own **0–127** sound parameters. The eight pad fields are TUNE, DAMP, BODY, HIT, a pad-specific strike control, BRIGHT, a pad-specific timbre control and RING (or DECAY/TAIL). |
-| **LEVELS 1–3** | Independent **0–127** volume for all 12 pads, with the same level taper as DRUM-LAB; project-persistent. |
-
-The pad-specific field names tell you what is being changed: **BEATER / TEXTURE** on kick; **WIRES / TEXTURE** on snare; **SPLASH / METAL** on crash; **CHICK / DECAY** on hi-hats; **STICK / SHELL** on toms; **SNAP / TEXTURE / TAIL** on clap; **STRIKE** on ride bell; and **SPLASH** on ride splash. Not every field produces the same synthesis effect on every instrument. In contrast, the eight **kit-wide** controls above have a common musical purpose across all 12 pads.
-
-For each tom, **TUNE = 0** removes the pitched drumhead resonance, while **TUNE = 1–127** adjusts that resonance from low to high, independently for the floor, low, mid and high toms. Changing TUNE does not retune the noise-based thud. **SPLASH** affects the noisy strike and metallic wash of the crash and ride splash.
-
-DRUM-AC includes **ACOUSTIC**, **DRY KIT** and **BIG ROOM** factory presets. Its independent pad edits, levels and kit-wide values are stored with a project. The kit shares MASHINA's **eight-voice total polyphony**.
-
-**Compatibility:** Back up projects and presets before upgrading. Projects saved with newer firmware may not open correctly in older versions.
-
-## DRUM-IND industrial percussion
-
-**DRUM-IND** is the fourth 12-pad synthesized percussion engine, alongside DRUM-X, DRUM-LAB and DRUM-AC. It uses **no samples**. Its metallic impacts, whistles, scrapes, buzzes, mechanical rhythms and sweeping noises are designed to **layer with other kits or melodic instruments**. Its name is separate from the older **INDUSTRIAL** melodic bass/lead engine.
-
-**DRUM-IND keyboard mapping:** the twelve notes **C through B repeat in every MIDI octave**. MIDI 36–47 are one example octave:
-
-| Key (example MIDI) | Sound | Character |
-| --- | --- | --- |
-| C (36) | **CLANG** | Dense metal-on-metal strike |
-| C♯ (37) | **ANVIL** | Heavy hammer/anvil impact |
-| D (38) | **METAL** | Bright, irregular sheet-metal resonance |
-| D♯ (39) | **SCRAPE** | Metal dragged over a rough surface |
-| E (40) | **WHISTLE** | Moving narrow-band noise whistle |
-| F (41) | **SCREECH** | Unstable friction squeal |
-| F♯ (42) | **BUZZ** | Abrasive electrical buzzing |
-| G (43) | **LIGHTNING** | Sharp electrical crack with rolling noise |
-| G♯ (44) | **ENGINE** | Slow uneven mechanical chug |
-| A (45) | **WHOOSH** | Swelling air rush |
-| A♯ (46) | **MOTOR** | Fast rotary mechanical noise |
-| B (47) | **EXPLOSION** | Broad blast and turbulent tail |
-
-These sounds are synthesized rather than recordings. The mapping is fixed, unlike the customizable DRUM-X/DRUM-LAB MIDI-map screens.
-
-**DRUM-IND editing:** press **EDIT**, then use **SELECT** to navigate. The first two kit-wide pages expose **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL**, each **0–200%** with **100% neutral**. These eight controls act independently of the pad values. **ATTACK** changes how sharply each hit begins; **BRIGHT** adjusts its overall brightness. SOUND 1–3 lets **K1** choose a pad and **K2–K4** edit its eight 0–127 settings across the pages: **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** adjust the twelve individual pad volumes (0–127). Each parameter can have a different musical effect depending on the selected sound.
-
-The factory sound presets are **STEEL YARD**, **PRESSURE** and **SCRAPHEAP**. Individual pad edits, levels, and independent kit-wide controls persist in projects. DRUM-IND shares MASHINA's existing **eight synthesis voices**; twelve pads do not mean twelve extra voices. Use duplicate MIDI RX channels across tracks to layer DRUM-IND with another kit.
-
-**Upgrading:** back up projects, user presets and settings first. Firmware before v0.10 does not include DRUM-IND and may not understand projects that use it. Keep a known-working recovery method available.
-
-## External MIDI setup
-
-1. Connect a suitable **USB or TRS MIDI controller** to the FM1.
-2. Open **GLO → MIX → MIXER**. Set each track's **RX channel (K1)**, **volume (K2)** and **pan (K3)**.
-3. In **GLO → SYSTEM**, choose **ROUTE = 1-6** for assigned-channel routing across six active tracks. **ROUTE = 1-4** uses the first four; **SEL** follows the selected track. Set the active track count under **MENU → AUDIO → TRACKS**.
-4. Open **GLO → MIX → ZONES** to define note/velocity ranges and **TUNING** for per-track transpose and fine detuning.
-5. Save the project to retain its routing, zones, tuning and other project-specific settings.
-
-For example, assign T1 and T2 to the same incoming MIDI channel and give them overlapping zones: a single keyboard can then play two layered instruments. Assign non-overlapping zones to create a split.
-
-### Hardware controls for live use
-
-| Control | Main live function |
-| --- | --- |
-| **GLO** | Six-track mixer, zones, tuning, sends, EQ and global settings. |
-| **REC** | MIDI CC macro table: learn, edit, enable/bypass and delete assignments. |
-| **SEQ** | Drum MIDI note mapping, not a song sequencer. |
-| **PLAY** | Drum performance settings, not sequencer transport. |
-| **SAVE** | Sound, preset, project and library operations. |
-| **HOME (hold)** | Settings menu, including MIDI/USB options and the ABOUT page. |
-| **GLO (hold) + OCT−** | Panic: silence tracks, effects and held-note state. |
-
-**Live Recall:** long-press **REC** to enable this mode, then tap **FX / SEL / ENV / LFO** to recall project slots **1 / 2 / 3 / 4**. Long-press REC again to exit the mode.
-
-**CC macros:** open **REC**, press **OCT+**, send a CC from the controller, then navigate to the track/parameter you want to control and turn its knob. Back in REC, edit its range/toggle endpoints and other options; save the project afterward.
-
-See the **[MASHINA user manual](docs/MASHINA_MANUAL.md)** for further control mappings, project behavior, engine details, and MIDI command values. The online version contains the same current controls and instructions.
+For drum note layouts, sound parameters, MIDI mappings, hardware controls and complete operating instructions, see the **[User Manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)** (available in English, Serbian, Spanish, Russian, Japanese and Hindi).
 
 ## Install or try in a browser
 
-The **[web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** flashes MASHINA to the physical FM1 using a compatible desktop browser. The **[emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** runs the firmware UI and sound engines in a browser without flashing.
+Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** to install MASHINA with a compatible desktop browser, or **[try the emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** without flashing your device. The **[web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** supports device management and backup/restore.
 
-**Before flashing, back up your projects, user presets and settings**, and keep a known-working recovery firmware available. Projects saved by newer firmware may not be understood by older versions.
+**Before flashing:** back up projects, user presets and settings, and keep a known-working recovery firmware available. Projects saved with newer firmware may not be compatible with older versions.
 
-The [web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) supports device management and backup/restore; some recent live controls are not yet exposed in its editing interface.
+**Current version:** v0.10 · **FM1 firmware identity:** `FM-1_910`.
 
-**Version:** v0.10 · **FM1 firmware identity:** `FM-1_910`.
+## Credits and licensing
 
-## Origins, authors and licensing
+**MASHINA:** Misha Mashina.
 
-**MASHINA:** Misha Mashina. Based on the original JIANT and Felucca projects.
+**JIANT:** Juan Ignacio Antonucci (Juan Jiant) — [source repository](https://github.com/juanjiant-bit/JIANT) and [project/manual](https://juanjiant-bit.github.io/JIANT/).
 
-**Original JIANT:** Juan Ignacio Antonucci (Juan Jiant) — [source repository](https://github.com/juanjiant-bit/JIANT) and [project/manual](https://juanjiant-bit.github.io/JIANT/).
+**Felucca:** Hügelton Instruments, including Leo Kuroshita and other contributors. Additional credits are preserved in source headers, firmware ABOUT information and bundled license notices.
 
-**Felucca:** Hügelton Instruments, including Leo Kuroshita and other contributors. Further work by SKIFF, Melodee, fm1-x0x, sound-engine contributors, fonts and third-party projects is credited in the source headers, firmware ABOUT credits and bundled license notices.
-
-This project is distributed under **[GPL-3.0-only](LICENSE)**. Original author credits and third-party licenses remain in place.
+Distributed under **[GPL-3.0-only](LICENSE)**. Original author credits and third-party licenses are retained.
