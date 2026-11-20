@@ -112,7 +112,7 @@ const TEXT = {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
     warn: "書き込み中は USB を抜かないでください。",
     samples: "互換性の注意: MASHINA v0.10 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
-    dual: "MASHINA v0.10: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
+    dual: "MASHINA v0.10: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
     install: "インストール",
     firstTitle: "別のファームウェアから切り替える場合は、互換性を確認してください",
     firstText: "別のカスタムファームウェアへ直接上書きするとFM1が起動しなくなる可能性があります。Felucca、Skiff、baudgirlなどの場合、先に公式V15へ戻してください。必ずバックアップと復旧方法を確保してください。",
@@ -705,7 +705,7 @@ TEXT.hi = {
   "intro": "FM1 को USB से कंप्यूटर में जोड़ें (Chrome या Edge का उपयोग करें)।",
   "warn": "फ़र्मवेयर लिखे जाने के दौरान USB केबल न निकालें।",
   "samples": "अनुकूलता: MASHINA Felucca के उपयोगकर्ता सैंपल नहीं चलाता। फ़र्मवेयर बदलने से पहले मूल WAV फ़ाइलें और पूरा बैकअप सुरक्षित रखें।",
-  "dual": "MASHINA v0.10: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB और 32 MIDI मैक्रो।",
+  "dual": "MASHINA v0.10: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND और 32 MIDI मैक्रो।",
   "install": "इंस्टॉल करें",
   "firstTitle": "दूसरे फ़र्मवेयर से आ रहे हैं? पहले अनुकूलता जाँचें",
   "firstText": "किसी असंगत कस्टम फ़र्मवेयर के ऊपर सीधे इंस्टॉल करने से FM1 चालू नहीं हो सकता। Felucca, Skiff या दूसरे फ़र्मवेयर से आने पर नीचे दिए गए विकल्प से पहले आधिकारिक V15 पर लौटें। बैकअप और रिकवरी की योजना रखें।",
@@ -919,7 +919,7 @@ window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault
 
 /* (0.6.46) the version to install: the current one or one of the last few (make_site.py PREV_DIR) */
 const versions = meta.versions && meta.versions.length ? meta.versions : [{ version: meta.version, pkg: meta.pkg }];
-/* (0.9.9-beta1) each version's own package identity (the 0.6 line is FM-1_900, later ones FM-1_909): the device must
+/* (0.9.9-beta1) each version's own package identity (the 0.6 line is FM-1_900, later ones FM-1_910): the device must
  * report it after the install */
 const productOfVersion = (v) => v.product || meta.product;
 let product = meta.product;
