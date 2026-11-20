@@ -13,7 +13,7 @@ expected = {
     "Play in emulator": "emu/index.html",
     "FM1 web installer": "webapp/installer/index.html",
     "Web editor": "webapp/editor/index.html",
-    "User manual": None,
+    "User manual": "manual/index.html",
 }
 base = "https://mishamashinamm.github.io"
 prefix = "/mashina-fm1-fw/"
@@ -21,11 +21,6 @@ assert len(links) == len(expected), f"Expected {len(expected)} primary links, go
 for label, url in links:
     assert label in expected, f"Unexpected README link: {label}"
     dest = expected[label]
-    if dest is None:
-        assert url == "https://github.com/MishaMashinaMM/mashina-fm1-fw/blob/main/docs/JLD_MANUAL_V0.9.md", url
-        assert Path("docs/JLD_MANUAL_V0.9.md").is_file()
-        print(f"OK {label}: repository documentation")
-        continue
     parsed = urlparse(url)
     assert parsed.scheme == "https" and parsed.netloc == "mishamashinamm.github.io", url
     assert parsed.path.startswith(prefix), url
