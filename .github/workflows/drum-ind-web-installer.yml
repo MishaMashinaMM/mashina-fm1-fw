@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # DRUM-IND development branch: isolated flashable hardware test installer.
-# Never deploys Pages, merges to main, tags releases or changes public v0.9.
+# Never deploys Pages, merges to main, tags releases or changes public v0.10.
 name: MASHINA DRUM-IND experimental web installer
 on:
   push:
@@ -63,16 +63,16 @@ jobs:
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
           set -o pipefail
-          python3 tools/build.py --release 0.9 2>&1 | tee firmware-build.log
-          test -s build/felucca-0.9.fwsc
+          python3 tools/build.py --release 0.10 2>&1 | tee firmware-build.log
+          test -s build/felucca-0.10.fwsc
           test -s build/felucca.bin
       - name: Package isolated DRUM-IND web installer
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="0.9-drum-ind-${GITHUB_SHA::7}-preview"
+          VERSION="0.10-drum-ind-${GITHUB_SHA::7}-preview"
           OUT="build/drum-ind-web-installer"
-          python3 web/make_site.py build/felucca-0.9.fwsc "$VERSION" "$OUT"
+          python3 web/make_site.py build/felucca-0.10.fwsc "$VERSION" "$OUT"
           test -s "$OUT/webapp/installer/index.html"
           test -s "$OUT/firmware/felucca-$VERSION.fwsc"
           # The public Pages workflow normally provides these at site root.
@@ -98,7 +98,7 @@ jobs:
               'EXPERIMENTAL DRUM-IND PREVIEW (' + version + '). '
               'NOT PHYSICALLY TESTED. This is a REAL FM1 firmware flash. '
               'Back up projects, presets and settings; keep a known-working '
-              'recovery method ready. The official v0.9 installer is separate.'
+              'recovery method ready. The official v0.10 installer is separate.'
               '</p>\n'
           )
           # Render this warning as static HTML if scripts are blocked.
@@ -149,7 +149,7 @@ jobs:
               '\n\n/* (0.9.11)', 1)
           page.write_text(html, encoding="utf-8")
           PY
-          cp "$OUT/webapp/installer/index.html" "$OUT/webapp/installer-orange-v09/index.html"
+          cp "$OUT/webapp/installer/index.html" "$OUT/webapp/installer-orange-v010/index.html"
           printf '%s\n' "$GITHUB_SHA" > "$OUT/firmware/SOURCE_COMMIT"
           (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
           cp firmware-build.log "$OUT/firmware/BUILD-LOG.txt"
@@ -217,7 +217,7 @@ jobs:
         with:
           name: mashina-drum-ind-native-firmware
           path: |
-            build/felucca-0.9.fwsc
+            build/felucca-0.10.fwsc
             build/felucca.bin
             firmware-build.log
           retention-days: 30
