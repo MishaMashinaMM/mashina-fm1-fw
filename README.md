@@ -6,7 +6,9 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 
 ![MASHINA FM1 Performance Firmware — MIDI routing, synths, drums and live controls](docs/mashina-overview.svg)
 
-**[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/)** · **[Emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** · **[Web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** · **[Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** · **[User manual](docs/JLD_MANUAL_V0.9.md)**
+### MASHINA online
+
+[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [User manual](https://github.com/MishaMashinaMM/mashina-fm1-fw/blob/main/docs/JLD_MANUAL_V0.9.md)
 
 ## What MASHINA does
 
