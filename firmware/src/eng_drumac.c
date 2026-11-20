@@ -290,7 +290,6 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
              * modes. The modes modulate the noise rather than dominate the
              * sustain as audible pure notes. This better approximates a
              * struck vibrating plate without prerecorded samples. */
-            int32_t wash = (white - fast) / 2 + (fast - lp) / 2;
             int32_t upper = (white - fast);
             int32_t lower = fast - lp;
             int32_t flutter = 140 + (s0 + s1 / 2 + s2 / 3) / 700;
