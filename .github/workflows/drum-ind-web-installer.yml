@@ -75,11 +75,20 @@ jobs:
           python3 web/make_site.py build/felucca-0.9.fwsc "$VERSION" "$OUT"
           test -s "$OUT/webapp/installer/index.html"
           test -s "$OUT/firmware/felucca-$VERSION.fwsc"
+          # The public Pages workflow normally provides these at site root.
+          # The standalone ZIP must provide them itself.
+          cp web/mashina-nav.css web/mashina-nav.js "$OUT/"
           python3 - "$OUT/webapp/installer/index.html" "$VERSION" <<'PY'
           from pathlib import Path
           import sys
           page, version = Path(sys.argv[1]), sys.argv[2]
           html = page.read_text(encoding="utf-8")
+          # Everything needed for the translated installer is already in
+          # the generated inline bundle. A classic script runs on file://
+          # too, allowing it to display a clear HTTP-server warning rather
+          # than leaving every data-t label blank. Flashing still requires HTTP.
+          assert html.count('<script type="module">') == 1
+          html = html.replace('<script type="module">', '<script>')
           needle = '  <p><button id="go" disabled data-t="install"></button></p>'
           assert html.count(needle) == 1, "Flashing button anchor changed - abort"
           warning = (
@@ -92,11 +101,46 @@ jobs:
               'recovery method ready. The official v0.9 installer is separate.'
               '</p>\n'
           )
-          html = html.replace(needle, warning + needle)
+          # Render this warning as static HTML if scripts are blocked.
+          # A failed init must NEVER look like an empty-but-usable flasher.
+          notice = (
+              '<div id="installer-startup-warning" role="alert" '
+              'style="border:2px solid #e43;padding:12px;'
+              'margin:14px 0;font-weight:700">'
+              'Installer has not initialized. DO NOT FLASH. '
+              'Use Chrome/Edge and serve the complete extracted ZIP over '
+              'http://localhost:8000/ (run: py -m http.server 8000). '
+              'If this message remains, stop and report the problem.'
+              '</div>\n'
+          )
+          html = html.replace(needle, warning + notice + needle)
+          # Never allow file:// flashing even if the browser permits fetch.
+          # The package must be loaded from the HTTP origin described above.
+          guard = (
+              'if (location.protocol !== "http:" && location.protocol !== "https:") {'
+              'document.getElementById("go").disabled = true;'
+              'document.getElementById("installer-startup-warning").textContent = '
+              '"Open the extracted installer at http://localhost:8000/webapp/installer/ '
+              'after running py -m http.server 8000. Do not use file://.";' 
+              'throw new Error("DRUM-IND installer requires HTTP");'
+              '}'
+          )
+          html = html.replace('const $ = (id) => document.getElementById(id);',
+                              guard + '\nconst $ = (id) => document.getElementById(id);')
           html = html.replace('<title>MASHINA — Installer</title>',
                               '<title>MASHINA — DRUM-IND Preview Installer</title>')
           assert 'drum-ind-preview-warning' in html
+          assert 'installer-startup-warning' in html
           assert 'channel":"preview"' in html or '"channel": "preview"' in html, "Expected preview metadata"
+          # Remove the static warning ONLY after the full installer script
+          # has reached its initialized state and applied translations.
+          bootstrap = 'applyLang();'
+          assert bootstrap in html, "Translation bootstrap changed"
+          html = html.replace(
+              bootstrap,
+              bootstrap + '\\n'
+              + 'document.getElementById("installer-startup-warning").remove();',
+              1)
           page.write_text(html, encoding="utf-8")
           PY
           cp "$OUT/webapp/installer/index.html" "$OUT/webapp/installer-orange-v09/index.html"
@@ -118,8 +162,10 @@ jobs:
           2. Open PowerShell in the extracted folder (where webapp/ exists).
           3. Run: py -m http.server 8000
           4. Open: http://localhost:8000/webapp/installer/
-          5. Use the installer's normal FM1 compatibility and safety checks.
-          6. Do not disconnect power or USB while flashing.
+          5. Check that all labels and buttons are readable. If ANY label is
+             blank or an initialization warning remains, DO NOT FLASH.
+          6. Use the installer's normal FM1 compatibility and safety checks.
+          7. Do not disconnect power or USB while flashing.
 
           FIRST HARDWARE CHECKS:
           - Boot and confirm MASHINA still runs normally.
