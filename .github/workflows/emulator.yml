@@ -24,6 +24,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Verify MASHINA website, project links and published UI
+        run: node web/drums_site_test.mjs
       - name: generated headers (fonts, icons, palettes, shapes, tables, samples)
         run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
       - uses: mymindstorm/setup-emsdk@v14
