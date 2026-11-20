@@ -180,7 +180,7 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 
 **Upgrading:** back up your projects before flashing. Older firmware may not recognize projects containing DRUM-AC. Non-neutral global controls saved with earlier experimental DRUM-AC builds may sound different because the global parameters now have consistent kit-wide meanings.
 
-### DRUM-IND: non-tonal industrial percussion (v0.10)
+### DRUM-IND: non-tonal industrial percussion
 
 **DRUM-IND** is a fourth, independent, sample-free 12-pad engine, separate from the melodic **INDUSTRIAL** synthesizer. It uses noise excitation, moving resonant filters, rough transients and irregular mechanical pulses rather than tuned note oscillators. It is intended to layer with acoustic or electronic drum kits using the same incoming MIDI channel.
 
@@ -199,7 +199,7 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 
 Three presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. The note mapping is fixed and repeats every octave; the SEQ custom-note mapping of DRUM-X/DRUM-LAB does not apply.
 
-**v0.10 display fix:** DRUM-LAB, DRUM-AC and DRUM-IND EDIT knobs now redraw only changed parameter cells, avoiding the former full-screen flashing during rapid turns. This fix does not alter existing synthesis. The new engine and display fix were **verified on a physical FM1**; automated firmware, audio and UI tests passed. Back up projects before upgrading: older firmware may not recognize DRUM-IND projects.
+**Compatibility:** Back up projects before changing firmware. Older versions may not recognize projects containing DRUM-IND.
 
 ### SEQ: drum MIDI mapping
 
