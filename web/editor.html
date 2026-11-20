@@ -358,6 +358,7 @@
     <span data-t="foot"></span> M-VAVE and FM-1 are trademarks of their respective owners.<br>
     <a href="FUKIAI-LICENSE.txt" data-t="iconsCredit"></a></footer>
 </main>
+<script src="../../mashina-editor-locales.js"></script>
 <script>
 "use strict";
 /*PROTO-BEGIN*/
@@ -3017,8 +3018,20 @@ const TEXT = {
     userBank: "User presets", none: "none",
   },
 };
-let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
-const t = (k) => TEXT[lang][k] ?? k;
+for (const [locale, strings] of Object.entries(MASHINA_EDITOR_LOCALES))
+  TEXT[locale] = { ...TEXT.en, ...strings };
+const EDITOR_LANGS = ["en", "es", "ja", "ru", "sr", "hi"];
+const editorQueryLang = new URLSearchParams(location.search).get("lang");
+let editorPreferred = editorQueryLang;
+if (!EDITOR_LANGS.includes(editorPreferred)) {
+  try { editorPreferred = localStorage.getItem("mashina-lang"); } catch (_) {}
+}
+if (!EDITOR_LANGS.includes(editorPreferred)) {
+  const browser = (navigator.language || "en").toLowerCase();
+  editorPreferred = EDITOR_LANGS.find((code) => browser.startsWith(code)) || "en";
+}
+let lang = editorPreferred;
+const t = (k) => TEXT[lang]?.[k] ?? TEXT.en[k] ?? k;
 let lastKey = null, lastArg = "";
 function sayK(k, arg = "") { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; }
 function applyLang() {
