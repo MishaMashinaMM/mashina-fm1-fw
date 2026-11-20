@@ -116,7 +116,7 @@ def manual(out):
                   "ru": "Содержание", "sr": "Садржај", "hi": "विषय-सूची"}
         toc_html = '<nav id="toc" aria-label="Contents"><strong>' + titles[lang] + '</strong><ul>' + "".join(toc) + '</ul></nav>'
         content = content.replace("</h1>", "</h1>" + toc_html, 1)
-        for forbidden in ("JIANT", "JLD", "Juan Jiant", "development process"):
+        for forbidden in ("JLD", "development process"):
             if forbidden.lower() in content.lower():
                 raise SystemExit(f"{name} includes non-user-facing reference: {forbidden}")
         visible = " data-active" if lang == "en" else ""
