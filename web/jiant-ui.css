@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * JIANT tools: the landing page's palette, type and HUD corners.
+ * MASHINA tools: the landing page's palette, type and HUD corners.
  * Inlined by make_site.py so each tool keeps its standalone styling. */
 /* v0.9 live-performance visual identity: orange values, monochrome surfaces.
  * Keep legacy named variables as aliases for compatibility with the original editor. */
