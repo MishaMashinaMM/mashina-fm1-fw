@@ -140,7 +140,7 @@ static int nv_ok(uint32_t sec, uint32_t e)
      * TRACKS/ENV artwork. Each pair addresses exactly the same controls.
      * Retain the old entries in the table for legacy builds and stable
      * GEN indices, but do not expose duplicate pages in the live UI. */
-    if ((sec == SEC_HOME && (e == 2u || e == 3u)) ||
+    if ((sec == SEC_HOME && e >= 2u) ||
         (sec == SEC_ENV && (e == 0u || e == 1u)))
         return 0;
 #endif
@@ -155,9 +155,9 @@ static uint32_t nav_cur(void)
     const ch_t *c = &CHAINS[key];
     if (sec == SEC_HOME) {
 #if FELUCCA_NO_SEQUENCER
-        /* Old saved HOME level 1 held only duplicated graphic views.
-         * Resolve it to the equivalent first-level numeric page. */
-        return gen_on() ? 4u + gen_page() : (ui.hset[ui.hlv ? 1 : 0] & 1u);
+        /* MASHINA exposes only CONTROLS and MACROS. Resolve any saved
+         * level-1 HOME state to the equivalent first-level numeric page. */
+        return ui.hset[ui.hlv ? 1 : 0] & 1u;
 #else
         return gen_on() ? 4u + gen_page() : (ui.hlv ? 2u : 0u) + (ui.hset[ui.hlv ? 1 : 0] & 1u);
 #endif
@@ -187,7 +187,14 @@ static uint32_t nav_cur(void)
 static uint32_t nav_lv(void) { return nav_ch(nav_sec())->e[nav_cur()].lv; }   /* the 0.8.5 lens level it is drawn as */
 static uint32_t pd_level(void) { return nav_lv(); }
 static uint32_t save_level(void) { return nav_lv(); }
-static uint32_t home_level(void) { return gen_on() ? 2u : ui.hlv ? 1u : 0u; }
+static uint32_t home_level(void)
+{
+#if FELUCCA_NO_SEQUENCER
+    return 0u;       /* only the CONTROLS/MACROS pair remains */
+#else
+    return gen_on() ? 2u : ui.hlv ? 1u : 0u;
+#endif
+}
 static uint32_t home_set(void) { return ui.hset[home_level() & 1u] & 1u; }
 static int home_macros(void) { return ui.home && !ui.menu && !gen_on() && home_set(); }   /* MACROS / ROUTES: M1..M4 */
 /* the entries shown now (on this track, at this LOAD), in order: their indices in v; how many */
@@ -226,7 +233,9 @@ static void nav_go(uint32_t sec, uint32_t e, int outside)
     nav_mem_put(key, e);
     if (sec == SEC_HOME) {
 #if FELUCCA_NO_SEQUENCER
-        if (e == 2u || e == 3u) e -= 2u;
+        /* No generator navigation in MASHINA. Old callers requesting
+         * legacy HOME pages land on the equivalent live control page. */
+        if (e >= 2u) e = 0u;
 #endif
         if (e >= 4u) {                                  /* GEN: the generator's screen, HOME's last group */
             if (!gen_on()) {
