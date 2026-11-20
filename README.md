@@ -2,12 +2,14 @@
 
 **MASHINA** is performance-focused firmware for the **M-VAVE FM1**: a six-track sound module for external MIDI keyboards, pads and controllers, with flexible routing, keyboard zones, melodic synthesis, drum engines, effects, 32 MIDI macros and live project recall. Developed by **Misha Mashina**, based on **JIANT by Juan Jiant** (originally based on Felucca).
 
-**Repository migration:** This is the official MASHINA repository, created from the physically tested `atmos` development branch on November 20, 2026. The previous project, [jiant-live-drums](https://github.com/MishaMashinaMM/jiant-live-drums), remains as the historical development archive. The code, assets and historical source attribution were preserved.\n\n[![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-777777.svg)](LICENSE)
+**Repository migration:** This is the official MASHINA repository, created from the physically tested `atmos` development branch on November 20, 2026. The previous project, [jiant-live-drums](https://github.com/MishaMashinaMM/jiant-live-drums), remains as the historical development archive. The code, assets and historical source attribution were preserved.
+
+[![License: GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-777777.svg)](LICENSE)
 [![UI v0.9: FM1 tested](https://img.shields.io/badge/v0.9_UI-FM1_device_tested-ff9900.svg)](#v09-orange-ui-device-tested)
 
-![JIANT LIVE DRUMS v0.9: six-track zones, transpose ±36 semitones and fine tuning ±50 cents, BRASS and INDUSTRIAL, two 12-pad drum engines and 32 MIDI macros](docs/jiant-live-drums-overview-32-macros.svg?v=0.9-ui)
+![MASHINA v0.9: six-track zones, transpose ±36 semitones and fine tuning ±50 cents, BRASS and INDUSTRIAL, two 12-pad drum engines and 32 MIDI macros](docs/jiant-live-drums-overview-32-macros.svg?v=0.9-ui)
 
-****[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/)** · **[Emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** · **[MASHINA installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** · **[Editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** · **[Inherited interactive manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)**
+**[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/)** · **[Emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** · **[MASHINA installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** · **[Editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** · **[Inherited interactive manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)**
 
 ### MASHINA v0.9 — device-tested
 
@@ -23,21 +25,21 @@
 
 The display now uses a **black / white / grayscale palette with orange `#FF9900`**. Editable values, page titles and breadcrumbs are orange; labels, backgrounds and gauge/intensity ramps remain grayscale; selected mixer tracks are white with black lettering. Occupied SAVE section chips are orange, empty ones dark gray, and saved projects have orange borders (current project white). The HOME-over-GLO rendering bug is fixed. The original UI animations remain disabled.
 
-**Installer:** after the merged `main` firmware build and GitHub Pages deployment complete, use the [public Drums installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/). The [UI v0.9 test installer workflow](https://github.com/MishaMashinaMM/mashina-fm1-fw/actions/workflows/ui-changes-installer.yml) remains as the historical pre-merge build used for hardware verification. Back up FM1 projects, user presets and settings before updating.
+**Installer:** after the merged `main` firmware build and GitHub Pages deployment complete, use the [MASHINA installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/). The [UI v0.9 test installer workflow](https://github.com/MishaMashinaMM/jiant-live-drums/actions/workflows/ui-changes-installer.yml) remains as the historical pre-merge build used for hardware verification. Back up FM1 projects, user presets and settings before updating.
 
 **Physical test report:** the orange-accent v0.9 firmware flashed successfully to an FM1 on November 18, 2026, and the owner reported everything working properly. The release changes include the splash title, HOME ↔ GLO redraw fix, mixer selection contrast, editable-value/breadcrumb coloring, and occupied/empty SAVE slot colors. For a future update, continue checking audio, MIDI, recalls, persistence and display readability.
 
-**[JIANT LIVE DRUMS v0.9 user manual](docs/JLD_MANUAL_V0.9.md)** — covers MIXER, ZONES and TUNING, independent per-track ±36-semitone transpose and ±50-cent fine tuning, splits/layers, MIDI routing, BRASS, INDUSTRIAL, EQ, live recall, both drum engines and REC macros. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
+**[MASHINA v0.9 user manual](docs/JLD_MANUAL_V0.9.md)** — covers MIXER, ZONES and TUNING, independent per-track ±36-semitone transpose and ±50-cent fine tuning, splits/layers, MIDI routing, BRASS, INDUSTRIAL, EQ, live recall, both drum engines and REC macros. The separate interactive manual linked above is inherited from original JIANT and has not yet been fully adapted to Drums.
 
-The links above target this MASHINA repository's GitHub Pages routes (subject to Pages deployment). The repository includes the Drums-specific browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated Drums control reference**.
+The links above target this MASHINA repository's GitHub Pages routes (subject to Pages deployment). The repository includes the MASHINA browser emulator, firmware installer, editor, and an inherited interactive manual. The inherited manual still describes some original sequencer behavior and is **not a fully updated MASHINA control reference**.
 
-JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six independently routed MIDI tracks**, expressive melodic engines, two 12-pad drum kits, live project recall and 32 project MIDI CC macros. **v0.9 adds a dedicated six-track TUNING page** with **TRN −36…+36 semitones** and **FINE −50…+50 cents**, moving TRN out of MIXER. **v0.8 introduced Keyboard Zones** for per-track note/velocity splits and overlaps; **v0.7 introduced BRASS and INDUSTRIAL**. Existing live channel overrides, global pre-effects 50 Hz / 700 Hz / 10 kHz three-band EQ and the 12-pad drum engines remain available. The sequencer is disabled; SEQ, PLAY and REC serve live controls instead.
+MASHINA is performance-oriented firmware for the FM1 with **six independently routed MIDI tracks**, expressive melodic engines, two 12-pad drum kits, live project recall and 32 project MIDI CC macros. **v0.9 adds a dedicated six-track TUNING page** with **TRN −36…+36 semitones** and **FINE −50…+50 cents**, moving TRN out of MIXER. **v0.8 introduced Keyboard Zones** for per-track note/velocity splits and overlaps; **v0.7 introduced BRASS and INDUSTRIAL**. Existing live channel overrides, global pre-effects 50 Hz / 700 Hz / 10 kHz three-band EQ and the 12-pad drum engines remain available. The sequencer is disabled; SEQ, PLAY and REC serve live controls instead.
 
 > **v0.9 hardware testing (November 18, 2026):** The prior feature build was flashed and tested with a Korg X5D MIDI keyboard, including TUNING and existing features. Later the same day, the new black/gray/orange v0.9 UI build was flashed successfully to a physical FM1, and the owner reported all tested functions working. Automated firmware, MIDI, UI, project and WebAssembly checks also passed. Hardware validation is a functional test, not comprehensive stress, upgrade-path or recovery certification.
 
 ## What's different from JIANT / Jiant Live
 
-| Feature | JIANT LIVE DRUMS v0.9 |
+| Feature | MASHINA v0.9 |
 | --- | --- |
 | **MIXER MIDI activity (v0.9, device-tested)** | First **GLO → MIX → MIXER** page: six **ACT** circles after PAN. Dark-gray thin ring with black center when idle, solid **#FF9900** while a MIDI note is held or sustained, including on the white selected row. Tracks follow existing routing/zones and can light independently. Emulator provides three independent MIDI test rows. Physically tested November 18, 2026. |\n| **Panic Mode (v0.9, device-tested)** | Hold **GLO**, tap **OCT−**: immediately silence all tracks and effects, show white **PANIC MODE** on black while GLO remains held, then return to the previous screen on release. Does not modify project data or macros. Tested on a physical FM1 on November 18, 2026. |
 | **Keyboard Zones (introduced in v0.8)** | **GLO → MIX → ZONES**, immediately after MIXER. Six identical track rows: static track number/name; **K1 MIN**, **K2 MAX** (note 0–127, shown as note names), **K3 V.MIN**, **K4 V.MAX** (velocity 1–127). Each track independently filters incoming USB/TRS MIDI after RX-channel selection and **before transpose**. Ranges are inclusive; overlapping note/velocity areas layer sounds. Saved **per project**; old projects default to full ranges. FM1 built-in keyboard still plays only the selected track. Confirmed on a physical FM1 with a Korg X5D in v0.9 hardware testing. |
@@ -59,8 +61,8 @@ JIANT LIVE DRUMS is performance-oriented firmware for the FM1 with **six indepen
 | DRUM-LAB | **12 independent synthesized pads** with selectable sound types, ten per-pad sound parameters, three LEVELS pages, and eight kit-wide proportional controls. |
 | Repurposed SEQ, PLAY and REC buttons | **SEQ** opens **DRUM MIDI MAP**, **PLAY** opens **DRUM PERFORMANCE**, and **REC** opens **MIDI CC MACROS**. The three buttons illuminate with their active live pages; none starts the removed sequencer/transport. |
 | Polyphony | **Eight shared voices** across all tracks and both drum engines. |
-| Display (v0.9 UI, device-tested) | Static **JIANT LIVE DRUMS v0.9** startup splash; black/white/gray UI with **orange #FF9900** values and breadcrumbs, solid-white selected mixer rows, orange occupied SAVE slots and gray empty slots. Decorative animations remain disabled. |
-| ABOUT | JIANT LIVE DRUMS identification and purpose, while retaining original author and license credits. |
+| Display (v0.9 UI, device-tested) | Static **MASHINA v0.9** startup splash with abstract cog; black/white/gray UI with **orange #FF9900** values and breadcrumbs, solid-white selected mixer rows, orange occupied SAVE slots and gray empty slots. Decorative animations remain disabled. |
+| ABOUT | MASHINA identity, external MIDI/live-performance purpose, repository QR, and original Jiant credits preserved below. |
 | Browser emulator | Can load an existing JIANT **backup JSON** into an isolated session to audition saved sounds/projects without changing the physical FM1. |
 | Sequencer / sound engines | **Sequencer disabled** for live use; the inherited melodic engines and effects remain. |
 
@@ -153,11 +155,11 @@ See [MIDI randomization technical notes](docs/randomization-midi.md) for eligibi
 
 ### Live project recall and slot management (v0.4)
 
-**Why Live Recall exists:** Original JIANT's keyboard-based shortcut is still available: hold **SAVE**, then press a mapped keyboard key to recall or store a section. For performance, v0.4 offers a simpler alternative: **long-press REC once to enable Live Recall mode and leave it active**. From then on, a **single tap** on **FX**, **SEL**, **ENV** or **LFO** recalls project slot **1**, **2**, **3** or **4**, respectively—without holding SAVE or reaching for a keyboard key each time. **Long-press REC again to exit Live Recall mode.** The inherited SAVE + keyboard shortcuts remain available; neither method replaces the other. On physical FM1 hardware and in the emulator, switching between saved sounds worked on the first note; the previous sound's active notes stopped while existing delay/reverb tails continued naturally. This feature and CLEAR SLOT were merged into `main` in [PR #18](https://github.com/MishaMashinaMM/mashina-fm1-fw/pull/18), merge commit [`43b2e9a`](https://github.com/MishaMashinaMM/mashina-fm1-fw/commit/43b2e9ad207cf62370e9e2aa6c132887caa9bfdf). The 11 live-drum regression suites and firmware build passed in the feature-branch CI run [#100](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43690733723); live recall and slot management have also been validated on the physical FM1.
+**Why Live Recall exists:** Original JIANT's keyboard-based shortcut is still available: hold **SAVE**, then press a mapped keyboard key to recall or store a section. For performance, v0.4 offers a simpler alternative: **long-press REC once to enable Live Recall mode and leave it active**. From then on, a **single tap** on **FX**, **SEL**, **ENV** or **LFO** recalls project slot **1**, **2**, **3** or **4**, respectively—without holding SAVE or reaching for a keyboard key each time. **Long-press REC again to exit Live Recall mode.** The inherited SAVE + keyboard shortcuts remain available; neither method replaces the other. On physical FM1 hardware and in the emulator, switching between saved sounds worked on the first note; the previous sound's active notes stopped while existing delay/reverb tails continued naturally. This feature and CLEAR SLOT were merged into `main` in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18), merge commit [`43b2e9a`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/43b2e9ad207cf62370e9e2aa6c132887caa9bfdf). The 11 live-drum regression suites and firmware build passed in the feature-branch CI run [#100](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/43690733723); live recall and slot management have also been validated on the physical FM1.
 
 In **SAVE → LIBRARY → TOOLS**, the four visible actions are **INIT SOUND**, **CLEAR SLOT**, **NEW PROJECT** and **CPU TEST**, selected by turning **K1**, **K2**, **K3** and **K4** respectively. CLEAR SLOT requires confirmation; clearing a saved slot persists across reloads. The owner confirms that the v0.4 firmware was successfully flashed, tested and approved on a physical FM1.
 
-**LIBRARY display fix (device-tested):** The SAVE → LIBRARY → PROJECTS overview now validates saved sections using the same project importer as project selection. Previously, some empty sections appeared occupied until their project was selected; the correction was merged in [PR #21](https://github.com/MishaMashinaMM/mashina-fm1-fw/pull/21). The owner confirmed the fix on a physical FM1 running v0.4.
+**LIBRARY display fix (device-tested):** The SAVE → LIBRARY → PROJECTS overview now validates saved sections using the same project importer as project selection. Previously, some empty sections appeared occupied until their project was selected; the correction was merged in [PR #21](https://github.com/MishaMashinaMM/jiant-live-drums/pull/21). The owner confirmed the fix on a physical FM1 running v0.4.
 
 ### Global three-band EQ (introduced in v0.3)
 
@@ -269,15 +271,15 @@ On the tested FM1, these pages open with a single press and remain stable while 
 
 ### Display and startup
 
-The startup screen uses a black background with **JIANT LIVE DRUMS**, author attribution and the current **build-version label** (for example **v0.9**). It no longer hard-codes **v0.5**. Decorative display animations and the startup LED sweep are disabled; informative UI and sound feedback remain.
+The startup screen uses a black background with **MASHINA**, a stylized orange cog, **FM1 PERFORMANCE FW**, original Jiant attribution and the current **release-version label** (for example **v0.9**). It no longer hard-codes **v0.5**. Decorative display animations and the startup LED sweep are disabled; informative UI and sound feedback remain.
 
-## Try JIANT LIVE DRUMS on your computer
+## Try MASHINA on your computer
 
-**[▶ Launch JIANT LIVE DRUMS in your browser](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** — no installation or FM1 hardware is required to use the emulator. The public emulator follows the current v0.9 `main` build once GitHub Pages deployment completes; the v0.9 release candidate was already tested on a physical FM1 with a Korg X5D.
+**[▶ Launch MASHINA in your browser](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** — no installation or FM1 hardware is required to use the emulator. The public emulator follows the current v0.9 `main` build once GitHub Pages deployment completes; the v0.9 release candidate was already tested on a physical FM1 with a Korg X5D.
 
-The browser tab is titled **JIANT LIVE DRUMS**. It includes the virtual FM1, computer-keyboard controls, MIDI CC testing, and an optional JIANT backup importer. Credits and licenses remain in the repository.
+The browser tab is titled **MASHINA**. It includes the virtual FM1, computer-keyboard controls, MIDI CC testing, and an optional JIANT backup importer. Credits and licenses remain in the repository.
 
-The Drums site's GitHub Actions workflow builds the emulator under `emu/` and the dedicated installer and editor under `webapp/`. Their source files are `web/emu/index.html`, `web/index_pkg.html`, and `web/editor.html`. The installer is separate from the emulator.
+The MASHINA site's GitHub Actions workflow builds the emulator under `emu/` and the dedicated installer and editor under `webapp/`. Their source files are `web/emu/index.html`, `web/index_pkg.html`, and `web/editor.html`. The installer is separate from the emulator.
 
 ### Dedicated web installer, editor and documentation
 
@@ -323,11 +325,11 @@ The Drums emulator does not load a sample bank or offer sample-kit playback. It 
 
 **Current hardware validation:** On November 18, 2026, JLD v0.9 TUNING and zones were successfully tested on a physical FM1 with a Korg X5D. The orange-accent UI version was subsequently flashed successfully onto an FM1, and the owner confirmed everything was working properly. The updated UI is therefore **device-tested**, while long-duration stress and recovery behavior remain outside this report.
 
-- **v0.4 device-tested release:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/mashina-fm1-fw/pull/18). The project LIBRARY occupancy discrepancy was corrected in [PR #21](https://github.com/MishaMashinaMM/mashina-fm1-fw/pull/21). **The owner successfully flashed v0.4 on a physical FM1 and confirmed live recall, slot management, LIBRARY indicators, startup/About version display and the current feature set work on the device (November 15, 2026).** Firmware, host regression and emulator checks also passed. Device approval does not imply exhaustive long-duration stress qualification.
+- **v0.4 device-tested release:** Live project recall, CLEAR SLOT and direct K1–K4 TOOLS navigation merged in [PR #18](https://github.com/MishaMashinaMM/jiant-live-drums/pull/18). The project LIBRARY occupancy discrepancy was corrected in [PR #21](https://github.com/MishaMashinaMM/jiant-live-drums/pull/21). **The owner successfully flashed v0.4 on a physical FM1 and confirmed live recall, slot management, LIBRARY indicators, startup/About version display and the current feature set work on the device (November 15, 2026).** Firmware, host regression and emulator checks also passed. Device approval does not imply exhaustive long-duration stress qualification.
 
-- **Previous v0.3 release (historical):** [GitHub Actions build and deployment](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42855710544) completed successfully for `v0.3-1956d21`. Both physical FM1 units were flashed and checked successfully on November 10, 2026: **official V15 → JLD v0.3** and **original JIANT → JLD v0.3**. The [public installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) serves the current v0.7 release, not this historical package.
+- **Previous v0.3 release (historical):** [GitHub Actions build and deployment](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42855710544) completed successfully for `v0.3-1956d21`. Both physical FM1 units were flashed and checked successfully on November 10, 2026: **official V15 → JLD v0.3** and **original JIANT → JLD v0.3**. The [public installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) serves the current v0.9 release, not this historical package.
 - **Host regression:** the live-drum host regression suite covers drum engines, MIDI routing, project serialization, macro control, and Stage 27B stress. The `macro-32` firmware and emulator build jobs, including all 11 live-drum host regression suites, passed on November 10, 2026.
-- **Historical 32-macro build:** source commit [`5c79b3b`](https://github.com/MishaMashinaMM/mashina-fm1-fw/commit/5c79b3b7b394c9d2a6ac75d4847aef9ef81e44da) produced [successful firmware and emulator preview artifacts](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42836474817). The earlier Stage 29C package `felucca-v0.2-b9654ee.fwsc` is also historical; neither package is the current v0.4 release.
+- **Historical 32-macro build:** source commit [`5c79b3b`](https://github.com/MishaMashinaMM/jiant-live-drums/commit/5c79b3b7b394c9d2a6ac75d4847aef9ef81e44da) produced [successful firmware and emulator preview artifacts](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42836474817). The earlier Stage 29C package `felucca-v0.2-b9654ee.fwsc` is also historical; neither package is the current v0.4 release.
 - **REC partial redraw:** the [firmware and emulator CI run](https://github.com/MishaMashinaMM/jiant-live-drums/actions/runs/42849592862) passed all 11 live-drum host regression suites. The new installer was successfully flashed to an FM1 on November 10, 2026; K-knob macro edits no longer cause full-screen flickering on the device.
 - **Update simulation:** Stage 29C OTA staging, CRC validation, allowed flash boundaries and the Stage 29B → 29C loader update passed host tests. These checks do **not** guarantee recovery from a failed physical update.
 - **Physical FM1 testing (November 9–10, 2026):** **v0.3 (`1956d21`) was successfully flashed and booted on two FM1 units**—one starting from **official V15** and one from **original JIANT**—and the owner reported **all performed device checks passed**. The first device confirmed ABOUT v0.3 and smooth REC partial updates without flicker; the second also functioned as expected. Earlier physical tests confirmed DRUM-LAB sound/editing, SEQ/PLAY navigation, LEDs, and external-controller MIDI CC macros. Physical FM1 testing now covers the current macro feature set, including paging, editing, deletion and save/reload (owner-confirmed for v0.4). Emulator tests also exercised ten macros over three pages, and host tests exercised all 32. Exhaustive long-duration reliability qualification is not claimed.
@@ -347,7 +349,7 @@ bash tests/run_live_drum_tests.sh
 
 ## Upstream documentation and references
 
-JIANT LIVE DRUMS retains many JIANT synthesis engines, interfaces, effects and editing workflows, but removes the sequencer and substantially changes drum pages. For unchanged controls, refer to the original manual:
+MASHINA retains many JIANT synthesis engines, interfaces, effects and editing workflows, but removes the sequencer and substantially changes drum pages. For unchanged controls, refer to the original manual:
 
 - [Original JIANT project](https://github.com/juanjiant-bit/JIANT) and [original README](https://github.com/juanjiant-bit/JIANT/blob/main/README.md)
 - [JIANT English manual](https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.md) and [Spanish manual](https://github.com/juanjiant-bit/JIANT/blob/main/docs/MANUAL.es.md)
@@ -355,12 +357,12 @@ JIANT LIVE DRUMS retains many JIANT synthesis engines, interfaces, effects and e
 - [Felucca](https://github.com/hugelton/Felucca), the firmware on which JIANT is based
 - [SLOOP](https://github.com/isod89/sloop-fm1), source of JIANT's song-system lineage
 
-**Important:** the inherited manual, navigation map, screenshots and cheat sheets describe upstream JIANT revisions; they are **not exact Jiant Live Drums v0.9 control maps**. Original illustrations under [`docs/`](docs/) are historical upstream assets.
+**Important:** the inherited manual, navigation map, screenshots and cheat sheets describe upstream JIANT revisions; they are **not exact MASHINA v0.9 control maps**. Original illustrations under [`docs/`](docs/) are historical upstream assets.
 
 ## Authors, credits and license
 
 - **Original JIANT firmware:** Juan Ignacio Antonucci (**Juan Jiant**).
-- **JIANT LIVE DRUMS modification:** **Misha Mashina**.
+- **MASHINA firmware modification:** **Misha Mashina** (originally developed as JIANT LIVE DRUMS).
 - **Felucca firmware:** Hügelton Instruments, including Leo Kuroshita and other credited contributors.
 - Additional contributors, predecessor projects, third-party tools, and font licenses retain their original attribution in source headers and accompanying license files.
 
