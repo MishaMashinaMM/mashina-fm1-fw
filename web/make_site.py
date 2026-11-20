@@ -126,7 +126,7 @@ def main(pkg, version, out, prev=None):
     editions = json.loads((HERE / "EDITIONS.json").read_text(encoding="utf-8"))
     for entry in versions:
         entry.update(editions.get(entry["version"], {}))
-    # This fork publishes only its own Drums build, never an upstream edition
+    # This fork publishes only its own MASHINA build, never an upstream edition
     # or an older firmware selected from an unrelated site.
     selected = versions[0]
     release_hash = hashlib.sha256(raw).hexdigest()[:12]
@@ -179,9 +179,9 @@ def main(pkg, version, out, prev=None):
             shutil.copy(HERE / f, ed / f)
     shutil.copy(HERE / "404.html", out / "404.html")
     (out / "index.html").write_text(
-        '<!doctype html><meta charset="utf-8"><title>JIANT LIVE DRUMS</title>'
+        '<!doctype html><meta charset="utf-8"><title>MASHINA</title>'
         '<meta http-equiv="refresh" content="0; url=webapp/installer/">'
-        '<a href="webapp/installer/">JIANT LIVE DRUMS installer</a>\n', encoding="utf-8")
+        '<a href="webapp/installer/">MASHINA installer</a>\n', encoding="utf-8")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, firmware/{name} ({len(raw)} B, {product})"
           + (f", earlier: {' '.join(e['version'] for e, _ in old)}" if old else ""))
 
