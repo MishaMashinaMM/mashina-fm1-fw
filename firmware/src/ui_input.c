@@ -2514,10 +2514,13 @@ static void ui_input_frame(void)
             (ps = panel_enc(EN_SELECT)) != 0) {
             uint32_t k = f == FAM_EDIT ? CF_DICE_SOUND : f == FAM_SEQ ? CF_DICE_SEQ : f == FAM_LFO ? CF_DICE_LFO :
                          f == FAM_FX ? CF_DICE_FX : 0u;
-            if (f == FAM_COUNT) {                       /* HOME held: GEN, HOME's generator */
-                ui.home_t0 |= 2u;
+            if (f == FAM_COUNT) {
+                ui.home_t0 |= 2u;    /* HOME + SELECT consumes the gesture; no HOME tap on release */
+#if !FELUCCA_NO_SEQUENCER
+                /* Legacy Jiant only: open the three-page song generator. */
                 if (!pj_sel_ms || fm1_ms - pj_sel_ms > 400u)
                     nav_go(SEC_HOME, 4u + gen_page(), 1);
+#endif
             } else if (k) {
                 part_dice(k);
                 btn_used(FAM_BTN[f]);
