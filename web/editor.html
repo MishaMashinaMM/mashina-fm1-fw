@@ -3022,15 +3022,7 @@ for (const [locale, strings] of Object.entries(MASHINA_EDITOR_LOCALES))
   TEXT[locale] = { ...TEXT.en, ...strings };
 const EDITOR_LANGS = ["en", "es", "ja", "ru", "sr", "hi"];
 const editorQueryLang = new URLSearchParams(location.search).get("lang");
-let editorPreferred = editorQueryLang;
-if (!EDITOR_LANGS.includes(editorPreferred)) {
-  try { editorPreferred = localStorage.getItem("mashina-lang"); } catch (_) {}
-}
-if (!EDITOR_LANGS.includes(editorPreferred)) {
-  const browser = (navigator.language || "en").toLowerCase();
-  editorPreferred = EDITOR_LANGS.find((code) => browser.startsWith(code)) || "en";
-}
-let lang = editorPreferred;
+let lang = EDITOR_LANGS.includes(editorQueryLang) ? editorQueryLang : "en";
 const t = (k) => TEXT[lang]?.[k] ?? TEXT.en[k] ?? k;
 let lastKey = null, lastArg = "";
 function sayK(k, arg = "") { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; }
