@@ -159,6 +159,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     int32_t level_gain;
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
     int32_t mod_delta[8];
+    uint32_t mod_render;
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
     a = &ac_state[t - trk][slot];
@@ -183,6 +184,11 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         for (field = 0u; field < 8u; field++)
             mod_delta[field] = ac_mod_delta(t, kind, field, values[field]);
     }
+    /* If no per-pad change is active, skip the additional DSP completely:
+     * the approved default kit remains the original render path. */
+    mod_render = (mod_delta[0] || mod_delta[2] || mod_delta[3] ||
+                  mod_delta[4] || mod_delta[5] || mod_delta[6] ||
+                  mod_delta[7]);
     lid = kind < 8u ? P_LN0 + kind : P_LN8 + kind - 8u;
     {   /* Quadratic pad LEVEL, identical to DRUM-LAB; calculated per block. */
         int32_t level = clamp(t->p[lid], 0, 127);
@@ -404,7 +410,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
          * previously inert cymbal TUNE/RING, tom STICK/SHELL, hat CHICK/
          * DECAY and clap SNAP/TEXTURE/TAIL. Use the same existing noise,
          * head and strike states: no additional synth engine or voices. */
-        {
+        if (mod_render) {
             int32_t high = white - fast;
             int32_t mid = fast - lp;
             int32_t low = lp;
@@ -418,41 +424,44 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t ring_delta = mod_delta[7];
             /* TUNE: body colour for untuned kick/snare/clap, plate spectrum
              * for cymbals; toms already have a separate true-pitch path. */
-            if (!ac_is_tom(kind))
+            if (mod_delta[0] && !ac_is_tom(kind))
                 extra += (int32_t)(((int64_t)mid * body * tune_delta) >> 34);
             /* BODY: change thump/wash strength rather than merely the decay.
              * Preserve the existing low-frequency kick and snare generators. */
-            extra += (int32_t)(((int64_t)low * body * body_delta) >> 33);
+            if (body_delta)
+                extra += (int32_t)(((int64_t)low * body * body_delta) >> 33);
             /* HIT: independently emphasise or soften the initial transient. */
-            extra += (int32_t)(((int64_t)high * trans * hit_delta) >> 33);
+            if (hit_delta)
+                extra += (int32_t)(((int64_t)high * trans * hit_delta) >> 33);
             /* WIRES / BEATER / SPLASH / STICK / CHICK / SNAP:
              * For pads where field 5 was previously unused, make it an
              * unmistakable initial strike and short rattle control. */
-            if (kind == AC_HAT_C || kind == AC_HAT_O ||
-                ac_is_tom(kind) || kind == AC_CLAP || kind == AC_RIDE_BELL)
+            if (aux_delta && (kind == AC_HAT_C || kind == AC_HAT_O ||
+                ac_is_tom(kind) || kind == AC_CLAP || kind == AC_RIDE_BELL))
                 extra += (int32_t)(((int64_t)high * trans * aux_delta) >> 32);
             /* SPLASH is more than a volume knob: also vary crash and ride
              * attack-to-wash balance around the exact original sound. */
-            if (kind == AC_CRASH || kind == AC_RIDE_SPLASH) {
+            if (aux_delta && (kind == AC_CRASH || kind == AC_RIDE_SPLASH)) {
                 extra += (int32_t)(((int64_t)high * trans * aux_delta) >> 33);
                 extra += (int32_t)(((int64_t)mid * body * aux_delta) >> 34);
             }
             /* BRIGHT: strong upper-band emphasis on all sounds. The snare
              * already has a bright transient; this adds sustained spectral
              * contrast without overwriting its approved default. */
-            extra += (int32_t)(((int64_t)high * body * bright_delta) >> 34);
+            if (bright_delta)
+                extra += (int32_t)(((int64_t)high * body * bright_delta) >> 34);
             /* METAL/TEXTURE/SHELL: previously ineffective for tom and clap;
              * on cymbals modify the noisy metal sheet, not just its resonator. */
-            if (ac_is_tom(kind) || kind == AC_CLAP ||
-                kind == AC_HAT_C || kind == AC_HAT_O || ac_is_metal(kind))
+            if (texture_delta && (ac_is_tom(kind) || kind == AC_CLAP ||
+                kind == AC_HAT_C || kind == AC_HAT_O || ac_is_metal(kind)))
                 extra += (int32_t)(((int64_t)mid * body * texture_delta) >> 33);
             /* RING/TAIL: separate body-band tail coloration on pads whose
              * earlier RING scarcely affected the sound, especially hats
              * and clap. Decay is also modulated above. */
-            if (kind == AC_HAT_C || kind == AC_HAT_O || kind == AC_CLAP ||
-                ac_is_metal(kind))
+            if (ring_delta && (kind == AC_HAT_C || kind == AC_HAT_O || kind == AC_CLAP ||
+                ac_is_metal(kind)))
                 extra += (int32_t)(((int64_t)(mid + low) * body * ring_delta) >> 34);
-            raw = (int32_t)clamp((int64_t)raw + extra, -32768, 32767);
+            raw = (int32_t)clamp(raw + extra, -32768, 32767);
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
