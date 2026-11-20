@@ -23,7 +23,15 @@ emcc ${EMU_OPT:--O2} -ffp-contract=off -std=gnu99 -w ${EMU_CFLAGS:-} \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o build/emu/felucca.wasm web/emu/felucca_web.c
 [ "${EMU_PREVIEW:-1}" = 0 ] && PREVIEW='' || PREVIEW=' (preview)'
-sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" web/emu/index.html > build/emu/index.html
+# Ship the navigation and translation assets with the isolated artifact.
+# Installed Pages sites may have these in the parent folder; downloaded
+# previews must not require any files outside build/emu.
+sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" \
+    -e 's#../mashina-nav.css#./mashina-nav.css#g' \
+    -e 's#../mashina-nav.js#./mashina-nav.js#g' \
+    -e 's#../mashina-emu-locale.js#./mashina-emu-locale.js#g' \
+    web/emu/index.html > build/emu/index.html
+cp web/mashina-nav.css web/mashina-nav.js web/mashina-emu-locale.js build/emu/
 cp web/emu/worklet.js web/emu/stems.js web/emu/sample-bank.js web/fm1backup.js build/emu/
 cp web/factory-voices.json web/factory-samples.json build/emu/
 cp web/emu/fonts/DotGothic16-subset.woff web/emu/fonts/OFL.txt build/emu/fonts/
