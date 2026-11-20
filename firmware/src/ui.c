@@ -593,7 +593,7 @@ static int page_visible(uint32_t i)
         return trk_eng(TSEL) == ENGI_DRUM ||
                (trk_eng(TSEL) == ENGI_DRUMLAB && PAGES[i].title[0] != 'X') ||
                (trk_eng(TSEL) == ENGI_DRUMAC && PAGES[i].title[0] != 'X' &&
-                dx_pagen(&PAGES[i]) != 8u);
+                PAGES[i].title[6] != '4');
     if (PAGES[i].graph == GR_DXIMG) /* DRUM-X-specific KIT 3 / IMAGE */
         return trk_eng(TSEL) == ENGI_DRUM;
     if (PAGES[i].fam == FAM_EDIT && PAGES[i].scope == SC_TRACK &&
