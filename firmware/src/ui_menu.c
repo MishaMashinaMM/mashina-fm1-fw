@@ -8,15 +8,15 @@
 /* ------------------------------------------------------------ menu --- */
 /* (the rows, their values and names, usb_serial_apply: menu_items.c) */
 
-/* QR for https://github.com/MishaMashinaMM/jiant-live-drums.
+/* QR for https://github.com/MishaMashinaMM/mashina-fm1-fw.
  * Version 3, correction L (qrcode); 29x29 modules at 2px, with a 4-module
  * quiet zone. One uint32_t per row, leftmost module in bit 0. */
 static const uint32_t ABOUT_QR[29] = {
-    0x1FC47D7Fu, 0x10511741u, 0x1757B45Du, 0x1756F45Du, 0x1746475Du, 0x10507141u,
-    0x1FD5557Fu, 0x00049500u, 0x19F31767u, 0x18FBDE88u, 0x17CAA95Eu, 0x0335923Du,
-    0x10D14BE6u, 0x18D0B807u, 0x11EEBEEEu, 0x00DD4E80u, 0x10710FCDu, 0x1CCD391Cu,
-    0x130CBC5Bu, 0x01551614u, 0x0BF11D7Fu, 0x17133D00u, 0x1156EA7Fu, 0x11185541u,
-    0x1BF9905Du, 0x1F3BCE5Du, 0x19278D5Du, 0x03959141u, 0x13111D7Fu,
+    0x1FC4397Fu, 0x10513741u, 0x1757BC5Du, 0x1756645Du, 0x17464F5Du, 0x10510941u,
+    0x1FD5557Fu, 0x00051D00u, 0x19F31767u, 0x18FBA79Du, 0x17CAE957u, 0x0335DA38u,
+    0x10D10AECu, 0x18D0B98Au, 0x11EE9C5Fu, 0x00DD1E87u, 0x10711BDCu, 0x1CCD190Cu,
+    0x130CECCBu, 0x01555318u, 0x0BF1566Fu, 0x17132B00u, 0x1156AE7Fu, 0x01184141u,
+    0x1BF98A5Du, 0x1F3B885Du, 0x1927895Du, 0x03959341u, 0x1311117Fu,
 };
 
 static void draw_about_qr(int32_t x, int32_t y)
@@ -248,7 +248,7 @@ static int32_t menu_document(int32_t y, int draw)
         cv_text(6, y + 118, &AF_S, "GPL-3.0-only / no warranty", T_TEXT);
         cv_text(6, y + 138, &AF_S, "github.com", T_MID);
         cv_text(6, y + 156, &AF_S, "/MishaMashinaMM", T_MID);
-        cv_text(6, y + 174, &AF_S, "/jiant-live-drums", T_MID);
+        cv_text(6, y + 174, &AF_S, "/mashina-fm1-fw", T_MID);
         draw_about_qr(158, y + 122);
     }
     /* Introduce MASHINA as a playable MIDI sound module, not a drum sequencer.
@@ -265,7 +265,7 @@ static int32_t menu_document(int32_t y, int draw)
     y = menu_text("The song sequencer is disabled. The streamlined orange, gray and white interface has no animations.", y, T_TEXT, draw);
     y = menu_text("PROJECT + SOURCE", y + 12, T_THEME, draw);
     y = menu_text("Firmware, emulator, installer and documentation:", y, T_TEXT, draw);
-    y = menu_text("github.com/MishaMashinaMM/jiant-live-drums", y, T_MID, draw);
+    y = menu_text("github.com/MishaMashinaMM/mashina-fm1-fw", y, T_MID, draw);
     y -= 216;
     {   /* (0.6.17) the audio's load since power-on (voice.c load_diag): to tell what happened when it clicked */
         char b[40], n[12];
@@ -316,7 +316,7 @@ static int32_t menu_document(int32_t y, int draw)
     y = menu_text("Fonts and icons: their licences travel with the source and the release files.", y, T_TEXT, draw);
     y = menu_text("NO WARRANTY", y, T_TEXT, draw);
     y = menu_text("Full notices in source:", y + 8, T_TEXT, draw);
-    y = menu_text("github.com/MishaMashinaMM/jiant-live-drums", y, T_MID, draw);
+    y = menu_text("github.com/MishaMashinaMM/mashina-fm1-fw", y, T_MID, draw);
     return y + 4;
 }
 static int32_t menu_scroll_max(void)
