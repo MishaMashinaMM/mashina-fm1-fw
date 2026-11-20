@@ -35,11 +35,42 @@ jobs:
           sh tools/get_toolchain.sh "$HOME/.jieli"
           test -x "$HOME/.jieli/toolchain/pi32v2/bin/clang"
 
-      - name: Fetch AC79 SDK
+      - name: Cache pinned AC79 SDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/fw-AC79_AIoT_SDK
+          key: ac79-sdk-v1.2.1-2023-12-13-linux
+
+      - name: Fetch AC79 SDK with retries
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        shell: bash
         run: |
-          git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
-            https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
-          test -f "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/uboot.boot"
+          set -euo pipefail
+          sdk="$HOME/fw-AC79_AIoT_SDK"
+          for attempt in 1 2 3 4 5; do
+            echo "AC79 SDK clone attempt $attempt/5"
+            rm -rf "$sdk"
+            if git -c http.version=HTTP/1.1 clone --depth 1 --single-branch \
+                 --branch AC79NN_SDK_V1.2.1_2023-12-13 \
+                 https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$sdk"; then
+              if test -s "$sdk/cpu/wl82/tools/uboot.boot"; then
+                echo "AC79 SDK fetched successfully"
+                break
+              fi
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "::error::AC79 SDK download failed after five attempts"
+              exit 1
+            fi
+            echo "Network download interrupted; retrying after $((attempt * 5)) seconds"
+            sleep "$((attempt * 5))"
+          done
+
+      - name: Validate AC79 SDK
+        run: |
+          test -s "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/uboot.boot"
+          test -s "$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools/cfg_tool.bin"
 
       - name: Generate assets and compile firmware
         run: |
