@@ -2907,9 +2907,15 @@ static void ui_input_frame(void)
         else
             presets_turn(s);
     }
-    if (!lay && (s = panel_enc(EN_ALGO)) != 0)     /* ALGORITHM: the selected track, on every page. (0.6.55) Only
-                                                    * the tracks that play: TRACKS 4 stops at T4 (T5 / T6 asleep) */
-        track_select((uint32_t)clamp((int32_t)song.sel + (s > 0 ? 1 : -1), 0, (int32_t)trk_live - 1));
+    if (!lay && (s = panel_enc(EN_ALGO)) != 0) {   /* ALGORITHM normally selects the active track. */
+        /* SAVE > SOUNDS > PRESETS uses K2 to change the selected track's
+         * engine. Switching tracks here makes ENG appear to jump between
+         * only the engines assigned to T1..T4/6, rather than cycling the
+         * actual engine list. Consume ALGORITHM detents on this page. */
+        if (ui.home || ui.menu || dlg_on() || cur_page()->graph != GR_BROWSE)
+            track_select((uint32_t)clamp((int32_t)song.sel + (s > 0 ? 1 : -1),
+                                         0, (int32_t)trk_live - 1));
+    }
     if (glo) {                                          /* GLO + SELECT: the tempo (0.6.67: the only way, with TAP) */
         if (sel) {
             song.g[G_BPM] = (int16_t)clamp(song.g[G_BPM] + accel(EN_SELECT, sel, 200), GP[G_BPM].min, GP[G_BPM].max);
