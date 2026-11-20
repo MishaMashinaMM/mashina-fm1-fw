@@ -15,7 +15,7 @@ static const char *ac_field_name(uint32_t pad, uint32_t field)
 {
     if (field == 4u)
         return pad == AC_KICK ? "BEATER" :
-               pad == AC_CRASH ? "SPLASH" : AC_FIELDS[field];
+               (pad == AC_CRASH || pad == AC_RIDE_SPLASH) ? "SPLASH" : AC_FIELDS[field];
     if (field == 6u && (pad == AC_KICK || pad == AC_SNARE))
         return "TEXTURE";
     return AC_FIELDS[field];
