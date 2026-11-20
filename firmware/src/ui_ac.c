@@ -22,7 +22,7 @@ static void ac_knob(const page_t *pg, uint32_t k, int32_t steps)
         uint8_t *patch = ac_patch_of(TSEL, ac_ui_pad);
         if (patch)
             ac_patch_set(TSEL, ac_ui_pad, field,
-                         (uint32_t)clamp((int32_t)patch[field] +
+                         (uint32_t)clamp((int32_t)ac_param_value(TSEL, ac_ui_pad, field) +
                                         accel(EN_K1 + k, steps, 127), 0, 127));
     }
     ui.force = 1;
@@ -37,9 +37,10 @@ static void ac_cards(const page_t *pg)
     for (k = 0; k < 3u; k++) {
         uint32_t field = first + k;
         if (patch && field < 8u) {
-            fmt_int(val, patch[field]);
+            uint32_t value = ac_param_value(TSEL, ac_ui_pad, field);
+            fmt_int(val, (int32_t)value);
             draw_column(k + 1u, AC_FIELDS[field], val, "", VAL(k + 1u),
-                        (int32_t)patch[field] * 1000 / 127, ICON_LEVEL);
+                        (int32_t)value * 1000 / 127, ICON_LEVEL);
         } else
             draw_column(k + 1u, "", "", "", T_DIM, -1, ICON_NONE);
     }
