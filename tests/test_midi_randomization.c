@@ -26,6 +26,7 @@ typedef struct { int32_t min, max; } param_desc_t;
 typedef struct { uint8_t eng_req; int16_t p[P_COUNT]; } track_t;
 static track_t trk[6];
 static uint32_t fm1_ms;
+static volatile uint8_t fm6_pgen[6];
 static uint32_t eng_idx(uint32_t e) { return e; }
 static int eng_gone(uint32_t e)
 {
@@ -167,6 +168,14 @@ static void signed_fm6_and_no_drums(void)
     random_command(12, 87, 127);
     random_reset_poll();
     for (i = 0; i < P_COUNT; i++) assert(trk[0].p[i] == before[i]);
+    /* A different FM6 patch also resets the reference, even with same engine. */
+    random_command(12, 86, 0);
+    random_command(12, 86, 127);
+    assert(random_variation_active[0]);
+    fm6_pgen[0]++;
+    random_command(12, 87, 0);
+    random_command(12, 87, 127);
+    assert(!(random_reset_pending & 1u));
     /* Unsaved switch to a drum never applies CC85/86/87. */
     trk[0].eng_req = ENGI_DRUMAC;
     random_sound_changed(0);
