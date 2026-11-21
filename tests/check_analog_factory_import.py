@@ -34,7 +34,7 @@ items = re.findall(
     factory, flags=re.M,
 )
 assert len(items) == 18, f"Expected 18 replacement factory entries, got {len(items)}"
-all_factory_names = re.findall(r'^\\s*\\{"([^"]+)"', factory, flags=re.M)
+all_factory_names = [line.strip().split('"')[1] for line in factory.splitlines() if line.strip().startswith('{"')]
 assert len(all_factory_names) == 18, f"Expected exactly 18 ANALOG factory presets, got {len(all_factory_names)}"
 assert tuple(all_factory_names) == expected_names, "Legacy ANALOG presets must not remain"
 combined = []
