@@ -1,0 +1,66 @@
+# PHASE factory preset preview. Does not deploy GitHub Pages or flash hardware.
+name: PHASE factory bank web emulator preview
+on:
+  push:
+    branches: [factory-presets-phase-10]
+    paths:
+      - 'firmware/**'
+      - 'web/emu/**'
+      - 'web/mashina-*.js'
+      - 'web/mashina-*.css'
+      - 'web/factory-*.json'
+      - 'tools/**'
+      - 'tests/**'
+      - '.github/workflows/phase-factory-emulator.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phase-preview:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install generator dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate embedded headers
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Verify all ten imported PHASE sounds
+        run: python3 tests/check_phase_factory_import.py
+      - name: Live performance firmware regressions
+        run: bash tests/run_live_drum_tests.sh
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Build PHASE bank emulator preview
+        run: |
+          EMU_PREVIEW=1 EMU_VERSION='0.10 PHASE FACTORY TEST' sh web/emu/build.sh
+          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+          node web/emu/emu_test.mjs build/emu/felucca.wasm
+          test -s build/emu/felucca.wasm
+          test -s build/emu/index.html
+          printf '%s\n' "$GITHUB_SHA" > build/emu/SOURCE_COMMIT
+          cat > build/emu/README-PREVIEW.txt <<'EOF'
+          MASHINA v0.10 - PHASE factory bank browser test
+
+          This emulator contains 10 user-bank PHASE presets.
+          It is not the official firmware and cannot flash an FM1.
+
+          1. Extract the whole artifact ZIP to a directory.
+          2. Open a terminal in that directory.
+          3. Run: python -m http.server 8790
+          4. Open http://localhost:8790/ in Chrome or Edge.
+          5. In PRESETS, choose PHASE and audition the 10 replacement sounds.
+
+          Do not double-click index.html using file://.
+          No changes were deployed to the official GitHub Pages site.
+          EOF
+      - name: Upload playable isolated emulator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MASHINA-PHASE-10-web-emulator
+          path: build/emu/
+          if-no-files-found: error
+          retention-days: 14
