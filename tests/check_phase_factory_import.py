@@ -7,17 +7,17 @@ from pathlib import Path
 source = Path("firmware/src/eng_phase.c").read_text(encoding="utf-8")
 header = Path("firmware/src/phase_factory_import.h").read_text(encoding="utf-8")
 expected = ["PSEUDO-DIONY","MAXIMUS","AL-KINDI","JOHN SCOTUS","AL-FARABI","AVICENNA","ANSELM","AVERROES","COLUCCIO","GEMISTUS"]
-rows = re.findall(r"/\\* (\\d+)\\. ([A-Z0-9-]+(?: [A-Z]+)?) \\*/\\s*\\{([^{}]+)\\}", header)
+rows = re.findall(r"/\* (\d+)\. ([A-Z0-9-]+(?: [A-Z]+)?) \*/\s*\{([^{}]+)\}", header)
 assert len(rows) == 10, len(rows)
 common = []
 for i, (pos, name, values) in enumerate(rows):
     assert int(pos) == i + 1 and name == expected[i]
-    params = [int(x) for x in re.findall(r"-?\\d+", values)]
+    params = [int(x) for x in re.findall(r"-?\d+", values)]
     assert len(params) == 115, (name, len(params))
     assert all(-128 <= x <= 127 for x in params)
     common.append(params)
 body = source.split("static const preset_t PHASE_PRESETS[] = {", 1)[1].split("};", 1)[0]
-items = re.findall(r'^\\s*\\{"([^"]+)", \\{([^{}]+)\\}, \\{([^{}]+)\\}, (-?\\d+), TAG\\(NONE\\), FX\\(([^()]*)\\), PAT\\(0\\)\\},', body, flags=re.M)
+items = re.findall(r'^\s*\{"([^"]+)", \{([^{}]+)\}, \{([^{}]+)\}, (-?\d+), TAG\(NONE\), FX\(([^()]*)\), PAT\(0\)\},', body, flags=re.M)
 assert len(items) == 10, len(items)
 combined = []
 for i, (name, values, env, fenv, fx) in enumerate(items):
