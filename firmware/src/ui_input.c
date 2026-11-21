@@ -2127,10 +2127,9 @@ static void random_reset_poll(void)
     for (k = 0; k < 3u; k++) {
         track_t *t = &trk[k];
         if (!(pending & (1u << k))) continue;
-        if (!random_baseline_valid[k] || random_saved_slot[k] >= 4u ||
+        if (!random_variation_active[k] || !random_baseline_valid[k] ||
             t->eng_req != random_baseline_engine[k] ||
-            t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB ||
-            eng_gone(t->eng_req))
+            !random_melodic_engine(t->eng_req))
             continue;
         for (id = 0; id < P_COUNT; id++) {
             if (id == P_LEVEL || id == P_PAN) continue;
@@ -2139,6 +2138,7 @@ static void random_reset_poll(void)
                 (void)motion_capture(t, id, random_baseline[k][id]);
             }
         }
+        random_variation_active[k] = 0u;
         random_ui_dirty = 1u;
     }
 }
