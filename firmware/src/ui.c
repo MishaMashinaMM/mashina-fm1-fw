@@ -1431,14 +1431,30 @@ static void apply_preset_to(track_t *t, uint32_t pi)
      * filter type, morph and other common sound parameters that do not fit in
      * legacy preset_t. Load their exact user-bank values while retaining the
      * track-specific controls (mixer, ARP, scale, steps, etc.). The original
-     * ANALOG presets 19..25 retain the legacy factory loading behavior. */
+     * All ANALOG factory presets are user-imported; no legacy ANALOG
+     * presets remain. */
     if (trk_eng(t) == ENGI_ANALOG && pi < ANALOG_FACTORY_IMPORTED) {
         const int8_t *v = ANALOG_IMPORT_COMMON[pi];
         for (i = 0; i < P_E0; i++)
             if (!param_kept(i))
                 t->p[i] = (int16_t)v[i];
     }
-    fm6_track_loaded(t);                              /* FM6: the preset's patch (its SLOT) */
+    if (trk_eng(t) == ENGI_FM6 && pi < FM6_IMPORT_N) {
+        /* The exported FM6 sound contains an actual independent 128-byte DX
+         * voice, not merely its eight EDIT macros. Load that exact voice.
+         * The common-parameter overlay preserves modulation, effects and
+         * voice controls while still respecting track-only parameters. */
+        uint8_t unpacked[FP_SIZE + 1u];
+        const int8_t *v = FM6_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+        fm6_unpack(FM6_IMPORT_PATCH[pi], unpacked);
+        fm6_set_patch(trk_index(t), unpacked);
+        fm6_adopt(trk_index(t)); /* show F1..F8 only if identical; otherwise OWN */
+    } else {
+        fm6_track_loaded(t);    /* Unchanged FM6 engine initialization/other engines. */
+    }
     load_end(t);
 }
 
