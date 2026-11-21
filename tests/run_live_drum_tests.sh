@@ -5,6 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+python3 tests/check_analog_factory_import.py
+
 out=build/host/live_drums
 mkdir -p "$out"
 for test in drum_edit_redraw_test drum_midi_map_test keyboard_zones_ui_test tuning_pitch_test drumlab_ui_test industrial_ui_test brass_ui_test atmos_ui_test cc_macro_ui_test drums_clock_test midi_rx_test \
