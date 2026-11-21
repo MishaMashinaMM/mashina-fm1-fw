@@ -91,6 +91,7 @@ static uint32_t random_sound_pool(const track_t *t, uint8_t *ids, uint32_t cap)
  * Only T1..T3 use the reserved command channels. */
 static int16_t random_baseline[3][P_COUNT];
 static uint8_t random_baseline_engine[3];
+static uint8_t random_baseline_fm6_gen[3];
 static volatile uint8_t random_variation_active[3];
 static volatile uint8_t random_baseline_valid[3];
 /* High-only pads may repeat the same value on each new press. Suppress
@@ -122,9 +123,20 @@ static void random_capture_track(uint32_t k)
     for (j = 0; j < P_COUNT; j++)
         random_baseline[k][j] = trk[k].p[j];
     random_baseline_engine[k] = trk[k].eng_req;
+    random_baseline_fm6_gen[k] = fm6_pgen[k];
     RING_PUBLISH();
     random_baseline_valid[k] = 1u;
     /* Do not reset trigger state here: a first command can capture its baseline. */
+}
+/* Detect FM6 patch changes that do not load a new factory/user preset:
+ * PATCH SLOT turns and editor patch imports update fm6_pgen. */
+static int random_same_sound(uint32_t k)
+{
+    const track_t *t = &trk[k];
+    return random_baseline_valid[k] && random_baseline_engine[k] == t->eng_req &&
+           (t->eng_req != ENGI_FM6 ||
+            (random_baseline_fm6_gen[k] == fm6_pgen[k] &&
+             random_baseline[k][P_E7] == t->p[P_E7]));
 }
 static void random_capture_all(void)
 {
@@ -164,15 +176,13 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
     if (!random_melodic_engine(t->eng_req)) return;
     if (cmd == 2u) {
         /* CC87 only reverses randomization of this current sound. */
-        if (random_variation_active[k] && random_baseline_valid[k] &&
-            random_baseline_engine[k] == t->eng_req)
+        if (random_variation_active[k] && random_same_sound(k))
             random_reset_pending |= (uint8_t)(1u << k);
         return;
     }
     /* A fresh preset, user sound, project, or sound edited since the last
      * reset becomes the baseline on the first CC85/86 press. */
-    if (!random_variation_active[k] || !random_baseline_valid[k] ||
-        random_baseline_engine[k] != t->eng_req)
+    if (!random_variation_active[k] || !random_same_sound(k))
         random_capture_track(k);
     /* A human pad's first press timing diversifies the sequence across boots,
      * while keeping all subsequent choices deterministic for host regressions. */
@@ -220,8 +230,7 @@ static void random_reset_poll(void)
     for (k = 0; k < 3u; k++) {
         track_t *t = &trk[k];
         if (!(pending & (1u << k))) continue;
-        if (!random_variation_active[k] || !random_baseline_valid[k] ||
-            t->eng_req != random_baseline_engine[k] ||
+        if (!random_variation_active[k] || !random_same_sound(k) ||
             !random_melodic_engine(t->eng_req))
             continue;
         for (id = 0; id < P_COUNT; id++) {
