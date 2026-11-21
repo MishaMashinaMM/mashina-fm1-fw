@@ -83,12 +83,12 @@ static inline uint32_t eng_idx(uint32_t e) { return e < NENGINES ? e : 0u; }
 
 /* Factory preset global browsing order and PROGRAM CHANGE numbering.
  * ANALOG is first: its 18 imported user-bank sounds occupy global positions
- * 1..18, followed by the seven unchanged ANALOG sounds at 19..25.
+ * 1..18. No original ANALOG presets remain.
  * Changing this order does not renumber engine IDs or alter TRK_DEF startup
  * sounds; it does change Program Change mappings and the rest of the factory
  * list's global positions. */
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
-    ENGI_ANALOG,                 /* global factory positions 1..25 (first 18 are newly imported) */
+    ENGI_ANALOG,                 /* global factory positions 1..18: imported ANALOG sounds */
     ENGI_DRUM,                   /* DRUM (DRUM-X) */
     ENGI_VOICE,                  /* VOICE */
     ENGI_ANIMAL,                 /* ANIMAL */
