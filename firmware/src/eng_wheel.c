@@ -314,19 +314,17 @@ static void wheel_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
 }
 
 static const preset_t WHEEL_PRESETS[] = {
-    /* name, {REG, SUB, BODY, TOP, PERC, CLICK, DRIVE, ROTR}, {A D S R}, fenv, mono */
-    {"FULL ORGAN", {15, 0, 0, 0, 0, 30, 20, 1}, {0, 64, 127, 45}, 0, TAG(KEYS), FX(0, 0, 10, 35), PAT(5)},
-    {"JAZZ PERC", {4, 0, 0, 0, 2, 50, 8, 1}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(0, 0, 0, 25), PAT(3)},
-    {"GOSPEL", {6, 0, 0, 0, 1, 60, 40, 2}, {0, 64, 127, 45}, 0, TAG(KEYS), FX(0, 0, 0, 40), PAT(6)},
-    {"SOFT FLUTE", {1, 0, -2, 0, 0, 10, 0, 1}, {0, 64, 127, 55}, 0, TAG(LEAD), FX(0, 20, 15, 55), PAT(5)},
-    {"ROCK DRIVE", {7, 0, 0, 0, 0, 70, 100, 2}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(35, 0, 10, 25), PAT(4)},
-    /* (0.7.0) a dub organ, soft keys, a chapel, a tops organ with a soft percussion, a bass register */
-    {"DUB ORGAN", {2, 0, 0, 0, 0, 20, 10, 1}, {0, 64, 127, 40}, 0, TAG(KEYS), FX(0, 10, 45, 40), PAT(6)},
-    {"SOFT KEYS", {3, 0, 0, -2, 0, 5, 0, 0}, {5, 64, 127, 50}, 0, TAG(KEYS), FX(0, 25, 20, 45), PAT(6)},
-    {"CHURCH", {12, 0, 0, 0, 0, 0, 0, 0}, {15, 64, 127, 70}, 0, TAG(KEYS), FX(0, 15, 10, 80), PAT(5)},
-    {"WAVE ORGAN", {8, 0, 0, 2, 3, 35, 15, 2}, {0, 64, 127, 35}, 0, TAG(KEYS), FX(0, 20, 25, 35), PAT(3)},
-    {"REED BASS", {14, 2, 0, -4, 0, 20, 10, 0}, {0, 64, 127, 30}, 0, 1 | TAG(BASS), FX(0, 0, 0, 5), PAT(2)},
+    /* Complete replacement of legacy WHEEL factory sounds with uploaded bank. */
+    {"BRUNI", {15, 8, 8, 0, 0, 0, 25, 2}, {0, 64, 127, 45}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"BATTISTA", {13, 8, 8, 0, 0, 0, 127, 0}, {111, 127, 0, 109}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"MARSILIO", {5, -8, -8, -8, 0, 0, 127, 0}, {0, 127, 0, 109}, 0, TAG(NONE), FX(127, 0, 0, 0), PAT(0)},
+    {"MIRANDOLA", {7, 8, 8, -8, 5, 0, 63, 0}, {0, 127, 0, 117}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"ERASMUS", {15, 8, 8, -8, 5, 127, 127, 2}, {0, 127, 0, 101}, 0, TAG(NONE), FX(0, 0, 102, 0), PAT(0)},
+
 };
+
+/* Import exact WHEEL common sound parameters from the user bank. */
+#include "wheel_factory_import.h"
 
 static const engine_t ENG_WHEEL = {
     .name = "WHEEL",
