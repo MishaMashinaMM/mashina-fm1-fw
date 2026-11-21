@@ -34,6 +34,9 @@ items = re.findall(
     factory, flags=re.M,
 )
 assert len(items) == 18, f"Expected 18 replacement factory entries, got {len(items)}"
+all_factory_names = re.findall(r'^\\s*\\{"([^"]+)"', factory, flags=re.M)
+assert len(all_factory_names) == 18, f"Expected exactly 18 ANALOG factory presets, got {len(all_factory_names)}"
+assert tuple(all_factory_names) == expected_names, "Legacy ANALOG presets must not remain"
 combined = []
 for i, (name, e, env, fenv, fx) in enumerate(items):
     assert name == expected_names[i]
@@ -54,4 +57,4 @@ assert f"{h:08x}" == "9be859a5", f"Export fidelity fingerprint changed: {h:08x}"
 assert "if (trk_eng(t) == ENGI_ANALOG && pi < ANALOG_FACTORY_IMPORTED)" in Path("firmware/src/ui.c").read_text()
 order = Path("firmware/src/engines.c").read_text(encoding="utf-8").split("ENGINE_ORDER[NENG_SHOWN] = {", 1)[1].split("};", 1)[0]
 assert next(line.strip().split(",")[0] for line in order.splitlines() if line.strip().startswith("ENGI_")) == "ENGI_ANALOG", "ANALOG must be first in global PRESETS order"
-print("PASS: 18 imported ANALOG sounds occupy global presets 1-18 and match the complete export")
+print("PASS: exactly 18 ANALOG factory sounds, all imported names and full parameters verified")
