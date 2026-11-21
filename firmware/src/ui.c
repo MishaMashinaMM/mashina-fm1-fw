@@ -1427,6 +1427,17 @@ static void apply_preset_to(track_t *t, uint32_t pi)
         for (i = 0; i < 4u; i++)
             t->p[P_DIST + i] = (int16_t)(pr->fx[i] ? pr->fx[i] - 1 : FX_DEF[i]);
     }
+    /* MASHINA's imported ANALOG factory sounds contain a modulation matrix,
+     * filter type, morph and other common sound parameters that do not fit in
+     * legacy preset_t. Load their exact user-bank values while retaining the
+     * track-specific controls (mixer, ARP, scale, steps, etc.). The original
+     * ANALOG presets 19..25 retain the legacy factory loading behavior. */
+    if (trk_eng(t) == ENGI_ANALOG && pi < ANALOG_FACTORY_IMPORTED) {
+        const int8_t *v = ANALOG_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
     fm6_track_loaded(t);                              /* FM6: the preset's patch (its SLOT) */
     load_end(t);
 }
