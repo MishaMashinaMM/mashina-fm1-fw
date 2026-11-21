@@ -176,6 +176,7 @@ static void signed_fm6_and_no_drums(void)
 }
 int main(void)
 {
+    random_capture_all(); /* also exercise the initial snapshot path */
     engines();
     current_sound_and_reset();
     signed_fm6_and_no_drums();
