@@ -89,7 +89,7 @@ static uint32_t random_sound_pool(const track_t *t, uint8_t *ids, uint32_t cap)
 /* A snapshot belongs to the CURRENT sound, whether factory, user or project.
  * The first randomization after an edit/load starts from the live parameters.
  * Only T1..T3 use the reserved command channels. */
-static int16_t random_baseline[3][P_COUNT];
+static int16_t random_baseline[3][P_COUNT] __attribute__((section(".pool")));
 static uint8_t random_baseline_engine[3];
 static uint8_t random_baseline_fm6_gen[3];
 static volatile uint8_t random_variation_active[3];
