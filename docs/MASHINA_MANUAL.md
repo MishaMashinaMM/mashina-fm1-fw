@@ -266,11 +266,11 @@ These commands operate independently of the REC macro table:
 | **CC90** | Temporarily switch T3 receive channel |
 | **CC85** | Lightly randomize melodic sound parameters |
 | **CC86** | Strongly randomize melodic sound parameters |
-| **CC87** | Restore last saved melodic sound parameters |
+| **CC87** | Restore the current sound as it was before CC85/86 |
 
 **CC88–90:** send value **0–63 for RX channel 2**, or **64–127 for RX channel 1**, on any incoming MIDI channel. This does not overwrite the project assignment. Loading a project restores the saved channels.
 
-**CC85–87:** use incoming **channel 13 for T1, 14 for T2, 15 for T3**. Send **64–127** to trigger; send **0–63** to re-arm the command. Randomization affects eligible melodic sound parameters, not drum engines. CC87 restores the last saved sound's parameters without interrupting already sounding notes, provided the engine has not changed.
+**CC85–87:** use incoming **channel 13 for T1, 14 for T2, 15 for T3**. Send **64–127** to trigger; send **0–63** to re-arm the command. CC85/86 vary the **currently loaded sound** on the addressed track: factory presets, user presets and sounds loaded from projects all work, without first saving them. The first randomization captures the current settings; later variations use the same starting point. CC87 restores that starting sound without interrupting playing notes. Loading another preset or changing a sound engine establishes a new starting point. All melodic engines, including ATMOS, BRASS, INDUSTRIAL and FM6, are supported; **DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND are excluded**. Waveform and patch selectors remain protected.
 
 ## 6. Global EQ, effects and project management
 
