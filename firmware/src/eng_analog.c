@@ -242,7 +242,7 @@ static void analog_dispatch(track_t *t, voice_t *v, int32_t *out, uint32_t n, co
 }
 
 static const preset_t ANALOG_PRESETS[] = {
-    /* MASHINA factory bank: user-export slots 0..17 -> ANALOG presets 1..18. */
+    /* MASHINA ANALOG factory bank: exclusively the 18 user-exported sounds, slots 0..17. */
     {"THALES", {7, 0, 63, 0, 80, 64, 63, -12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(25, 0, 13, 0), PAT(0)},
     {"ANAXIMENES", {0, 10, 63, 19, 85, 38, 64, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(0, 0, 13, 13), PAT(0)},
     {"ANAXIMANDER", {2, 0, 63, 26, 108, 51, 64, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(6, 0, 13, 0), PAT(0)},
@@ -261,14 +261,7 @@ static const preset_t ANALOG_PRESETS[] = {
     {"ANTISTENES", {7, 4, 51, 0, 74, 38, 127, -12}, {0, 69, 76, 0}, 23, TAG(NONE), FX(64, 0, 13, 0), PAT(0)},
     {"PRODICUS", {7, 0, 76, 0, 39, 13, 127, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(127, 0, 13, 0), PAT(0)},
     {"ARCHYTAS", {0, 0, 38, 38, 33, 101, 0, -12}, {60, 90, 60, 80}, 50, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
-    /* Unchanged original factory presets 19..25. */
-    {"DUB STAB", {1, 6, 64, 0, 52, 55, 10, 7}, {0, 50, 20, 45}, 50, TAG(KEYS), FX(0, 15, 60, 55), PAT(6)},
-    {"CELLO", {0, 4, 40, 2, 48, 18, 15, -12}, {30, 85, 110, 70}, 10, TAG(PAD), FX(5, 30, 20, 55), PAT(5)},
-    {"ARP PLUCK", {1, 10, 50, 0, 44, 50, 0, 12}, {0, 62, 0, 40}, 60, TAG(PLUCK), FX(0, 25, 55, 35), PAT(3)},
-    {"MOOG LEAD", {2, 6, 40, 0, 72, 40, 40, -12}, {6, 75, 100, 45}, 25, 1 | TAG(LEAD), FX(10, 0, 35, 25), PAT(4)},
-    {"DARK PAD", {0, 18, 64, 6, 38, 30, 10, -12}, {70, 95, 120, 100}, 12, TAG(PAD), FX(0, 55, 30, 75), PAT(5)},
-    {"GLASS KEYS", {3, 8, 60, 0, 120, 0, 0, 19}, {0, 82, 20, 65}, 0, TAG(KEYS), FX(0, 35, 35, 50), PAT(6)},
-    {"ORGAN SQR", {1, 4, 64, 0, 100, 0, 5, 12}, {0, 64, 127, 30}, 0, TAG(KEYS), FX(0, 35, 10, 35), PAT(6)},
+
 };
 
 /* Full common sound parameters for imported presets, not their track-specific
