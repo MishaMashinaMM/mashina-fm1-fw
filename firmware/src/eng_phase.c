@@ -202,27 +202,22 @@ static void phase_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
 }
 
 static const preset_t PHASE_PRESETS[] = {
-    /* name, {WAVE, WAVE2, DCW, ENV, DTN, LINE, SUB, -}, {A D S R}, fenv, mono */
-    {"BRASS", {0, 0, 30, 90, 0, 0, 0, 0}, {8, 70, 90, 40}, 0, TAG(LEAD), FX(0, 20, 20, 40), PAT(6)},
-    {"ORGAN", {3, 0, 40, 0, 0, 0, 0, 0}, {0, 127, 127, 30}, 0, TAG(KEYS), FX(0, 40, 0, 30), PAT(6)},
-    {"STRING", {0, 4, 50, 40, 12, 0, 0, 0}, {40, 90, 100, 70}, 0, TAG(PAD), FX(0, 50, 20, 60), PAT(5)},
-    {"RESO", {5, 0, 60, 60, 0, 0, 0, 0}, {0, 70, 30, 60}, 0, TAG(PLUCK), FX(0, 0, 40, 40), PAT(1)},
-    {"BELL", {6, 0, 80, 50, 0, 0, 0, 0}, {0, 95, 0, 90}, 0, TAG(BELL), FX(0, 0, 30, 70), PAT(7)},
-    {"WIRE", {4, 7, 70, 40, 7, 0, 0, 0}, {10, 80, 80, 60}, 0, TAG(LEAD), FX(15, 30, 30, 40), PAT(4)},
-    /* (JIANT 0.4) FB: the phase fed back */
-    {"GROWL", {0, 0, 70, 80, 0, 0, 40, 55}, {2, 70, 90, 40}, 0, 1 | TAG(BASS), FX(20, 10, 30, 30), PAT(4)},
-    {"FB BASS", {1, 0, 45, 60, 0, 0, 70, 35}, {0, 60, 60, 25}, 0, 1 | TAG(BASS), FX(10, 0, 10, 10), PAT(2)},
-    /* (0.7.0) the CZ side of it: a piano, a glass pad, a digital stab (RING), a synth bass, a vowel pad, a harp,
-     * a lead, ring keys */
-    {"CZ PIANO", {3, 0, 55, 85, 0, 0, 15, 0}, {0, 78, 30, 55}, 0, TAG(KEYS), FX(0, 20, 25, 40), PAT(6)},
-    {"GLASS PAD", {6, 5, 45, 35, 14, 0, 0, 0}, {60, 90, 115, 95}, 0, TAG(PAD), FX(0, 60, 30, 75), PAT(5)},
-    {"DIGI STAB", {4, 2, 75, 70, 0, 1, 0, 0}, {0, 55, 20, 40}, 0, TAG(KEYS), FX(5, 10, 45, 40), PAT(6)},
-    {"SYN BASS", {1, 0, 50, 70, 0, 0, 60, 0}, {0, 58, 50, 25}, 0, 1 | TAG(BASS), FX(8, 0, 10, 5), PAT(2)},
-    {"VOX PAD", {5, 4, 35, 30, 10, 0, 0, 0}, {70, 95, 115, 100}, 0, TAG(PAD), FX(0, 55, 25, 70), PAT(5)},
-    {"HARP", {3, 0, 70, 90, 0, 0, 0, 0}, {0, 85, 0, 70}, 0, TAG(PLUCK), FX(0, 15, 40, 55), PAT(3)},
-    {"PD LEAD", {0, 2, 65, 55, 9, 0, 20, 10}, {4, 70, 95, 45}, 0, 1 | TAG(LEAD), FX(10, 10, 40, 30), PAT(4)},
-    {"RING KEYS", {2, 4, 60, 60, 0, 1, 0, 0}, {0, 75, 25, 60}, 0, TAG(KEYS), FX(0, 25, 35, 50), PAT(6)},
+    /* Full replacement: 10 user-bank PHASE sounds; no legacy PHASE factory presets. */
+    {"PSEUDO-DIONY", {0, 3, 0, 63, 3, 0, 32, 0}, {8, 70, 90, 40}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"MAXIMUS", {0, 3, 25, 102, 0, 0, 32, 16}, {8, 70, 90, 40}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"AL-KINDI", {3, 2, 127, 32, 0, 0, 38, 51}, {0, 101, 0, 0}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"JOHN SCOTUS", {6, 5, 123, 0, 10, 0, 26, 0}, {60, 90, 115, 95}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"AL-FARABI", {6, 6, 0, 51, 12, 0, 0, 51}, {0, 85, 0, 106}, 0, TAG(NONE), FX(63, 0, 0, 0), PAT(0)},
+    {"AVICENNA", {4, 0, 0, 127, 0, 1, 0, 64}, {0, 85, 0, 106}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"ANSELM", {0, 4, 63, 64, 5, 1, 25, 127}, {0, 124, 87, 87}, 0, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
+    {"AVERROES", {5, 1, 64, 38, 5, 1, 19, 0}, {0, 85, 127, 87}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"COLUCCIO", {3, 3, 38, 51, 14, 0, 64, 0}, {77, 105, 32, 105}, 0, TAG(NONE), FX(0, 0, 38, 0), PAT(0)},
+    {"GEMISTUS", {3, 3, 0, 114, 14, 0, 64, 51}, {77, 97, 63, 105}, 0, TAG(NONE), FX(0, 0, 38, 0), PAT(0)},
+
 };
+
+/* Load full common sound settings for each imported PHASE preset. */
+#include "phase_factory_import.h"
 
 static const engine_t ENG_PHASE = {
     .name = "PHASE",
