@@ -1455,6 +1455,14 @@ static void apply_preset_to(track_t *t, uint32_t pi)
             if (!param_kept(i))
                 t->p[i] = (int16_t)v[i];
     }
+    if (trk_eng(t) == ENGI_NOISE && pi < NOISE_FACTORY_IMPORTED) {
+        /* Import the complete NOISE sound while retaining project/track-only
+         * parameters such as receive channels and keyboard zones. */
+        const int8_t *v = NOISE_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
     if (trk_eng(t) == ENGI_FM6 && pi < FM6_IMPORT_N) {
         /* The exported FM6 sound contains an actual independent 128-byte DX
          * voice, not merely its eight EDIT macros. Load that exact voice.
