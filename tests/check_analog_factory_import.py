@@ -17,20 +17,20 @@ expected_names = (
     "PROTAGORAS", "GORGIAS", "ANAXAGORAS", "LEUCIPPUS",
     "SOCRATES", "DEMOCRITUS", "ANTISTENES", "PRODICUS", "ARCHYTAS",
 )
-rows = re.findall(r"/\\* (\\d+)\\. ([A-Z]+) \\*/\\s*\\{([^{}]+)\\}", overlay)
+rows = re.findall(r"/\* (\d+)\. ([A-Z]+) \*/\s*\{([^{}]+)\}", overlay)
 assert len(rows) == 18, f"Expected 18 imported common arrays, got {len(rows)}"
 common = []
 for i, (num, name, values) in enumerate(rows):
     assert int(num) == i + 1 and name == expected_names[i]
-    p = [int(s) for s in re.findall(r"-?\\d+", values)]
+    p = [int(s) for s in re.findall(r"-?\d+", values)]
     assert len(p) == 115, (name, len(p))
     assert all(-128 <= v <= 127 for v in p)
     common.append(p)
 
 factory = engine.split("static const preset_t ANALOG_PRESETS[] = {", 1)[1].split("};", 1)[0]
 items = re.findall(
-    r'^\\s*\\{"([^"]+)", \\{([^{}]+)\\}, \\{([^{}]+)\\}, '
-    r'(-?\\d+), TAG\\(NONE\\), FX\\(([^()]*)\\), PAT\\(0\\)\\},',
+    r'^\s*\{"([^"]+)", \{([^{}]+)\}, \{([^{}]+)\}, '
+    r'(-?\d+), TAG\(NONE\), FX\(([^()]*)\), PAT\(0\)\},',
     factory, flags=re.M,
 )
 assert len(items) == 18, f"Expected 18 replacement factory entries, got {len(items)}"
