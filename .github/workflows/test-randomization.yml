@@ -1,0 +1,24 @@
+name: CC randomization host regression
+on:
+  push:
+    branches: [cc-random-current-sound]
+  pull_request:
+    paths:
+      - 'firmware/src/midi_randomization.c'
+      - 'firmware/src/ui.c'
+      - 'firmware/src/ui_input.c'
+      - 'firmware/src/project.c'
+      - 'tests/test_midi_randomization.c'
+      - '.github/workflows/test-randomization.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile randomization engine against host stubs
+        run: cc -std=c11 -O2 -Wall -Wextra -Werror tests/test_midi_randomization.c -o /tmp/test-mashina-random
+      - name: Test all melodic engines, drum exclusions, CC85/86/87 and current preset reset
+        run: /tmp/test-mashina-random
