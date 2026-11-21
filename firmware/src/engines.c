@@ -81,17 +81,18 @@ static const engine_t *const ENGINES[NENGINES] = {
 /* a track's engine number as an index (the audio paths: a compare, cheaper than % NENGINES; a bad number: 0) */
 static inline uint32_t eng_idx(uint32_t e) { return e < NENGINES ? e : 0u; }
 
-/* the order the engines are shown in (PRESETS browsing and its ENG knob, the EDIT layer's keys, the editor's list):
- * engine indices, never DIGITAL's reserved 1 (with FELUCCA_FM4 it comes last). The indices stay as they are (the
- * stores and the protocol hold them); only this table orders them. (0.9.9) DRUM-X, VOICE, ANIMAL first, as the parts
- * at power-on (TRK_DEF: T1..T6 are its first six), then PHASE WHEEL NOISE; was ANALOG FM6 PHASE LOFI VOICE WHEEL
- * NOISE DRUM ANIMAL. PROGRAM CHANGE numbers the sounds in this order too (ui.c midi_pc_poll) */
+/* Factory preset global browsing order and PROGRAM CHANGE numbering.
+ * ANALOG is first: its 18 imported user-bank sounds occupy global positions
+ * 1..18. No original ANALOG presets remain.
+ * Changing this order does not renumber engine IDs or alter TRK_DEF startup
+ * sounds; it does change Program Change mappings and the rest of the factory
+ * list's global positions. */
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
+    ENGI_ANALOG,                 /* global factory positions 1..18: imported ANALOG sounds */
     ENGI_DRUM,                   /* DRUM (DRUM-X) */
     ENGI_VOICE,                  /* VOICE */
     ENGI_ANIMAL,                 /* ANIMAL */
     ENGI_LOFI,                   /* LOFI */
-    ENGI_ANALOG,                 /* ANALOG */
     ENGI_FM6,                    /* FM6 */
     ENGI_PHASE, ENGI_WHEEL,      /* PHASE WHEEL */
     ENGI_NOISE,                  /* NOISE */

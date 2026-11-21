@@ -498,24 +498,22 @@ static const char *const N_FM6_PATCH[] = {"F1", "F2", "F3", "F4", "F5", "F6", "F
 _Static_assert(NELEM(N_FM6_PATCH) == FM6_OWN + FM6_NBANK + 2u, "a SLOT name per value");
 
 /* {ALG, FB, MLVL, MRAT, MEG, VMOD, DTUN, SLOT}: the factory patch F1..F8 as it is, DTUN on the pad */
+#include "fm6_factory_import.h"  /* Full imported sound and six-operator bank, flash-resident */
+
+/* The 10 MASHINA user-bank FM6 sounds replace all 15 old browser presets.
+ * Each selected sound loads the full six-operator voice from FM6_IMPORT_PATCH,
+ * not an arbitrary legacy F1..F8 patch with just these macro settings. */
 static const preset_t FM6_PRESETS[] = {
-    {"TINE EP", {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 127, 0}, 0, TAG(KEYS), FX(0, 45, 25, 35), PAT(6)},
-    {"BELL", {0, 0, 0, 0, 0, 0, 0, 1}, {0, 0, 127, 0}, 0, TAG(BELL), FX(0, 10, 30, 70), PAT(7)},
-    {"FM BASS", {0, 0, 0, 0, 0, 0, 0, 2}, {0, 0, 127, 0}, 0, 1 | TAG(BASS), FX(0, 0, 10, 10), PAT(2)},
-    {"BRASS", {0, 0, 0, 0, 0, 0, 0, 3}, {0, 0, 127, 0}, 0, TAG(LEAD), FX(0, 25, 20, 40), PAT(4)},
-    {"PAD", {0, 0, 0, 0, 0, 0, 30, 4}, {0, 0, 127, 0}, 0, TAG(PAD), FX(0, 60, 30, 70), PAT(5)},
-    {"MARIMBA", {0, 0, 0, 0, 0, 0, 0, 5}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 0, 25, 40), PAT(3)},
-    {"ORGAN", {0, 0, 0, 0, 0, 0, 0, 6}, {0, 0, 127, 0}, 0, TAG(KEYS), FX(10, 40, 0, 30), PAT(6)},
-    {"PLUCK", {0, 0, 0, 0, 0, 0, 0, 7}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 20, 35, 30), PAT(13)},
-    /* (0.7.0) the factory patches bent a little: an ice bell and a soft bell from BELL, DX keys from TINE EP, a pluck
-     * and wood from PLUCK and MARIMBA, strings from PAD, a hard bass */
-    {"ICE BELL", {0, 0, -20, 0, 0, 0, 45, 1}, {0, 0, 127, 0}, 0, TAG(BELL), FX(0, 60, 30, 80), PAT(5)},
-    {"DX KEYS", {0, 0, 12, 0, 0, 0, 10, 0}, {0, 0, 127, 0}, 0, TAG(KEYS), FX(0, 40, 25, 40), PAT(6)},
-    {"FM PLUCK", {0, 0, 20, 0, -20, 0, 0, 7}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 20, 45, 35), PAT(3)},
-    {"SOFT BELL", {0, 0, -25, 0, 0, 0, 20, 1}, {0, 0, 127, 0}, 0, TAG(BELL), FX(0, 20, 35, 75), PAT(7)},
-    {"FM STRINGS", {0, 0, -10, 0, 0, 0, 35, 4}, {0, 0, 127, 0}, 0, TAG(PAD), FX(0, 55, 25, 65), PAT(5)},
-    {"HARD BASS", {0, 2, 25, 0, 0, 0, 0, 2}, {0, 0, 127, 0}, 0, 1 | TAG(BASS), FX(15, 0, 10, 5), PAT(2)},
-    {"WOOD", {0, 0, -15, 0, 0, 0, 0, 5}, {0, 0, 127, 0}, 0, TAG(PLUCK), FX(0, 10, 30, 45), PAT(3)},
+    {"PLATO", {5, 0, 13, -16, 0, 0, 38, 8}, {0, 101, 127, 0}, 0, TAG(NONE), FX(127, 0, 13, 0), PAT(0)},
+    {"DIOGENES", {11, 6, 3, -16, 0, 0, 38, 8}, {0, 101, 127, 0}, 0, TAG(NONE), FX(127, 0, 13, 0), PAT(0)},
+    {"ARISTOTLE", {18, 0, 0, 0, 13, -1, 0, 8}, {0, 0, 0, 0}, 61, TAG(NONE), FX(19, 0, 0, 0), PAT(0)},
+    {"XENOKRATES", {18, 0, 0, 0, 13, -1, 0, 8}, {0, 0, 0, 0}, 61, TAG(NONE), FX(38, 0, 0, 0), PAT(0)},
+    {"EPICURUS", {0, 0, 7, -1, 0, 0, 0, 8}, {0, 0, 0, 0}, 0, TAG(NONE), FX(25, 0, 0, 0), PAT(0)},
+    {"BION", {19, -4, 19, -16, 32, 4, 1, 8}, {0, 82, 0, 0}, 4, TAG(NONE), FX(76, 0, 0, 0), PAT(0)},
+    {"PLUTARCH", {19, -7, 23, -15, 63, 3, 0, 8}, {0, 127, 127, 0}, 0, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
+    {"EPICTETUS", {0, 0, 13, 4, 0, 0, 26, 4}, {0, 0, 127, 0}, 0, TAG(NONE), FX(127, 0, 0, 0), PAT(0)},
+    {"APOLLONIUS", {0, 0, 13, 4, 0, 0, 26, 4}, {0, 0, 127, 0}, 0, TAG(NONE), FX(127, 0, 0, 0), PAT(0)},
+    {"SOTION", {0, 0, 13, 4, 0, 0, 26, 8}, {0, 0, 127, 0}, 0, TAG(NONE), FX(127, 0, 0, 0), PAT(0)},
 };
 
 static const engine_t ENG_FM6 = {

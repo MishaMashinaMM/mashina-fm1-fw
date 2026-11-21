@@ -242,35 +242,32 @@ static void analog_dispatch(track_t *t, voice_t *v, int32_t *out, uint32_t n, co
 }
 
 static const preset_t ANALOG_PRESETS[] = {
-    {"SAW LEAD", {0, 12, 64, 0, 90, 30, 10, 12}, {4, 70, 100, 50}, 20, 1 | TAG(LEAD), FX(0, 10, 45, 30), PAT(4)},
-    {"SOFT PAD", {0, 20, 64, 4, 60, 10, 0, 0}, {80, 90, 110, 95}, 10, TAG(PAD), FX(0, 60, 20, 70), PAT(5)},
-    {"SQR BASS", {1, 0, 0, 0, 50, 70, 40, 0}, {0, 60, 40, 30}, 30, 1 | TAG(BASS), FX(5, 0, 10, 10), PAT(2)},
-    {"PWM STR", {4, 8, 40, 0, 75, 20, 0, 0}, {60, 80, 110, 85}, 8, TAG(PAD), FX(0, 50, 20, 60), PAT(5)},
-    {"ACID", {0, 0, 0, 0, 50, 100, 25, 0}, {0, 55, 20, 30}, 48, 1 | TAG(BASS), FX(20, 0, 45, 15), PAT(1)},
-    {"SINE KEY", {3, 6, 50, 0, 127, 0, 0, 0}, {2, 80, 30, 70}, 0, TAG(KEYS), FX(0, 30, 25, 40), PAT(6)},
-    {"RAVE", {4, 30, 64, 0, 85, 20, 30, 7}, {20, 80, 110, 60}, 10, 1 | TAG(LEAD), FX(30, 40, 30, 30), PAT(13)},
-    {"SUB BASS", {3, 0, 0, 0, 40, 0, 20, 0}, {0, 60, 100, 20}, 0, 1 | TAG(BASS), FX(0, 0, 0, 10), PAT(8)},
-    {"PLUCK", {0, 8, 50, 0, 30, 40, 0, 0}, {0, 88, 0, 60}, 55, TAG(PLUCK), FX(0, 20, 50, 30), PAT(3)},
-    {"BRASS", {0, 10, 64, 0, 45, 20, 10, 0}, {35, 70, 90, 45}, 40, TAG(LEAD), FX(0, 20, 20, 40), PAT(6)},
-    {"WIND", {0, 0, 0, 90, 30, 90, 0, 0}, {60, 90, 60, 80}, 50, TAG(FX), FX(0, 30, 30, 70), PAT(5)},
-    {"STRINGS", {0, 25, 64, 0, 70, 10, 0, 0}, {70, 90, 115, 90}, 5, TAG(PAD), FX(0, 60, 20, 70), PAT(5)},
-    /* (JIANT 0.4: TRIO's, folded in) SYNC (ratio 1 + 11/16), RING (1 + 18/16), SAW3 (9 ct a side) */
-    {"SYNC LEAD", {5, 11, 90, 0, 82, 30, 10, 0}, {2, 70, 100, 40}, 18, 1 | TAG(LEAD), FX(0, 10, 40, 25), PAT(4)},
-    {"RING BELL", {6, 18, 100, 0, 110, 20, 0, 0}, {0, 92, 0, 80}, 0, TAG(BELL), FX(0, 20, 35, 55), PAT(7)},
-    {"FAT BASS", {7, 9, 64, 0, 62, 45, 20, -12}, {0, 62, 60, 25}, 40, 1 | TAG(BASS), FX(10, 0, 10, 10), PAT(2)},
-    /* (0.7.0) a palette for the song generator and the player: pads, a reese, a hoover, a dub stab, a cello, an
-     * arp pluck, a lead, keys, an organ */
-    {"JUNO PAD", {4, 14, 64, 2, 58, 12, 0, 0}, {45, 90, 115, 90}, 8, TAG(PAD), FX(0, 70, 25, 60), PAT(5)},
-    {"REESE", {7, 22, 64, 0, 44, 20, 25, 0}, {2, 80, 110, 40}, 0, 1 | TAG(BASS), FX(10, 20, 10, 10), PAT(2)},
-    {"HOOVER", {7, 40, 64, 0, 92, 15, 35, 12}, {10, 80, 110, 55}, 12, 1 | TAG(LEAD), FX(25, 50, 35, 35), PAT(13)},
-    {"DUB STAB", {1, 6, 64, 0, 52, 55, 10, 7}, {0, 50, 20, 45}, 50, TAG(KEYS), FX(0, 15, 60, 55), PAT(6)},
-    {"CELLO", {0, 4, 40, 2, 48, 18, 15, -12}, {30, 85, 110, 70}, 10, TAG(PAD), FX(5, 30, 20, 55), PAT(5)},
-    {"ARP PLUCK", {1, 10, 50, 0, 44, 50, 0, 12}, {0, 62, 0, 40}, 60, TAG(PLUCK), FX(0, 25, 55, 35), PAT(3)},
-    {"MOOG LEAD", {2, 6, 40, 0, 72, 40, 40, -12}, {6, 75, 100, 45}, 25, 1 | TAG(LEAD), FX(10, 0, 35, 25), PAT(4)},
-    {"DARK PAD", {0, 18, 64, 6, 38, 30, 10, -12}, {70, 95, 120, 100}, 12, TAG(PAD), FX(0, 55, 30, 75), PAT(5)},
-    {"GLASS KEYS", {3, 8, 60, 0, 120, 0, 0, 19}, {0, 82, 20, 65}, 0, TAG(KEYS), FX(0, 35, 35, 50), PAT(6)},
-    {"ORGAN SQR", {1, 4, 64, 0, 100, 0, 5, 12}, {0, 64, 127, 30}, 0, TAG(KEYS), FX(0, 35, 10, 35), PAT(6)},
+    /* MASHINA ANALOG factory bank: exclusively the 18 user-exported sounds, slots 0..17. */
+    {"THALES", {7, 0, 63, 0, 80, 64, 63, -12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(25, 0, 13, 0), PAT(0)},
+    {"ANAXIMENES", {0, 10, 63, 19, 85, 38, 64, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(0, 0, 13, 13), PAT(0)},
+    {"ANAXIMANDER", {2, 0, 63, 26, 108, 51, 64, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(6, 0, 13, 0), PAT(0)},
+    {"ZENO", {6, 10, 51, 0, 72, 51, 64, 12}, {0, 107, 101, 0}, 23, TAG(NONE), FX(25, 0, 13, 0), PAT(0)},
+    {"PARMENIDES", {7, 15, 64, 0, 71, 26, 0, -12}, {78, 127, 0, 106}, 13, TAG(NONE), FX(51, 0, 13, 0), PAT(0)},
+    {"XENOPHANES", {0, 15, 89, 38, 33, 89, 63, -12}, {0, 87, 0, 74}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"HERACLITUS", {0, 15, 89, 38, 33, 89, 63, -24}, {0, 87, 0, 74}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"PYTHAGORAS", {6, 15, 63, 38, 39, 89, 64, -24}, {0, 96, 76, 64}, 0, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"EMPEDOCLES", {5, 3, 63, 0, 39, 89, 0, -3}, {0, 88, 0, 60}, 55, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"PROTAGORAS", {1, 5, 38, 0, 72, 26, 38, 12}, {0, 62, 0, 40}, 60, TAG(NONE), FX(0, 0, 0, 13), PAT(0)},
+    {"GORGIAS", {0, 15, 64, 26, 39, 0, 0, -12}, {70, 95, 120, 100}, 12, TAG(NONE), FX(0, 0, 0, 3), PAT(0)},
+    {"ANAXAGORAS", {6, 19, 51, 51, 61, 38, 0, -12}, {64, 127, 0, 96}, 16, TAG(NONE), FX(64, 0, 13, 0), PAT(0)},
+    {"LEUCIPPUS", {6, 19, 63, 19, 73, 32, 0, -12}, {19, 127, 0, 89}, 20, TAG(NONE), FX(63, 0, 45, 0), PAT(0)},
+    {"SOCRATES", {6, 10, 51, 6, 47, 89, 63, -12}, {0, 73, 108, 0}, 23, TAG(NONE), FX(6, 0, 38, 0), PAT(0)},
+    {"DEMOCRITUS", {7, 12, 76, 0, 71, 38, 127, 12}, {0, 15, 22, 0}, 23, TAG(NONE), FX(2, 0, 13, 0), PAT(0)},
+    {"ANTISTENES", {7, 4, 51, 0, 74, 38, 127, -12}, {0, 69, 76, 0}, 23, TAG(NONE), FX(64, 0, 13, 0), PAT(0)},
+    {"PRODICUS", {7, 0, 76, 0, 39, 13, 127, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(127, 0, 13, 0), PAT(0)},
+    {"ARCHYTAS", {0, 0, 38, 38, 33, 101, 0, -12}, {60, 90, 60, 80}, 50, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
+
 };
+
+/* Full common sound parameters for imported presets, not their track-specific
+ * mixer, arp, zone or step state. Kept separate from compact preset_t so the
+ * user's modulation matrix, filter mode and other sound settings survive. */
+#include "analog_factory_import.h"
 
 static const engine_t ENG_ANALOG = {
     .name = "ANALOG",
