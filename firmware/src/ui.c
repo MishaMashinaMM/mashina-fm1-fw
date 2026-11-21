@@ -1439,6 +1439,14 @@ static void apply_preset_to(track_t *t, uint32_t pi)
             if (!param_kept(i))
                 t->p[i] = (int16_t)v[i];
     }
+    if (trk_eng(t) == ENGI_PHASE && pi < PHASE_FACTORY_IMPORTED) {
+        /* Preserve track-only settings, but load the entire saved PHASE
+         * sound, including modulation and other common parameters. */
+        const int8_t *v = PHASE_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
     if (trk_eng(t) == ENGI_FM6 && pi < FM6_IMPORT_N) {
         /* The exported FM6 sound contains an actual independent 128-byte DX
          * voice, not merely its eight EDIT macros. Load that exact voice.
