@@ -101,3 +101,46 @@ jobs:
             build/firmware-symbols.txt
             build/felucca.elf
           retention-days: 14
+
+  fm6-factory-preview:
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'factory-presets-analog-18' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify exact imported ANALOG and FM6 factory sound data
+        run: |
+          python3 tests/check_analog_factory_import.py
+          python3 tests/check_fm6_factory_import.py
+      - name: Generate emulator assets
+        run: |
+          pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Build FM6 factory bank browser preview
+        run: |
+          EMU_PREVIEW=1 EMU_VERSION='0.10 FACTORY FM6 10 TEST' sh web/emu/build.sh
+          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+          node web/emu/emu_test.mjs build/emu/felucca.wasm
+          printf '%s\n' "$GITHUB_SHA" > build/emu/SOURCE_COMMIT
+          cat > build/emu/README-PREVIEW.txt <<'EOF'
+          MASHINA test emulator with 18 custom ANALOG presets and 10 custom FM6 presets.
+          Extract the ZIP. In the folder with index.html run:
+              python -m http.server 8790
+          Open http://localhost:8790/ in Chrome or Edge.
+          In SAVE -> PRESETS set LIST = ALL. Scroll to the FM6 engine:
+          PLATO, DIOGENES, ARISTOTLE, XENOKRATES, EPICURUS,
+          BION, PLUTARCH, EPICTETUS, APOLLONIUS, SOTION.
+          This is a WEB emulator test, not a flashable firmware file.
+          EOF
+      - name: Upload FM6 factory preview emulator
+        uses: actions/upload-artifact@v4
+        with:
+          name: MASHINA-factory-ANALOG18-FM6-10
+          path: build/emu/
+          if-no-files-found: error
+          retention-days: 14
