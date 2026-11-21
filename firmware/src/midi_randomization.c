@@ -3,18 +3,30 @@
  * This list does not imply that an arbitrary stored 0..127 value is continuous.
  * All descriptors must still be checked for min=0, max=127 at runtime.
  */
+/* All playable melodic engines may vary; the four drum engines and retired
+ * engines are excluded. Avoid waveform/mode/patch selectors and pitch controls. */
+static int random_melodic_engine(uint32_t e)
+{
+    return e != ENGI_DRUM && e != ENGI_DRUMLAB &&
+           e != ENGI_DRUMAC && e != ENGI_DRUMIND && !eng_gone(e) &&
+           (FELUCCA_FM4 || e != ENGI_DIGITAL);
+}
 static int random_sound_param(const track_t *t, uint32_t id)
 {
-    uint32_t e = eng_idx(t->eng_req);
-    uint32_t mode = (uint32_t)t->p[P_E0];
-    if (e == ENGI_DRUM || e == ENGI_DRUMLAB || eng_gone(e))
+    uint32_t e = eng_idx(t->eng_req), mode = (uint32_t)t->p[P_E0];
+    if (!random_melodic_engine(e))
         return 0;
     if (id == P_DIST)
         return 1;
     if (id == P_FCUT || id == P_FRES)
-        return e != 12u; /* FM6 uses its own operator-based tone shaping. */
+        return e != ENGI_FM6;
     if (id == P_MORPH)
         return e == ENGI_ANALOG || e == ENGI_PHASE || e == ENGI_LOFI;
+    if (id >= P_LN8 && id <= P_LN11) {
+        if (e == ENGI_ATMOS || e == ENGI_BRASS) return 1;
+        if (e == ENGI_INDUSTRIAL) return id == P_LN9 || id == P_LN10;
+        return 0;
+    }
     if (id < P_E0 || id > P_E7)
         return 0;
     switch (e) {
@@ -23,29 +35,30 @@ static int random_sound_param(const track_t *t, uint32_t id)
     case ENGI_PHASE:
         return id == P_E2 || id == P_E6 || id == P_E7;
     case ENGI_LOFI:
-        /* WAVE is E1: BYTE has VAR/GRIT; FLOAT has VAR but E5 is
-         * envelope decay. STEP repurposes CRUSH as an envelope.
-         * BEND and VIB affect pitch modulation, so exclude both. */
-        if (t->p[P_E1] == 5u)
-            return id == P_E3 || id == P_E5;
-        if (t->p[P_E1] == 6u)
-            return id == P_E3;
+        /* BYTE/FLOAT/STEP reinterpret these controls; protect waveforms,
+         * pitch modulation and STEP's envelope. */
+        if (t->p[P_E1] == 5u) return id == P_E3 || id == P_E5;
+        if (t->p[P_E1] == 6u) return id == P_E3;
         return (id == P_E2 && t->p[P_E1] != 4u) ||
                (id == P_E3 && mode != 4u) || id == P_E7;
     case ENGI_VOICE:
-        /* VOICE words mode remaps E0..E2 and E7 to selectors/articulation. */
         return id == P_E4 || id == P_E5 || id == P_E6 ||
                (!t->p[P_VLANG] && (id == P_E0 || id == P_E1));
     case ENGI_WHEEL:
         return id == P_E5 || id == P_E6;
     case ENGI_NOISE:
-        /* FREQ/DRIFT control oscillator pitch; CRUSH can retime its clock. */
         return id == P_E1 || id == P_E3;
     case ENGI_ANIMAL:
-        /* SIZE/CAP are excluded, as are SWEEP, RATE and GROUP. */
         return id == P_E1 || id == P_E2;
-    case 12u:
-        return 0; /* FM6's EDIT macros are signed, pitch or patch selectors. */
+    case ENGI_FM6:
+        /* Operator feedback/modulation, not algorithm, patch slot or pitch. */
+        return id == P_E1 || id == P_E2 || id == P_E4;
+    case ENGI_ATMOS:
+        return id >= P_E1 && id <= P_E7;
+    case ENGI_BRASS:
+        return id >= P_E1 && id <= P_E7;
+    case ENGI_INDUSTRIAL:
+        return id >= P_E1 && id <= P_E7;
     default:
         return 0;
     }
@@ -55,26 +68,31 @@ static uint32_t random_sound_pool(const track_t *t, uint8_t *ids, uint32_t cap)
     uint32_t i, n = 0;
     static const uint8_t candidates[] = {
         P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7,
-        P_FCUT, P_FRES, P_DIST, P_MORPH
+        P_FCUT, P_FRES, P_DIST, P_MORPH,
+        P_LN8, P_LN9, P_LN10, P_LN11
     };
     for (i = 0; i < sizeof candidates; i++) {
         uint32_t id = candidates[i];
         const param_desc_t *d;
-        if (!random_sound_param(t, id))
-            continue;
+        if (!random_sound_param(t, id)) continue;
         d = track_desc(t, id);
-        if (!d || d->min != 0 || d->max != 127)
-            continue;
-        if (n < cap)
-            ids[n++] = (uint8_t)id;
+        if (!d || d->max <= d->min) continue;
+        /* FM6's signed operator controls are safe; other engines use the
+         * original conservative 0..127 eligibility rule. */
+        if (eng_idx(t->eng_req) != ENGI_FM6 &&
+            (d->min != 0 || d->max != 127)) continue;
+        if (n < cap) ids[n++] = (uint8_t)id;
     }
     return n;
 }
 
-/* Baselines are captured when a project is loaded or explicitly saved.
- * Only T1..T3 are addressable by the reserved MIDI channels. */
-static int16_t random_baseline[3][P_COUNT];
+/* A snapshot belongs to the CURRENT sound, whether factory, user or project.
+ * The first randomization after an edit/load starts from the live parameters.
+ * Only T1..T3 use the reserved command channels. */
+static int16_t random_baseline[3][P_COUNT] __attribute__((section(".pool")));
 static uint8_t random_baseline_engine[3];
+static uint8_t random_baseline_fm6_gen[3];
+static volatile uint8_t random_variation_active[3];
 static volatile uint8_t random_baseline_valid[3];
 /* High-only pads may repeat the same value on each new press. Suppress
  * close-together duplicate packets, but allow another high after 120 ms.
@@ -86,8 +104,14 @@ static uint32_t random_seed = 0xA3C59AC3u;
 static uint8_t random_seed_ready;
 static volatile uint8_t random_ui_dirty;
 static volatile uint8_t random_reset_pending;
-/* The saved section used for each track; 0xff means there is no saved sound. */
-static volatile uint8_t random_saved_slot[3] = {0xffu, 0xffu, 0xffu};
+/* A sound change cancels an outstanding variation, but never changes the project. */
+static void random_sound_changed(uint32_t k)
+{
+    if (k >= 3u) return;
+    random_baseline_valid[k] = 0u;
+    random_variation_active[k] = 0u;
+    random_reset_pending &= (uint8_t)~(1u << k);
+}
 
 static void random_capture_track(uint32_t k)
 {
@@ -99,9 +123,20 @@ static void random_capture_track(uint32_t k)
     for (j = 0; j < P_COUNT; j++)
         random_baseline[k][j] = trk[k].p[j];
     random_baseline_engine[k] = trk[k].eng_req;
+    random_baseline_fm6_gen[k] = fm6_pgen[k];
     RING_PUBLISH();
     random_baseline_valid[k] = 1u;
     /* Do not reset trigger state here: a first command can capture its baseline. */
+}
+/* Detect FM6 patch changes that do not load a new factory/user preset:
+ * PATCH SLOT turns and editor patch imports update fm6_pgen. */
+static int random_same_sound(uint32_t k)
+{
+    const track_t *t = &trk[k];
+    return random_baseline_valid[k] && random_baseline_engine[k] == t->eng_req &&
+           (t->eng_req != ENGI_FM6 ||
+            (random_baseline_fm6_gen[k] == fm6_pgen[k] &&
+             random_baseline[k][P_E7] == t->p[P_E7]));
 }
 static void random_capture_all(void)
 {
@@ -120,7 +155,7 @@ static uint32_t random_next(void)
 static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
 {
     uint32_t k, cmd, n, i, take, strength;
-    uint8_t pool[12];
+    uint8_t pool[16];
     track_t *t;
     if (ch < 12u || ch > 14u) return;
     k = ch - 12u;
@@ -138,47 +173,74 @@ static void random_command(uint32_t ch, uint32_t cc, uint32_t value)
         random_last_ms[k][cmd] = now;
     }
     t = &trk[k];
+    if (!random_melodic_engine(t->eng_req)) return;
     if (cmd == 2u) {
-        /* Reset is a saved-project sound load. A melodic saved sound may
-         * replace an unsaved DRUM engine, but never randomize a saved drum kit.
-         * The load runs on the main/UI thread (storage and IRQ guards). */
-        if (random_baseline_valid[k] &&
-            (random_baseline_engine[k] == ENGI_DRUM ||
-             random_baseline_engine[k] == ENGI_DRUMLAB ||
-             eng_gone(random_baseline_engine[k])))
-            return;
-        random_reset_pending |= (uint8_t)(1u << k);
+        /* CC87 only reverses randomization of this current sound. */
+        if (random_variation_active[k] && random_same_sound(k))
+            random_reset_pending |= (uint8_t)(1u << k);
         return;
     }
-    if (t->eng_req == ENGI_DRUM || t->eng_req == ENGI_DRUMLAB || eng_gone(t->eng_req))
-        return;
-    /* An unsaved engine switch is not a new saved baseline. Do not mutate it. */
-    if (!random_baseline_valid[k] || random_saved_slot[k] >= 4u ||
-        random_baseline_engine[k] != t->eng_req)
-        return;
+    /* A fresh preset, user sound, project, or sound edited since the last
+     * reset becomes the baseline on the first CC85/86 press. */
+    if (!random_variation_active[k] || !random_same_sound(k))
+        random_capture_track(k);
     /* A human pad's first press timing diversifies the sequence across boots,
      * while keeping all subsequent choices deterministic for host regressions. */
     if (!random_seed_ready) {
         random_seed ^= (fm1_ms + 1u) * 0x9e3779b9u;
         random_seed_ready = 1u;
     }
+    random_reset_pending &= (uint8_t)~(1u << k);
     n = random_sound_pool(t, pool, sizeof pool);
+    if (!n) return;
     take = cmd == 0u ? 2u : 3u;
     if (take > n) take = n;
     strength = cmd == 0u ? 20u : 40u;
     for (i = 0; i < take; i++) {
         uint32_t j = i + random_next() % (n - i);
         uint8_t id = pool[i];
-        int32_t offset, v;
+        const param_desc_t *d;
+        int32_t offset, v, range;
         pool[i] = pool[j];
         pool[j] = id;
+        d = track_desc(t, id);
+        range = d->max - d->min;
         offset = (int32_t)(strength + random_next() % (cmd == 0u ? 41u : 51u));
+        /* Scale for FM6's narrow or bipolar operators (e.g. FB -7..7). */
+        offset = (offset * range + 63) / 127;
+        if (!offset) offset = 1;
         if (random_next() & 1u) offset = -offset;
-        v = clamp((int32_t)random_baseline[k][id] + offset, 0, 127);
+        v = clamp((int32_t)random_baseline[k][id] + offset, d->min, d->max);
         t->p[id] = (int16_t)v;
         /* Match ordinary MIDI CC edits: update motion's live base so a later
          * explicit SAVE captures this sound rather than an old automation value. */
         (void)motion_capture(t, id, (int16_t)v);
     }
+    random_variation_active[k] = 1u;
     random_ui_dirty = 1u;
+}
+
+/* Apply CC87 on the UI thread without sound_put(), which kills active voices.
+ * Restore the sound snapshot in place while preserving mixer controls and active notes. */
+static void random_reset_poll(void)
+{
+    uint32_t k, id;
+    uint8_t pending = random_reset_pending;
+    random_reset_pending &= (uint8_t)~pending;
+    for (k = 0; k < 3u; k++) {
+        track_t *t = &trk[k];
+        if (!(pending & (1u << k))) continue;
+        if (!random_variation_active[k] || !random_same_sound(k) ||
+            !random_melodic_engine(t->eng_req))
+            continue;
+        for (id = 0; id < P_COUNT; id++) {
+            if (id == P_LEVEL || id == P_PAN) continue;
+            if (t->p[id] != random_baseline[k][id]) {
+                t->p[id] = random_baseline[k][id];
+                (void)motion_capture(t, id, random_baseline[k][id]);
+            }
+        }
+        random_variation_active[k] = 0u;
+        random_ui_dirty = 1u;
+    }
 }

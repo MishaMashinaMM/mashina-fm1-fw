@@ -289,7 +289,7 @@ Abrí **REC**. Cada proyecto guarda hasta **32 macros**. Para crear una: presion
 
 **Y** significa activa, **N** desactivada, **S** suspendida si falta el motor. Para cambiar número/canal CC o destino, borrá y recreá la macro.
 
-**CC88/89/90** seleccionan temporalmente RX 1 (**valor 64–127**) o RX 2 (**0–63**) para T1/T2/T3. **CC85** aleatoriza suavemente, **CC86** más intensamente y **CC87** restaura el sonido melódico guardado. Para CC85–87 usá canales MIDI **13–15**, valor **64–127** para ejecutar y **0–63** para rearmar.
+**CC88/89/90** seleccionan temporalmente RX 1 (**valor 64–127**) o RX 2 (**0–63**) para T1/T2/T3. **CC85** aleatoriza suavemente, **CC86** más intensamente y **CC87** recupera el sonido actual tal como estaba antes de aleatorizarlo. Para CC85–87 usá canales MIDI **13–15** (T1/T2/T3), valor **64–127** para ejecutar y **0–63** para rearmar. Funciona con el sonido actualmente cargado, sea un preset de fábrica, uno de usuario o un sonido de proyecto, sin necesidad de guardarlo antes. CC87 recupera sus parámetros originales sin cortar las notas. Cambiar de preset establece una referencia nueva. Compatible con todos los motores melódicos, incluidos ATMOS, BRASS, INDUSTRIAL y FM6; no se aplica a DRUM-X, DRUM-LAB, DRUM-AC ni DRUM-IND. Los selectores de onda y de patch quedan protegidos.
 
 ### Crear y administrar macros REC
 

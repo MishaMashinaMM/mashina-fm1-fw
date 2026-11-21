@@ -1150,6 +1150,7 @@ static void load_begin(track_t *t, uint32_t what)
 {
     if (load_depth++)
         return;
+    if (what & LOAD_SOUND) random_sound_changed(trk_index(t));
     if (what & LOAD_SOUND) {                      /* (0.6.13) the sound as it is: the fade of what sounds renders
                                                    * with it (voice.c xf_snap), unless one is fading on it now */
         uint32_t k = trk_index(t);

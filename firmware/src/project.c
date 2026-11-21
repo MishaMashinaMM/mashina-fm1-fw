@@ -2201,7 +2201,7 @@ static void random_saved_project(const project_t *p, uint32_t slot)
         for (i = 0; i < P_COUNT; i++)
             random_baseline[k][i] = p->t[k].p[i];
         random_baseline_engine[k] = p->t[k].engine;
-        random_saved_slot[k] = (uint8_t)slot;
+        random_variation_active[k] = 0u;
         RING_PUBLISH();
         random_baseline_valid[k] = 1u;
     }
@@ -2210,9 +2210,10 @@ static void random_saved_project(const project_t *p, uint32_t slot)
 static void random_saved_live(uint32_t slot)
 {
     uint32_t k;
+    (void)slot;
     for (k = 0; k < 3u; k++) {
         random_baseline_valid[k] = 0u;
-        random_saved_slot[k] = (uint8_t)slot;
+        random_variation_active[k] = 0u;
         random_capture_track(k);
     }
     random_reset_pending = 0u;
@@ -2276,12 +2277,7 @@ static int project_clear_slot(uint32_t slot)
     }
 #endif
     memset(&proj_slot[slot], 0, sizeof proj_slot[slot]);
-    for (uint32_t k = 0; k < 3u; k++)
-        if (random_saved_slot[k] == slot) {
-            random_baseline_valid[k] = 0u;
-            random_saved_slot[k] = 0xffu;
-            random_reset_pending &= (uint8_t)~(1u << k);
-        }
+    /* Removing a stored slot must not affect the current sound's variation. */
     live.dirty &= (uint8_t)~(1u << slot);
     if (proj_cur == slot) proj_cur = PROJ_NO_SLOT;
     ui_message("PROJECT SLOT CLEARED");
@@ -2355,7 +2351,7 @@ static int project_recall_sound(uint32_t slot, uint32_t k)
     sound_put(p, k);
     if (k < 3u) {
         random_baseline_valid[k] = 0u;
-        random_saved_slot[k] = (uint8_t)slot;
+        random_variation_active[k] = 0u;
         random_capture_track(k);
     }
     return 0;
