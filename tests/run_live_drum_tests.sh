@@ -9,6 +9,7 @@ python3 tests/check_analog_factory_import.py
 python3 tests/check_fm6_factory_import.py
 python3 tests/check_phase_factory_import.py
 python3 tests/check_wheel_factory_import.py
+python3 tests/check_noise_factory_import.py
 
 out=build/host/live_drums
 mkdir -p "$out"
