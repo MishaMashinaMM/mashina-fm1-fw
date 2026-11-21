@@ -52,4 +52,6 @@ for ch in payload:
     h = ((h ^ ord(ch)) * 16777619) & 0xFFFFFFFF
 assert f"{h:08x}" == "9be859a5", f"Export fidelity fingerprint changed: {h:08x}"
 assert "if (trk_eng(t) == ENGI_ANALOG && pi < ANALOG_FACTORY_IMPORTED)" in Path("firmware/src/ui.c").read_text()
-print("PASS: 18 imported ANALOG factory sounds match the exported names, positions and complete sound data")
+order = Path("firmware/src/engines.c").read_text(encoding="utf-8").split("ENGINE_ORDER[NENG_SHOWN] = {", 1)[1].split("};", 1)[0]
+assert re.findall(r"ENGI_([A-Z0-9]+)\\s*,", order)[0] == "ANALOG", "ANALOG must be first in global PRESETS order"
+print("PASS: 18 imported ANALOG sounds occupy global presets 1-18 and match the complete export")
