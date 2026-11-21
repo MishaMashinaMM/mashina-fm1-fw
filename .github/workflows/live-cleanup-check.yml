@@ -44,27 +44,6 @@ jobs:
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
       - name: Direct browser emulator functional test
         run: node web/emu/emu_test.mjs build/emu/felucca.wasm
-      - name: Package browser preview for hands-on CC85/86/87 testing
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'cc-random-current-sound' }}
-        run: |
-          printf '%s\n' "${GITHUB_SHA}" > build/emu/SOURCE_COMMIT
-          cat > build/emu/README-PREVIEW.txt <<'EOF'
-          MASHINA CC85/86/87 emulator preview
-
-          Extract the ZIP fully. In the extracted directory run:
-              python -m http.server 8790
-          Then open http://localhost:8790/ in Chrome or Edge.
-          The browser cannot load this emulator reliably using file://.
-          This is a WEB emulator, not firmware for flashing to the device.
-          EOF
-      - name: Upload downloadable CC85/86/87 web emulator
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'cc-random-current-sound' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: MASHINA-CC85-86-87-web-emulator
-          path: build/emu/
-          if-no-files-found: error
-          retention-days: 14
 
   firmware:
     runs-on: ubuntu-24.04
@@ -121,40 +100,4 @@ jobs:
           path: |
             build/firmware-symbols.txt
             build/felucca.elf
-          retention-days: 14
-
-  cc-emulator-preview:
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'cc-random-current-sound' }}
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Generate WASM headers
-        run: |
-          pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
-          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
-      - uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: 6.0.11
-      - name: Build preview emulator
-        run: |
-          EMU_PREVIEW=1 EMU_VERSION='0.10 CC RANDOM TEST' sh web/emu/build.sh
-          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
-          printf '%s\n' "$GITHUB_SHA" > build/emu/SOURCE_COMMIT
-          cat > build/emu/README-PREVIEW.txt <<'EOF'
-          MASHINA - CC85/CC86/CC87 test emulator
-          Extract the complete ZIP. In the folder containing index.html run:
-              python -m http.server 8790
-          Open http://localhost:8790/ in Chrome or Edge.
-          Do not open index.html directly as file://.
-          This is an emulator only; it cannot be flashed to the FM1.
-          EOF
-      - name: Upload downloadable emulator
-        uses: actions/upload-artifact@v4
-        with:
-          name: MASHINA-CC85-86-87-web-emulator
-          path: build/emu/
-          if-no-files-found: error
           retention-days: 14
