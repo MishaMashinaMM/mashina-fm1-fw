@@ -1,0 +1,44 @@
+name: CC randomization web emulator preview
+on:
+  push:
+    branches: [cc-random-current-sound]
+    paths:
+      - 'firmware/**'
+      - 'web/emu/**'
+      - 'web/mashina-emu-locale.js'
+      - 'web/mashina-nav.js'
+      - 'web/mashina-nav.css'
+      - 'tools/**'
+      - '.github/workflows/cc-random-emulator.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install generator dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate firmware headers used by browser emulator
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Build isolated browser emulator from this test branch
+        run: |
+          EMU_PREVIEW=1 EMU_VERSION='0.10 CC RANDOM TEST' sh web/emu/build.sh
+          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+          test -s build/emu/felucca.wasm
+          test -s build/emu/index.html
+          echo "${GITHUB_SHA}" > build/emu/SOURCE_COMMIT
+      - name: Upload self-contained preview ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: MASHINA-CC85-86-87-web-emulator
+          path: build/emu/
+          if-no-files-found: error
+          retention-days: 14
