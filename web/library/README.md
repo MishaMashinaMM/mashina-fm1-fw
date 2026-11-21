@@ -8,7 +8,9 @@ This directory contains an interactive **browser-only** preview for the planned 
 
 - **FM1 Slots:** fixed slots 001–300 (no engine grouping); drag from a filled slot to an occupied slot to swap, or an empty slot to move; search and filter; stage changes; undo; export/import local 300-slot drafts. The change counter is relative to the initial browser demo, not the FM1.
 - **Sound Collections:** import multiple MASHINA/Felucca bank JSON files (with `patches[]`), combine and filter sounds without a 300-sound limit, export all or selected sounds, or explicitly stage a selected sound into one of the 300 local slots. FM6 sound import checks for a 128-byte `fm6[]` patch.
-- **Projects & Backups:** conceptual eight projects × four sections × six tracks, reference-based slots; export illustrative project templates and bundled setup JSON containing referenced sounds once each. **These demo exports are not real firmware backup files.**
+- **Projects & Backups:** conceptual eight projects × four lettered sections (A, B, C, D) × six tracks, reference-based slots; import/export illustrative project templates and bundled setup JSON containing referenced sounds once each. **These demo imports and exports operate only on browser drafts, and are not real firmware backup files.**
+
+The slot list uses a **project-use badge** (e.g. `P2:A,B +1`), and the three-dot control opens all referencing projects and lettered sections, e.g. `[P2:A,B] - [P4:B] - [P8:A,C,D]`.
 
 ## Implementation stages still required
 
