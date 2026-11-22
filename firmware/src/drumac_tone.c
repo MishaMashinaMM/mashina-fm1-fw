@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Permanent DRUM-AC tone contour: two first-order low-pass states.
  *
- * Numerically fitted to the three-band GLO EQ with LOW +10, MID -7,
- * HIGH +3 (50 / 700 / 10000 Hz). No UI, no preset/project parameters.
- * Frequency-response fit is within about 1.5 dB from 25 Hz to 17 kHz.
+ * Based on the three-band GLO EQ at LOW +10, MID -7, HIGH +3,
+ * with 20% less mid-band contribution than the first lightweight preview.
+ * No UI, no preset/project parameters.
  *
  * Two one-pole filters partition the mono signal:
  *   low = LP(171 Hz), mid = LP(1663 Hz) - low, high = x - LP(1663 Hz)
- *   y = 1.840*low + 0.271*mid + 1.293*high
+ *   y = 1.840*low + 0.217*mid + 1.293*high
  * Rewritten as three Q12 gain terms to avoid computing three buffers.
  * LP histories are kept in Q12 to avoid truncated quiet bass tails.
  *
@@ -25,8 +25,8 @@ static ac_tone_t ac_tone[NPART] __attribute__((section(".pool")));
 #define AC_TONE_LP_A    1576  /* 171 Hz, Q16, FS=44117.647 */
 #define AC_TONE_LP_B   13818  /* 1663 Hz, Q16 */
 #define AC_TONE_HIGH_Q12  5297
-#define AC_TONE_MID_MINUS_HIGH_Q12 (-4187)
-#define AC_TONE_LOW_MINUS_MID_Q12  6425
+#define AC_TONE_MID_MINUS_HIGH_Q12 (-4409)
+#define AC_TONE_LOW_MINUS_MID_Q12  6647
 #define AC_TONE_TAIL_BLOCKS 64u  /* ~46 ms, enough to settle 171-Hz state */
 
 static void ac_tone_forget(uint32_t ti)
