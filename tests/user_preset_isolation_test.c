@@ -50,7 +50,7 @@ static int store_case(uint32_t idx, uint32_t variant)
     set_engine_of(TSEL, ENGINE[idx]);
     TSEL->engine = TSEL->eng_req;
     edit_kit(ENGINE[idx], seed);
-    if (up_store(slot, "KIT TEST") != 3 && !flash_ok) return 0;
+    if (up_store(slot, "KIT TEST") != 3) return 0;
     memcpy(stored[idx][variant], upf.e[slot].pk, UPF_PK);
     if (ENGINE[idx] != ENGI_DRUM) {
         for (uint32_t j = 0; j < 8u; j++)
@@ -119,7 +119,7 @@ int main(void)
                  !upd_companion_get(0u, stored[0][0]));
     /* Renaming mutates the underlying record only, never the companion data. */
     bad += check("User bank remains 192-byte/16-record compatible",
-                 sizeof(up_rec_t) == 192u && sizeof(up_bank_t) <= ST_PAYLOAD_MAX);
+                 sizeof(up_rec_t) == 192u && sizeof(up_bank_t) <= 3840u);
     printf("USER PRESET ISOLATION %s (%d failures)\n", bad ? "FAILED" : "PASSED", bad);
     return !!bad;
 }
