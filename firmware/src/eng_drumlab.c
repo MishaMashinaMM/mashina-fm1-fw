@@ -253,9 +253,9 @@ static void drumlab_render(track_t *t, voice_t *v, int32_t *out,
 }
 
 static const preset_t DRUMLAB_PRESETS[] = {
-    {"LAB KIT", {34, 24, 96, 115, 95, 55, 118, 74}, {0, 127, 127, 127}, 0, TAG(DRUM)},
-    {"SUB LAB", {16, 100, 75, 12, 10, 90, 18, 50}, {0, 127, 127, 127}, 0, TAG(DRUM)},
-    {"IND LAB", {34, 127, 80, 100, 100, 90, 118, 74}, {0, 127, 127, 127}, 0, TAG(DRUM)},
+    {"ZIZEK-1", {34, 24, 96, 115, 95, 55, 118, 74}, {0, 127, 127, 127}, 0, TAG(DRUM)},
+    {"ZIZEK-2", {16, 100, 75, 12, 10, 90, 18, 50}, {0, 127, 127, 127}, 0, TAG(DRUM)},
+    {"ZIZEK-3", {34, 127, 80, 100, 100, 90, 118, 74}, {0, 127, 127, 127}, 0, TAG(DRUM)},
 };
 
 static const engine_t ENG_DRUMLAB = {
