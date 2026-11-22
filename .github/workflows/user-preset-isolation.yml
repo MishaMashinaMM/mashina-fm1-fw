@@ -76,6 +76,21 @@ jobs:
           test -s build/felucca-0.11.fwsc
           python3 web/make_site.py build/felucca-0.11.fwsc "$VERSION" "$OUT"
           test -s "$OUT/webapp/installer/index.html"
+          python3 - "$OUT/webapp/installer/index.html" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          html = p.read_text(encoding="utf-8")
+          anchor = '<p><button id="go" disabled data-t="install"></button></p>'
+          if anchor not in html:
+              raise SystemExit("Cannot safely label device-test installer: button not found")
+          banner = ('<p style="border:2px solid #ff9900;padding:12px;font-weight:bold">'
+                    'USER PRESET ISOLATION — DEVICE TEST ONLY. '
+                    'Back up your complete MASHINA library before flashing. '
+                    'This preview is NOT the public v0.11 release.</p>')
+          html = html.replace(anchor, banner + "\\n  " + anchor)
+          p.write_text(html, encoding="utf-8")
+          PY
           cat > "$OUT/READ-ME-FIRST.txt" <<EOF
           MASHINA v0.11 - USER PRESET ISOLATION TEST
           ==========================================
