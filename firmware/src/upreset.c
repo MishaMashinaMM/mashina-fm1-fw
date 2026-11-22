@@ -257,6 +257,7 @@ static void up_values(const up_rec_t *r, int16_t *v)   /* mapped and clamped for
 }
 
 #include "up_fm6.c"                            /* the FM6 user presets' patches: the same kind of store */
+#include "up_drum.c"                           /* independent AC, IND and LAB user kits in the same sidecar bank */
 #include "fm6_vbank.c"                         /* FM6's voice bank (SLOT B1..B32; JIANT 0.6.11, from Felucca 1.4.1) */
 
 static void up_boot(void)                      /* persist_boot: the banks from flash */
@@ -377,6 +378,7 @@ static int up_store(uint32_t k, const char *name)
     r.np = P_COUNT;
     r.packed[UP_FM_AT] = UP_V04_MARK;
     up_set_name(&r, k, name);
+    upd_capture_globals(&r, TSEL);
     for (i = 0; i < P_COUNT; i++)
         up_set_value(&r, i, motion_base_value(TSEL, i));
     up_pat_from(&r, TSEL->step);
@@ -394,10 +396,10 @@ static int up_store(uint32_t k, const char *name)
     }
     {
         int rc = up_put(k, &r);                         /* the record first, then its FM6 patch (up_fm6.c) */
-        if ((rc == 0 || rc == 3) && r.engine == ENGI_FM6) {
-            int u = upf_store(k, (uint32_t)(TSEL - trk));
-            if (u == 2)
-                rc = 2;
+        if (rc == 0 || rc == 3) {
+            int u = r.engine == ENGI_FM6 ? upf_store(k, (uint32_t)(TSEL - trk)) :
+                    upd_engine(r.engine) ? upd_store(k, TSEL) : 0;
+            if (u == 2) rc = 2;
         }
         return rc;
     }
@@ -447,6 +449,7 @@ static int up_load(uint32_t k)
         t->preset = 0;
         fm1_irq_on();
         upf_track_load(t, k);                           /* FM6: the preset's own patch (up_fm6.c) */
+        upd_track_load(t, k);                          /* DRUM-AC/IND/LAB: restore independent full kit */
         if (eng_gone(r->engine))                        /* a retired engine (core.h): ANALOG's first preset */
             set_engine_of(t, ENGI_PHYS_TO);
     }
