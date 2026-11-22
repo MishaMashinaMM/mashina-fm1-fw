@@ -20,7 +20,7 @@ for test in drum_edit_redraw_test drum_midi_map_test keyboard_zones_ui_test tuni
             drumlab_engine_test drumind_engine_test industrial_engine_test brass_engine_test atmos_engine_test brass_stress_test drumlab_stage24b_test project_test drumx_test \
             drum_stage27_test drum_stage27b_stress_test; do
     echo "== $test (FELUCCA_NO_SEQUENCER=1)"
-    cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -Ibuild/gen -Ifirmware/src \
+    cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DMASHINA_HOST_TEST=1 -Ibuild/gen -Ifirmware/src \
        -o "$out/$test" "tests/$test.c" -lm
     if "$out/$test" > "$out/$test.log" 2>&1; then
         echo "PASS: $test"
