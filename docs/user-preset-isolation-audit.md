@@ -1,36 +1,41 @@
-# User preset isolation audit (work branch; NOT A FIX)
+# USER preset engine isolation — implementation and validation
 
-Status: analysis completed, firmware correction pending. Do not merge or flash this branch as a bug fix.
+**Status:** implemented and host/build validated on branch `fix/user-preset-engine-isolation`. Physical FM1 flash/save/reboot testing is still required. This is not merged or released.
 
-## Reproduction
-1. Edit a complete DRUM-AC kit and save in USER U01.
-2. Edit different pads and the eight global controls; save as USER U02.
-3. Reload U01; compare each pad's EDIT values, global controls and audio with saved U01, then repeat U02.
-4. Repeat with U03, power-cycle, reload in reverse order, and test export/import.
-5. Repeat for DRUM-IND, DRUM-LAB and DRUM-X; also verify ordinary engines and FM6.
+## Root cause
 
-## Confirmed architectural cause
-- `upreset.c:up_store` saves `motion_base_value(TSEL, i)` for only P_COUNT parameters into `up_rec_t`; `up_load` only restores these values, with a special FM6 sidecar (`upf_track_load`).
-- `eng_drumac.c` stores per-pad changes in `ac_patch[NPART][12][8]`, per-track dirty masks and override flags, separate from P_E*.
-- `eng_drumind.c` similarly uses `ind_patch[NPART][12][8]` and separate flags.
-- `eng_drumlab.c` stores 12 editable patches in `drumlab_kit[NPART][12]` as well as `drumlab_global`.
-- The DRUM-X engine owns its kit (`dx_kit`/`dx_kit12`) outside the standard P_COUNT values.
-- `project.c` already explicitly serializes and restores DRUM-AC, DRUM-IND and DRUM-LAB per-pad kits and global controls into project sections. The USER pathway does not.
-- FM6 differs: `up_fm6.c` already has a dedicated tag-bound storage object and reload path.
-Thus the confirmed code defect is missing USER serialization of auxiliary kit state, not proven aliasing of two stored records. The exact symptoms on hardware still require regression testing.
+`up_store()` originally captured only `P_COUNT` ordinary engine parameters. Drum engine pad patches and kit-wide controls live separately in RAM and were not included in the user preset. Changing the next kit therefore also changed what the previous user preset would play upon reload.
 
-## Storage and compatibility constraints
-- Existing USER record is 192 bytes, 16 records per bank, two banks in flash (0xDC000..0xDFFFF). Do not change its shape or version without a migration strategy.
-- Existing `storage.c` supports atomic A/B object copies with up to 3840 payload bytes.
-- 0xDA000..0xDBFFF is presently described as free in `storage.c`, exactly one A/B sector pair; verify flash-linker reservations before allocating it.
-- Worst-case 32 editable DRUM-LAB kits are larger than one standard storage payload uncompressed. Do not silently truncate, share state between slots, or overwrite song/index/OTA sectors.
-- Backups (`editor_backup.c`) must include any added storage, validate imports and handle older archives that lack the new object.
-- Keep main and the published v0.11 installer untouched until tests and real-device verification.
+## What this branch changes
 
-## Required implementation and tests
-1. Design an atomic, per-USER-slot auxiliary patch store covering DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND. Ensure overwrite, erase and rename preserve coherent tags/records, and handle interrupted writes.
-2. Save the complete selected engine's kit, per-pad overrides and global controls on UP_STORE and restore them on UP_LOAD, resetting stale per-track auxiliary state first.
-3. Use a versioned format with explicitly checked capacity and no silent loss. Preserve current USER sound bank and FM6 sidecar compatibility.
-4. Integrate auxiliary store with full backup enumeration, export, restore, and migration of older backups.
-5. Automated multi-slot tests for all four drum engines, in-place overwrite, rename, erase, power-cycle, backup/restore, mixed engine slots and a full 32-slot bank; verify FM6 and melodic engine behavior unchanged.
-6. Build and run firmware / host and emulator checks, then test on physical FM1 before merge.
+- `up_drum.c` adds independent compressed 32-slot user-kit serialization for **DRUM-AC, DRUM-IND, DRUM-LAB, and DRUM-X**.
+- The existing `up_fm6.c` sidecar object holds 112 bytes per USER slot and tags them to that USER record. It was already included in complete exports/imports as backup object 9; a user slot holds either an FM6 patch or a drum kit. **No extra flash sector or USER record size increase.**
+- Eight acoustic/industrial/lab global controls are stored in otherwise unused bytes of their original 192-byte USER record; DRUM-X's larger kit uses the sidecar plus unused record bytes and retired sequencer-pattern fields (not presented as a pattern).
+- On USER load, the selected engine's pad patches are reset from the selected sound and then replaced by the recorded independent kit. Older records with no kit sidecar retain standard defaults.
+- A rename preserves the sidecar tag (record names are excluded from its hash). Erasing and overwriting use the original USER bank and existing sidecar write paths.
+- FM6 saves remain on the original FM6 codec, using the same tagged sidecar bank. Other melodic engines retain the ordinary parameter-only path.
+- DRUM-X's encoded pattern bytes are excluded from legacy sequencer normalization during USER bank read and from the legacy pattern list.
+
+## Validation results
+
+Automated `tests/user_preset_isolation_test.c` and `tests/run_live_drum_tests.sh` pass on GitHub Actions, including:
+- two divergent kits each for DRUM-AC, DRUM-IND, DRUM-LAB and DRUM-X, alternating load order
+- per-kit global controls, per-pad values, type selection, DRUM-X additional patch data
+- rename integrity and DRUM-X byte preservation during bank re-validation
+- all 32 USER slots filled with mixed engine kits, simulated reboot/bank re-validation
+- overwrite one slot and check all 31 others remain unchanged; erase behavior
+- existing live-drum, UI, drum engine and project tests
+
+The physical FM1 firmware was built successfully by the branch-only workflow with flash/RAM checks. Preview ZIP is attached to the successful workflow under **user-preset-isolation-device-test**.
+
+## Before physical-device testing
+
+Back up all existing data using the MASHINA web library/full backup facility. The preview installer is clearly marked DEVICE TEST ONLY. Flash this branch's candidate, not the public v0.11 installer. Save U01/U02/U03 as three clearly different DRUM-AC kits (including distinct per-pad EDIT settings), power-cycle, reload U01, U02, U03 in reverse order, and verify all are unchanged. Repeat for DRUM-IND, DRUM-LAB, DRUM-X; verify project recall and FM6 user presets.
+
+**Do not merge to `main` until physical FM1 testing confirms these checks.**
+
+## Remaining limits / compatibility
+
+- Individual legacy editor UP_PUT/GET preset transfers contain only the standard preset record; transferring full drum kits requires **full backup/export-import** including backup object 9, not merely a legacy individual preset command.
+- The DRUM-X kit remains engine-global at runtime as in v0.11; independent USER slots restore their own saved global kit when selected. This change does not introduce multiple simultaneous independent DRUM-X tracks.
+- USER-bank and companion-bank commits are separate existing A/B flash objects. Like the pre-existing FM6 sidecar path, a power cut *between* the two writes could leave one slot's record and auxiliary payload temporarily out of sync; the companion tag prevents applying mismatched data. Further atomic multi-object journaling was not introduced.
