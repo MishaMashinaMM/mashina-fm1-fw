@@ -74,10 +74,12 @@ const order = target.log.filter((x) => typeof x === "number");
 ok(order.at(-1) === 0 && order.at(-2) === 1 && order.indexOf(2) < order.indexOf(1), "backup: restore order: projects, banks, settings, live music last");
 ok([0, 1, 2, 6].every((id) => target.objs.get(id).every((v, i) => v === objs.find((o) => o[0] === id)[1][i])), "backup: restored objects equal the source");
 {   /* the FM6 patch bank (id 8) and the archives of firmware before it (8 objects, no id 8) */
-  ok(BACKUP_IDS.length === 43 && file.objects.some((o) => o.id === 8) && file.objects.some((o) => o.id === 9) &&
-     file.objects.some((o) => o.id === 10) && file.objects.filter((o) => o.id >= 40).length === 32 &&
+  ok(BACKUP_IDS.length === 44 && file.objects.some((o) => o.id === 8) && file.objects.some((o) => o.id === 9) &&
+     file.objects.some((o) => o.id === 10) && file.objects.some((o) => o.id === 11) && file.objects.filter((o) => o.id >= 40).length === 32 &&
      !file.objects.some((o) => o.id >= 32 && o.id <= 34),
-     "backup: 43 objects: id 8 (the retired FM6 bank), 9 (user presets' FM6 patches), 10 the song index, 40..71 every song's sections");
+     "backup: 44 objects: id 8 retired FM6 bank, 9 FM6 user patches, 10 song index, 11 drum user kits, 40..71 song sections");
+  const previous = JSON.parse(JSON.stringify(file)); previous.objects = previous.objects.filter((o) => o.id !== 11);
+  ok(readBackup(previous).objects.length === 43, "backup: complete v0.11 archive without drum snapshots still reads");
   const v3 = JSON.parse(JSON.stringify(file)); v3.objects = v3.objects.filter((o) => o.id <= 9);
   ok(readBackup(v3).objects.length === 10, "backup: an archive of Felucca 1.0.3 .. JIANT 0.2 (10 objects, no songs) still reads");
   const v2 = JSON.parse(JSON.stringify(v3)); v2.objects = v2.objects.filter((o) => o.id !== 9);
