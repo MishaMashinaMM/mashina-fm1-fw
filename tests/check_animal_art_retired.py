@@ -1,34 +1,21 @@
 #!/usr/bin/env python3
-"""Guard the retired ANIMAL synth's orphaned graphical assets.
-
-The old creature renderers are disabled by FELUCCA_NO_SEQUENCER; this
-check also prevents the deleted engine's vector art from lingering in
-the source tree or resurfacing via the optional legacy visualizer.
-"""
+"""The obsolete creature and lens UI must not enter MASHINA firmware."""
 from pathlib import Path
 
-engvis = Path("firmware/src/ui_engvis.c").read_text(encoding="utf-8")
-being = Path("firmware/src/ui_being.c").read_text(encoding="utf-8")
+retired = (
+    "ui_organic.c", "ui_being.c", "ui_engvis.c", "ui_tech.c",
+    "ui_lzhome.c", "ui_lzedit.c", "ui_lzpage.c",
+)
 graph = Path("firmware/src/ui_graph.c").read_text(encoding="utf-8")
-size = Path("tools/size_fns.py").read_text(encoding="utf-8")
-engine = Path("firmware/src/engines.c").read_text(encoding="utf-8")
+optimizer = Path("tools/size_fns.py").read_text(encoding="utf-8")
+for filename in retired:
+    assert not Path("firmware/src", filename).exists(), filename
+    assert f'#include "{filename}"' not in graph, filename
+    assert f'"{filename}"' not in optimizer, filename
 
-assert "vx_animal(" not in engvis
-assert "VX_AN[" not in engvis
-assert "VA_POS[" not in engvis
-assert "ENG_ANIMAL" not in engvis
-assert "AN_CMOS" not in engvis
-assert "GENOME[8]" in being
-assert "larva" not in being
-assert '#include "ui_engvis.c"' in graph
-assert '#include "ui_being.c"' in graph
-assert '#include "ui_organic.c"' in graph
-for name in ("ui_engvis.c", "ui_being.c", "ui_organic.c"):
-    # All three of these old visualizers are in the sequencer-only path;
-    # no changes to their contents should affect MASHINA application flash.
-    marker = f'#include "{name}"'
-    where = graph.index(marker)
-    assert graph.rfind("#if !FELUCCA_NO_SEQUENCER", 0, where) > graph.rfind("#endif", 0, where), name
-assert "eng_animal.c" not in size
-assert "eng_animal.c" not in engine
-print("PASS: ANIMAL-only creature art removed; legacy visualizers remain compiled out")
+# The live UI still uses its own drawing and non-decorative FX/SAVE panels.
+for active in ("ui_fm6op.c", "ui_lzsave.c", "ui_lzfx.c"):
+    assert f'#include "{active}"' in graph, active
+assert "static void lz_arc(" in graph
+assert "static int32_t bg_energy(void)" in graph
+print("PASS: obsolete creature and lens artwork removed, active UI helpers intact")
