@@ -120,6 +120,54 @@ int main(void)
     /* Renaming mutates the underlying record only, never the companion data. */
     bad += check("User bank remains 192-byte/16-record compatible",
                  sizeof(up_rec_t) == 192u && sizeof(up_bank_t) <= 3840u);
+    /* Exercise the entire 32-slot companion bank, mixed engines and a
+     * simulated power cycle (bank normalization and restored sidecar bytes). */
+    {
+        uint8_t expected[UP_SLOTS][UPF_PK];
+        uint8_t expected_e[UP_SLOTS];
+        up_bank_t saved_banks[UP_SLOTS / UP_PER_BANK];
+        upf_t saved_aux;
+        int all = 1;
+        for (uint32_t k = 0; k < UP_SLOTS; k++) {
+            uint32_t e = ENGINE[k % 4u], seed = 10u + k * 3u;
+            set_engine_of(TSEL, e);
+            TSEL->engine = TSEL->eng_req;
+            edit_kit(e, (uint8_t)seed);
+            all &= up_store(k, "BANK FILL") == 3;
+            expected_e[k] = (uint8_t)e;
+            memcpy(expected[k], upf.e[k].pk, UPF_PK);
+        }
+        bad += check("All 32 mixed USER slots can save their independent kits", all);
+        memcpy(saved_banks, up_bank, sizeof saved_banks);
+        saved_aux = upf;
+        memset(up_bank, 0, sizeof up_bank);
+        memset(&upf, 0, sizeof upf);
+        memcpy(up_bank, saved_banks, sizeof saved_banks);
+        upf = saved_aux;
+        up_bank_check(0u, (int)sizeof up_bank[0]);
+        up_bank_check(1u, (int)sizeof up_bank[1]);
+        all = upf_valid(&upf);
+        for (uint32_t k = 0; k < UP_SLOTS; k++) {
+            uint8_t actual[UPF_PK];
+            all &= up_used(k) && up_rec(k)->engine == expected_e[k];
+            all &= !up_load(k) && !upd_companion_get(k, actual);
+            all &= !memcmp(actual, expected[k], UPF_PK);
+            all &= upf.e[k].tag == upf_tag(up_rec(k));
+        }
+        bad += check("32 kits survive simulated reboot and reverse-engine loads", all);
+        /* Reuse one slot without touching the other 31. */
+        set_engine_of(TSEL, ENGI_DRUMAC);
+        TSEL->engine = TSEL->eng_req;
+        edit_kit(ENGI_DRUMAC, 61u);
+        all = up_store(8u, "OVERWRITE") == 3;
+        for (uint32_t k = 0; k < UP_SLOTS; k++) {
+            if (k == 8u) continue;
+            all &= upf.e[k].tag == upf_tag(up_rec(k));
+            all &= !memcmp(upf.e[k].pk, expected[k], UPF_PK);
+        }
+        bad += check("Overwriting one slot preserves all 31 others", all);
+        bad += check("Erasing kit U09 clears its USER slot", up_put(8u, 0) == 3 && !up_used(8u));
+    }
     printf("USER PRESET ISOLATION %s (%d failures)\n", bad ? "FAILED" : "PASSED", bad);
     return !!bad;
 }
