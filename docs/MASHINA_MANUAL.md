@@ -110,7 +110,6 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 | **WHEEL** | Tonewheel-style additive organ with drawbar registrations, percussion, key click, drive and rotary-speaker color. Useful for organs, reedy bass and sustained chords. |
 | **NOISE** | Filtered noise, crackles, wind, rain, metallic hits and retro shift-register effects. MODE chooses the noise character; COLOR, FREQ and PEAK shape the result. |
 | **FM6** | Six-operator FM for electric pianos, bells, mallets, basses, complex pads and digital leads. Choose factory patches first; algorithms and operator envelopes provide deeper editing. |
-| **ANIMAL** | Synthetic calls and nature-inspired sounds such as birds, insects, frogs and wing buzzes. Choose a preset or a sound-producing mode and shape pitch, rhythm and resonances. |
 
 **DRUM-X** is the expanded version of JIANT's drum engine. It is described together with the other drum kits in section 4.
 
