@@ -137,6 +137,11 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
+### Sonidos de fábrica en v0.11
+
+El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
+
+
 ## 4. Motores de sonido y batería
 
 Elegí una pista y un motor, luego abrí **EDIT**. Girá **SELECT** para recorrer sus páginas y modificá los controles con K1–K4.
@@ -159,11 +164,11 @@ Estos ocho motores siguen disponibles junto a los nuevos. Elegí un preset para 
 
 ### Motores melódicos adicionales de MASHINA
 
-**ATMOS — pads y texturas en movimiento.** Probá **SOFT CLOUD**, **BREATHING** o **GLASS TIDE**. **WAVE** selecciona la onda; **MORPH**, **DENSITY** y **DRIFT** transforman sus capas; **CUT/RES** controlan el filtro, y **TEXTURE/SHIMMER** agregan color. **BREATH** crea cambios de volumen, **MOTION** determina la velocidad, **FLOW** modifica el timbre en el tiempo y **SPREAD** separa los osciladores. Para acordes superpuestos, comenzá con movimientos sutiles.
+**ATMOS — pads y texturas en movimiento.** Probá **KANT**, **BURKE** o **JEFFERSON**. **WAVE** selecciona la onda; **MORPH**, **DENSITY** y **DRIFT** transforman sus capas; **CUT/RES** controlan el filtro, y **TEXTURE/SHIMMER** agregan color. **BREATH** crea cambios de volumen, **MOTION** determina la velocidad, **FLOW** modifica el timbre en el tiempo y **SPREAD** separa los osciladores. Para acordes superpuestos, comenzá con movimientos sutiles.
 
-**BRASS — saxofones y metales electrónicos.** No intenta reproducir perfectamente instrumentos acústicos: su sonido es deliberadamente sintético. **TYPE 0** da un carácter de saxo y **127** se acerca a la trompeta, con híbridos en medio. **PRESS** cambia la intensidad, **BUZZ** el borde áspero, **BREATH** el aire y **BODY/FORMNT** la resonancia. **GROWL** agrega rugosidad y **ATTACK** define el comienzo. En la tercera página, **FAT, GRIND, METAL, CRUSH** permiten sonidos exagerados. Probá **TENOR SAX**, **SAX GROWL** o **BRASS LEAD**.
+**BRASS — saxofones y metales electrónicos.** No intenta reproducir perfectamente instrumentos acústicos: su sonido es deliberadamente sintético. **TYPE 0** da un carácter de saxo y **127** se acerca a la trompeta, con híbridos en medio. **PRESS** cambia la intensidad, **BUZZ** el borde áspero, **BREATH** el aire y **BODY/FORMNT** la resonancia. **GROWL** agrega rugosidad y **ATTACK** define el comienzo. En la tercera página, **FAT, GRIND, METAL, CRUSH** permiten sonidos exagerados. Probá **HUME**, **DIDEROT** o **HOLBACH**.
 
-**INDUSTRIAL — bajos y leads melódicos agresivos.** A diferencia de DRUM-IND, sigue las notas tocadas. **WAVE** elige la onda principal; **FAT** la engrosa; **GRIND, METAL, CRUSH y FEED** generan distorsión y aspereza; **CUT/RES** moldean el filtro. La tercera página ofrece **WAVE2, MIX, SUB y MODE** para el segundo oscilador y graves adicionales. Empezá con **IRON BASS**, **SUB MACHINE**, **STEEL LEAD** o **GEAR LEAD**.
+**INDUSTRIAL — bajos y leads melódicos agresivos.** A diferencia de DRUM-IND, sigue las notas tocadas. **WAVE** elige la onda principal; **FAT** la engrosa; **GRIND, METAL, CRUSH y FEED** generan distorsión y aspereza; **CUT/RES** moldean el filtro. La tercera página ofrece **WAVE2, MIX, SUB y MODE** para el segundo oscilador y graves adicionales. Empezá con **PASCAL**, **NEWTON**, **CAVENDISH** o **LOCKE**.
 
 **DRUM-X** tiene doce sonidos independientes: BD 36, SD 38, CP 39, CH 42, OH 46, TM 45, RM 37, BL 56, B2 41, S2 40, O2 43 y T2 44. **DRUM-LAB** tiene doce pads sintetizados, inicialmente en MIDI **36–47**. Abrí EDIT para editar cada pad y sus niveles.
 
@@ -199,7 +204,7 @@ Los multiplicadores del kit escalan los valores individuales sin reemplazarlos. 
 
 ### DRUM-AC: kit de 12 pads de estilo acústico
 
-**DRUM-AC** es el tercer motor de batería y sintetiza todos sus sonidos **sin muestras**. Combina golpes con ruido, resonancia de membrana en los toms y bandas metálicas amortiguadas para los platos. Ofrece los presets **ACOUSTIC**, **DRY KIT** y **BIG ROOM**, sin modificar DRUM-X ni DRUM-LAB.
+**DRUM-AC** es el tercer motor de batería y sintetiza todos sus sonidos **sin muestras**. Combina golpes con ruido, resonancia de membrana en los toms y bandas metálicas amortiguadas para los platos. Ofrece los presets **KRIPKE-1**, **KRIPKE-2** y **KRIPKE-3**, sin modificar DRUM-X ni DRUM-LAB.
 
 **La distribución cromática se repite en todas las octavas.** Los números MIDI corresponden al ejemplo **36–47**; la misma nota musical en cualquier octava reproduce el mismo pad:
 
@@ -247,7 +252,7 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 
 **Páginas EDIT:** las dos primeras ofrecen ocho controles independientes para todo el kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (cada uno **0–200%**, con **100% neutro**). ATTACK modifica aproximadamente los primeros 80 ms; BRIGHT modifica el balance de agudos después de limitar el sonido. En **SOUND 1–3**, **K1** selecciona el pad y **K2–K4** editan ocho parámetros individuales (**0–127**): **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** permiten doce niveles independientes (**0–127**). Los controles pueden actuar de forma distinta en cada sonido.
 
-Presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. Su asignación MIDI es fija; la reasignación SEQ de DRUM-X/DRUM-LAB no se aplica.
+Presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. Su asignación MIDI es fija; la reasignación SEQ de DRUM-X/DRUM-LAB no se aplica.
 
 **Compatibilidad:** guardá una copia de seguridad antes de cambiar el firmware. Las versiones anteriores pueden no reconocer proyectos con DRUM-IND.
 
@@ -384,4 +389,4 @@ Antes de cambiar o retroceder la versión, guardá una **copia completa de proye
 
 ---
 
-MASHINA v0.10 · M-VAVE FM1
+MASHINA v0.11 · M-VAVE FM1
