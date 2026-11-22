@@ -1,3 +1,4 @@
+#pragma once
 /* MASHINA user bank 2026-11-22: 5 VOICE + 10 LOFI factory patches.
  * Full 115 common sound parameters from the uploaded library bank.
  * Engine E0..E7 live in the PRESETS arrays; DRUM-only trailing fields are omitted.
