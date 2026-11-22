@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="660" viewBox="0 0 1080 660" role="img" aria-labelledby="title description">
-<title id="title">MASHINA v0.10 — FM1 Performance Firmware</title>
+<title id="title">MASHINA v0.11 — FM1 Performance Firmware</title>
 <desc id="description">MASHINA live-performance firmware for the M-VAVE FM1. Six independent MIDI-routed tracks, keyboard zones and tuning, 32 MIDI CC macros, ATMOS, BRASS and INDUSTRIAL synth engines, DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND, global equalizer, effects, and project recall. An abstract orange mechanical cog identifies the project.</desc>
 <rect width="1080" height="660" rx="18" fill="#080808"/>
 <rect x="18" y="18" width="1044" height="624" rx="18" fill="#0c0c0c" stroke="#424242" stroke-width="2"/>
@@ -12,7 +12,7 @@
 <text x="47" y="439" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="500" >Independent routing, splits,</text>
 <text x="47" y="462" fill="#aaa" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="500" >layers and real-time control.</text>
 <rect x="45" y="496" width="288" height="54" rx="10" fill="#282010" stroke="#ff9900" stroke-width="1.5"/>
-<text x="65" y="529" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" >v0.10  •  SIX TRACKS</text>
+<text x="65" y="529" fill="#ff9900" font-family="Arial,Helvetica,sans-serif" font-size="19" font-weight="700" >v0.11  •  SIX TRACKS</text>
 <text x="47" y="584" fill="#ddd" font-family="Arial,Helvetica,sans-serif" font-size="14" font-weight="500" >Misha Mashina</text>
 <text x="47" y="607" fill="#888" font-family="Arial,Helvetica,sans-serif" font-size="13" font-weight="500" >Based on JIANT by Juan Jiant</text>
 <text x="391" y="66" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="23" font-weight="750" letter-spacing=".6">PERFORMANCE FEATURES</text>
