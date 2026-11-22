@@ -88,7 +88,11 @@ static void upkit_capture(track_t *t, upkit_ent_t *e)
 
 static uint32_t upkit_crc(const upkit_ent_t *e)
 {
-    return fnv(2166136261u, e->global, sizeof e->global + sizeof e->pad);
+    const uint8_t *bytes = e->global;
+    uint32_t hash = 2166136261u;
+    for (uint32_t i = 0; i < sizeof e->global + sizeof e->pad; ++i)
+        hash = (hash ^ bytes[i]) * 16777619u;
+    return hash;
 }
 static void upkit_stamp(up_rec_t *r, const upkit_ent_t *e)
 {
