@@ -45,9 +45,7 @@ static void lz_uline(int32_t x, int32_t y, const aafont_t *f, const char *s, uin
 
 /* the height ADSR and LFO are drawn on: 100 px, or (MENU > LARGE's strip: draw_graph) the strip's ~ 56 */
 static int32_t graph_ht = 100;
-#if !FELUCCA_NO_SEQUENCER
-#include "ui_organic.c" /* Legacy graphical flourishes, no longer rendered in MASHINA. */
-#endif                              /* JIANT FM's organic line art (drawn by code) */
+/* Retired: organic drawing and creature renderers are absent from MASHINA. */
 #include "ui_fm6op.c"                                /* (0.6.10, from Felucca 1.5) EDIT > OPERATOR, OP ENV, OPERATOR 2 */
 static uint16_t heat_col(int32_t v);
 /* (0.9.5, as the 0.6.36) JIANT (thermal): a card's colour its value as heat (ratio 0..1000, -1 none); bipolar (its range
@@ -71,9 +69,7 @@ static uint16_t heat_y(int32_t y, int32_t y0, int32_t y1, uint16_t c)
 {
     return settings.palette == UI_JIANT_INDEX && y1 > y0 ? heat_col(24 + (y1 - y) * 232 / (y1 - y0)) : c;
 }
-#if !FELUCCA_NO_SEQUENCER
-#include "ui_being.c"
-#else
+/* Generic audio-level helper for FX status; no creature renderer required. */
 /* Only the generic audio-level helper is still used by legacy FX status
  * screens. All creature genomes, morphing and colony drawing are excluded. */
 static int32_t bg_sin(uint32_t ang) { return sine_i(ang << 16); }
@@ -95,10 +91,7 @@ static int32_t bg_energy(void)
     e += v > e ? (v - e) * 3 / 4 : (v - e) / 6;
     return e;
 }
-#endif                                /* (JIANT 0.5) the beings: the engine pages' creatures */
-#if !FELUCCA_NO_SEQUENCER
-#include "ui_engvis.c"
-#endif                               /* Disabled legacy vector engine artwork; retained only for optional legacy UI builds. */
+
 
 #if FELUCCA_NO_SEQUENCER
 /* The quick-layer KNOBS view still needs a static arc gauge. Keep its
@@ -1779,18 +1772,9 @@ static uint16_t sec_col(uint32_t s)
                                                          * violet orange yellow; was 60 115 175 230) */
     return heat_col(HJ[s & 3u]);
 }
-#include "ui_tech.c"                                /* (JIANT 0.5) the technical graphs (FX, DEST, VOICE, GLOBAL) */
 #include "ui_lzsave.c"                              /* (0.8.5) SAVE's lens: its levels' panels */
 #include "ui_lzfx.c"                                /* (0.8.5) FX's lens: its levels' panels */
-#if !FELUCCA_NO_SEQUENCER
-#include "ui_lzhome.c"
-#endif                              /* (0.8.5) HOME's lens: ECO, BEING, the critters */
-#if !FELUCCA_NO_SEQUENCER
-#include "ui_lzedit.c"
-#endif                               /* (0.8.5) EDIT's lens panels */
-#if !FELUCCA_NO_SEQUENCER
-#include "ui_lzpage.c" /* Legacy ENV/LFO/SCL graphs now replaced by 2x2 value grids. */
-#endif                               /* (0.8.5) ENV's, LFO . MOD's, SCL . ARP's, GLO's */
+/* Retired: legacy HOME/EDIT/ENV lens panels; MASHINA uses fixed value grids. */
 /* (0.9.17) a SEQ page's own marks over the roll (a kit: the grid), column i of the bar shown at x, w px wide:
  * PATTERN the notes as long as GATE plays them, the odd steps late by SWING (graph_roll); TRACK its PITCH, the notes
  * where they will sound outlined (MID); PLAYHEADS the heads playing, a line each as hot as its number (the one edited
