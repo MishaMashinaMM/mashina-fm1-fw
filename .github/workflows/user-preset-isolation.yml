@@ -1,0 +1,120 @@
+name: USER preset isolation branch validation
+on:
+  push:
+    branches:
+      - fix/user-preset-engine-isolation
+  pull_request:
+    paths:
+      - 'firmware/src/upreset.c'
+      - 'firmware/src/up_drum.c'
+      - 'tests/user_preset_isolation_test.c'
+      - 'tests/run_live_drum_tests.sh'
+      - '.github/workflows/user-preset-isolation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host:
+    name: Independent USER kits and live engine regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install asset dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate headers and fonts
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Run all live drum host tests
+        run: bash tests/run_live_drum_tests.sh
+  firmware:
+    name: Compile FM1 image (validation only, no publish)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: host
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned Python dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Cache compiler and SDK tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: Install toolchain and pinned SDK
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T="$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools"
+          [ -e "$HOME/.jieli/toolchain/pi32v2/bin/clang" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            cd "$HOME/fw-AC79_AIoT_SDK"
+            git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin
+            retry git checkout d179b4484759423312073f5fbb232501aa491047
+          fi
+      - name: Build real firmware, check RAM and flash limits
+        env:
+          FELUCCA_NO_SEQUENCER: '1'
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+        run: |
+          set -o pipefail
+          python3 tools/build.py --release 0.11 2>&1 | tee user-kit-firmware-build.log
+          test -s build/felucca.bin
+      - name: Package separate local-use device-test installer
+        run: |
+          VERSION="v0.11-user-presets-${GITHUB_SHA::7}-preview"
+          OUT="build/user-preset-isolation-preview"
+          test -s build/felucca-0.11.fwsc
+          python3 web/make_site.py build/felucca-0.11.fwsc "$VERSION" "$OUT"
+          test -s "$OUT/webapp/installer/index.html"
+          python3 - "$OUT/webapp/installer/index.html" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          html = p.read_text(encoding="utf-8")
+          anchor = '<p><button id="go" disabled data-t="install"></button></p>'
+          if anchor not in html:
+              raise SystemExit("Cannot safely label device-test installer: button not found")
+          banner = ('<p style="border:2px solid #ff9900;padding:12px;font-weight:bold">'
+                    'USER PRESET ISOLATION — DEVICE TEST ONLY. '
+                    'Back up your complete MASHINA library before flashing. '
+                    'This preview is NOT the public v0.11 release.</p>')
+          html = html.replace(anchor, banner + "\\n  " + anchor)
+          p.write_text(html, encoding="utf-8")
+          PY
+          cat > "$OUT/READ-ME-FIRST.txt" <<EOF
+          MASHINA v0.11 - USER PRESET ISOLATION TEST
+          ==========================================
+          Source branch: fix/user-preset-engine-isolation
+          Commit: $GITHUB_SHA
+          This is a device-test candidate, NOT the public MASHINA installer.
+          Back up ALL projects, presets and settings before using this build.
+          The firmware splash will still read v0.11.
+          Verify DRUM-AC, DRUM-IND, DRUM-LAB and DRUM-X USER presets.
+          This build is deliberately NOT published to GitHub Pages.
+          EOF
+          (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
+          cd build
+          zip -qr user-preset-isolation-device-test.zip user-preset-isolation-preview
+      - name: Upload separate device-test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-preset-isolation-device-test
+          path: build/user-preset-isolation-device-test.zip
+          if-no-files-found: error
+      - name: Save validation log only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-kit-firmware-build-log
+          path: user-kit-firmware-build.log
+          if-no-files-found: ignore

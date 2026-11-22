@@ -126,6 +126,11 @@ static void up_bank_check(uint32_t b, int len)
         if (!up_valid(r))
             continue;
         up_migrate(r);
+        /* New DRUM-X user kits keep extra patch bytes in the obsolete pattern
+         * fields. Do not normalize those bytes as sequencer events on boot. */
+        if (r->engine == ENGI_DRUM && r->ver >= 4u && r->np == P_COUNT &&
+            r->packed[P_COUNT + 8u] == 0xDAu)
+            continue;
         for (k = 0; k < 16u; k++)
             if (up_grid(r))
                 r->flags[k] &= r->note[k];          /* a drum grid: accents only on its hits */
@@ -257,6 +262,7 @@ static void up_values(const up_rec_t *r, int16_t *v)   /* mapped and clamped for
 }
 
 #include "up_fm6.c"                            /* the FM6 user presets' patches: the same kind of store */
+#include "up_drum.c"                           /* independent AC, IND and LAB user kits in the same sidecar bank */
 #include "fm6_vbank.c"                         /* FM6's voice bank (SLOT B1..B32; JIANT 0.6.11, from Felucca 1.4.1) */
 
 static void up_boot(void)                      /* persist_boot: the banks from flash */
@@ -392,12 +398,15 @@ static int up_store(uint32_t k, const char *name)
             }
         }
     }
+    /* DRUM-X reuses the retired pattern bytes for its complete kit: capture
+     * only AFTER the legacy pattern/grid code has finished. */
+    upd_capture_globals(&r, TSEL);
     {
         int rc = up_put(k, &r);                         /* the record first, then its FM6 patch (up_fm6.c) */
-        if ((rc == 0 || rc == 3) && r.engine == ENGI_FM6) {
-            int u = upf_store(k, (uint32_t)(TSEL - trk));
-            if (u == 2)
-                rc = 2;
+        if (rc == 0 || rc == 3) {
+            int u = r.engine == ENGI_FM6 ? upf_store(k, (uint32_t)(TSEL - trk)) :
+                    upd_engine(r.engine) ? upd_store(k, TSEL) : 0;
+            if (u == 2) rc = 2;
         }
         return rc;
     }
@@ -447,6 +456,7 @@ static int up_load(uint32_t k)
         t->preset = 0;
         fm1_irq_on();
         upf_track_load(t, k);                           /* FM6: the preset's own patch (up_fm6.c) */
+        upd_track_load(t, k);                          /* DRUM-AC/IND/LAB: restore independent full kit */
         if (eng_gone(r->engine))                        /* a retired engine (core.h): ANALOG's first preset */
             set_engine_of(t, ENGI_PHYS_TO);
     }
@@ -458,7 +468,13 @@ static int up_load(uint32_t k)
 }
 
 /* the patterns of the user presets (SEQ > PATTERNS lists them after the factory ones, ui.c pat_count) */
-static int up_has_pat(uint32_t k) { return up_used(k) && !up_pat_empty(up_rec(k)); }
+static int up_has_pat(uint32_t k)
+{
+    if (!up_used(k)) return 0;
+    const up_rec_t *r = up_rec(k);
+    return !(r->engine == ENGI_DRUM && r->ver >= 4u && r->np == P_COUNT &&
+             r->packed[P_COUNT + 8u] == 0xDAu) && !up_pat_empty(r);
+}
 
 static uint32_t up_pat_count(void)
 {
