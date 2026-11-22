@@ -115,7 +115,7 @@ int main(void)
                      !memcmp(saved, r->note, 16u) && !memcmp(saved + 16u, r->flags, 16u));
     }
     bad += check("Renaming a kit keeps its companion tag",
-                 !up_rename(0u, "RENAME TEST") &&
+                 up_rename(0u, "RENAME TEST") == 3 &&
                  !upd_companion_get(0u, stored[0][0]));
     /* Renaming mutates the underlying record only, never the companion data. */
     bad += check("User bank remains 192-byte/16-record compatible",
