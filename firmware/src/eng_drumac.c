@@ -265,10 +265,15 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     for (i = 0; i < n; i++, body += step_b, trans += step_t, age++) {
         int32_t white = (int32_t)(ac_random(&rng) >> 16) - 32768;
         int32_t raw;
+        /* LP states are convex combinations of 16-bit noise samples:
+         * all stay in [-32768,32767]. Max coefficient here is 22405,
+         * so |(white - state) * coefficient| <= 65535*22405 =
+         * 1468311675 < INT32_MAX. A 32-bit product is EXACTLY equal to
+         * the previous 64-bit calculation, but cheaper on the FM1. */
         /* Noise filters are bounded and share no state between drum voices. */
-        lp += (int32_t)(((int64_t)(white - lp) * (800 + bright * 45)) >> 15);
-        fast += (int32_t)(((int64_t)(white - fast) * (7800 + bright * 115)) >> 15);
-        wire += (int32_t)(((int64_t)(white - wire) * (1800 + bright * 65)) >> 15);
+        lp += ((white - lp) * (800 + bright * 45)) >> 15;
+        fast += ((white - fast) * (7800 + bright * 115)) >> 15;
+        wire += ((white - wire) * (1800 + bright * 65)) >> 15;
         if (kind == AC_KICK) {
             /* Two cascaded low-pass integrators produce a short, dull thump.
              * Unlike a resonant sine, each hit is genuinely aperiodic. The
@@ -276,8 +281,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t deep = (int32_t)ph0, low = (int32_t)ph1;
             int32_t k_low = 1400 + tune * 16;       /* broad impact around low mids */
             int32_t k_deep = 220 + tune * 4;       /* sub/low-frequency weight */
-            low += (int32_t)(((int64_t)(white - low) * k_low) >> 15);
-            deep += (int32_t)(((int64_t)(low - deep) * k_deep) >> 15);
+            low += ((white - low) * k_low) >> 15;
+            deep += ((low - deep) * k_deep) >> 15;
             int32_t thud = deep * (110 + body_mix) / 128 +
                            (low - deep) * (25 + ring_amt) / 128;
             int32_t beater = (white - fast) * (20 + strike) / 256;
@@ -298,8 +303,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t low = (int32_t)ph0, mid = (int32_t)ph1;
             int32_t k_mid = 3500 + tune * 42;
             int32_t k_low = 650 + tune * 12;
-            mid += (int32_t)(((int64_t)(white - mid) * k_mid) >> 15);
-            low += (int32_t)(((int64_t)(mid - low) * k_low) >> 15);
+            mid += ((white - mid) * k_mid) >> 15;
+            low += ((mid - low) * k_low) >> 15;
             int32_t thud = low * (85 + body_mix) / 128 +
                            (mid - low) * (15 + ring_amt) / 128;
             int32_t rattle = (white - wire) * wire_amt / 127;
