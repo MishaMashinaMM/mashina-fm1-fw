@@ -1,0 +1,70 @@
+# Isolated device test: DRUM-AC/DRUM-IND independent user-preset kit fix.
+# Does not publish Pages or change the stable v0.11 installer.
+name: DRUM user-preset kit fix test installer
+on:
+  push:
+    branches: [fix-drum-kit-user-presets]
+    paths:
+      - 'firmware/**'
+      - 'tests/**'
+      - 'web/**'
+      - 'tools/**'
+      - '.github/workflows/drum-kit-test-installer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install pinned generator dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
+      - name: Test kit isolation and backup compatibility
+        run: |
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+          bash tests/run_live_drum_tests.sh
+          node web/test_backup.mjs
+      - name: Cache verified JieLi SDK and compiler
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: Install JieLi compiler and pinned SDK files
+        run: |
+          set -e
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T="$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools"
+          [ -e "$HOME/.jieli/toolchain" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            (cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin && retry git checkout d179b4484759423312073f5fbb232501aa491047)
+          fi
+          test -s "$T/uboot.boot" && test -s "$T/cfg_tool.bin" && test -s "$T/cfg/eq_cfg_hw.bin"
+      - name: Build test firmware and self-contained WebMIDI installer
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+        run: |
+          set -e -o pipefail
+          python3 tools/build.py --release 0.11-preview | tee build-size.log
+          test -s build/felucca-0.11-preview.fwsc
+          python3 web/make_site.py build/felucca-0.11-preview.fwsc 0.11-preview build/kit-fix-installer
+          test -s build/kit-fix-installer/webapp/installer/index.html
+          test -s build/kit-fix-installer/firmware/felucca-0.11-preview.fwsc
+          printf '%s\n' "$GITHUB_SHA" > build/kit-fix-installer/firmware/SOURCE_COMMIT
+          (cd build/kit-fix-installer/firmware && sha256sum felucca-0.11-preview.fwsc > SHA256SUMS)
+          cp build-size.log build/kit-fix-installer/
+      - name: Upload separate test installer (NOT stable v0.11)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MASHINA-DRUM-KIT-FIX-FM1-test-installer
+          path: build/kit-fix-installer/
+          if-no-files-found: error
+          retention-days: 14
