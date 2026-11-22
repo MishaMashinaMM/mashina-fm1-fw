@@ -11,6 +11,7 @@
 #include "eng_formant.c"
 #include "eng_brass.c"
 #include "eng_atmos.c"
+#include "rest_factory_import.h"
 #include "eng_wheel.c"
 #include "eng_drum.c"           /* DRUM: the 8-lane DRUM-X kit (drumx_voice.c) */
 #include "eng_drumlab.c"        /* Stage 20A: independent electronic percussion */
@@ -81,13 +82,13 @@ static const engine_t *const ENGINES[NENGINES] = {
 static inline uint32_t eng_idx(uint32_t e) { return e < NENGINES ? e : 0u; }
 
 /* Factory preset global browsing order and PROGRAM CHANGE numbering.
- * ANALOG is first: its 18 imported user-bank sounds occupy global positions
- * 1..18. No original ANALOG presets remain.
+ * ANALOG is first: its 20 imported user-bank sounds occupy global positions
+ * 1..20. No original ANALOG presets remain.
  * Changing this order does not renumber engine IDs or alter TRK_DEF startup
  * sounds; it does change Program Change mappings and the rest of the factory
  * list's global positions. */
 static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
-    ENGI_ANALOG,                 /* global factory positions 1..18: imported ANALOG sounds */
+    ENGI_ANALOG,                 /* global factory positions 1..20: imported ANALOG sounds */
     ENGI_DRUM,                   /* DRUM (DRUM-X) */
     ENGI_VOICE,                  /* VOICE */
     ENGI_LOFI,                   /* LOFI */
