@@ -30,7 +30,7 @@ typedef struct {
     upkit_ent_t e[UP_SLOTS];
 } upkit_t;
 _Static_assert(sizeof(upkit_ent_t) == 108u, "complete drum kit entry");
-_Static_assert(sizeof(upkit_t) == 3472u && sizeof(upkit_t) <= ST_PAYLOAD_MAX,
+_Static_assert(sizeof(upkit_t) == 3472u && sizeof(upkit_t) <= 3840u,
                "drum preset snapshots fit the two free flash sectors");
 
 static upkit_t upkit __attribute__((section(".pool")));
@@ -88,7 +88,7 @@ static void upkit_capture(track_t *t, upkit_ent_t *e)
 
 static uint32_t upkit_crc(const upkit_ent_t *e)
 {
-    return st_crc32(e->global, sizeof e->global + sizeof e->pad);
+    return fnv(2166136261u, e->global, sizeof e->global + sizeof e->pad);
 }
 static void upkit_stamp(up_rec_t *r, const upkit_ent_t *e)
 {
