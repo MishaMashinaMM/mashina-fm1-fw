@@ -5,7 +5,7 @@
  * Values intentionally include modulation matrix and common processing.
  * This const table lives in firmware flash and does not allocate runtime RAM.
  */
-#define ANALOG_FACTORY_IMPORTED 18u
+#define ANALOG_FACTORY_IMPORTED 20u
 _Static_assert(P_E0 == 115, "Factory bank parameter layout changed; re-map the JSON export before building");
 static const int8_t ANALOG_IMPORT_COMMON[ANALOG_FACTORY_IMPORTED][P_E0] = {
     /* 1. THALES */
@@ -203,6 +203,28 @@ static const int8_t ANALOG_IMPORT_COMMON[ANALOG_FACTORY_IMPORTED][P_E0] = {
            1,   14,   16,   -3,    1,   19,  -64,    0,    0,    0,    0,    0,    0,    0,    0,  127,
            0,  127,    0,    0,  127,    0,  127,    0,    0,  127,    0,  127,    0,    0,  127,    0,
          127,    0,    0,  127,  127,  127,  127,  127,  127,  127,  127,    0,    0,   16,    2,    0,
+           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+           0,  127,    0
+    },
+    /* 19. ANALOG 01 */
+    {
+         100,   78,    0,  127,  108,   23,    0,   20,    1,   85,    0,  127,    0,   -3,    0,    2,
+          32,    0,    2,    1,   64,    0,  127,    0,    0,    0,    0,    0,    0,   16,    2,    0,
+          64,    0,    6,    0,   89,    2,   41,    0,    0,    1,    0,    0,   30,    0,    2,    1,
+           1,    0,   12,   -1,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,  127,
+           0,  127,    0,    0,  127,    0,  127,    0,    0,   63,    0,  127,    0,    0,  127,    0,
+         127,    0,    0,  127,  127,  127,  127,  127,  127,  127,  127,    2,   63,    1,    9,    0,
+           0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+           0,  127,    0
+    },
+    /* 20. ANALOG 02 */
+    {
+         100,   78,    0,  127,  108,   23,    0,   20,    1,   85,    0,  127,    0,   -3,    0,    2,
+          32,    0,    2,    1,   64,    0,  127,    0,    0,    0,    0,    0,    0,   16,    2,    0,
+          64,    0,    6,    0,   89,    2,   41,    0,    0,    1,    0,    0,   30,    0,    2,    1,
+           1,    2,   12,   -1,    9,   19,  -64,    0,    0,    0,    0,    0,    0,    0,    0,  127,
+           0,  127,    0,    0,  127,    0,  127,    0,    0,   63,    0,  127,    0,    0,  127,    0,
+         127,    0,    0,  127,  127,  127,  127,  127,  127,  127,  127,    2,   63,    1,    9,    0,
            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
            0,  127,    0
     },
