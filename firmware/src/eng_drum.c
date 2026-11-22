@@ -187,7 +187,11 @@ static const char *drum_oct_name(int32_t o)              /* what OCT does on a D
 static const uint8_t DRUM_LANE_NOTE[NLANE] = {36, 38, 39, 42, 46, 45, 37, 56};
 /* Stage 22: direct note assignments are independent of the legacy GM map.
  * The four additional DRUM-X sounds are S2=40, B2=41, O2=43, T2=44. */
-static const uint8_t DRUM_NOTE12[DV_NLANE12] = {36, 38, 39, 42, 46, 45, 37, 56, 41, 40, 43, 44};
+/* Live-only 12-pad default map: BELL completes C2..B2 at MIDI 47.
+ * Keep DRUM_LANE_NOTE and DRUM_GM unchanged: those are the legacy internal
+ * sound/step notes (BELL is internally triggered with 56). Custom mappings
+ * stored in existing projects are never rewritten. */
+static const uint8_t DRUM_NOTE12[DV_NLANE12] = {36, 38, 39, 42, 46, 45, 37, 47, 41, 40, 43, 44};
 static uint8_t drum_midi_note[NPART][DV_NLANE12];
 static uint8_t drum_midi_custom[NPART];
 /* Stage 22B: fixed signed pan for each pad, independent on every track.
