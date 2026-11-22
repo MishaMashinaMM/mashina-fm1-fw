@@ -11,6 +11,7 @@ python3 tests/check_phase_factory_import.py
 python3 tests/check_wheel_factory_import.py
 python3 tests/check_noise_factory_import.py
 python3 tests/check_animal_retired.py
+python3 tests/check_animal_art_retired.py
 
 out=build/host/live_drums
 mkdir -p "$out"
