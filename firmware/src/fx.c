@@ -11,6 +11,36 @@
 static eq_dsp_t global_eq_state;
 static uint16_t global_eq_tail;         /* allow the low shelf's state to decay after the last note */
 
+/* DRUM-AC's permanent, non-editable tonal contour: identical filters and
+ * coefficients to GLO EQ at LOW +10 / MID -7 / HIGH +4.
+ *
+ * One mono EQ per DRUM-AC track, AFTER its twelve voices are summed and
+ * BEFORE track distortion, level/pan, FX sends and the optional global EQ.
+ * Do not EQ per voice: that would multiply DSP cost and change pad behavior.
+ * Keep each track's state separate, including when assigned to core 1.
+ * Only stream 0 is used; the normal EQ helper already handles Q28 precision
+ * of the 50-Hz low shelf. Place history in .pool, away from hot audio RAM. */
+static eq_dsp_t ac_fixed_eq[NPART] __attribute__((section(".pool")));
+static uint8_t ac_fixed_eq_ready[NPART];
+static void ac_fixed_eq_process(track_t *t, int32_t *mono, uint32_t n)
+{
+    uint32_t ti = (uint32_t)(t - trk);
+    if (ti >= NPART) return;
+    if (t->engine != ENGI_DRUMAC) {
+        ac_fixed_eq_ready[ti] = 0u; /* fresh history when switching back */
+        return;
+    }
+    if (!ac_fixed_eq_ready[ti]) {
+        eq_dsp_init(&ac_fixed_eq[ti]);
+        ac_fixed_eq[ti].gain[0] = 10;
+        ac_fixed_eq[ti].gain[1] = -7;
+        ac_fixed_eq[ti].gain[2] = 4;
+        ac_fixed_eq_ready[ti] = 1u;
+    }
+    eq_dsp_process(&ac_fixed_eq[ti], 0u, mono, n);
+}
+
+
 #define CHO_LEN 2048u
 static union {
     int16_t s[DLY_LEN];
@@ -1960,6 +1990,7 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
         pf.mg[(uint32_t)(t - trk) % NTRK] = 32768;
         if (!on) {
             mp_seen[(uint32_t)(t - trk) % NTRK] = 0;
+            ac_fixed_eq_ready[(uint32_t)(t - trk) % NTRK] = 0u;
             return;
         }
     }
@@ -1969,10 +2000,13 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
         t->tail = 16;                                   /* blocks of DIST state to run out after the last voice */
     else if (!uin && (!t->tail || !t->p[P_DIST] || !--t->tail)) {
         mp_seen[(uint32_t)(t - trk) % NTRK] = 0;       /* (silent: the next sound at its LEVEL and PAN) */
+        ac_fixed_eq_ready[(uint32_t)(t - trk) % NTRK] = 0u;
         if (MOD.on)
             mod_end(t);
         return;
     }
+    /* Built-in AC EQ is limited to the drum synthesis, not USB audio input. */
+    ac_fixed_eq_process(t, b, n);
     {
         uint32_t ti = (uint32_t)(t - trk) % NTRK;
         int32_t lvl = LEVEL_Q12[t->p[P_LEVEL] & 127] << 8, pan = t->p[P_PAN] << 8, l0, p0, lq, dl, gl, gr, dgl, dgr;
