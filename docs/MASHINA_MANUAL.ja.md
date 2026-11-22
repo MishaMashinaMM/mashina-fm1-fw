@@ -141,6 +141,11 @@ WAVE/MIX はオシレーターの混合、CUT/RES はフィルター、GRIND/MET
 
 合計 **8 ボイスを全トラックとドラム音源で共有**します。BRASS にはさらに **1 トラック最大 4 ボイス**の上限があります。音が途切れる場合は同時のレイヤーや和音数を減らしてください。
 
+### v0.11 のファクトリー音色
+
+新しいファクトリーバンクは ANALOG 20 音色、INDUSTRIAL 12 音色、BRASS 5 音色、ATMOS 8 音色に加え、PHASE、WHEEL、NOISE、FM6、VOICE、LOFI も更新しました。多くのプリセット名は、歴史上のさまざまな時代の哲学者や思想家に由来します。DRUM-X: BUTTLER-1…9、DRUM-LAB: ZIZEK-1…3、DRUM-AC: KRIPKE-1…3、DRUM-IND: BADIOU-1…3。
+
+
 ## 4. 音源とドラム
 
 トラックと音源を選び、**EDIT** を開きます。SELECT で EDIT ページを移動し、K1〜K4 で調整します。
@@ -163,11 +168,11 @@ WAVE/MIX はオシレーターの混合、CUT/RES はフィルター、GRIND/MET
 
 ### MASHINA の追加メロディー音源
 
-**ATMOS — 動き続けるパッドと質感。** **SOFT CLOUD**、**BREATHING**、**GLASS TIDE** から始めてください。**WAVE** は基本波形、**MORPH/DENSITY/DRIFT** はレイヤーの変化、**CUT/RES** はフィルター、**TEXTURE/SHIMMER** は音色の輝きを設定します。**BREATH** は音量の揺れ、**MOTION** はその速さ、**FLOW** は時間的な音色変化、**SPREAD** はオシレーター間の広がりを調整します。重ねた和音では控えめな動きが使いやすくなります。
+**ATMOS — 動き続けるパッドと質感。** **KANT**、**BURKE**、**JEFFERSON** から始めてください。**WAVE** は基本波形、**MORPH/DENSITY/DRIFT** はレイヤーの変化、**CUT/RES** はフィルター、**TEXTURE/SHIMMER** は音色の輝きを設定します。**BREATH** は音量の揺れ、**MOTION** はその速さ、**FLOW** は時間的な音色変化、**SPREAD** はオシレーター間の広がりを調整します。重ねた和音では控えめな動きが使いやすくなります。
 
-**BRASS — 電子的なサックスやトランペット。** 本物の管楽器の完全な再現ではなく、個性的な合成音です。**TYPE 0** はサックス寄り、**127** はトランペット寄りで、中間は混合音色です。**PRESS** は勢い、**BUZZ** はざらつき、**BREATH** は息成分、**BODY/FORMNT** は共鳴、**GROWL** は唸り、**ATTACK** は立ち上がりを調整します。3 ページ目の **FAT/GRIND/METAL/CRUSH** で極端な合成管楽器音も作れます。**TENOR SAX**、**SAX GROWL**、**BRASS LEAD** を試してください。
+**BRASS — 電子的なサックスやトランペット。** 本物の管楽器の完全な再現ではなく、個性的な合成音です。**TYPE 0** はサックス寄り、**127** はトランペット寄りで、中間は混合音色です。**PRESS** は勢い、**BUZZ** はざらつき、**BREATH** は息成分、**BODY/FORMNT** は共鳴、**GROWL** は唸り、**ATTACK** は立ち上がりを調整します。3 ページ目の **FAT/GRIND/METAL/CRUSH** で極端な合成管楽器音も作れます。**HUME**、**DIDEROT**、**HOLBACH** を試してください。
 
-**INDUSTRIAL — 強いベースとリード。** DRUM-IND と違い、演奏した音程に従うメロディー音源です。**WAVE** は基本波形、**FAT** は厚み、**GRIND/METAL/CRUSH/FEED** は歪み、**CUT/RES** はフィルターを調整します。3 ページ目の **WAVE2/MIX/SUB/MODE** で第二オシレーターと低音を追加します。**IRON BASS**、**SUB MACHINE**、**STEEL LEAD**、**GEAR LEAD** から始めてください。
+**INDUSTRIAL — 強いベースとリード。** DRUM-IND と違い、演奏した音程に従うメロディー音源です。**WAVE** は基本波形、**FAT** は厚み、**GRIND/METAL/CRUSH/FEED** は歪み、**CUT/RES** はフィルターを調整します。3 ページ目の **WAVE2/MIX/SUB/MODE** で第二オシレーターと低音を追加します。**PASCAL**、**NEWTON**、**CAVENDISH**、**LOCKE** から始めてください。
 
 **DRUM-X** は独立した 12 音: BD 36、SD 38、CP 39、CH 42、OH 46、TM 45、RM 37、BL 56、B2 41、S2 40、O2 43、T2 44。**DRUM-LAB** は初期設定で MIDI **36–47** の 12 パッドを個別編集できます。
 
@@ -203,7 +208,7 @@ DRUM-X トラックの EDIT では、**LEVELS 1〜3** が 12 パッドすべて�
 
 ### DRUM-AC：アコースティック系 12 パッド音源
 
-**DRUM-AC** は DRUM-X／DRUM-LAB とは別の第 3 ドラム音源です。**サンプルは使わず**、ノイズを利用した打撃、タムの膜振動、減衰する金属共鳴帯域で音を合成します。プリセットは **ACOUSTIC**、**DRY KIT**、**BIG ROOM**。既存の二つのドラム音源は変更しません。
+**DRUM-AC** は DRUM-X／DRUM-LAB とは別の第 3 ドラム音源です。**サンプルは使わず**、ノイズを利用した打撃、タムの膜振動、減衰する金属共鳴帯域で音を合成します。プリセットは **KRIPKE-1**、**KRIPKE-2**、**KRIPKE-3**。既存の二つのドラム音源は変更しません。
 
 **12 音の配列はすべてのオクターブで繰り返されます。** 下の MIDI 番号は **36〜47** のオクターブでの例です。どのオクターブでも同じ音名なら同じパッドが鳴ります。
 
@@ -251,7 +256,7 @@ DRUM-X トラックの EDIT では、**LEVELS 1〜3** が 12 パッドすべて�
 
 **EDIT ページ：** 最初の 2 ページはキット全体の **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** を独立制御します（各 **0〜200%**、**100% が中立**）。ATTACK は打撃の最初の約 80 ms、BRIGHT はリミット処理後の高域バランスを大きく変えます。**SOUND 1–3** では **K1** がパッド選択、**K2〜K4** が 8 つの個別設定（**0〜127**）を操作します：**GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**。**LEVELS 1–3** は 12 パッドの音量を個別に変更します（**0〜127**）。パラメーターの働きは音ごとに異なる場合があります。
 
-プリセットは **STEEL YARD**、**PRESSURE**、**SCRAPHEAP**。個別音色、レベル、キット全体の設定をプロジェクトへ保存します。音源間で共有する発音数は合計 **8 ボイス**です。DRUM-IND は固定ノート配列なので、DRUM-X／DRUM-LAB の SEQ ノート再割当は適用されません。
+プリセットは **BADIOU-1**、**BADIOU-2**、**BADIOU-3**。個別音色、レベル、キット全体の設定をプロジェクトへ保存します。音源間で共有する発音数は合計 **8 ボイス**です。DRUM-IND は固定ノート配列なので、DRUM-X／DRUM-LAB の SEQ ノート再割当は適用されません。
 
 **互換性：** ファームウェアを変更する前にバックアップしてください。古いバージョンでは DRUM-IND を使ったプロジェクトを読み込めない場合があります。
 
@@ -390,4 +395,4 @@ EQ は **エフェクト前に置かれた全体共通の 1 つの EQ** で、�
 
 ---
 
-MASHINA v0.10 · M-VAVE FM1
+MASHINA v0.11 · M-VAVE FM1
