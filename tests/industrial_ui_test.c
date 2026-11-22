@@ -18,9 +18,11 @@ int main(void)
                  edit3 < NPAGES && page_visible(edit3));
     bad += check("DRUM-LAB LEVELS 3 hidden on INDUSTRIAL",
                  levels3 < NPAGES && !page_visible(levels3));
-    bad += check("factory IRON BASS extra values recalled",
-                 TSEL->p[P_LN8] == 0 && TSEL->p[P_LN9] == 21 &&
-                 TSEL->p[P_LN10] == 32 && TSEL->p[P_LN11] == 0);
+    bad += check("factory PASCAL extra values recalled",
+                 TSEL->p[P_LN8] == INDUSTRIAL_EXTRA_PRESETS[0][0] &&
+                 TSEL->p[P_LN9] == INDUSTRIAL_EXTRA_PRESETS[0][1] &&
+                 TSEL->p[P_LN10] == INDUSTRIAL_EXTRA_PRESETS[0][2] &&
+                 TSEL->p[P_LN11] == INDUSTRIAL_EXTRA_PRESETS[0][3]);
     {
         uint8_t entries[32];
         uint32_t n = nav_list(SEC_EDIT, entries), found = 0, k;
@@ -37,9 +39,11 @@ int main(void)
     bad += check("EDIT 3 second knob edits MIX",
                  TSEL->p[P_LN9] > before);
     apply_preset(1u);
-    bad += check("STEEL LEAD resets extra knobs to its factory values",
-                 TSEL->p[P_LN8] == 0 && TSEL->p[P_LN9] == 17 &&
-                 TSEL->p[P_LN10] == 32 && TSEL->p[P_LN11] == 0);
+    bad += check("CAVENDISH resets extra knobs to its factory values",
+                 TSEL->p[P_LN8] == INDUSTRIAL_EXTRA_PRESETS[1][0] &&
+                 TSEL->p[P_LN9] == INDUSTRIAL_EXTRA_PRESETS[1][1] &&
+                 TSEL->p[P_LN10] == INDUSTRIAL_EXTRA_PRESETS[1][2] &&
+                 TSEL->p[P_LN11] == INDUSTRIAL_EXTRA_PRESETS[1][3]);
     set_engine_of(TSEL, ENGI_DRUMLAB);
     TSEL->engine = TSEL->eng_req;
     bad += check("leaving INDUSTRIAL restores drum lane default levels",
