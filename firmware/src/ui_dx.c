@@ -10,6 +10,7 @@
  * The values are the side's; the MORPH plays between the two (EDIT 2 MRPH). The panel shows the kit's specimen
  * with the sound's organ singled out (ui_plates.c graph_p_drum: the iris, its node lit). */
 static uint8_t dx_ui_seen = 0xFFu;                   /* the last key note followed */
+static uint32_t dx_ui_event_seen = UINT32_MAX;      /* every tap, including the same note again */
 static const char *const DX_LANE_ABBR[DV_NLANE12] = {"BD", "SD", "CP", "CH", "OH", "TM", "RS", "CB", "B2", "S2", "O2", "T2"};
 
 /* Keep the original serialized eight-lane arrays and Stage 9B1's separate instances. */
@@ -35,13 +36,14 @@ static uint32_t dx_mapped_lane(const track_t *t, uint32_t note)
 /* A struck key or incoming MIDI note follows the actual drum pad assignment. */
 static void dx_follow(void)
 {
-    if (last_note != dx_ui_seen) {
+    if (last_note != dx_ui_seen || last_note_serial != dx_ui_event_seen) {
         if (dx_ui_seen != 0xFFu) {
             uint32_t lane = dx_mapped_lane(TSEL, last_note);
             if (lane < DV_NLANE12)
                 dx_ui_lane = (uint8_t)lane;
         }
         dx_ui_seen = last_note;
+        dx_ui_event_seen = last_note_serial;
     }
 }
 
