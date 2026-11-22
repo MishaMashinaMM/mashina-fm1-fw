@@ -1772,6 +1772,8 @@ static uint16_t sec_col(uint32_t s)
                                                          * violet orange yellow; was 60 115 175 230) */
     return heat_col(HJ[s & 3u]);
 }
+/* Technical FX transfer and generic fallback plots are still active. */
+#include "ui_tech.c"
 #include "ui_lzsave.c"                              /* (0.8.5) SAVE's lens: its levels' panels */
 #include "ui_lzfx.c"                                /* (0.8.5) FX's lens: its levels' panels */
 /* Retired: legacy HOME/EDIT/ENV lens panels; MASHINA uses fixed value grids. */
