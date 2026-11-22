@@ -31,7 +31,7 @@
  * commit record of the same kind (type OBJ_FM6VB, not an st_load object); a new bank is first staged in the
  * autosave's older copy (fm6_vbank.c). */
 enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_FM6BANK = OBJ_UPRESET0 + 2, OBJ_UPFM6,
-       OBJ_AUTOSAVE, OBJ_SONGIDX, OBJ_SONG1, OBJ_COUNT = OBJ_SONG1 + 7 * 4 };
+       OBJ_AUTOSAVE, OBJ_SONGIDX, OBJ_SONG1, OBJ_UPKIT = OBJ_SONG1 + 7 * 4, OBJ_COUNT = OBJ_UPKIT + 1 };
 /* JIANT's songs (song_chain.c): song 1's four sections are the four project slots (OBJ_PROJECT0..3, 0x97000..), songs
  * 2..8 four objects each (OBJ_SONG1 + (song - 1) * 4 + section) at 0xA0000..0xD7FFF, the song index (the songs' rows,
  * the current song) at 0xD8000 / 0xD9000; 0xDA000..0xDBFFF free */
@@ -76,6 +76,8 @@ static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset of copy 
         return copy ? 0xFE000u : 0x9F000u;
     if (obj == OBJ_AUTOSAVE)
         return 0xE5000u + copy * ST_SECTOR;
+    if (obj == OBJ_UPKIT)             /* separate saved DRUM-AC/IND user-kit snapshots: free 0xDA/B pair */
+        return 0xDA000u + copy * ST_SECTOR;
     if (obj == OBJ_SONGIDX)
         return 0xD8000u + copy * ST_SECTOR;
     if (obj >= OBJ_SONG1)
