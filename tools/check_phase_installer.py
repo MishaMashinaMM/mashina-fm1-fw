@@ -29,7 +29,7 @@ assert "</body>" in html, "Cannot insert preview banner"
 html = html.replace("</body>", warning + "\n</body>", 1)
 installer.write_text(html, encoding="utf-8")
 # The generated second installer entry must not be a mislabeled production page.
-(site / "webapp" / "installer-orange-v010" / "index.html").write_text(html, encoding="utf-8")
+(site / "webapp" / "installer-orange-v011" / "index.html").write_text(html, encoding="utf-8")
 (site / "README-PHASE-TEST.txt").write_text(
     "MASHINA v0.10-preview | PHASE 10-preset FM1 test firmware\n"
     "Source: factory-presets-phase-10. This is NOT the official v0.10 installer.\n\n"
