@@ -1980,7 +1980,7 @@ static int dice_kind(uint32_t c) { return c == CF_DICE_SOUND || c == CF_DICE_SEQ
 static void macro_dice(uint32_t mode);
 static int16_t sl_root = -1, sl_scale, sl_quant;      /* (scale_link: the song's scale) */
 #include "song_dice.c"                             /* Legacy CPU stress test and helper functions. */
-#if FELUCCA_NO_SEQUENCER
+#if FELUCCA_NO_SEQUENCER && !defined(MASHINA_HOST_TEST)
 /* MASHINA has no song generator or sequencer. Its old GEN screen is
  * unreachable, but some historical UI paths still declare these hooks.
  * Keep harmless stubs rather than linking the large song/genre generators.
@@ -2716,7 +2716,7 @@ static void ui_input_frame(void)
                     if (song.playing) transport_req = 2;
                     system_init();
                     hints_reset();                      /* (0.9.5) the teaching hints start over */
-#if !FELUCCA_NO_SEQUENCER
+#if !FELUCCA_NO_SEQUENCER || defined(MASHINA_HOST_TEST)
                     gp.genre = GEN_EXPLORE;             /* (0.8.6) GEN's GENRE as at power-on: EXPLORE */
 #endif
                     ui_message("NEW PROJECT");
