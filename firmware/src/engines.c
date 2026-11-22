@@ -18,14 +18,13 @@
 #include "eng_drumind.c"        /* DRUM-IND: non-tonal noise-driven factory kit */
 #include "eng_noise.c"
 #include "eng_fm6.c"            /* FM6: 6-operator FM, msfa ported (fm6_core.c, Apache-2.0) */
-#include "eng_animal.c"         /* (JIANT 0.8.3) ANIMAL: animal calls (CMOS PULSE WHSTL WING GLOTT) */
 #include "fm4_convert.c"        /* DIGITAL's tables, and its sounds -> FM6 */
 #if FELUCCA_FM4
 #include "eng_digital.c"        /* DIGITAL: four-operator FM (retired; FELUCCA_FM4=1 builds it) */
 #endif
 
 /* PHYS (engine 9): retired in TONIC (its 50 KB of voice state went to the song and the drums); SAMPLE (4), GRAIN (8) and
- * SLICE (13): retired in JIANT (core.h eng_gone). The numbers stay reserved, as DIGITAL's: the stores name engines by
+ * SLICE (13): retired in JIANT; ANIMAL (14): retired in MASHINA (core.h eng_gone). The numbers stay reserved, as DIGITAL's: the stores name engines by
  * index and the table is append-only. ENG_GONE below has no presets and is never offered (eng_ok); a sound of theirs
  * that arrives anyway -- a project, a user preset, the editor's PRESET / SET G_ENGSEL, a backup -- plays as ANALOG's
  * first preset (eng_live; project.c proj_phys_gone, ui.c set_engine_of, ui_input.c). A PHYS DRUM of before 1.0 and a
@@ -69,7 +68,7 @@ static const engine_t *const ENGINES[NENGINES] = {
     &ENG_NOISE,                  /* 11 */
     &ENG_FM6,                    /* 12 (ENGI_FM6) */
     &ENG_GONE,                   /* 13: reserved (SLICE, retired in JIANT) */
-    &ENG_ANIMAL,                 /* 14 (ENGI_ANIMAL, JIANT 0.8.3) */
+    &ENG_GONE,                   /* 14: reserved (ANIMAL retired; old patches become ANALOG) */
     &ENG_DRUMLAB,                /* 15: append-only; does not renumber saved engines */
     &ENG_INDUSTRIAL,             /* 16: playable industrial bass/lead synth */
     &ENG_BRASS,                  /* 17: reed/brass lead synth, append-only */
@@ -91,7 +90,6 @@ static const uint8_t ENGINE_ORDER[NENG_SHOWN] = {
     ENGI_ANALOG,                 /* global factory positions 1..18: imported ANALOG sounds */
     ENGI_DRUM,                   /* DRUM (DRUM-X) */
     ENGI_VOICE,                  /* VOICE */
-    ENGI_ANIMAL,                 /* ANIMAL */
     ENGI_LOFI,                   /* LOFI */
     ENGI_FM6,                    /* FM6 */
     ENGI_PHASE, ENGI_WHEEL,      /* PHASE WHEEL */
@@ -173,14 +171,14 @@ static const struct {
 #define NPATTERNS (sizeof PATTERNS / sizeof PATTERNS[0])
 
 /* (0.9.9) the parts at power-on, INIT SYSTEM and NEW PROJECT (engine, preset, PATTERNS[n - 1] in the sequencer,
- * 0 = empty: all are), in the display order's first six: T1 DRUM-X's kit, T2 VOICE singing words, T3 ANIMAL's bird,
+ * 0 = empty: all are), in the display order's first six: T1 DRUM-X's kit, T2 VOICE singing words, T3 NOISE,
  * T4 LOFI's bytebeat organism, T5 ANALOG's bass, T6 FM6's electric piano. Each its preset's sound, dry (ui.c
  * power_sound_of: no DIST CHOR DLY REV send, the effects are the player's to add) */
 #define TRK_PR_VOICE 9u          /* SINGER EN (eng_formant.c FORMANT_PRESETS) */
 #define TRK_PR_ANALOG 14u        /* FAT BASS (eng_analog.c) */
-static const uint8_t TRK_DEF[NPART][3] = {{ENGI_DRUM, 0, 0}, {ENGI_VOICE, TRK_PR_VOICE, 0}, {ENGI_ANIMAL, 0, 0},
+static const uint8_t TRK_DEF[NPART][3] = {{ENGI_DRUM, 0, 0}, {ENGI_VOICE, TRK_PR_VOICE, 0}, {ENGI_NOISE, 0, 0},
                                           {ENGI_LOFI, 0, 0}, {ENGI_ANALOG, TRK_PR_ANALOG, 0}, {ENGI_FM6, 0, 0}};
-/* DRUM-X (DRUM's first, the factory kit), SINGER EN, CMOS BIRD, BYTEBEAT, FAT BASS, TINE EP */
+/* DRUM-X (first kit), SINGER EN, NOISE first sound, BYTEBEAT, FAT BASS, TINE EP */
 /* the parts at power-on through 0.9.8 (the same columns): what an old project's tracks it had no room for load as
  * (project.c proj_new_tracks, PROJ_DEF_SOUND: format 1's tracks 2..4, a 4-track format's T5 / T6): never change it.
  * ANALOG ACID, FM6 PAD (was DIGITAL PAD), LOFI PULSE LD (3: BYTE first), DRUM KIT; (JIANT 0.6) PHASE's first, WHEEL's first */
