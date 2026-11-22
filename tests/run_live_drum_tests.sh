@@ -6,6 +6,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 python3 tests/check_analog_factory_import.py
+python3 tests/check_rest_factory_import.py
 python3 tests/check_fm6_factory_import.py
 python3 tests/check_phase_factory_import.py
 python3 tests/check_wheel_factory_import.py
