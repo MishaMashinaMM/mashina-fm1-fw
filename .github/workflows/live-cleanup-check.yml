@@ -35,6 +35,8 @@ jobs:
           python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
       - name: Dedicated 11 live-drum regression tests
         run: bash tests/run_live_drum_tests.sh
+      - name: Full backup archive compatibility (including independent drum kits)
+        run: node web/test_backup.mjs
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: 6.0.11
