@@ -455,8 +455,15 @@ static int up_load(uint32_t k)
         t->preset = 0;
         fm1_irq_on();
         upf_track_load(t, k);                           /* FM6: the preset's own patch (up_fm6.c) */
-        if (upkit_engine(r->engine) && !upkit_track_load(t, k))
-            ui_message("KIT DATA MISSING"); /* legacy preset: never copy the last loaded kit */
+        if (upkit_engine(r->engine)) {
+            /* The audio ISR must not render a half-copied 12-pad kit. */
+            int restored;
+            fm1_irq_off();
+            restored = upkit_track_load(t, k);
+            fm1_irq_on();
+            if (!restored)
+                ui_message("KIT DATA MISSING"); /* old records have no saved pad snapshot */
+        }
         if (eng_gone(r->engine))                        /* a retired engine (core.h): ANALOG's first preset */
             set_engine_of(t, ENGI_PHYS_TO);
     }
