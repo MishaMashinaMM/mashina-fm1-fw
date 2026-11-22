@@ -126,6 +126,11 @@ static void up_bank_check(uint32_t b, int len)
         if (!up_valid(r))
             continue;
         up_migrate(r);
+        /* New DRUM-X user kits keep extra patch bytes in the obsolete pattern
+         * fields. Do not normalize those bytes as sequencer events on boot. */
+        if (r->engine == ENGI_DRUM && r->ver >= 4u && r->np == P_COUNT &&
+            r->packed[P_COUNT + 8u] == 0xDAu)
+            continue;
         for (k = 0; k < 16u; k++)
             if (up_grid(r))
                 r->flags[k] &= r->note[k];          /* a drum grid: accents only on its hits */
@@ -461,7 +466,13 @@ static int up_load(uint32_t k)
 }
 
 /* the patterns of the user presets (SEQ > PATTERNS lists them after the factory ones, ui.c pat_count) */
-static int up_has_pat(uint32_t k) { return up_used(k) && !up_pat_empty(up_rec(k)); }
+static int up_has_pat(uint32_t k)
+{
+    if (!up_used(k)) return 0;
+    const up_rec_t *r = up_rec(k);
+    return !(r->engine == ENGI_DRUM && r->ver >= 4u && r->np == P_COUNT &&
+             r->packed[P_COUNT + 8u] == 0xDAu) && !up_pat_empty(r);
+}
 
 static uint32_t up_pat_count(void)
 {
