@@ -51,7 +51,7 @@ jobs:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
-          set -e
+          set -e -o pipefail
           python3 tools/build.py --release 0.10-preview | tee build-size.log
           python3 - <<'PY'
           from pathlib import Path
