@@ -77,6 +77,14 @@ int main(void)
     dx_follow();
     bad += bell_check("EDIT follows that deterministic shared-note winner",
                       dx_ui_lane == DV_KICK);
+    dx_ui_lane = DV_BELL; /* user manually chose another pad */
+    dx_follow();
+    bad += bell_check("manual LANE selection persists without another tap",
+                      dx_ui_lane == DV_BELL);
+    last_note_serial++; /* simulate a fresh tap of the SAME MIDI note 60 */
+    dx_follow();
+    bad += bell_check("repeated same-note tap reselects the layered first pad",
+                      dx_ui_lane == DV_KICK);
     bad += bell_check("each track has independent mappings",
                       dx_mapped_lane(&trk[1], 47u) == DV_BELL);
     printf("DRUM-X BELL MAP %s (%d failed)\n", bad ? "FAILED" : "PASSED", bad);
