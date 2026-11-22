@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the 18 MASHINA ANALOG factory presets against the accepted JSON export.
+"""Verify the original 18 MASHINA ANALOG factory presets and two appended sounds against the accepted JSON export.
 
 The fingerprint covers each preset's original user-bank slot, name, all common
 sound parameters, eight ANALOG EDIT parameters, envelope, filter envelope and FX.
@@ -18,9 +18,9 @@ expected_names = (
     "SOCRATES", "DEMOCRITUS", "ANTISTENES", "PRODICUS", "ARCHYTAS",
 )
 rows = re.findall(r"/\* (\d+)\. ([A-Z]+) \*/\s*\{([^{}]+)\}", overlay)
-assert len(rows) == 18, f"Expected 18 imported common arrays, got {len(rows)}"
+assert len(rows) == 20, f"Expected 20 imported common arrays, got {len(rows)}"
 common = []
-for i, (num, name, values) in enumerate(rows):
+for i, (num, name, values) in enumerate(rows[:18]):
     assert int(num) == i + 1 and name == expected_names[i]
     p = [int(s) for s in re.findall(r"-?\d+", values)]
     assert len(p) == 115, (name, len(p))
@@ -33,12 +33,12 @@ items = re.findall(
     r'(-?\d+), TAG\(NONE\), FX\(([^()]*)\), PAT\(0\)\},',
     factory, flags=re.M,
 )
-assert len(items) == 18, f"Expected 18 replacement factory entries, got {len(items)}"
+assert len(items) == 20, f"Expected 20 replacement factory entries, got {len(items)}"
 all_factory_names = [line.strip().split('"')[1] for line in factory.splitlines() if line.strip().startswith('{"')]
-assert len(all_factory_names) == 18, f"Expected exactly 18 ANALOG factory presets, got {len(all_factory_names)}"
-assert tuple(all_factory_names) == expected_names, "Legacy ANALOG presets must not remain"
+assert len(all_factory_names) == 20, f"Expected exactly 20 ANALOG factory presets, got {len(all_factory_names)}"
+assert tuple(all_factory_names) == expected_names + ("ANALOG 01", "ANALOG 02"), "ANALOG append order changed"
 combined = []
-for i, (name, e, env, fenv, fx) in enumerate(items):
+for i, (name, e, env, fenv, fx) in enumerate(items[:18]):
     assert name == expected_names[i]
     eng = [int(v.strip()) for v in e.split(",")]
     envelope = [int(v.strip()) for v in env.split(",")]
@@ -57,4 +57,4 @@ assert f"{h:08x}" == "9be859a5", f"Export fidelity fingerprint changed: {h:08x}"
 assert "if (trk_eng(t) == ENGI_ANALOG && pi < ANALOG_FACTORY_IMPORTED)" in Path("firmware/src/ui.c").read_text()
 order = Path("firmware/src/engines.c").read_text(encoding="utf-8").split("ENGINE_ORDER[NENG_SHOWN] = {", 1)[1].split("};", 1)[0]
 assert next(line.strip().split(",")[0] for line in order.splitlines() if line.strip().startswith("ENGI_")) == "ENGI_ANALOG", "ANALOG must be first in global PRESETS order"
-print("PASS: exactly 18 ANALOG factory sounds, all imported names and full parameters verified")
+print("PASS: original 18 ANALOG patches preserved exactly; ANALOG 01/02 appended")
