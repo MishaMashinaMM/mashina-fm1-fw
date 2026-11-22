@@ -36,7 +36,7 @@ items = re.findall(
 assert len(items) == 20, f"Expected 20 replacement factory entries, got {len(items)}"
 all_factory_names = [line.strip().split('"')[1] for line in factory.splitlines() if line.strip().startswith('{"')]
 assert len(all_factory_names) == 20, f"Expected exactly 20 ANALOG factory presets, got {len(all_factory_names)}"
-assert tuple(all_factory_names) == expected_names + ("ANALOG 01", "ANALOG 02"), "ANALOG append order changed"
+assert tuple(all_factory_names) == expected_names + ("CICERO", "PLUTARCH"), "ANALOG append order changed"
 combined = []
 for i, (name, e, env, fenv, fx) in enumerate(items[:18]):
     assert name == expected_names[i]
@@ -57,4 +57,4 @@ assert f"{h:08x}" == "9be859a5", f"Export fidelity fingerprint changed: {h:08x}"
 assert "if (trk_eng(t) == ENGI_ANALOG && pi < ANALOG_FACTORY_IMPORTED)" in Path("firmware/src/ui.c").read_text()
 order = Path("firmware/src/engines.c").read_text(encoding="utf-8").split("ENGINE_ORDER[NENG_SHOWN] = {", 1)[1].split("};", 1)[0]
 assert next(line.strip().split(",")[0] for line in order.splitlines() if line.strip().startswith("ENGI_")) == "ENGI_ANALOG", "ANALOG must be first in global PRESETS order"
-print("PASS: original 18 ANALOG patches preserved exactly; ANALOG 01/02 appended")
+print("PASS: original 18 ANALOG patches preserved exactly; CICERO/PLUTARCH appended")
