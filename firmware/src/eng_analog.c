@@ -262,8 +262,8 @@ static const preset_t ANALOG_PRESETS[] = {
     {"PRODICUS", {7, 0, 76, 0, 39, 13, 127, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(127, 0, 13, 0), PAT(0)},
     {"ARCHYTAS", {0, 0, 38, 38, 33, 101, 0, -12}, {60, 90, 60, 80}, 50, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
     /* Additional ANALOG patches appended without changing existing indexes. */
-    {"ANALOG 01", {3, 20, 64, 0, 127, 0, 0, 0}, {78, 0, 127, 108}, 23, TAG(NONE), FX(0, 6, 0, 89), PAT(0)},
-    {"ANALOG 02", {3, 30, 64, 0, 127, 0, 0, 24}, {78, 0, 127, 108}, 23, TAG(NONE), FX(0, 6, 0, 89), PAT(0)},
+    {"CICERO", {3, 20, 64, 0, 127, 0, 0, 0}, {78, 0, 127, 108}, 23, TAG(NONE), FX(0, 6, 0, 89), PAT(0)},
+    {"PLUTARCH", {3, 30, 64, 0, 127, 0, 0, 24}, {78, 0, 127, 108}, 23, TAG(NONE), FX(0, 6, 0, 89), PAT(0)},
 
 };
 
