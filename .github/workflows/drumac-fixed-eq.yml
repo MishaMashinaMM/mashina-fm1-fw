@@ -1,4 +1,4 @@
-name: DRUM-AC fixed tonal EQ branch validation
+name: DRUM-AC lightweight tonal filter validation
 on:
   push:
     branches:
@@ -14,7 +14,7 @@ permissions:
   contents: read
 jobs:
   host:
-    name: DRUM-AC EQ and live engine regressions
+    name: DRUM-AC lightweight filter and live engine regressions
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -84,21 +84,21 @@ jobs:
           if anchor not in html:
               raise SystemExit("Cannot safely label device-test installer: button not found")
           banner = ('<p style="border:2px solid #ff9900;padding:12px;font-weight:bold">'
-                    'DRUM-AC FIXED EQ — DEVICE TEST ONLY. '
+                    'DRUM-AC LIGHTWEIGHT TONE — DEVICE TEST ONLY. '
                     'Back up your complete MASHINA library before flashing. '
                     'This preview is NOT the public v0.11 release.</p>')
           html = html.replace(anchor, banner + "\\n  " + anchor)
           p.write_text(html, encoding="utf-8")
           PY
           cat > "$OUT/READ-ME-FIRST.txt" <<EOF
-          MASHINA v0.11 - DRUM-AC FIXED EQ TEST
+          MASHINA v0.11 - DRUM-AC LIGHTWEIGHT TONE TEST
           ==========================================
-          Source branch: fix/user-preset-engine-isolation
+          Source branch: drum-acoustic-bass-eq
           Commit: $GITHUB_SHA
           This is a device-test candidate, NOT the public MASHINA installer.
           Back up ALL projects, presets and settings before using this build.
           The firmware splash will still read v0.11.
-          Listen to DRUM-AC kick, snare, toms and cymbals; compare to the existing v0.11 sound.
+          Test DRUM-AC tone with GLO EQ flat. Compare to main v0.11 with GLO EQ LOW +10 MID -7 HIGH +3. Monitor CPU.
           This build is deliberately NOT published to GitHub Pages.
           EOF
           (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
@@ -115,5 +115,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: drumac-eq-firmware-build-log
-          path: user-kit-firmware-build.log
+          path: drumac-eq-firmware-build.log
           if-no-files-found: ignore
