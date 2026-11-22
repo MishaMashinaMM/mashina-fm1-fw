@@ -85,7 +85,8 @@ def preset(name):
                  [ord(c) for c in "0123456789.-+"], 0.0, PHASES_L),
                 ("V", v + "@700", 21, (32, 32),
                  [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L),
-                ("Q", v + "@750", 17, (32, 126), [], 0.0, PHASES_L),
+                ("Q", v + "@750", 17, (32, 32),
+                 [ord(c) for c in L_CHARS[1:]], 0.0, PHASES_L),
                 ("R", v + "@750", 16, (32, 126), [], 0.0, PHASES_L)]
     if name == "inter-tight":
         v = str(FONTS.parent / "assets" / "fonts" / "InterTight[wght].ttf")   # SIL OFL 1.1, Google Fonts
@@ -295,6 +296,9 @@ def main():
     if not faces:
         ap.error("--preset or --face is required")
     # MASHINA uses the 115%-stretched Q face on SEQ/PLAY drum pad rows.
+    # Q has the same uppercase/digit/sign coverage as L/V; each glyph's
+    # raster and horizontal advance are unchanged. Lowercase falls back
+    # to the uppercase via gfx.c fold(), as for the other sparse faces.
     # Do not change its metrics or the font-fit fallbacks on those pages.
     # R (110%-stretched) has no current firmware references.
     if a.preset == "oxanium" and not a.face and not a.include_legacy_stretched:
