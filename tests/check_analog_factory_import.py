@@ -17,7 +17,7 @@ expected_names = (
     "PROTAGORAS", "GORGIAS", "ANAXAGORAS", "LEUCIPPUS",
     "SOCRATES", "DEMOCRITUS", "ANTISTENES", "PRODICUS", "ARCHYTAS",
 )
-rows = re.findall(r"/\* (\d+)\. ([A-Z]+) \*/\s*\{([^{}]+)\}", overlay)
+rows = re.findall(r"/\* (\d+)\. ([A-Z0-9 ]+) \*/\s*\{([^{}]+)\}", overlay)
 assert len(rows) == 20, f"Expected 20 imported common arrays, got {len(rows)}"
 common = []
 for i, (num, name, values) in enumerate(rows[:18]):
