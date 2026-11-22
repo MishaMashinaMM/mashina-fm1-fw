@@ -58,7 +58,7 @@ int main(void)
             bad += check("user kit loads from its own slot",
                          !up_load(slot0 + i) && verify_kit(eng, 11u + i * 21u));
         }
-        bad += check("rename preserves kit data", !up_rename(slot0, "RENAMED"));
+        bad += check("rename preserves kit data", up_rename(slot0, "RENAMED") == 3);
         bad += check("renamed kit still restores exact pads and global values",
                      !up_load(slot0) && verify_kit(eng, 11u));
         /* Re-save the third kit: the first two must not change. */
