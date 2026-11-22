@@ -257,6 +257,7 @@ static void up_values(const up_rec_t *r, int16_t *v)   /* mapped and clamped for
 }
 
 #include "up_fm6.c"                            /* the FM6 user presets' patches: the same kind of store */
+#include "up_kit.c"                            /* per-user-slot DRUM-AC/DRUM-IND full kit snapshots */
 #include "fm6_vbank.c"                         /* FM6's voice bank (SLOT B1..B32; JIANT 0.6.11, from Felucca 1.4.1) */
 
 static void up_boot(void)                      /* persist_boot: the banks from flash */
@@ -267,6 +268,7 @@ static void up_boot(void)                      /* persist_boot: the banks from f
         up_bank_check(b, flash_ok ? st_load(OBJ_UPRESET0 + b, &up_bank[b], sizeof up_bank[b]) : -1);
 #endif
     upf_boot();                                  /* (after the banks: it may move the retired FM6 bank's patches) */
+    upkit_boot();                                /* independent drum kits (v0.11 fix branch) */
     fvb_boot();                                  /* FM6's voice bank: a staged one finished, its voices */
 #ifdef FELUCCA_FAVORITES
     for (uint32_t k = 0; k < UP_SLOTS; k++)
@@ -369,7 +371,8 @@ static void up_set_name(up_rec_t *r, uint32_t k, const char *name)
 static int up_store(uint32_t k, const char *name)
 {
     up_rec_t r;
-    uint32_t i;
+    upkit_ent_t kit;
+    uint32_t i, kit_sound = upkit_engine(TSEL->eng_req);
     memset(&r, 0, sizeof r);
     r.used = UP_USED;
     r.ver = UP_VER;
@@ -377,6 +380,7 @@ static int up_store(uint32_t k, const char *name)
     r.np = P_COUNT;
     r.packed[UP_FM_AT] = UP_V04_MARK;
     up_set_name(&r, k, name);
+    if (kit_sound) { upkit_capture(TSEL, &kit); upkit_stamp(&r, &kit); }
     for (i = 0; i < P_COUNT; i++)
         up_set_value(&r, i, motion_base_value(TSEL, i));
     up_pat_from(&r, TSEL->step);
@@ -394,6 +398,10 @@ static int up_store(uint32_t k, const char *name)
     }
     {
         int rc = up_put(k, &r);                         /* the record first, then its FM6 patch (up_fm6.c) */
+        if ((rc == 0 || rc == 3) && kit_sound) {
+            int saved = upkit_store(k, &kit);
+            if (saved == 2) rc = 2;
+        }
         if ((rc == 0 || rc == 3) && r.engine == ENGI_FM6) {
             int u = upf_store(k, (uint32_t)(TSEL - trk));
             if (u == 2)
@@ -447,6 +455,15 @@ static int up_load(uint32_t k)
         t->preset = 0;
         fm1_irq_on();
         upf_track_load(t, k);                           /* FM6: the preset's own patch (up_fm6.c) */
+        if (upkit_engine(r->engine)) {
+            /* The audio ISR must not render a half-copied 12-pad kit. */
+            int restored;
+            fm1_irq_off();
+            restored = upkit_track_load(t, k);
+            fm1_irq_on();
+            if (!restored)
+                ui_message("KIT DATA MISSING"); /* old records have no saved pad snapshot */
+        }
         if (eng_gone(r->engine))                        /* a retired engine (core.h): ANALOG's first preset */
             set_engine_of(t, ENGI_PHYS_TO);
     }

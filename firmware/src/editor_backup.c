@@ -12,7 +12,7 @@
  * storage driver's own buffer: no RAM of their own). Ids 2..5 stay the current song's sections, as before.
  */
 #define ED_BK_SONG 40u                /* (JIANT) the first song section's id */
-static const uint8_t ED_BK_IDS[11 + NSONG * 4u] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+static const uint8_t ED_BK_IDS[12 + NSONG * 4u] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
     40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
 _Static_assert(NSONG == 8u && sizeof(song_index_t) <= sizeof proj_wire_u.raw, "the songs' ids, the index staged");
 static int proj_store_len(uint32_t len);
@@ -22,7 +22,7 @@ static uint32_t ed_bk_song_obj(uint32_t s, uint32_t k) { return s ? OBJ_SONG1 + 
 #define ED_BK_MAX ((uint32_t)sizeof proj_wire_u.raw)
 #define ED_BK_RAW (proj_wire_u.raw)  /* reuse the existing serialized main-loop scratch */
 static uint8_t ed_bk_buf[256];       /* a PUT's chunk, unpacked */
-_Static_assert(sizeof proj_wire_u.raw >= sizeof(upf_t) && sizeof proj_wire_u.raw >= sizeof(fm6_bank_t), "backup staging");
+_Static_assert(sizeof proj_wire_u.raw >= sizeof(upf_t) && sizeof proj_wire_u.raw >= sizeof(upkit_t) && sizeof proj_wire_u.raw >= sizeof(fm6_bank_t), "backup staging");
 static persist_t ed_bk_settings;
 static uint8_t ed_bk_valid, ed_bk_put, ed_bk_id, ed_bk_gen;
 static uint32_t ed_bk_len, ed_bk_crc, ed_bk_pos, ed_bk_ms, ed_bk_usb;
@@ -59,6 +59,10 @@ static const uint8_t *ed_bk_object(uint32_t id, uint32_t *len)
     if (id == 9u) {                                 /* the user presets' FM6 patches */
         if (upf_valid(&upf)) *len = sizeof upf;
         return (const uint8_t *)&upf;
+    }
+    if (id == 11u) {                                /* complete user DRUM-AC/DRUM-IND kit snapshots */
+        if (upkit_valid(&upkit)) *len = sizeof upkit;
+        return (const uint8_t *)&upkit;
     }
     if (id == 10u) {                                /* (JIANT) the song index, the current rows in it */
         song_idx.rows[song_cur] = chain_config;
@@ -165,6 +169,12 @@ static uint32_t ed_bk_commit(void)
         if (ed_bk_len) memcpy(&upf, raw, sizeof upf); else upf_empty();
         sync_reload = 1; ui.force = 1;
         return upf_save() == 2 ? 4u : 0u;           /* (a failed write keeps the restored RAM copy) */
+    } else if (ed_bk_id == 11u) {
+        const upkit_t *u = (const upkit_t *)raw;
+        if (ed_bk_len && (ed_bk_len != sizeof *u || !upkit_valid(u))) return 2;
+        if (ed_bk_len) memcpy(&upkit, raw, sizeof upkit); else upkit_empty();
+        sync_reload = 1; ui.force = 1;
+        return upkit_save() == 2 ? 4u : 0u;
     } else if (ed_bk_id == 10u) {                   /* (JIANT) the song index: rows and scenes; the current song stays */
         const song_index_t *p = (const song_index_t *)raw;
         uint32_t k;
@@ -231,7 +241,7 @@ static int proj_store_len(uint32_t len)
 static uint32_t ed_bk_write(const uint8_t *a, uint32_t n)
 {
     /* the arguments first: a malformed request never stops the transport */
-    if (n < 2u || a[0] > 3u || (a[1] > 10u && (a[1] < ED_BK_SONG || a[1] >= ED_BK_SONG + NSONG * 4u))) return 1;
+    if (n < 2u || a[0] > 3u || (a[1] > 11u && (a[1] < ED_BK_SONG || a[1] >= ED_BK_SONG + NSONG * 4u))) return 1;
     if (a[0] == 0u) {
         if (n != 12u || a[6] > 15u || a[11] > 15u) return 1;
         uint32_t len = ed_bk_r32(a + 2);
@@ -240,7 +250,7 @@ static uint32_t ed_bk_write(const uint8_t *a, uint32_t n)
             (a[1] >= 2u && a[1] <= 5u && len && !proj_store_len(len)) ||
             ((a[1] == 6u || a[1] == 7u) && len && len != sizeof(up_bank_t)) ||
             (a[1] == 8u && len && len != sizeof(fm6_bank_t)) || (a[1] == 9u && len && len != sizeof(upf_t)) ||
-            (a[1] == 10u && len != sizeof(song_index_t)) || (a[1] >= ED_BK_SONG && len && !proj_store_len(len))) return 1;
+            (a[1] == 10u && len != sizeof(song_index_t)) || (a[1] == 11u && len && len != sizeof(upkit_t)) || (a[1] >= ED_BK_SONG && len && !proj_store_len(len))) return 1;
         if (ed_flash_stop()) return 3;
         ed_bk_valid = 0; ed_bk_put = 1; ed_bk_id = a[1]; ed_bk_len = len; ed_bk_gen = ++proj_wire_gen;
         ed_bk_crc = ed_bk_r32(a + 7); ed_bk_pos = 0;
