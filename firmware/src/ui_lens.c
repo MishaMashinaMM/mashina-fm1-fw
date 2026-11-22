@@ -116,7 +116,11 @@ static uint32_t sec_of_fam(uint32_t f)
             return s;
     return SEC_HOME;
 }
-static int gen_on(void) { return ui.confirm == CF_DICE_ALL; }   /* GEN: HOME's last group (the generator's screen) */
+#if FELUCCA_NO_SEQUENCER
+static int gen_on(void) { return 0; } /* No GEN screen in MASHINA. */
+#else
+static int gen_on(void) { return ui.confirm == CF_DICE_ALL; }
+#endif
 static int dlg_on(void) { return ui.confirm && ui.confirm != CF_DICE_ALL; }   /* a dialog over the page */
 static uint32_t gen_page(void);                         /* (gen.c) */
 static uint32_t nav_sec(void) { return ui.home || gen_on() ? SEC_HOME : sec_of_fam(PAGES[ui.page].fam); }
