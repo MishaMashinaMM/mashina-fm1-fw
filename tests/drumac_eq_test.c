@@ -44,6 +44,34 @@ static double sine_rms_at(uint32_t hz, int contour, int reference)
     }
     return sqrt(sum / count);
 }
+static int ac_exact_32bit_filters(void)
+{
+    const int32_t bound[] = {-32768, -12345, 0, 12345, 32767};
+    int ok = 1;
+    for (uint32_t param = 0; param < 128u; param++) {
+        const int32_t coeff[] = {
+            800 + (int32_t)param * 45,
+            7800 + (int32_t)param * 115,
+            1800 + (int32_t)param * 65,
+            1400 + (int32_t)param * 16,
+            220 + (int32_t)param * 4,
+            3500 + (int32_t)param * 42,
+            650 + (int32_t)param * 12,
+            600 + 3 * 540 + 64 * 13,
+            150 + 3 * 130 + 64 * 3
+        };
+        for (uint32_t k = 0; k < sizeof coeff / sizeof coeff[0]; k++)
+            for (uint32_t x = 0; x < sizeof bound / sizeof bound[0]; x++)
+                for (uint32_t y = 0; y < sizeof bound / sizeof bound[0]; y++) {
+                    int32_t diff = bound[x] - bound[y];
+                    int64_t original = ((int64_t)diff * coeff[k]) >> 15;
+                    int64_t product = (int64_t)diff * coeff[k];
+                    ok &= product <= INT32_MAX && product >= INT32_MIN;
+                    ok &= original == ((diff * coeff[k]) >> 15);
+                }
+    }
+    return ok;
+}
 int main(void)
 {
     int bad = 0, changed = 0, untouched = 1;
@@ -54,6 +82,8 @@ int main(void)
     ui_power_on();
     memcpy(global_before, global_eq_gain, sizeof global_before);
     enabled_before = global_eq_on;
+    bad += eq_check("optimized AC noise filters match original 64-bit results exactly",
+                    ac_exact_32bit_filters());
     bad += eq_check("AC tonal contour uses just two filter states per track",
                     sizeof(ac_tone_t) <= 24u);
     bad += eq_check("no new user-adjustable kit parameters", P_COUNT == 127u);
