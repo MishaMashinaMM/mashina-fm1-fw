@@ -17,12 +17,30 @@ static dx_lane_t *dx_ui_patch(uint32_t l) { return l < DV_NLANE ? &dx_kit[l] : &
 static uint8_t *dx_ui_layer(uint32_t l) { return l < DV_NLANE ? &dx_lay[l] : &dx_lay12[l - DV_NLANE]; }
 static uint8_t *dx_ui_send(uint32_t l) { return l < DV_NLANE ? &dx_snd[l] : &dx_snd12[l - DV_NLANE]; }
 
-/* a key struck on the track (seq.c key_on: last_note) picks the sound it plays */
+/* Match EDIT audition selection to the same effective per-track MIDI map
+ * used by trk_note_on(). In a shared-note layer, the lowest-index pad wins;
+ * all matching pads still sound, and Knob 1 can choose another pad.
+ * A note that triggers no DRUM-X pad must not select an unrelated GM lane. */
+static uint32_t dx_mapped_lane(const track_t *t, uint32_t note)
+{
+    uint32_t ti = (uint32_t)(t - trk), lane;
+    if (ti >= NPART || note > 127u) return DV_NLANE12;
+    for (lane = 0; lane < DV_NLANE12; lane++)
+        if ((drum_midi_custom[ti] ? drum_midi_note[ti][lane] :
+             DRUM_NOTE12[lane]) == note)
+            return lane;
+    return DV_NLANE12;
+}
+
+/* A struck key or incoming MIDI note follows the actual drum pad assignment. */
 static void dx_follow(void)
 {
     if (last_note != dx_ui_seen) {
-        if (dx_ui_seen != 0xFFu)                     /* (the first look only takes note of it) */
-            dx_ui_lane = (uint8_t)drum_lane(last_note);
+        if (dx_ui_seen != 0xFFu) {
+            uint32_t lane = dx_mapped_lane(TSEL, last_note);
+            if (lane < DV_NLANE12)
+                dx_ui_lane = (uint8_t)lane;
+        }
         dx_ui_seen = last_note;
     }
 }
