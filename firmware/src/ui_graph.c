@@ -98,7 +98,7 @@ static int32_t bg_energy(void)
 #endif                                /* (JIANT 0.5) the beings: the engine pages' creatures */
 #if !FELUCCA_NO_SEQUENCER
 #include "ui_engvis.c"
-#endif                               /* (0.9.4) VOICE's head, ANIMAL's creature, DRUM-X's kit */
+#endif                               /* Disabled legacy vector engine artwork; retained only for optional legacy UI builds. */
 
 #if FELUCCA_NO_SEQUENCER
 /* The quick-layer KNOBS view still needs a static arc gauge. Keep its
