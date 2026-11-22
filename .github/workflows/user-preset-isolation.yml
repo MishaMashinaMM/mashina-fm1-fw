@@ -69,6 +69,33 @@ jobs:
           set -o pipefail
           python3 tools/build.py --release 0.11 2>&1 | tee user-kit-firmware-build.log
           test -s build/felucca.bin
+      - name: Package separate local-use device-test installer
+        run: |
+          VERSION="v0.11-user-presets-${GITHUB_SHA::7}-preview"
+          OUT="build/user-preset-isolation-preview"
+          test -s build/felucca-0.11.fwsc
+          python3 web/make_site.py build/felucca-0.11.fwsc "$VERSION" "$OUT"
+          test -s "$OUT/webapp/installer/index.html"
+          cat > "$OUT/READ-ME-FIRST.txt" <<EOF
+          MASHINA v0.11 - USER PRESET ISOLATION TEST
+          ==========================================
+          Source branch: fix/user-preset-engine-isolation
+          Commit: $GITHUB_SHA
+          This is a device-test candidate, NOT the public MASHINA installer.
+          Back up ALL projects, presets and settings before using this build.
+          The firmware splash will still read v0.11.
+          Verify DRUM-AC, DRUM-IND, DRUM-LAB and DRUM-X USER presets.
+          This build is deliberately NOT published to GitHub Pages.
+          EOF
+          (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
+          cd build
+          zip -qr user-preset-isolation-device-test.zip user-preset-isolation-preview
+      - name: Upload separate device-test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-preset-isolation-device-test
+          path: build/user-preset-isolation-device-test.zip
+          if-no-files-found: error
       - name: Save validation log only
         if: always()
         uses: actions/upload-artifact@v4
