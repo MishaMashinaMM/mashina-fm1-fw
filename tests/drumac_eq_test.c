@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Regression for the lightweight, invisible DRUM-AC tonal contour.
  * Compare the full signal's measured RMS frequency response with GLO EQ
- * at LOW +10 / MID -7 / HIGH +3, using the actual host DSP implementations.
+ * at LOW +10 / MID -7 / HIGH +3, with 20% additional MID component
+ * reduction, using the actual host DSP implementations.
  */
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
@@ -56,11 +57,16 @@ int main(void)
     bad += eq_check("AC tonal contour uses just two filter states per track",
                     sizeof(ac_tone_t) <= 24u);
     bad += eq_check("no new user-adjustable kit parameters", P_COUNT == 127u);
+    bad += eq_check("mid-band gain 20% lower, bass/treble identical to prior filter",
+                    AC_TONE_HIGH_Q12 == 5297 &&
+                    AC_TONE_MID_MINUS_HIGH_Q12 == -4409 &&
+                    AC_TONE_LOW_MINUS_MID_Q12 == 6647 &&
+                    AC_TONE_HIGH_Q12 + AC_TONE_MID_MINUS_HIGH_Q12 + AC_TONE_LOW_MINUS_MID_Q12 == 7535);
     for (uint32_t f = 0; f < sizeof frequencies / sizeof frequencies[0]; f++) {
         double actual = sine_rms_at(frequencies[f], 1, 0);
         double target = sine_rms_at(frequencies[f], 0, 1);
         double db = 20.0 * log10(actual / target);
-        int close = db > -1.8 && db < 1.8;
+        int close = db > -2.8 && db < 2.8;
         char label[104];
         snprintf(label, sizeof label, "%5u Hz vs GLO +10/-7/+3: error %+.2f dB",
                  frequencies[f], db);
