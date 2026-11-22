@@ -11,6 +11,9 @@
 static eq_dsp_t global_eq_state;
 static uint16_t global_eq_tail;         /* allow the low shelf's state to decay after the last note */
 
+/* Lightweight built-in DRUM-AC contour. Global EQ remains unchanged. */
+#include "drumac_tone.c"
+
 #define CHO_LEN 2048u
 static union {
     int16_t s[DLY_LEN];
@@ -1960,19 +1963,34 @@ static inline __attribute__((always_inline)) void mix_part(track_t *t, uint32_t 
         pf.mg[(uint32_t)(t - trk) % NTRK] = 32768;
         if (!on) {
             mp_seen[(uint32_t)(t - trk) % NTRK] = 0;
+            ac_tone_forget((uint32_t)(t - trk) % NTRK);
             return;
         }
     }
     mod_begin(t);                                       /* the matrix's per-block values into t->p (mod.c) */
     int uin = uin_on && (uint32_t)(t - trk) + 1u == trk_live;   /* (0.7.5) USB IN+OUT: the host's audio comes in here */
-    if (track_render(t, b, n))
+    uint32_t ti_tone = (uint32_t)(t - trk) % NTRK;
+    uint32_t sound_now = track_render(t, b, n);
+    if (sound_now) {
         t->tail = 16;                                   /* blocks of DIST state to run out after the last voice */
-    else if (!uin && (!t->tail || !t->p[P_DIST] || !--t->tail)) {
-        mp_seen[(uint32_t)(t - trk) % NTRK] = 0;       /* (silent: the next sound at its LEVEL and PAN) */
+        if (t->engine == ENGI_DRUMAC)
+            ac_tone[ti_tone].tail_blocks = AC_TONE_TAIL_BLOCKS;
+    } else if (t->engine == ENGI_DRUMAC && ac_tone[ti_tone].tail_blocks) {
+        /* Keep processing silence through the filter until the low-pole
+         * tail dies, rather than discarding its state at every note-off. */
+        ac_tone[ti_tone].tail_blocks--;
+    } else if (!uin && (!t->tail || !t->p[P_DIST] || !--t->tail)) {
+        mp_seen[ti_tone] = 0;                            /* silent: reset mixer ramp */
+        ac_tone_forget(ti_tone);
         if (MOD.on)
             mod_end(t);
         return;
     }
+    /* In-engine AC contour: once per mono track, before distortion/sends. */
+    if (t->engine == ENGI_DRUMAC)
+        ac_tone_process(t, b, n);
+    else if (ac_tone[ti_tone].ready)
+        ac_tone_forget(ti_tone);
     {
         uint32_t ti = (uint32_t)(t - trk) % NTRK;
         int32_t lvl = LEVEL_Q12[t->p[P_LEVEL] & 127] << 8, pan = t->p[P_PAN] << 8, l0, p0, lq, dl, gl, gr, dgl, dgr;
