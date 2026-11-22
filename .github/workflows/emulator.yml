@@ -77,8 +77,8 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > build/site/firmware/SOURCE_COMMIT
           (cd build/site/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
           # Refuse to publish an unidentifiable or potentially cached earlier v0.11 binary.
-          test -s build/site/webapp/installer-orange-v010/index.html
-          grep -q 'v0.11 · MASHINA · BUILD' build/site/webapp/installer-orange-v010/index.html
+          test -s build/site/webapp/installer-orange-v011/index.html
+          grep -q 'v0.11 · MASHINA · BUILD' build/site/webapp/installer-orange-v011/index.html
           grep -q 'cache: "no-store"' build/site/webapp/installer/index.html
           grep -q 'release=' build/site/webapp/installer/index.html
           test -s build/site/firmware/RELEASE_SHA256
