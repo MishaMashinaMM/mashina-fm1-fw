@@ -25,6 +25,7 @@ int main(void)
     track_t *t = &trk[0];
     ui_power_on();
     set_engine_of(t, ENGI_DRUM);
+    t->engine = t->eng_req; /* complete the simulated engine switch before Note On */
     drum_midi_custom[0] = 0u;
     bad += bell_check("factory BELL is MIDI 47 (B2), the end of C2..B2",
                       DRUM_NOTE12[DV_BELL] == 47u);
