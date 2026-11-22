@@ -30,7 +30,7 @@ for engine_id, label, count, table, path, ident in specs:
         entries = entries[-count:]
     for p, (name, e, env, fenv, fx) in zip(patches, entries):
         ps = p["params"]
-        assert name == p["name"]
+        assert name == ({"ANALOG 01": "CICERO", "ANALOG 02": "PLUTARCH"}.get(p["name"], p["name"]))
         assert [int(v.strip()) for v in e.split(",")] == ps[115:123], name
         assert [int(v.strip()) for v in env.split(",")] == ps[1:5], name
         assert int(fenv) == ps[5], name
@@ -39,7 +39,7 @@ for engine_id, label, count, table, path, ident in specs:
         common_src = Path("firmware/src/analog_factory_import.h").read_text()
         assert "#define ANALOG_FACTORY_IMPORTED 20u" in common_src
         offset = 18
-        assert '("ANALOG 01", "ANALOG 02")' not in src or len(entries) == 2
+        assert [e[0] for e in entries] == ["CICERO", "PLUTARCH"]
     else:
         common_src = header
         offset = 0
@@ -60,7 +60,7 @@ for engine_id, label, count, table, path, ident in specs:
     assert len(rows) == count + offset, (ident, len(rows))
     for idx, p in enumerate(patches):
         pos, name, values = rows[idx + offset]
-        assert int(pos) == idx + offset + 1 and name == p["name"]
+        assert int(pos) == idx + offset + 1 and name == ({"ANALOG 01": "CICERO", "ANALOG 02": "PLUTARCH"}.get(p["name"], p["name"]))
         assert [int(x) for x in re.findall(r"-?\d+", values)] == p["params"][:115], name
     print(f"PASS: {count} new {label} presets match exported 127-parameter values")
 
