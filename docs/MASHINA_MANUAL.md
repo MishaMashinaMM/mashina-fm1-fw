@@ -115,13 +115,18 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 ### Additional MASHINA melodic engines
 
-**ATMOS — moving pads and evolving textures.** Start with **SOFT CLOUD** for a subtle layered pad, **BREATHING** for slow swells or **GLASS TIDE** for a brighter texture. Its basic EDIT controls include **WAVE** (oscillator shape), **MORPH**, **DENSITY**, **DRIFT**, **CUT**, **RES**, **TEXTURE** and **SHIMMER**. The additional **BREATH** control adds volume movement, **MOTION** sets its pace, **FLOW** moves the tone over time and **SPREAD** separates the oscillators. Increase these gradually to keep stacked chords clear.
+**ATMOS — moving pads and evolving textures.** Start with **KANT** for a subtle layered pad, **BURKE** for slow swells or **JEFFERSON** for a brighter texture. Its basic EDIT controls include **WAVE** (oscillator shape), **MORPH**, **DENSITY**, **DRIFT**, **CUT**, **RES**, **TEXTURE** and **SHIMMER**. The additional **BREATH** control adds volume movement, **MOTION** sets its pace, **FLOW** moves the tone over time and **SPREAD** separates the oscillators. Increase these gradually to keep stacked chords clear.
 
-**BRASS — playable synthetic sax, horn and trumpet.** This engine is intentionally electronic rather than a realistic acoustic imitation. **TYPE** sweeps between sax-like (**0**) and trumpet-like (**127**) character, with hybrid sounds between them. **PRESS** changes playing intensity, **BUZZ** adds a reed/lip-like edge, **BREATH** adds air, and **BODY/FORMNT** control resonant color. Use **GROWL** for rougher tone and **ATTACK** for the start of a note. A third EDIT page provides **FAT**, **GRIND**, **METAL** and **CRUSH** for detuned or aggressive synthetic brass. Try **TENOR SAX**, **SAX GROWL** or **BRASS LEAD** as starting points.
+**BRASS — playable synthetic sax, horn and trumpet.** This engine is intentionally electronic rather than a realistic acoustic imitation. **TYPE** sweeps between sax-like (**0**) and trumpet-like (**127**) character, with hybrid sounds between them. **PRESS** changes playing intensity, **BUZZ** adds a reed/lip-like edge, **BREATH** adds air, and **BODY/FORMNT** control resonant color. Use **GROWL** for rougher tone and **ATTACK** for the start of a note. A third EDIT page provides **FAT**, **GRIND**, **METAL** and **CRUSH** for detuned or aggressive synthetic brass. Try **HUME**, **DIDEROT** or **HOLBACH** as starting points.
 
-**INDUSTRIAL — powerful melodic basses and leads.** Unlike the DRUM-IND percussion kit, this engine follows the notes you play. **WAVE** chooses the main oscillator; **FAT** thickens it, **GRIND/METAL/CRUSH** add increasingly hard-edged color, and **FEED** introduces additional grit. **CUT/RES** shape the filter. On the third EDIT page **WAVE2**, **MIX**, **SUB** and **MODE** combine a second oscillator and low-end weight. For tight bass begin with **IRON BASS** or **SUB MACHINE**; for sharp leads try **STEEL LEAD** or **GEAR LEAD**.
+**INDUSTRIAL — powerful melodic basses and leads.** Unlike the DRUM-IND percussion kit, this engine follows the notes you play. **WAVE** chooses the main oscillator; **FAT** thickens it, **GRIND/METAL/CRUSH** add increasingly hard-edged color, and **FEED** introduces additional grit. **CUT/RES** shape the filter. On the third EDIT page **WAVE2**, **MIX**, **SUB** and **MODE** combine a second oscillator and low-end weight. For tight bass begin with **PASCAL** or **NEWTON**; for sharp leads try **CAVENDISH** or **LOCKE**.
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
+
+### Factory sounds in v0.11
+
+The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
+
 
 ## 4. Drum engines and live pad controls
 
@@ -151,7 +156,7 @@ Kit-wide multipliers scale individual pad settings without replacing them. At 10
 
 ### DRUM-AC: acoustic-style 12-pad engine
 
-**DRUM-AC** is a third, separately synthesized drum engine (no samples). Its twelve pads use acoustic-style impact, tom-head and metallic-plate models. The original DRUM-X and DRUM-LAB engines are unaffected. The DRUM-AC kit has three presets: **ACOUSTIC**, **DRY KIT** and **BIG ROOM**.
+**DRUM-AC** is a third, separately synthesized drum engine (no samples). Its twelve pads use acoustic-style impact, tom-head and metallic-plate models. The original DRUM-X and DRUM-LAB engines are unaffected. The DRUM-AC kit has three presets: **KRIPKE-1**, **KRIPKE-2** and **KRIPKE-3**.
 
 **Chromatic layout, repeating in every octave:** each note name plays the same pad in any octave. This is the fixed DRUM-AC mapping, not the customizable mapping of the other drum engines.
 
@@ -199,7 +204,7 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 
 **EDIT structure:** the first two pages control the whole kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (each **0–200%**, **100% neutral**). ATTACK changes roughly the first 80 ms of the hit; BRIGHT changes its high-frequency balance after the sound's limiting. The individual SOUND 1–3 pages use **K1** for pad selection and **K2–K4** for the eight **0–127** parameters **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** offer twelve independent pad volumes (**0–127**). The same parameter may act differently on different models.
 
-Three presets: **STEEL YARD**, **PRESSURE**, **SCRAPHEAP**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. The note mapping is fixed and repeats every octave; the SEQ custom-note mapping of DRUM-X/DRUM-LAB does not apply.
+Three presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. The note mapping is fixed and repeats every octave; the SEQ custom-note mapping of DRUM-X/DRUM-LAB does not apply.
 
 **Compatibility:** Back up projects before changing firmware. Older versions may not recognize projects containing DRUM-IND.
 
@@ -325,4 +330,4 @@ Before flashing or changing to an earlier firmware, save a complete backup of pr
 
 ---
 
-MASHINA v0.10 · M-VAVE FM1 · Usage reference
+MASHINA v0.11 · M-VAVE FM1 · Usage reference
