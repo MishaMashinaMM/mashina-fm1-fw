@@ -448,21 +448,15 @@ EXPORT uint8_t *web_anim_levels(void)
     return lv;
 }
 
-/* (0.6.91) the song generator from the page or a bench (web/emu/gen_bench.mjs): a genre (0 RANDOM, 1 + the genre's
- * index, 0.8.6: web_gen_count() + 1 EXPLORE), a seed 0..9999, an energy 0..100, a form (0 LOOP, 1 PARTS, 2 SONG); the
- * piece's name after */
+/* Legacy song-generator API: retained as inert exports for older emulator
+ * test harnesses. MASHINA does not provide GEN or a song sequencer. */
 EXPORT void web_gen(uint32_t genre, uint32_t seed, uint32_t energy, uint32_t form)
 {
-    gp.genre = (uint8_t)(genre % (NGENRE + 2u));
-    gp.seed = (uint16_t)(seed % 10000u);
-    gp.energy = (uint8_t)(energy > 100u ? 100u : energy);
-    gp.form = (uint8_t)(form % 3u);
-    gen_go();
-    gp.sig = gen_sig();
+    (void)genre; (void)seed; (void)energy; (void)form;
 }
-EXPORT const char *web_gen_last(void) { return gp.last; }
-EXPORT uint32_t web_gen_count(void) { return NGENRE; }
-EXPORT const char *web_gen_name(uint32_t i) { return GENRE[i % NGENRE].name; }
+EXPORT const char *web_gen_last(void) { return ""; }
+EXPORT uint32_t web_gen_count(void) { return 0u; }
+EXPORT const char *web_gen_name(uint32_t i) { (void)i; return ""; }
 
 /* for the test and the bench (web/emu/emu_test.mjs), a heavy song straight into the tracks (as hostsim's
  * renders set them): T1 FM6 PAD, T2 TRIO (its first preset; PHYS, retired in TONIC, was here), T3 VOICE CHOIR AAH (GRAIN, retired in JIANT, was here), 4-note chords on all 16
