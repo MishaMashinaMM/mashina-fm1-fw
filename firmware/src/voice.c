@@ -782,7 +782,8 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
         (drum_midi_custom[ti] || FELUCCA_NO_SEQUENCER)) {
         for (lane = 0; lane < DV_NLANE12; lane++)
             if ((drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane]) == note)
-                trk_note_on_raw(t, DRUM_NOTE12[lane], vel);
+                trk_note_on_raw(t, lane < DV_NLANE ?
+                                    DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane], vel);
         return;
     }
     if (t->eng_req == ENGI_DRUMLAB && ti < NPART && drumlab_midi_custom[ti]) {
@@ -837,7 +838,8 @@ static void trk_note_off(track_t *t, uint32_t note)
         (drum_midi_custom[ti] || FELUCCA_NO_SEQUENCER)) {
         for (lane = 0; lane < DV_NLANE12; lane++)
             if ((drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane]) == note)
-                trk_note_off_raw(t, DRUM_NOTE12[lane]);
+                trk_note_off_raw(t, lane < DV_NLANE ?
+                                     DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
         return;
     }
     if (t->eng_req == ENGI_DRUMLAB && ti < NPART && drumlab_midi_custom[ti]) {
