@@ -23,7 +23,7 @@ int main(void)
     track_t *t0 = &trk[0], *t1 = &trk[1];
     eq_dsp_t reference_eq = {0};
     int match = 1, changed = 0, bypass = 1;
-    int8_t global_before[3]; uint8_t enabled_before;
+    int16_t global_before[3]; int16_t enabled_before;
 
     ui_power_on();
     t0->engine = t0->eng_req = ENGI_DRUMAC;
