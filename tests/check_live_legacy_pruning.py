@@ -17,7 +17,9 @@ assert 'static void gen_panel(void) { }' in ui
 assert 'static void gen_cards(void) { }' in ui
 assert 'static uint32_t gen_draw_sig(void) { return 0u; }' in ui
 assert 'static const char *dice_seq(track_t *t)' in ui
-assert "static int gen_on(void) { return 0; }" in lens\nassert "#if FELUCCA_NO_SEQUENCER && !defined(MASHINA_HOST_TEST)" in lens\nassert "-DMASHINA_HOST_TEST=1" in Path("tests/run_live_drum_tests.sh").read_text(encoding="utf-8")
+assert "static int gen_on(void) { return 0; }" in lens
+assert "#if FELUCCA_NO_SEQUENCER && !defined(MASHINA_HOST_TEST)" in lens
+assert "-DMASHINA_HOST_TEST=1" in Path("tests/run_live_drum_tests.sh").read_text(encoding="utf-8")
 assert "(void)rng();" in layer
 assert "gen_panel();" in graph  # safe stub keeps obsolete selector harmless
 assert "python3 tests/check_live_legacy_pruning.py" in Path("tests/run_live_drum_tests.sh").read_text(encoding="utf-8")
