@@ -29,7 +29,7 @@ MASHINA has **eight shared synthesis voices in total**, not eight per track. It 
 
 For drum note layouts, sound parameters, MIDI mappings, hardware controls and complete operating instructions, see the **[User Manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)** (available in English, Serbian, Spanish, Russian, Japanese and Hindi).
 
-## What's new in v0.11 — factory sound library
+## Factory sound library — v0.11
 
 **The v0.11 factory banks were rebuilt and successfully tested on a physical M-VAVE FM1.** The melodic banks now contain 20 ANALOG presets (including CICERO and PLUTARCH), 12 INDUSTRIAL, 5 BRASS and 8 ATMOS, alongside custom PHASE, WHEEL, NOISE, VOICE, LOFI and FM6 sounds. The four drum engines retain their synthesis and have renamed factory kits: **BUTTLER-1–9** (DRUM-X), **ZIZEK-1–3** (DRUM-LAB), **KRIPKE-1–3** (DRUM-AC) and **BADIOU-1–3** (DRUM-IND).
 
