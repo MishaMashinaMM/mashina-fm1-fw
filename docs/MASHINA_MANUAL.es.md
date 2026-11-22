@@ -154,7 +154,6 @@ Estos ocho motores siguen disponibles junto a los nuevos. Elegí un preset para 
 | **WHEEL** | Órgano de ruedas tonales con registros, percusión, clic de tecla, saturación y efecto rotatorio. |
 | **NOISE** | Viento, lluvia, chasquidos, ruidos metálicos y registros de desplazamiento; MODE, COLOR, FREQ y PEAK. |
 | **FM6** | FM de seis operadores: pianos eléctricos, campanas, bajos y timbres digitales; algoritmos y envolventes por operador. |
-| **ANIMAL** | Cantos sintéticos de pájaros, insectos, ranas y zumbidos; distintos modos controlan resonancias, ritmo y tono. |
 
 **DRUM-X** también procede del motor de batería original, ampliado a doce sonidos; aparece junto a las otras baterías más abajo.
 
