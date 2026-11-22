@@ -383,7 +383,6 @@ static int up_store(uint32_t k, const char *name)
     r.np = P_COUNT;
     r.packed[UP_FM_AT] = UP_V04_MARK;
     up_set_name(&r, k, name);
-    upd_capture_globals(&r, TSEL);
     for (i = 0; i < P_COUNT; i++)
         up_set_value(&r, i, motion_base_value(TSEL, i));
     up_pat_from(&r, TSEL->step);
@@ -399,6 +398,9 @@ static int up_store(uint32_t k, const char *name)
             }
         }
     }
+    /* DRUM-X reuses the retired pattern bytes for its complete kit: capture
+     * only AFTER the legacy pattern/grid code has finished. */
+    upd_capture_globals(&r, TSEL);
     {
         int rc = up_put(k, &r);                         /* the record first, then its FM6 patch (up_fm6.c) */
         if (rc == 0 || rc == 3) {
