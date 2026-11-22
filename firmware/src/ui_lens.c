@@ -116,7 +116,7 @@ static uint32_t sec_of_fam(uint32_t f)
             return s;
     return SEC_HOME;
 }
-#if FELUCCA_NO_SEQUENCER
+#if FELUCCA_NO_SEQUENCER && !defined(MASHINA_HOST_TEST)
 static int gen_on(void) { return 0; } /* No GEN screen in MASHINA. */
 #else
 static int gen_on(void) { return ui.confirm == CF_DICE_ALL; }
