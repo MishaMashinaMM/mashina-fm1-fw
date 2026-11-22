@@ -18,12 +18,6 @@
  *           opening and shutting) and sends sound waves out of the mouth (the nose); turbulence at the constriction for
  *           the frication (s sh f x, the bursts) and at the glottis for the aspiration (h, BREATH); a damped nod at each
  *           vowel's onset (WORDS off: a note's), a slow sway and breath with the level.
- *   ANIMAL  a creature between a bird, an insect and a mammal: its outline, legs, wing, antennae / ears / crest are
- *           the same points in the three (VX_AN), mixed by weights that glide (a metamorphosis, ~0.6 s) to the MODE's
- *           animal (CMOS WHSTL a bird, PULSE WING an insect, GLOTT a mammal), leaned by SIZE past its presets' sizes
- *           (smaller: towards the insect; larger: the mammal) and stirred by CHAOS. With the call (each voice's syllable envelope, CMOS's
- *           chirp gate, WHSTL's syrinx amplitude): the beak / jaw opens and the throat (syrinx, larynx) swells, the
- *           wings buzz at the pulse rate (PULSE, WING), the legs stridulate, the ribs breathe (GLOTT).
  *   DRUM-X  the kit as a colony of small beings with eyes and a mouth, standing as a drum kit does: the kick large in
  *           the middle (its core hot), the snare flat on its stand, the toms on little legs, the hi-hat two shells (CH
  *           together, OH the top one lifted, its mouth open), the crash on a long stem and the cowbell a small head (BELL),
@@ -71,7 +65,7 @@
  * State: vxs (in the pool: no global of the RAM region moves). MENU > ANIM OFF: they rest. */
 #define VX_POOL __attribute__((section(".pool")))
 #define VX_CODE __attribute__((noinline))                 /* (each creature its own function: its size on its own) */
-#define VX_NE 9                                          /* the creatures: VOICE ANIMAL DRUM-X ANALOG FM6 WHEEL NOISE PHASE LOFI */
+#define VX_NE 9                                          /* legacy creature visualizer's fixed state capacity */
 #define VX_NSW 56                                        /* NOISE's swarm (the mock-up's 84: its cost) */
 typedef struct { int32_t cx, cy, s; } vxf_t;            /* a unit (Q4: 16) -> Q4 px: c + u * s / 256 */
 static struct {
@@ -98,7 +92,6 @@ static struct {
                                                           * waves leaving (their radius, Q4 units; 0 none) */
     uint8_t wh[4], pwn[2], pwi[2], pwk[2], vow;          /* .. the waves' heat; the pulses' / waves' nose bits, the next slot
                                                           * of each, the frames since the last; a vowel (1), its onset to come (2) */
-    int16_t w[3];                                        /* ANIMAL: bird insect mammal weights (0..256) */
     uint8_t age[8], last;                                /* DRUM-X: each lane's age seen; the lane struck last */
     uint32_t hitm[8], tl[8], kms;                        /* .. its last hit (fm1_ms), its being's time; the ms drawn */
     uint8_t kc;                                          /* .. drawing it (its colours: vx_col) */
@@ -576,161 +569,6 @@ static VX_CODE void vx_voice(const track_t *t, int32_t cx, int32_t cy, int32_t s
                 w[2 * i + 1] = (nz ? 326 : mid) + ((rr * 21 / 20 * og_sin(an)) >> 15);
             }
             vh_poly(&f, w, 6, (140 + vxs.wh[k] * 3 / 10) * (26 * 16 - vxs.pw[1][k]) / (26 * 16) + 30);
-        }
-}
-
-/* ------------------------------------------------------------------------------------------------ ANIMAL --- */
-/* the three animals, the same points in each (units, facing left, ~100 x 70): the outline (16, from the beak / snout
- * / mouthparts' tip round the head, the back, the tail, the belly, the throat, the chin), four limbs (hip knee foot:
- * a bird's two legs, the others folded into its belly; an insect's front, middle and jumping legs; a mammal's four), the
- * wing (5: a bird's folded wing, an insect's forewings, a mammal's ribcage), two head strokes (3: a crest, antennae,
- * ears), the eye, the mouth's corner, the throat's organ (syrinx, tymbal, larynx) */
-enum { VA_OUT = 0, VA_LIMB = 32, VA_WING = 56, VA_HEAD = 66, VA_EYE = 78, VA_MTH = 80, VA_ORG = 82, VA_NP = 84 };
-static const int8_t VX_AN[3][VA_NP] = {
-    {   /* a bird (a songbird perched) */
-        -48, -15, -34, -24, -26, -29, -17, -24, -8, -15, 8, -11, 22, -7, 30, -6, 52, 3, 30, 4, 18, 11, 2, 15, -12, 9, -20, -1,
-        -26, -8, -38, -12,
-        2, 13, 7, 23, 1, 33, 8, 12, 13, 23, 8, 33, 10, 12, 10, 12, 10, 12, 12, 11, 12, 11, 12, 11,
-        -15, -12, 4, -14, 30, -3, 12, 4, -8, 2,
-        -27, -28, -26, -35, -19, -38, -23, -27, -18, -32, -13, -33,
-        -32, -20, -36, -14, -16, 2},
-    {   /* an insect (a cricket) */
-        -46, 3, -44, -8, -37, -13, -29, -11, -21, -13, 0, -11, 20, -9, 36, -5, 50, 0, 37, 4, 22, 8, 2, 8, -18, 7, -28, 6,
-        -35, 7, -43, 7,
-        -24, 6, -33, 16, -40, 25, -14, 7, -10, 19, -18, 28, 2, 6, 24, -12, 36, 26, -8, 7, -2, 18, 4, 27,
-        -22, -13, 0, -16, 42, -7, 30, -2, -16, -7,
-        -43, -9, -32, -36, 8, -46, -41, -9, -22, -32, 24, -38,
-        -38, -5, -42, 4, 18, -2},
-    {   /* a mammal (a fox) */
-        -52, -6, -38, -17, -29, -22, -20, -17, -10, -15, 8, -16, 22, -15, 30, -15, 52, -19, 35, -2, 22, 6, 2, 8, -14, 6, -22, 2,
-        -31, -1, -45, -1,
-        -14, 4, -17, 18, -15, 32, -8, 4, -9, 18, -6, 32, 18, 4, 26, 17, 20, 32, 23, 4, 31, 17, 26, 32,
-        -14, -9, 0, -11, 12, -7, 6, 5, -10, 4,
-        -28, -21, -26, -33, -20, -20, -24, -20, -19, -31, -15, -17,
-        -36, -13, -38, -3, -27, 2},
-};
-static const uint8_t VA_EYE_R[3] = {3, 5, 2};
-/* MODE -> the animal on the line insect 0 .. bird 128 .. mammal 256; the middle of its presets' SIZE */
-static const uint8_t VA_POS[AN_NMODE] = {128, 0, 128, 0, 255}, VA_MID[AN_NMODE] = {64, 30, 50, 70, 64};   /* (.. its presets' SIZE) */
-static VX_CODE void vx_animal(const track_t *t, int32_t cx, int32_t cy, int32_t s, int32_t en_home)
-{
-    vxf_t f = {cx, cy, s};
-    const int16_t *p = t->p;
-    uint32_t mode = an_mode(p), i, j;
-    int32_t en = vx_level(t, 1, en_home), act = 0, w[3], m, tgt, pt[2 * 42], q[2 * 16], op, flap, hb;
-    uint32_t tm = vxs.tm[1];
-    for (i = 0; i < NVOICE; i++) {                       /* the call now: each voice's level (its syllable's, CMOS's gate) */
-        const voice_t *v = &t->v[i];
-        int32_t a;
-        if (!v->active) continue;
-        a = v->env_out > 0 ? v->env_out >> 7 : 0;
-        if (mode == AN_WHSTL) a = a * clamp((int32_t)v->ph[1], 0, 24000) / 16000;
-        if (a > act) act = a;
-    }
-    act = clamp(act, 0, 256) * clamp(en * 2, 0, 256) >> 8;
-    tgt = VA_POS[mode];
-    if (mode != AN_CMOS) {                               /* SIZE (CMOS: CAP there) past the mode's own animals' sizes */
-        int32_t d = p[P_E3] - VA_MID[mode];
-        d = d > 12 ? d - 12 : d < -12 ? d + 12 : 0;
-        tgt += d * 6 / 5;
-        if (mode != AN_GLOTT)
-            tgt += (og_sin(tm >> 2) * p[P_E2]) >> 17;   /* (CHAOS stirs it) */
-    }
-    tgt = clamp(tgt, 0, 256);
-    m = UI_ANIM_OFF ? tgt : vxs.w[0];
-    if (!vxs.w[1]) { vxs.w[1] = 1; m = tgt; }           /* (the first look: at once) */
-    if (!UI_ANIM_OFF && vxs.w[2] != (int16_t)ui.frame) { /* optional metamorphosis glide */
-        m += (tgt - m) / 5 + (tgt > m) - (tgt < m);
-        vxs.w[2] = (int16_t)ui.frame;
-    }
-    vxs.w[0] = (int16_t)m;
-    w[0] = m >= 128 ? (256 - m) * 2 : m * 2;             /* bird */
-    w[1] = m < 128 ? (128 - m) * 2 : 0;                  /* insect */
-    w[2] = m > 128 ? (m - 128) * 2 : 0;                  /* mammal */
-    if (w[0] > 256) w[0] = 256;
-    hb = act * 60 / 256;
-    for (i = 0; i < VA_NP / 2; i++)                      /* the animal now: the three mixed (Q4 units) */
-        for (j = 0; j < 2u; j++)
-            pt[2 * i + j] = (VX_AN[0][2 * i + j] * w[0] + VX_AN[1][2 * i + j] * w[1] + VX_AN[2][2 * i + j] * w[2]) >> 4;
-    /* the call: the beak / mouth opens (the chin down about the mouth's corner), wings, legs, ribs move */
-    op = act * (8 + (mode == AN_GLOTT ? p[P_E1] / 16 : 0)) / 256 * 16;
-    pt[2 * 15 + 1] += op * (w[0] + w[2]) / 256 + op / 3;
-    pt[2 * 14 + 1] += op / 3;
-    flap = 0;
-    if (mode == AN_PULSE) flap = act ? (int32_t)((ui.frame & 1u) ? 1 : -1) * (2600 + act * 20) : 0;
-    else if (mode == AN_WING) flap = act ? og_sin(ui.frame * 0x5100u) * (act * 26) >> 15 : 0;
-    else if (act > 40) flap = og_sin(ui.frame * 0x2400u) * (act / 4) >> 9;
-    flap -= (w[1] * 3000) >> 8;                           /* (an insect's wings raised a little, as it sings) */
-    {   /* the body: three isotherms, the outer cold */
-        static const int16_t SC[3] = {256, 170, 96}, HT[3] = {40, 116, 176};
-        int32_t breath = w[2] ? ((og_sin(tm >> 1) + 32768) >> 12) * w[2] / 256 : 0;
-        for (j = 0; j < 3u; j++) {
-            for (i = 0; i < 16u; i++) {
-                q[2 * i] = 2 * 16 + (((pt[2 * i] - 2 * 16) * SC[j]) >> 8);
-                q[2 * i + 1] = ((pt[2 * i + 1] * (SC[j] + (j ? breath : breath / 2))) >> 8);
-            }
-            vx_curve(&f, q, 16, 1, HT[j] + hb + en / 8);
-        }
-    }
-    /* the limbs: hip, knee, foot (a bird's feet with toes; an insect's legs shaking as it stridulates) */
-    for (i = 0; i < 4u; i++) {
-        int32_t *l = &pt[VA_LIMB + 6 * i], jx = 0;
-        if (mode == AN_PULSE && act && i == 2u) jx = (ui.frame & 1u) ? 2 * 16 : -2 * 16;
-        q[0] = l[0]; q[1] = l[1]; q[2] = l[2] + jx; q[3] = l[3] - jx / 2; q[4] = l[4]; q[5] = l[5];
-        if ((q[0] - q[4]) * (q[0] - q[4]) + (q[1] - q[5]) * (q[1] - q[5]) < 4 * 256)
-            continue;                                    /* (folded away) */
-        vx_line(&f, q[0], q[1], q[2], q[3], i & 1u ? 70 : 120);
-        vx_line(&f, q[2], q[3], q[4], q[5], i & 1u ? 70 : 120);
-        if (w[2] > 96)                                   /* (a mammal's paws) */
-            vx_line(&f, q[4], q[5], q[4] - 4 * 16 * w[2] / 256, q[5], i & 1u ? 70 : 120);
-        if (w[0] > 96 && i < 2u) {                       /* (toes) */
-            vx_line(&f, q[4], q[5], q[4] - 6 * 16 * w[0] / 256, q[5] + 16, 110);
-            vx_line(&f, q[4], q[5], q[4] + 4 * 16 * w[0] / 256, q[5] + 16, 110);
-        }
-    }
-    /* the wing (turned about its root by the flap; WING mode: a blur of two) / the ribcage (breathing) */
-    {
-        int32_t k, n = mode == AN_WING && act ? 2 : 1, c0 = og_cos((uint32_t)flap & 0xFFFFu), s0 = og_sin((uint32_t)flap & 0xFFFFu);
-        for (k = 0; k < n; k++) {
-            int32_t ox = pt[VA_WING], oy = pt[VA_WING + 1], cs = k ? c0 : c0, sn = k ? -s0 : s0;
-            for (i = 0; i < 5u; i++) {
-                int32_t x = pt[VA_WING + 2 * i] - ox, y = pt[VA_WING + 2 * i + 1] - oy;
-                int32_t sc = 256 + (w[2] * ((og_sin(tm >> 1) >> 9) + act / 2)) / 256 / 2;
-                q[2 * i] = ox + (((x * cs - y * sn) >> 15) * sc >> 8);
-                q[2 * i + 1] = oy + (((x * sn + y * cs) >> 15) * sc >> 8);
-            }
-            vx_curve(&f, q, 5, 1, (k ? 90 : 150) + hb);
-            for (i = 1; i < 4u; i++)                     /* (veins / feathers / ribs) */
-                vx_line(&f, q[0] + (q[2 * i] - q[0]) / 5, q[1] + (q[2 * i + 1] - q[1]) / 5,
-                        q[2 * i] - (q[2 * i] - q[0]) / 6, q[2 * i + 1] - (q[2 * i + 1] - q[1]) / 6, 104 + hb);
-        }
-    }
-    /* the head's strokes: crest, antennae (trembling with the call), ears */
-    for (i = 0; i < 2u; i++) {
-        int32_t *h = &pt[VA_HEAD + 6 * i], tr = w[1] && act ? (og_sin(ui.frame * 0x3700u + i * 0x5000u) * act) >> 17 : 0;
-        q[0] = h[0]; q[1] = h[1]; q[2] = h[2] + tr; q[3] = h[3]; q[4] = h[4] + tr * 2; q[5] = h[5] - tr;
-        vx_curve(&f, q, 3, 0, i ? 96 : 140);
-    }
-    /* the eye (hot), the mouth's line, the throat's organ swelling with the call; song arcs from the mouth */
-    vx_arc(&f, pt[VA_EYE], pt[VA_EYE + 1], (VA_EYE_R[0] * w[0] + VA_EYE_R[1] * w[1] + VA_EYE_R[2] * w[2]) >> 4,
-           (VA_EYE_R[0] * w[0] + VA_EYE_R[1] * w[1] + VA_EYE_R[2] * w[2]) >> 4, 0, 65536u, 8, 236);
-    og_node(cx + ((pt[VA_EYE] * s) >> 8), cy + ((pt[VA_EYE + 1] * s) >> 8), 1, vx_col(250));
-    vx_line(&f, pt[VA_MTH], pt[VA_MTH + 1], pt[0], pt[1], 150);
-    vx_line(&f, pt[VA_MTH], pt[VA_MTH + 1], pt[2 * 15], pt[2 * 15 + 1], 150);
-    {
-        int32_t r = (2 * 16 + act * 3 * 16 / 256) * (w[0] + w[2]) / 256;
-        if (r > 16)
-            vx_arc(&f, pt[VA_ORG], pt[VA_ORG + 1], r, r * 3 / 4, 0, 65536u, 10, 180 + hb);
-        if (w[1] > 40)                                   /* (the abdomen's segments: the tymbal pulsing) */
-            for (i = 0; i < 4u; i++) {
-                int32_t x = (pt[2 * 6] * (int32_t)(i + 1) + pt[2 * 5] * (int32_t)(4 - i)) / 5, sp = act ? (int32_t)((ui.frame + i) & 1u) * 16 : 0;
-                vx_line(&f, x + sp, pt[2 * 5 + 1] + 2 * 16, x - 2 * 16 + sp, pt[2 * 11 + 1] - 2 * 16, 60 + (w[1] * (90 + hb) >> 8));
-            }
-    }
-    if (act > 24)                                        /* the call: arcs out of the mouth, as loud as it is */
-        for (i = 0; i < 3u; i++) {
-            int32_t ph = (int32_t)((tm >> 4) + i * 85u) & 255, r = (6 + ph / 12) * 16;
-            vx_arc(&f, pt[0] - 2 * 16, pt[1] + op / 2, r, r, 0x6000u, 0xA000u, 5, (act * (255 - ph)) >> 8);
         }
 }
 
@@ -2131,9 +1969,7 @@ static int vx_draw(const track_t *t, int32_t x, int32_t y, int32_t w, int32_t h,
     } else if (trk_eng(t) == ENGI_DRUM) {    /* (the kit ~128 x 92) */
         s = vx_fit(w, h, 128, 92);
         vx_kit(t, cx - (s >> 4), cy + (48 * s >> 8), s, en_home, -1);
-    } else if (e == &ENG_ANIMAL)                        /* (the animal ~103 x 78) */
-        vx_animal(t, cx, cy, vx_fit(w, h, 103, 78), en_home);
-    else if (e == &ENG_ANALOG)
+    } else if (e == &ENG_ANALOG)
         vx_analog(t, A, en_home);
     else if (trk_eng(t) == ENGI_FM6)
         vx_fm6(t, A, en_home, 6u, 0);
