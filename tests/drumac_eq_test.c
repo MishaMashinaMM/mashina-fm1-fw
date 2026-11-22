@@ -22,16 +22,17 @@ int main(void)
     int32_t ac[CTL], reference[CTL], untouched[CTL], other[CTL];
     track_t *t0 = &trk[0], *t1 = &trk[1];
     eq_dsp_t reference_eq = {0};
+    int match = 1, changed = 0, bypass = 1;
+    int8_t global_before[3]; uint8_t enabled_before;
 
     ui_power_on();
     t0->engine = t0->eng_req = ENGI_DRUMAC;
     t1->engine = t1->eng_req = ENGI_DRUMLAB;
     eq_dsp_init(&reference_eq);
     memcpy(reference_eq.gain, expected_gain, sizeof expected_gain);
-    bad += check("fixed AC EQ has no new sound/kit parameters", P_COUNT == 127u);
-    bad += check("GLO EQ settings stay independent and unchanged",
-                 !global_eq_on && global_eq_gain[0] == 0 &&
-                 global_eq_gain[1] == 0 && global_eq_gain[2] == 0);
+    bad += check("fixed AC EQ adds no kit controls", P_COUNT == 127u);
+    memcpy(global_before, global_eq_gain, sizeof global_before);
+    enabled_before = global_eq_on;
 
     for (uint32_t block = 0; block < 350u; block++) {
         ac_test_signal(ac, block);
@@ -40,14 +41,17 @@ int main(void)
         ac_fixed_eq_process(t0, ac, CTL);
         eq_dsp_process(&reference_eq, 0u, reference, CTL);
         ac_fixed_eq_process(t1, untouched, CTL);
-        if (memcmp(ac, reference, sizeof ac) || memcmp(untouched, reference, sizeof untouched) == 0) {
-            /* AC should match the fixed reference; LAB must remain raw. */
-            if (memcmp(ac, reference, sizeof ac) || memcmp(untouched, ac, sizeof ac) == 0)
-                bad++;
-        }
+        match &= !memcmp(ac, reference, sizeof ac);
+        changed |= memcmp(ac, untouched, sizeof ac) != 0;
         ac_test_signal(other, block);
-        if (memcmp(other, untouched, sizeof other)) bad++;
+        bypass &= !memcmp(other, untouched, sizeof other);
     }
+    bad += check("built-in AC output matches global EQ's three fixed bands exactly", match);
+    bad += check("AC tone actually changes with internal EQ", changed);
+    bad += check("non-AC engine leaves audio bit-for-bit unchanged", bypass);
+    bad += check("GLO EQ remains unaffected",
+                 global_eq_on == enabled_before &&
+                 !memcmp(global_before, global_eq_gain, sizeof global_before));
     bad += check("EQ gains are exactly LOW +10, MID -7, HIGH +4",
                  ac_fixed_eq[0].gain[0] == 10 &&
                  ac_fixed_eq[0].gain[1] == -7 &&
