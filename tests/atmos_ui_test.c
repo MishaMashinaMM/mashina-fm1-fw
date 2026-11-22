@@ -16,9 +16,11 @@ int main(void)
     }
     bad += check("ATMOS EDIT 3 page visible", edit3 < NPAGES && page_visible(edit3));
     bad += check("DRUM-LAB LEVELS 3 hidden on ATMOS", levels3 < NPAGES && !page_visible(levels3));
-    bad += check("factory SOFT CLOUD extra controls recalled",
-                 TSEL->p[P_LN8] == 18 && TSEL->p[P_LN9] == 22 &&
-                 TSEL->p[P_LN10] == 26 && TSEL->p[P_LN11] == 16);
+    bad += check("factory KANT extra controls recalled",
+                 TSEL->p[P_LN8] == ATMOS_EXTRA_PRESETS[0][0] &&
+                 TSEL->p[P_LN9] == ATMOS_EXTRA_PRESETS[0][1] &&
+                 TSEL->p[P_LN10] == ATMOS_EXTRA_PRESETS[0][2] &&
+                 TSEL->p[P_LN11] == ATMOS_EXTRA_PRESETS[0][3]);
     bad += check("third page displays ATMOS descriptors",
                  str_eq(track_desc(TSEL, P_LN8)->label, "BREATH") &&
                  str_eq(track_desc(TSEL, P_LN9)->label, "MOTION") &&
@@ -29,9 +31,11 @@ int main(void)
     turn(EN_K2, 1); frame();
     bad += check("EDIT 3 K2 edits MOTION", TSEL->p[P_LN9] > before);
     apply_preset(1u);
-    bad += check("BREATHING preset recalls all four extras",
-                 TSEL->p[P_LN8] == 38 && TSEL->p[P_LN9] == 17 &&
-                 TSEL->p[P_LN10] == 55 && TSEL->p[P_LN11] == 35);
+    bad += check("BURKE preset recalls all four extras",
+                 TSEL->p[P_LN8] == ATMOS_EXTRA_PRESETS[1][0] &&
+                 TSEL->p[P_LN9] == ATMOS_EXTRA_PRESETS[1][1] &&
+                 TSEL->p[P_LN10] == ATMOS_EXTRA_PRESETS[1][2] &&
+                 TSEL->p[P_LN11] == ATMOS_EXTRA_PRESETS[1][3]);
     set_engine_of(TSEL, ENGI_DRUMLAB);
     TSEL->engine = TSEL->eng_req;
     bad += check("switch to DRUM-LAB restores lane defaults",

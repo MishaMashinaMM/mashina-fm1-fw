@@ -40,8 +40,8 @@ int main(void)
     uint64_t ea, eb, a, b;
     bad += check("append-only engine ID 17", ENGI_BRASS == 17u &&
                  ENGINES[ENGI_BRASS] == &ENG_BRASS);
-    bad += check("VOICE resonators reused, 4-voice cap, six presets",
-                 ENG_BRASS.poly == 4 && ENG_BRASS.npresets == 6u);
+    bad += check("VOICE resonators reused, 4-voice cap, five presets",
+                 ENG_BRASS.poly == 4 && ENG_BRASS.npresets == 5u);
     a = digest(P_E0, 0, &ea);
     b = digest(P_E0, 127, &eb);
     bad += check("SAX/TRUMPET endpoints have distinct timbres", a != b && ea > 100000 && eb > 100000);

@@ -1,6 +1,6 @@
-# NOISE factory bank emulator preview. Keeps imported ANALOG, FM6, PHASE and WHEEL sounds.
+# ANIMAL removal emulator preview. Keeps all imported factory banks.
 # Does not deploy GitHub Pages or flash hardware.
-name: Factory preset bank web emulator preview (NOISE)
+name: Factory preset bank web emulator preview (ANIMAL removed)
 on:
   push:
     branches: [factory-presets-phase-10]
@@ -28,37 +28,39 @@ jobs:
         run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
       - name: Generate embedded headers
         run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
-      - name: Verify all imported factory sound banks
+      - name: Verify imported sound banks and ANIMAL retirement
         run: |
           python3 tests/check_phase_factory_import.py
           python3 tests/check_wheel_factory_import.py
           python3 tests/check_noise_factory_import.py
+          python3 tests/check_animal_retired.py
       - name: Live performance firmware regressions
         run: bash tests/run_live_drum_tests.sh
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: 6.0.11
-      - name: Build NOISE bank emulator preview
+      - name: Build ANIMAL-free emulator preview
         run: |
-          EMU_PREVIEW=1 EMU_VERSION='0.10 NOISE FACTORY TEST' sh web/emu/build.sh
+          EMU_PREVIEW=1 EMU_VERSION='0.10 NO ANIMAL TEST' sh web/emu/build.sh
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
           node web/emu/emu_test.mjs build/emu/felucca.wasm
           test -s build/emu/felucca.wasm
           test -s build/emu/index.html
           printf '%s\n' "$GITHUB_SHA" > build/emu/SOURCE_COMMIT
           cat > build/emu/README-PREVIEW.txt <<'EOF'
-          MASHINA v0.10 - NOISE factory bank browser test
+          MASHINA v0.10 - ANIMAL engine removal browser test
 
-          This emulator contains 4 user-bank NOISE presets (MACHIAVELLI,
-          MORE, MONTAIGNE, BACON), plus the previously imported
-          ANALOG, FM6, PHASE and WHEEL factory banks.
+          This emulator removes ANIMAL completely from the sound engines and
+          factory bank. Slot 14 remains reserved for project compatibility.
+          All imported ANALOG, FM6, PHASE, WHEEL and NOISE banks remain.
           It is not the official firmware and cannot flash an FM1.
 
           1. Extract the whole artifact ZIP to a directory.
           2. Open a terminal in that directory.
           3. Run: python -m http.server 8790
           4. Open http://localhost:8790/ in Chrome or Edge.
-          5. In PRESETS, choose NOISE and audition the 4 replacement sounds.
+          5. Confirm ANIMAL is absent from PRESETS and engine selection;
+          test the remaining engines (especially NOISE on track 3).
 
           Do not double-click index.html using file://.
           No changes were deployed to the official GitHub Pages site.
@@ -66,7 +68,7 @@ jobs:
       - name: Upload playable isolated emulator artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MASHINA-NOISE-4-web-emulator
+          name: MASHINA-NO-ANIMAL-web-emulator
           path: build/emu/
           if-no-files-found: error
           retention-days: 14

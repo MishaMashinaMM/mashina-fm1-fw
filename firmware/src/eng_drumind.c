@@ -291,9 +291,9 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
     if(a->amp<100)a->active=0;
 }
 static const preset_t IND_PRESETS[] = {
-    {"STEEL YARD",{64,64,78,86,70,85,80,64},{0,127,127,127},0,TAG(DRUM)},
-    {"PRESSURE",{50,93,95,72,97,96,65,83},{0,127,127,127},0,TAG(DRUM)},
-    {"SCRAPHEAP",{93,38,62,110,115,107,116,61},{0,127,127,127},0,TAG(DRUM)}
+    {"BADIOU-1",{64,64,78,86,70,85,80,64},{0,127,127,127},0,TAG(DRUM)},
+    {"BADIOU-2",{50,93,95,72,97,96,65,83},{0,127,127,127},0,TAG(DRUM)},
+    {"BADIOU-3",{93,38,62,110,115,107,116,61},{0,127,127,127},0,TAG(DRUM)}
 };
 static const engine_t ENG_DRUMIND = {
     .name="DRUM-IND",.page_title={"IMPACT","SURFACE"},

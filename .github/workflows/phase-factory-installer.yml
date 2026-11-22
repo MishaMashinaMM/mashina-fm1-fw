@@ -51,13 +51,33 @@ jobs:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
-          set -e
-          python3 tools/build.py --release 0.10-preview
+          set -e -o pipefail
+          python3 tools/build.py --release 0.10-preview | tee build-size.log
+          python3 - <<'PY'
+          from pathlib import Path
+          size = Path('build/felucca.bin').stat().st_size
+          limit = 0x8EA90
+          free = limit - size
+          pct = size * 100 / limit
+          baseline = 545336  # Confirmed ANIMAL-free branch build before obsolete UI/GEN pruning
+          saved = baseline - size
+          report = (f'MASHINA ANIMAL-free branch application flash use\n'
+                    f'Firmware app: {size:,} bytes ({size/1024:.1f} KiB)\n'
+                    f'Application slot: {limit:,} bytes ({limit/1024:.1f} KiB)\n'
+                    f'Free: {free:,} bytes ({free/1024:.1f} KiB)\n'
+                    f'Used: {pct:.2f}%\n'
+                    f'Change vs previous 545,336-byte build: {saved:+,} bytes freed\n')
+          Path('build-size.txt').write_text(report)
+          print(report)
+          with Path(__import__('os').environ['GITHUB_STEP_SUMMARY']).open('a') as out:
+              out.write('### Firmware application flash usage\n\n```\n' + report + '```\n')
+          PY
           test -s build/felucca-0.10-preview.fwsc
           python3 web/make_site.py build/felucca-0.10-preview.fwsc 0.10-preview build/phase-installer
           python3 tools/check_phase_installer.py build/phase-installer
           printf '%s\n' "$GITHUB_SHA" > build/phase-installer/firmware/SOURCE_COMMIT
           (cd build/phase-installer/firmware && sha256sum felucca-0.10-preview.fwsc > SHA256SUMS)
+          cp build-size.txt build-size.log build/phase-installer/
       - name: Upload self-contained WebMIDI installer (not official firmware)
         uses: actions/upload-artifact@v4
         with:

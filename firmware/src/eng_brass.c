@@ -20,8 +20,12 @@ static const param_desc_t BRASS_EXTRA[4] = {
     {"CRUSH", F_PCT, 0, 127, 0, 0, 0}
 };
 static const uint8_t BRASS_EXTRA_PRESETS[][4] = {
-    {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
-    {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}
+    {10, 0, 0, 0},
+    {10, 13, 13, 0},
+    {10, 127, 26, 0},
+    {10, 25, 6, 0},
+    {15, 127, 26, 0},
+
 };
 static int32_t brass_lerp(int32_t sax, int32_t trumpet, int32_t morph)
 {
@@ -153,12 +157,13 @@ static void brass_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const
 }
 
 static const preset_t BRASS_PRESETS[] = {
-    {"TENOR SAX", {0, 94, 78, 14, 72, 62, 14, 28}, {12, 72, 117, 48}, 4, 1 | TAG(LEAD), FX(0, 3, 24, 17), PAT(4)},
-    {"BARITONE SAX", {0, 107, 67, 9, 91, 43, 18, 38}, {15, 82, 117, 57}, -2, 1 | TAG(LEAD), FX(0, 1, 13, 13), PAT(4)},
-    {"SAX GROWL", {0, 108, 101, 22, 75, 70, 63, 22}, {7, 76, 120, 50}, 5, 1 | TAG(LEAD), FX(10, 0, 18, 9), PAT(4)},
-    {"SOFT HORN", {127, 65, 46, 7, 51, 50, 4, 54}, {25, 80, 107, 65}, 1, 1 | TAG(LEAD), FX(0, 6, 12, 26), PAT(4)},
-    {"BRASS LEAD", {127, 105, 108, 5, 72, 78, 9, 16}, {8, 75, 122, 41}, 8, 1 | TAG(LEAD), FX(4, 0, 17, 15), PAT(4)},
-    {"TRUMPET", {127, 93, 86, 8, 58, 68, 5, 24}, {10, 70, 116, 44}, 7, 1 | TAG(LEAD), FX(0, 1, 17, 17), PAT(4)},
+    /* Full replacement with 5 user-exported BRASS factory sounds. */
+    {"HUME", {0, 95, 64, 38, 19, 26, 0, 26}, {0, 66, 76, 58}, 4, TAG(NONE), FX(0, 0, 19, 0), PAT(0)},
+    {"ROUSSEAU", {25, 64, 127, 51, 51, 13, 127, 0}, {0, 66, 76, 58}, 4, TAG(NONE), FX(38, 13, 19, 6), PAT(0)},
+    {"DIDEROT", {64, 51, 127, 19, 89, 25, 63, 51}, {0, 66, 76, 58}, 4, TAG(NONE), FX(0, 13, 19, 6), PAT(0)},
+    {"BAUMGARTEN", {95, 51, 64, 32, 127, 89, 0, 63}, {0, 116, 0, 58}, 4, TAG(NONE), FX(64, 0, 19, 40), PAT(0)},
+    {"HOLBACH", {127, 51, 64, 64, 64, 13, 127, 13}, {0, 116, 63, 58}, 4, TAG(NONE), FX(32, 13, 13, 32), PAT(0)},
+
 };
 static const engine_t ENG_BRASS = {
     .name = "BRASS",

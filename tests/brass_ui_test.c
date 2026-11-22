@@ -19,9 +19,11 @@ int main(void)
                  edit3 < NPAGES && page_visible(edit3));
     bad += check("DRUM levels page stays hidden on BRASS",
                  levels3 < NPAGES && !page_visible(levels3));
-    bad += check("BRASS factory extras start fully neutral",
-                 !TSEL->p[P_LN8] && !TSEL->p[P_LN9] &&
-                 !TSEL->p[P_LN10] && !TSEL->p[P_LN11]);
+    bad += check("BRASS factory HUME extras recalled",
+                 TSEL->p[P_LN8] == BRASS_EXTRA_PRESETS[0][0] &&
+                 TSEL->p[P_LN9] == BRASS_EXTRA_PRESETS[0][1] &&
+                 TSEL->p[P_LN10] == BRASS_EXTRA_PRESETS[0][2] &&
+                 TSEL->p[P_LN11] == BRASS_EXTRA_PRESETS[0][3]);
     {
         uint8_t list[32];
         uint32_t n = nav_list(SEC_EDIT, list), found = 0;
@@ -39,11 +41,13 @@ int main(void)
                      TSEL->p[P_LN9] > before);
     }
     apply_preset(4u);
-    bad += check("BRASS LEAD loads TRUMPET end of TYPE morph",
-                 TSEL->p[P_E0] == 127);
-    bad += check("factory recall resets all four industrial additions",
-                 !TSEL->p[P_LN8] && !TSEL->p[P_LN9] &&
-                 !TSEL->p[P_LN10] && !TSEL->p[P_LN11]);
+    bad += check("HOLBACH recalls its TYPE morph value",
+                 TSEL->p[P_E0] == BRASS_PRESETS[4].e[0]);
+    bad += check("HOLBACH recalls all four BRASS extra parameters",
+                 TSEL->p[P_LN8] == BRASS_EXTRA_PRESETS[4][0] &&
+                 TSEL->p[P_LN9] == BRASS_EXTRA_PRESETS[4][1] &&
+                 TSEL->p[P_LN10] == BRASS_EXTRA_PRESETS[4][2] &&
+                 TSEL->p[P_LN11] == BRASS_EXTRA_PRESETS[4][3]);
     set_engine_of(TSEL, ENGI_DRUMLAB);
     TSEL->engine = TSEL->eng_req;
     bad += check("DRUM-LAB existing LEVELS 3 remains visible",

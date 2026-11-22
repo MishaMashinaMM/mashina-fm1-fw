@@ -1979,8 +1979,24 @@ static int dice_kind(uint32_t c) { return c == CF_DICE_SOUND || c == CF_DICE_SEQ
  * the music before it back */
 static void macro_dice(uint32_t mode);
 static int16_t sl_root = -1, sl_scale, sl_quant;      /* (scale_link: the song's scale) */
-#include "song_dice.c"                             /* (0.6.26) DICE ALL: a song-idea generator */
-#include "gen.c"                                   /* (0.6.91) GEN: the song generator and its screen (HOME + SELECT) */
+#include "song_dice.c"                             /* Legacy CPU stress test and helper functions. */
+#if FELUCCA_NO_SEQUENCER && !defined(MASHINA_HOST_TEST)
+/* MASHINA has no song generator or sequencer. Its old GEN screen is
+ * unreachable, but some historical UI paths still declare these hooks.
+ * Keep harmless stubs rather than linking the large song/genre generators.
+ * Sound, LFO, FX and macro randomization are implemented separately. */
+static uint32_t gen_page(void) { return 0u; }
+static void gen_page_put(uint32_t p) { (void)p; }
+static void gen_open(void) { }
+static void gen_press(void) { }
+static void gen_knob(uint32_t k, int32_t s) { (void)k; (void)s; }
+static uint32_t gen_draw_sig(void) { return 0u; }
+static void gen_panel(void) { }
+static void gen_cards(void) { }
+static const char *dice_seq(track_t *t) { (void)t; return "SEQUENCER REMOVED"; }
+#else
+#include "gen.c"                                   /* Original Jiant song generator, legacy builds only. */
+#endif
 
 /* HOME / REC / SAVE: tap on release, hold 0.7 s fires once. t0 = press time | 1,
  * bit 1 = fired (or swallowed: then the release is no tap either) */
@@ -2492,7 +2508,13 @@ static void ui_input_frame(void)
         int32_t ps;
         if (!ui.menu && !dlg_on() && !name_on() && (f != FAM_COUNT || hb) && f != FAM_GLO &&
             (ps = panel_enc(EN_SELECT)) != 0) {
-            uint32_t k = f == FAM_EDIT ? CF_DICE_SOUND : f == FAM_SEQ ? CF_DICE_SEQ : f == FAM_LFO ? CF_DICE_LFO :
+            uint32_t k = f == FAM_EDIT ? CF_DICE_SOUND :
+#if FELUCCA_NO_SEQUENCER
+                          f == FAM_SEQ ? 0u :
+#else
+                          f == FAM_SEQ ? CF_DICE_SEQ :
+#endif
+                          f == FAM_LFO ? CF_DICE_LFO :
                          f == FAM_FX ? CF_DICE_FX : 0u;
             if (f == FAM_COUNT) {
                 ui.home_t0 |= 2u;    /* HOME + SELECT consumes the gesture; no HOME tap on release */
@@ -2694,7 +2716,9 @@ static void ui_input_frame(void)
                     if (song.playing) transport_req = 2;
                     system_init();
                     hints_reset();                      /* (0.9.5) the teaching hints start over */
+#if !FELUCCA_NO_SEQUENCER || defined(MASHINA_HOST_TEST)
                     gp.genre = GEN_EXPLORE;             /* (0.8.6) GEN's GENRE as at power-on: EXPLORE */
+#endif
                     ui_message("NEW PROJECT");
                 }
             } else if (kind == CF_CLEAR_ALL) {          /* SEQ + REC: every track's steps and automation, the lane */

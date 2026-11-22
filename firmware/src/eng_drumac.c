@@ -525,9 +525,9 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     if (a->body < 100) a->active = 0;
 }
 static const preset_t AC_PRESETS[] = {
-    {"ACOUSTIC", {64, 64, 85, 80, 92, 87, 65, 64}, {0, 127, 127, 127}, 0, TAG(DRUM)},
-    {"DRY KIT", {64, 105, 65, 95, 68, 93, 54, 64}, {0, 127, 127, 127}, 0, TAG(DRUM)},
-    {"BIG ROOM", {64, 28, 119, 88, 108, 102, 98, 64}, {0, 127, 127, 127}, 0, TAG(DRUM)},
+    {"KRIPKE-1", {64, 64, 85, 80, 92, 87, 65, 64}, {0, 127, 127, 127}, 0, TAG(DRUM)},
+    {"KRIPKE-2", {64, 105, 65, 95, 68, 93, 54, 64}, {0, 127, 127, 127}, 0, TAG(DRUM)},
+    {"KRIPKE-3", {64, 28, 119, 88, 108, 102, 98, 64}, {0, 127, 127, 127}, 0, TAG(DRUM)},
 };
 static const engine_t ENG_DRUMAC = {
     .name = "DRUM-AC",

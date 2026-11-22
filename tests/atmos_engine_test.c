@@ -42,8 +42,8 @@ int main(void)
                        ENGINES[18] == &ENG_ATMOS &&
                        ENGINES[19] == &ENG_DRUMAC &&
                        ENGINES[20] == &ENG_DRUMIND);
-    bad += atmos_check("12 edit controls and six presets", NELEM(ATMOS_EXTRA) == 4u &&
-                       ENG_ATMOS.npresets == 6u &&
+    bad += atmos_check("12 edit controls and eight presets", NELEM(ATMOS_EXTRA) == 4u &&
+                       ENG_ATMOS.npresets == 8u &&
                        NELEM(ATMOS_EXTRA_PRESETS) == ENG_ATMOS.npresets);
     const uint32_t slots[] = {P_E0, P_E1, P_E2, P_E3, P_E4, P_E5, P_E6, P_E7,
                               AT_BREATH, AT_MOTION, AT_FLOW, AT_SPREAD};

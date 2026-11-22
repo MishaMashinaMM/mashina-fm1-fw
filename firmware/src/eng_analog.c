@@ -242,7 +242,7 @@ static void analog_dispatch(track_t *t, voice_t *v, int32_t *out, uint32_t n, co
 }
 
 static const preset_t ANALOG_PRESETS[] = {
-    /* MASHINA ANALOG factory bank: exclusively the 18 user-exported sounds, slots 0..17. */
+    /* MASHINA ANALOG factory bank: 20 user-exported sounds: original 18 followed by two new sounds. */
     {"THALES", {7, 0, 63, 0, 80, 64, 63, -12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(25, 0, 13, 0), PAT(0)},
     {"ANAXIMENES", {0, 10, 63, 19, 85, 38, 64, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(0, 0, 13, 13), PAT(0)},
     {"ANAXIMANDER", {2, 0, 63, 26, 108, 51, 64, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(6, 0, 13, 0), PAT(0)},
@@ -261,6 +261,9 @@ static const preset_t ANALOG_PRESETS[] = {
     {"ANTISTENES", {7, 4, 51, 0, 74, 38, 127, -12}, {0, 69, 76, 0}, 23, TAG(NONE), FX(64, 0, 13, 0), PAT(0)},
     {"PRODICUS", {7, 0, 76, 0, 39, 13, 127, 12}, {0, 0, 101, 0}, 23, TAG(NONE), FX(127, 0, 13, 0), PAT(0)},
     {"ARCHYTAS", {0, 0, 38, 38, 33, 101, 0, -12}, {60, 90, 60, 80}, 50, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
+    /* Additional ANALOG patches appended without changing existing indexes. */
+    {"CICERO", {3, 20, 64, 0, 127, 0, 0, 0}, {78, 0, 127, 108}, 23, TAG(NONE), FX(0, 6, 0, 89), PAT(0)},
+    {"PLUTARCH", {3, 30, 64, 0, 127, 0, 0, 24}, {78, 0, 127, 108}, 23, TAG(NONE), FX(0, 6, 0, 89), PAT(0)},
 
 };
 

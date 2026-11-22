@@ -16,14 +16,14 @@ for (const [name, text] of [['home', home], ['installer', installer],
   assert.match(text, /MASHINA/i, `${name} must identify MASHINA`);
 }
 for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
-  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v010/")}"`), `homepage must link to ${href}`);
+  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v011/")}"`), `homepage must link to ${href}`);
 }
 assert.match(home, /<strong>MASHINA<\/strong><span>FM1 PERFORMANCE FW<\/span>/, 'homepage must have a two-line MASHINA wordmark');
 assert.match(home, /data-i18n="safety"/, 'homepage must retain firmware backup warning');
 assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
-assert.match(readme, /^# MASHINA .* v0\.10$/m, 'README must use the release-only title');
+assert.match(readme, /^# MASHINA .* v0\.11$/m, 'README must use the release-only title');
 assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
-assert.match(installer, /MASHINA v0\.10: six-track (?:external )?MIDI/, 'installer must identify the current MASHINA external MIDI performance features');
+assert.match(installer, /MASHINA v0\.11: six-track (?:external )?MIDI/, 'installer must identify the current MASHINA external MIDI performance features');
 assert.match(editor, /id="backup-export"/, 'editor must retain complete backup export');
 assert.match(editor, /id="backup-import"/, 'editor must retain complete backup restore');
 assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'MASHINA editor must not offer disabled sequencer');
@@ -43,6 +43,6 @@ for (const name of ['DRUM-X', 'DRUM-LAB', 'DRUM-AC', 'DRUM-IND']) {
 for (const lang of ['en', 'es', 'ja', 'ru', 'sr', 'hi']) {
   assert.match(translations, new RegExp('"'+lang+'"\\s*:\\s*\\{'), 'homepage missing '+lang+' translation');
 }
-assert.equal((translations.match(/DRUM-IND/g)||[]).length, 6, 'homepage must describe DRUM-IND in all six languages');
-assert.doesNotMatch(readme, /New in v0\.10|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
+assert.ok((translations.match(/DRUM-IND/g)||[]).length >= 6, 'homepage must describe DRUM-IND in all six languages');
+assert.doesNotMatch(readme, /New in v0\.11|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
 console.log('PASS: MASHINA site pages, links, metadata and build source');

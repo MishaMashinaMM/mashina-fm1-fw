@@ -1307,9 +1307,10 @@ static int param_kept(uint32_t i)
 /* a retired preset kept as an alias (SAMPLE's, gone with it in JIANT): none now. -> the preset k stands for */
 static uint32_t preset_orig(const engine_t *e, uint32_t k) { (void)e; return k; }
 /* the presets of engine e that browsing shows before preset k (k = npresets: all of them) */
-/* (0.5.1) browsing order: LOFI's BYTE presets, then FLOAT's (appended in 0.5.1: the stored numbers stay), then the
- * rest; every other engine in its own order. preset_nth: the preset shown n-th */
-static const uint8_t LOFI_ORDER[17] = {0, 1, 2, 8, 9, 10, 11, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16};
+/* MASHINA: the new LOFI factory presets appear exactly in the uploaded bank's
+ * order. The old BYTE/FLOAT browsing permutation applied to the retired
+ * 17-preset factory bank and must not reorder or index these ten patches. */
+static const uint8_t LOFI_ORDER[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 _Static_assert(sizeof LOFI_ORDER == NELEM(LOFI_PRESETS), "LOFI's browsing order: every preset once");
 static uint32_t preset_rank(const engine_t *e, uint32_t k)
 {
@@ -1455,10 +1456,45 @@ static void apply_preset_to(track_t *t, uint32_t pi)
             if (!param_kept(i))
                 t->p[i] = (int16_t)v[i];
     }
+    if (trk_eng(t) == ENGI_VOICE && pi < FORMANT_FACTORY_IMPORTED) {
+        /* Complete imported VOICE sound: preserve track-only controls. */
+        const int8_t *v = FORMANT_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
+    if (trk_eng(t) == ENGI_LOFI && pi < LOFI_FACTORY_IMPORTED) {
+        /* Complete imported LOFI sound, including modulation and FX. */
+        const int8_t *v = LOFI_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
     if (trk_eng(t) == ENGI_NOISE && pi < NOISE_FACTORY_IMPORTED) {
         /* Import the complete NOISE sound while retaining project/track-only
          * parameters such as receive channels and keyboard zones. */
         const int8_t *v = NOISE_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
+    if (trk_eng(t) == ENGI_INDUSTRIAL && pi < INDUSTRIAL_FACTORY_IMPORTED) {
+        /* Restore the full imported patch, preserving track-specific settings. */
+        const int8_t *v = INDUSTRIAL_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
+    if (trk_eng(t) == ENGI_BRASS && pi < BRASS_FACTORY_IMPORTED) {
+        /* Restore the full imported patch, preserving track-specific settings. */
+        const int8_t *v = BRASS_IMPORT_COMMON[pi];
+        for (i = 0; i < P_E0; i++)
+            if (!param_kept(i))
+                t->p[i] = (int16_t)v[i];
+    }
+    if (trk_eng(t) == ENGI_ATMOS && pi < ATMOS_FACTORY_IMPORTED) {
+        /* Restore the full imported patch, preserving track-specific settings. */
+        const int8_t *v = ATMOS_IMPORT_COMMON[pi];
         for (i = 0; i < P_E0; i++)
             if (!param_kept(i))
                 t->p[i] = (int16_t)v[i];

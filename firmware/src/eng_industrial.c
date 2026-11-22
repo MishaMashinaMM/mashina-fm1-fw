@@ -18,8 +18,19 @@ static const param_desc_t INDUSTRIAL_EXTRA[4] = {
 };
 /* Corresponding factory preset defaults in unchanged preset index order. */
 static const uint8_t INDUSTRIAL_EXTRA_PRESETS[][4] = {
-    {0, 21, 32, 0}, {0, 17, 32, 0}, {0, 31, 32, 0},
-    {0, 28, 32, 0}, {0, 38, 32, 0}, {0, 10, 32, 0},
+    {0, 0, 38, 0},
+    {0, 0, 38, 0},
+    {1, 26, 63, 0},
+    {0, 32, 32, 0},
+    {0, 0, 101, 0},
+    {0, 127, 89, 0},
+    {1, 51, 64, 0},
+    {5, 51, 63, 0},
+    {5, 51, 63, 0},
+    {5, 51, 51, 0},
+    {0, 0, 64, 0},
+    {2, 19, 63, 0},
+
 };
 
 
@@ -114,12 +125,20 @@ static void industrial_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, 
 }
 
 static const preset_t INDUSTRIAL_PRESETS[] = {
-    {"IRON BASS", {0, 30, 70, 8, 0, 12, 72, 25}, {0, 62, 95, 24}, 18, 1 | TAG(BASS), FX(0, 0, 9, 7), PAT(2)},
-    {"STEEL LEAD", {2, 24, 84, 25, 0, 14, 95, 18}, {3, 75, 110, 35}, 12, 1 | TAG(LEAD), FX(6, 0, 19, 14), PAT(4)},
-    {"GRIND BASS", {0, 45, 108, 24, 0, 22, 66, 40}, {0, 68, 90, 26}, 20, 1 | TAG(BASS), FX(0, 0, 7, 5), PAT(2)},
-    {"GEAR LEAD", {3, 40, 80, 64, 0, 12, 90, 30}, {2, 66, 100, 38}, 10, 1 | TAG(LEAD), FX(5, 0, 18, 15), PAT(4)},
-    {"BROKEN AMP", {5, 55, 115, 20, 35, 40, 80, 20}, {2, 75, 95, 38}, 15, 1 | TAG(LEAD), FX(0, 0, 12, 8), PAT(4)},
-    {"SUB MACHINE", {4, 15, 54, 0, 0, 0, 58, 10}, {0, 70, 110, 26}, 12, 1 | TAG(BASS), FX(0, 0, 5, 4), PAT(2)},
+    /* Full replacement with 12 user-exported INDUSTRI factory sounds. */
+    {"PASCAL", {0, 127, 127, 26, 0, 63, 99, 51}, {3, 75, 110, 35}, 12, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"CAVENDISH", {4, 127, 127, 26, 0, 63, 99, 51}, {3, 75, 110, 35}, 12, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"SPINOZA", {0, 0, 127, 0, 0, 38, 127, 0}, {3, 75, 110, 35}, 12, TAG(NONE), FX(0, 0, 0, 0), PAT(0)},
+    {"LOCKE", {0, 50, 127, 0, 0, 127, 67, 40}, {0, 68, 90, 26}, 20, TAG(NONE), FX(127, 0, 0, 0), PAT(0)},
+    {"MALEBRANCHE", {4, 0, 0, 0, 0, 127, 25, 38}, {0, 70, 110, 26}, 12, TAG(NONE), FX(63, 0, 0, 0), PAT(0)},
+    {"NEWTON", {3, 25, 127, 76, 0, 51, 71, 114}, {2, 66, 100, 38}, 10, TAG(NONE), FX(64, 0, 0, 0), PAT(0)},
+    {"LEIBNIZ", {0, 15, 127, 13, 127, 63, 85, 0}, {0, 62, 95, 24}, 18, TAG(NONE), FX(63, 0, 0, 0), PAT(0)},
+    {"VICO", {0, 50, 127, 102, 0, 38, 127, 0}, {0, 85, 32, 97}, 10, TAG(NONE), FX(0, 0, 18, 0), PAT(0)},
+    {"BERKELEY", {4, 10, 25, 63, 0, 127, 85, 63}, {0, 0, 127, 81}, 10, TAG(NONE), FX(13, 0, 25, 0), PAT(0)},
+    {"MONTESQUIEU", {4, 10, 25, 63, 0, 127, 90, 64}, {0, 96, 0, 81}, 10, TAG(NONE), FX(13, 0, 25, 0), PAT(0)},
+    {"VOLTAIRE", {5, 5, 38, 63, 0, 82, 99, 0}, {95, 115, 0, 108}, 57, TAG(NONE), FX(0, 0, 25, 0), PAT(0)},
+    {"LA METTRIE", {4, 0, 63, 64, 0, 13, 127, 0}, {0, 101, 127, 71}, 12, TAG(NONE), FX(127, 64, 0, 0), PAT(0)},
+
 };
 
 static const engine_t ENG_INDUSTRIAL = {
