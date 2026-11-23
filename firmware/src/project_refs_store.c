@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Experimental reference-based project storage, host-only.
- * Sixteen banks, two project sections each, two alternating 4 KiB sectors.
- * Planned reservation 0xA0000..0xBFFFF (128 KiB), replacing the old
- * 256 KiB project allocation. No firmware save/recall calls this yet.
+ * Experimental reference-based project storage, compiled into the FM1
+ * only under FELUCCA_PROJECT_REFS. All hardware writes remain separately
+ * locked unless explicitly enabled. Sixteen banks, two project sections
+ * each, two alternating 4 KiB sectors. Candidate reservation
+ * 0xA0000..0xBFFFF (128 KiB) replaces the old 256 KiB allocation.
  *
  * A record occupies 1824 bytes maximum; 2*1824 = 3648 <= 3840.
  * Full bank is copied before update, new payload written before commit
