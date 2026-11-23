@@ -110,6 +110,7 @@ export function inspectEmulatorFlash(file){
       if(version>=4)need(raw.slice(16,16+count).every(x=>x<=191),"USER "+(slot+1)+": invalid parameter");
       need(raw[4]!==0,"USER "+(slot+1)+": missing name");
       users.push({slot:slot+1,status:"saved",name:userName(raw),engine:raw[2],version,
+        recordBytes:Array.from(raw),
         note:"192-byte USER record; FM6/drum companions may be stored separately"});
     }
   }
