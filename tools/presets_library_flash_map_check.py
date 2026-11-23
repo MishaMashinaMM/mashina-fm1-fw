@@ -29,6 +29,11 @@ def check():
     assert "LIB_BANKS = 4" in source and "LIB_SECTOR = 4096" in source
     library = (start, start + 4 * 2 * sector)
     assert library == (0xEA000, 0xF2000), f"unexpected library region: {library}"
+    ref_store = "firmware/src/project_refs_store.c"
+    projects = (macro(ref_store, "MPRS_BASE"), macro(ref_store, "MPRS_BASE") + 16 * 2 * sector)
+    assert projects == (0xA0000, 0xC0000), f"unexpected new project region: {projects}"
+    assert separated(projects, library), "compact project and LIB32 banks overlap"
+    assert projects[0] % sector == 0 and projects[1] % sector == 0
     regions = {
         "firmware app": (macro(loader, "LDR_APP_LO"), macro(loader, "LDR_APP_HI")),
         "existing USER/project store": (macro(flash, "FL_DATA_LO"), macro(flash, "FL_DATA_HI")),
@@ -44,6 +49,13 @@ def check():
     for name, region in regions.items():
         assert separated(library, region), f"LIBRARY overlaps {name}: {region}"
         print(f"PASS: LIBRARY {library[0]:#x}..{library[1]-1:#x} avoids {name} {region[0]:#x}..{region[1]-1:#x}")
+        if name == "existing USER/project store":
+            assert region[0] <= projects[0] and projects[1] <= region[1], "new projects outside original data region"
+            print("CAUTION: compact projects REPLACE sectors of old project storage; fresh initialization required")
+        else:
+            assert separated(projects, region), f"MPR1 projects overlap {name}: {region}"
+    assert projects[1] <= 0xDC000, "MPR1 projects must stay below USER preset storage"
+    assert projects[0] >= 0xA0000, "MPR1 projects must not overlap legacy first 4 sections"
     # The loader's update-record sweep can scan this range. It erases only
     # sectors whose trailing 80 bytes validate as stock update records.
     # Thus we cannot claim collision-free operation merely from range checks.
@@ -52,6 +64,6 @@ def check():
     assert "ota_rd16(r + 6) == 0x5441u" in src(loader), "record signature guard changed"
     assert "ota_crc16(r + 2, 78, 0)" in src(loader), "record CRC guard changed"
     print("CAUTION: loader scans LIBRARY region for possible update records (conditional erase); device verification still required.")
-    print("PASS: source-level LIB32 geometry and known app partitions")
+    print("PASS: source-level LIB32 + compact MPR1 geometry and known app partitions")
 if __name__ == "__main__":
     check()
