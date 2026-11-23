@@ -152,7 +152,7 @@ jobs:
           FELUCCA_PROJECT_REFS_FORMAT: "1"
         run: python3 tools/build.py --release 0.13
 
-      - name: Build read-only FM1 flash diagnostic (legacy projects, writes locked)
+      - name: Build read-only PROBE firmware (legacy saves may still write)
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
@@ -178,13 +178,13 @@ jobs:
           assert needle in html, "Installer layout changed; refuse to package diagnostic"
           html = html.replace(needle,
               '<p style="border:2px solid #ff9900;padding:14px;font-weight:700">'
-              'READ-ONLY FLASH DIAGNOSTIC / v0.13-diag. '
+              'READ-ONLY FLASH PROBE / v0.13-diag. '
               'This install STILL REFLASHES the firmware. '
               'Back up your running v0.13 projects, presets and settings first. '
-              'The diagnostic will not permit project or preset SAVES. '
-              'This is not a public firmware release.'
+              'Only the new experimental writes are blocked; ordinary firmware SAVES may still write flash. '
+              'Use only Inspect flash; do not save settings, projects or presets. Not a public release.'
               '</p>\\n' + needle)
-          assert "READ-ONLY FLASH DIAGNOSTIC" in html
+          assert "READ-ONLY FLASH PROBE" in html
           p.write_text(html, encoding="utf-8")
           PY
           cp docs/diagnostic-flash-readonly.md "$OUT/README.md"
