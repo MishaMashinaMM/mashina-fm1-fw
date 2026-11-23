@@ -38,7 +38,7 @@ jobs:
           version: 6.0.11
       - name: Compile branch browser emulator
         run: |
-          EMU_VERSION="0.12-timing-${GITHUB_SHA:0:7}" EMU_PREVIEW=1 \
+          EMU_VERSION="0.13-timing-${GITHUB_SHA:0:7}" EMU_PREVIEW=1 \
             FELUCCA_NO_SEQUENCER=1 bash web/emu/build.sh
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
       - name: Validate standalone browser assets
