@@ -1,0 +1,47 @@
+name: Presets library experimental checks
+on:
+  push:
+    branches: [presets-library]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify existing storage and report 32-slot capacity
+        run: python3 tools/presets_library_capacity.py
+      - name: Check web preset interface regressions
+        run: node web/test_web.mjs
+      - name: Live drum and firmware host regressions
+        run: bash tests/run_live_drum_tests.sh
+      - name: JieLi build toolchain cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: JieLi toolchain and SDK
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T=$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          [ -e "$HOME/.jieli/toolchain" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            (cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin && retry git checkout d179b4484759423312073f5fbb232501aa491047)
+          fi
+      - name: Prepare generated firmware headers
+        run: |
+          python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Firmware compile and linker memory report (NOT a device release)
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+        run: python3 tools/build.py --release 0.13
