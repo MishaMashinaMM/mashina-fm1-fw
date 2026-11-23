@@ -6,7 +6,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import {spawn,spawnSync} from "node:child_process";
 import {chromium} from "playwright-core";
-import {encodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
+import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
+import {editEmulatorUserSnapshot,crc32} from "../web/emulator-snapshot-editor.mjs";
+import {encodeProject,decodeProject} from "../web/projects-library-codec.mjs";
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
 const dir=process.argv[2]??"build/presets-library-smoke";
 const which=name=>{
@@ -62,6 +64,48 @@ try{
     "Read-only editor unexpectedly wrote emulator browser saves");
   assert.deepEqual(errors,[],"Browser errors after queue/download");
   console.log("PASS: real Chrome loads standalone modules, imports emulator JSON, shows 32+32+32, queues THALES and downloads checked NOR without browser writes");
+  // Second end-to-end case uses one saved USER sound and one MPR1 section.
+  // Queue a USER copy first, then reference that newly saved slot in P1:A.
+  const withUser=editEmulatorUserSnapshot(patched,[{
+    slot:1,recordBytes:inspection.library[0].recordBytes
+  }]).snapshot;
+  const sectors=decodeEmulatorFlash(withUser),sec=new Uint8Array(4096).fill(255);
+  const body=new Uint8Array(3648);
+  body.set(encodeProject({section:0,name:"BROWSER TEST",
+    refs:[0,32,255,255,255,255],settingsBytes:[]}));
+  const w32=(p,n)=>{for(let i=0;i<4;i++)sec[p+i]=(n>>>(8*i))&255;};
+  w32(0,0x3153504d);w32(4,0);w32(8,1);w32(12,3648);
+  w32(16,crc32(body));sec.set(body,256);
+  sectors[0xa0000]=sec;
+  const full=JSON.stringify(encodeEmulatorFlash(sectors));
+  assert.equal(inspectEmulatorFlash(full).users[0].name,"THALES");
+  await page.locator("#inspect-emu").setInputFiles({
+    name:"expanded.json",mimeType:"application/json",buffer:Buffer.from(full)});
+  await page.waitForFunction(()=>document.querySelector("#emu-import-status").textContent.includes("Loaded expanded.json"));
+  await page.selectOption("#emu-source-type","user");
+  await page.selectOption("#emu-source-select","U1");
+  await page.selectOption("#emu-target-type","user");
+  await page.selectOption("#emu-target-select","2");
+  await page.locator("#emu-stage").click();
+  assert.equal(await page.locator("#emu-pending tr").count(),1);
+  await page.selectOption("#emu-project-position","0");
+  await page.selectOption("#emu-project-track","1");
+  await page.selectOption("#emu-project-ref","1");
+  await page.locator("#emu-project-stage").click();
+  assert.equal(await page.locator("#emu-project-pending tr").count(),1);
+  const [second]=await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#emu-export-patched").click()
+  ]);
+  const fullModified=JSON.parse(fs.readFileSync(await second.path(),"utf8"));
+  const finalView=inspectEmulatorFlash(fullModified);
+  assert.equal(finalView.users[0].name,"THALES");
+  assert.equal(finalView.users[1].name,"THALES");
+  assert.equal(decodeProject(finalView.projects.sections[0]).refs[0],1);
+  assert.equal(finalView.library[0].name,"THALES");
+  assert.deepEqual(errors,[],"Browser errors after USER/project staging and export");
+  console.log("PASS: real Chrome queues a USER-to-USER copy and remaps P1:A/T1 to the newly saved slot; complete JSON is checked");
+
 }finally{
   if(browser)await browser.close();
   server.kill("SIGTERM");
