@@ -52,10 +52,19 @@ static inline void *fl_far(void *p) { void *volatile q = p; return q; }
 /* Felucca's own store (projects, songs; settings; the autosave) */
 #define FL_STORE_OK(off, n) (FL_IN(off, n, FL_DATA_LO, FL_DATA_HI) || FL_IN(off, n, FL_GLOB_LO, FL_GLOB_HI) || \
                              FL_IN(off, n, FL_AUTO_LO, FL_VBANK_HI))   /* (the autosave and the FM6 voice bank) */
+/* The proposed LIBRARY area is deliberately NOT writable by the normal
+ * firmware flash driver. Only a separately compiled, experimentally gated
+ * LIB32_WRITE=1 image may touch 0xEA000..0xF1FFF. The bootloader's
+ * FL_RANGE_OK override continues to have its own restricted policy. */
+#if defined(FELUCCA_LIB32_WRITE) && FELUCCA_LIB32_WRITE
+#define FL_LIB32_OK(off,n) FL_IN(off,n,0x000EA000u,0x000F2000u)
+#else
+#define FL_LIB32_OK(off,n) 0
+#endif
 /* Where the RAM driver may erase / program. The app build allows only its own
  * data regions; the update loader (firmware/loader) defines its own window. */
 #ifndef FL_RANGE_OK
-#define FL_RANGE_OK(off, n) (FL_STORE_OK(off, n) || FL_IN(off, n, FL_OTA_LO, FL_OTA_HI))
+#define FL_RANGE_OK(off, n) (FL_STORE_OK(off, n) || FL_IN(off, n, FL_OTA_LO, FL_OTA_HI) || FL_LIB32_OK(off,n))
 #endif
 
 typedef struct { uint32_t sfc_con, spi_con; } fl_saved_t;
