@@ -18,7 +18,6 @@
  *     3 invalid record. No transport/save policy included here.
  */
 #include <stdint.h>
-#include <string.h>
 #define LIB_WIRE_CAP 89u
 #define LIB_WIRE_LIST 90u
 #define LIB_WIRE_GET 91u
