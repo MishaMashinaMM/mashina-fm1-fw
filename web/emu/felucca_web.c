@@ -428,6 +428,26 @@ EXPORT uint32_t web_mpr_test_save(void)
 { return (uint32_t)mpr_live_save(0u,"BOOT TEST"); }
 EXPORT uint32_t web_mpr_test_used(void)
 { return (uint32_t)mpr_slot_used(0u); }
+/* Browser-only RESTORE LAST regression helpers. Never used by the UI. */
+EXPORT uint32_t web_mpr_restore_flag(void)
+{ return (uint32_t)!!(ui_prefs & PREF_RESTORE_ON); }
+EXPORT void web_mpr_restore_enable(void)
+{
+    ui_prefs |= PREF_RESTORE_ON;
+    settings_save();
+}
+EXPORT uint32_t web_mpr_assign(uint32_t track,uint32_t source)
+{ return (uint32_t)project_reference_load(track,source); }
+EXPORT uint32_t web_mpr_autosave_writes(void)
+{ return as.writes; }
+EXPORT uint32_t web_mpr_autosave_record(void)
+{
+    uint8_t buf[MPR_MAX_RECORD];
+    return (uint32_t)(st_load(OBJ_AUTOSAVE,buf,sizeof buf)==MPR_MAX_RECORD &&
+                      mpr_get32(buf)==MPR_MAGIC);
+}
+EXPORT uint32_t web_mpr_boot_clean(void)
+{ return (uint32_t)boot_clean; }
 EXPORT void web_mpr_test_edit(uint32_t track)
 {
     if (track < NTRK)
