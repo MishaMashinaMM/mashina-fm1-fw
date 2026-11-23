@@ -1,4 +1,4 @@
-name: DRUM-X BELL note and EDIT selection validation
+name: Universal drum octave and MIDI map validation
 on:
   push:
     branches:
@@ -15,7 +15,7 @@ permissions:
   contents: read
 jobs:
   host:
-    name: DRUM-X MIDI mapping and live engine regressions
+    name: All drum engine MIDI map and live regressions
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -85,21 +85,21 @@ jobs:
           if anchor not in html:
               raise SystemExit("Cannot safely label device-test installer: button not found")
           banner = ('<p style="border:2px solid #ff9900;padding:12px;font-weight:bold">'
-                    'DRUM-X BELL / EDIT MIDI MAP — DEVICE TEST ONLY. '
+                    'ALL DRUM MIDI MAPS — DEVICE TEST ONLY. '
                     'Back up your complete MASHINA library before flashing. '
                     'This preview is NOT the public v0.11 release.</p>')
           html = html.replace(anchor, banner + "\\n  " + anchor)
           p.write_text(html, encoding="utf-8")
           PY
           cat > "$OUT/READ-ME-FIRST.txt" <<EOF
-          MASHINA v0.11 - DRUM-X BELL MIDI/EDIT TEST
+          MASHINA v0.11 - UNIVERSAL DRUM MIDI/EDIT TEST
           ==========================================
           Source branch: fix/drumx-bell-midi-edit-selection
           Commit: $GITHUB_SHA
           This is a device-test candidate, NOT the public MASHINA installer.
           Back up ALL projects, presets and settings before using this build.
           The firmware splash will still read v0.11.
-          Check factory DRUM-X BELL at MIDI 47, tap BELL to select EDIT sound, and test shared note layers. Existing custom maps are preserved.
+          Every drum engine repeats its 12-pad kit across octaves by default. A custom pad assignment switches that track to exact-note mapping. Check DRUM-X BELL on B in several octaves, DRUM-AC/IND remapping, duplicate-note layers and saved project recall.
           This build is deliberately NOT published to GitHub Pages.
           EOF
           (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
