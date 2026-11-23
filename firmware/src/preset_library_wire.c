@@ -19,6 +19,7 @@
  */
 #include <stdint.h>
 #include <string.h>
+#define LIB_WIRE_CAP 89u
 #define LIB_WIRE_LIST 90u
 #define LIB_WIRE_GET 91u
 #define LIB_WIRE_PUT 92u
@@ -40,6 +41,11 @@ static int lib_record_valid(const uint8_t *r)
         np < 8u || np > (ver >= 4u ? 144u : 72u) || !r[4]) return 0;
     if (ver >= 4u) for (i=0;i<np;i++) if (r[16u+i] > 191u) return 0;
     for (i=0;i<12u;i++) if (r[4u+i] && (r[4u+i] < 32u || r[4u+i] > 126u)) return 0;
+    /* A drum sound without its independent full 12-pad companion is NOT
+     * a complete LIBRARY sound. Refuse incomplete records rather than
+     * silently replacing an existing kit with factory/default pads. */
+    if ((engine == 10u || engine == 15u || engine == 19u || engine == 20u) &&
+        r[LIB_ENTRY - 1u] != 0xD3u) return 0;
     return 1;
 }
 static uint32_t lib_pack7(const uint8_t *src, uint32_t n, uint8_t *dst)
@@ -75,7 +81,15 @@ static uint32_t lib_wire_reply(uint32_t cmd, const uint8_t *args, uint32_t n,
                                uint8_t out[LIB_WIRE_MAX])
 {
     uint32_t slot, k;
-    if (!args || !out) return 0;
+    if (!out) return 0;
+    if (cmd == LIB_WIRE_CAP) {
+        if (n) return 0;
+        /* The actual firmware adapter overrides this with its write gate;
+         * the shared host codec only describes format and slot count. */
+        out[0] = LIB_VERSION; out[1] = LIB_SLOTS; out[2] = 0u;
+        return 3u;
+    }
+    if (!args) return 0;
     if (cmd == LIB_WIRE_LIST) {
         if (n != 2u || args[0] >= LIB_SLOTS || !args[1] || args[1] > 16u ||
             args[0] + args[1] > LIB_SLOTS) return 0;
