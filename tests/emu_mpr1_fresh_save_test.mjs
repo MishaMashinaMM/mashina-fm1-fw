@@ -8,7 +8,7 @@ import {readFileSync} from "node:fs";
 const {instance}=await WebAssembly.instantiate(readFileSync("build/emu/felucca.wasm"),{});
 const ex=instance.exports;
 for(const name of ["_initialize","web_nor_erase","web_boot","web_render",
-  "web_mpr_ref","web_mpr_dirty","web_mpr_test_save","web_mpr_test_used"]){
+  "web_mpr_ref","web_mpr_dirty","web_mpr_test_save","web_mpr_test_used","web_mpr_test_edit"]){
   assert.equal(typeof ex[name],"function","missing WASM export "+name);
 }
 ex._initialize();
@@ -23,6 +23,10 @@ for(let k=0;k<4;k++){
 }
 assert.equal(ex.web_mpr_test_save(),0,"untouched boot project SAVE refused");
 assert.equal(ex.web_mpr_test_used(),1,"saved Section A still reports EMPTY");
-// Edits must remain protected: if a future test adds a sound-changing export,
-// verify its dirty flag cannot be silently rebased by SAVE.
-console.log("PASS: real MPR1 emulator boots four clean factory references and saves Section A");
+// A genuine edit must still be rejected: do not disable the sound integrity
+// guard merely to get the default four-track SAVE working.
+ex.web_mpr_test_edit(1);
+assert.equal(ex.web_mpr_dirty(1),1,"T2 sound edit was not detected");
+assert.notEqual(ex.web_mpr_test_save(),0,"unsaved sound edit incorrectly saved");
+assert.equal(ex.web_mpr_test_used(),1,"failed overwrite deleted saved Section A");
+console.log("PASS: boot four factory refs, immediate Section A SAVE, and genuine edit rejection");
