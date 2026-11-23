@@ -17,8 +17,8 @@ assert.equal(defaults.length,32);
 assert.equal(defaults.filter(i=>i!==null).length,32);
 const view=validateFactorySelection(catalog,defaults);
 assert.equal(view.ready+view.blocked,32);
-assert.equal(view.blocked,8); // two across four drum engines
-assert.equal(view.ready,24);
+assert.equal(view.blocked,9); // 2 each for four drums, plus third DRUM-X
+assert.equal(view.ready,23);
 assert.throws(()=>buildFactoryUpload(catalog,defaults),/drum kit|kit is not yet serialized/i);
 const backup=factorySelectionFile(catalog,defaults);
 const again=importFactorySelection(JSON.parse(JSON.stringify(backup)));
