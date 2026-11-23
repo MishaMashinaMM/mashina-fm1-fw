@@ -1613,7 +1613,9 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         pos += 3u;
         for (t = 0; t < NPART; t++) {
             if (!(mask & (1u << t))) continue;
-            if ((q->t[t].engine != ENGI_DRUM && q->t[t].engine != ENGI_DRUMLAB) || pos + 12u > room) return 0;
+            if ((q->t[t].engine != ENGI_DRUM && q->t[t].engine != ENGI_DRUMLAB &&
+                 q->t[t].engine != ENGI_DRUMAC && q->t[t].engine != ENGI_DRUMIND) ||
+                pos + 12u > room) return 0;
             for (lane = 0; lane < 12u; lane++) {
                 int32_t pan = (int8_t)b[pos + lane];
                 if (pan < -64 || pan > 64) return 0;
@@ -1629,7 +1631,9 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         pos += 3u;
         for (t = 0; t < NPART; t++) {
             if (!(mask & (1u << t))) continue;
-            if ((q->t[t].engine != ENGI_DRUM && q->t[t].engine != ENGI_DRUMLAB) || pos + 12u > room) return 0;
+            if ((q->t[t].engine != ENGI_DRUM && q->t[t].engine != ENGI_DRUMLAB &&
+                 q->t[t].engine != ENGI_DRUMAC && q->t[t].engine != ENGI_DRUMIND) ||
+                pos + 12u > room) return 0;
             for (lane = 0; lane < 12u; lane++) {
                 int32_t pit = (int8_t)b[pos + lane];
                 if (pit < -24 || pit > 24) return 0;
