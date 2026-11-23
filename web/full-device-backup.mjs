@@ -229,6 +229,14 @@ export async function restoreProjectsOnly(request,file,progress=()=>{}) {
     await writeProjectObject(request,40+i,projects[i]);
     progress("PROJECTS",i+1,32);
   }
+  // Verify every section after all writes, including positions cleared to
+  // empty. A successful PUT acknowledgement alone is insufficient evidence
+  // that the section was persisted correctly in flash.
+  const verify=await captureBackup(archiveRequest(request),"",
+      (done,total)=>progress("PROJECTS VERIFY",done,total));
+  const actual=archiveSections(readBackup(verify));
+  insist(actual.every((record,i)=>JSON.stringify(record)===JSON.stringify(projects[i])),
+         "Project-only restore verification failed; keep the offline backup and inspect the device");
   return {restored:32}; // includes 32 empty-position clears
 }
 /* Preset, project, and current-performance restoration is deliberately not
