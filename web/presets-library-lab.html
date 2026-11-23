@@ -22,6 +22,10 @@ tr:nth-child(2n){background:#161616}
 .empty{color:#666}.name{font-weight:600}
 #status{white-space:pre-wrap;color:#ddd;font-size:13px;line-height:1.5}
 .foot{font-size:12px;color:#999;margin-top:24px}
+.subtle{color:#aaa;font-size:12px}
+.refs{font-variant-numeric:tabular-nums;font-size:12px;color:#c7c7c7}
+#project-map td:nth-child(1){color:#ff9900;font-weight:700}
+#project-map td:last-child{max-width:550px;word-break:break-word}
 </style>
 </head>
 <body>
@@ -42,6 +46,8 @@ tr:nth-child(2n){background:#161616}
 <div class="toolbar">
  <button id="probe-flash" type="button" disabled>Inspect flash (read-only)</button>
  <button id="backup-projects" type="button" disabled>Backup 8 projects (A–D)</button>
+ <button id="view-projects" type="button" disabled>Inspect FM1 project references</button>
+ <label class="file">Preview projects JSON <input id="preview-projects" type="file" accept=".json,application/json"/></label>
  <button id="backup-full" type="button" disabled>Backup complete FM1</button>
  <label class="file" id="label-restore-projects">Restore projects JSON <input id="restore-projects" type="file" accept=".json,application/json" disabled/></label>
  <label class="file" id="label-restore-full">Restore complete FM1 JSON <input id="restore-full" type="file" accept=".json,application/json" disabled/></label>
@@ -49,7 +55,11 @@ tr:nth-child(2n){background:#161616}
 <p class="foot">Project and full-device restores require write-enabled experimental firmware and a fresh offline full-device backup of the target FM1. Restores are not atomic across every bank: retain the JSON file for recovery if USB disconnects.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
-<table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
+<table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Used in projects</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
+<h2 style="margin-top:32px">PROJECTS · A–D REFERENCE MAP</h2>
+<p class="subtle">Inspect a projects-only JSON offline or read the connected FM1. Each section lists six preset identities. This view never writes to the device.</p>
+<div class="stats" id="project-info">No project reference data loaded.</div>
+<table aria-label="Project preset references"><thead><tr><th>Project</th><th>Section</th><th>Name</th><th>Track references T1–T6</th></tr></thead><tbody id="project-map"></tbody></table>
 <pre id="status" role="status" aria-live="polite"></pre>
 <p class="foot">All preset backups preserve the full 304-byte sound and FM6/drum-kit sidecar. Project-only JSON uses compact preset references and independent project settings. Complete backup also includes global device settings and the current unsaved performance.</p>
 <script type="module">
@@ -57,10 +67,32 @@ import {decodeRecord,parseImportedLibrary,LIBRARY_SLOTS} from "./presets-library
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash} from "./full-device-backup.mjs";
-import {restoreProjectsBackup} from "./projects-library-codec.mjs";
+import {restoreProjectsBackup,projectsBackup} from "./projects-library-codec.mjs";
+import {inspectProjectReferences} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
+let inspectedProjects=null;
+function showProjects(file){
+  const view=inspectProjectReferences(file);
+  inspectedProjects=view;
+  const tbody=$("project-map");tbody.replaceChildren();
+  let filled=0;
+  for(const section of view.sections){
+    if(!section.empty)filled++;
+    const tr=document.createElement("tr");
+    const vals=[String(section.project),section.section,section.name||"—",
+      section.empty?"EMPTY":section.tracks.map(t=>"T"+t.track+": "+t.label).join(" · ")];
+    vals.forEach((value,i)=>{
+      const td=document.createElement("td");td.textContent=value;
+      if(i===3)td.className="refs";tr.append(td);
+    });
+    tbody.append(tr);
+  }
+  $("project-info").textContent=filled+" populated sections · "+(32-filled)+
+    " empty · "+view.usage.filter(x=>x.length).length+" different preset slots referenced";
+  render();
+}
 function connectionStatus(){
   $("conn").textContent=device?`Connected: ${device.name}. LIB32 v${cap.version}, ${cap.slots} slots (${cap.writable?"write-enabled":"read-only"}); MPR1 projects: ${projectCap?(projectCap.writable?"write-enabled":"read-only"):"unsupported"}.`:"Not connected. No device write can occur.";
   $("connect").disabled=busy;
@@ -69,6 +101,7 @@ function connectionStatus(){
   $("upload-device").disabled=busy||!device||!cap?.writable||!backedUp;
   $("probe-flash").disabled=busy||!device;
   $("backup-projects").disabled=busy||!device||!projectCap;
+  $("view-projects").disabled=busy||!device||!projectCap;
   $("backup-full").disabled=busy||!device||!projectCap;
   $("restore-projects").disabled=busy||!device||!projectCap?.writable||!wholeBackup;
   $("restore-full").disabled=busy||!device||!projectCap?.writable||!cap?.writable||!wholeBackup;
@@ -97,6 +130,12 @@ function render(){
     const vals=[String(33+i).padStart(3,"0"),String(32+i),p?.name||"EMPTY",p?String(p.engine):"—",rec?"304 bytes":"—"];
     vals.forEach((v,j)=>{const td=document.createElement("td");td.textContent=v;
       if(j===0)td.className="num";if(j===1)td.className="pc";if(j===2)td.className=p?"name":"empty";row.append(td)});
+    const places=inspectedProjects?.usage[i+32]??[];
+    const useCell=document.createElement("td");
+    useCell.className="refs";
+    useCell.textContent=places.length?places.length+" track"+(places.length===1?"":"s"):"—";
+    if(places.length)useCell.title=places.map(v=>"P"+v.project+":"+v.section+" T"+v.track).join(", ");
+    row.append(useCell);
     const action=document.createElement("td");
     if(rec){const b=document.createElement("button");b.textContent="Remove";b.addEventListener("click",()=>{slots[i]=null;render()});action.append(b)}
     row.append(action);body.append(row);
@@ -170,11 +209,26 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     (health.unknown?"Some flash sectors are unknown/unavailable. Do NOT enable writes.":
      "Read-only inspection completed. Physical bootloader/update ownership still requires verification.");
 }));
+$("preview-projects").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  try{
+    showProjects(JSON.parse(await file.text()));
+    $("status").textContent="Loaded offline project reference map from "+file.name+"; FM1 unchanged.";
+  }catch(err){$("status").textContent="Project preview rejected: "+err.message;}
+});
+$("view-projects").addEventListener("click",()=>action(async()=>{
+  if(!device||!projectCap)throw new Error("Connect an MPR1-compatible FM1 first.");
+  const file=await captureProjectsOnly(device.request,device.name,
+    (phase,i,n)=>$("status").textContent=phase+": "+i+"/"+n+"...");
+  showProjects(file);
+  $("status").textContent="Read and inspected all 32 project sections; no device writes.";
+}));
 $("backup-projects").addEventListener("click",()=>action(async()=>{
   if(!device||!projectCap)throw new Error("MPR1 project protocol unavailable");
   const file=await captureProjectsOnly(device.request,device.name,
     (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n} bytes...`);
   downloadFile("mashina-projects-8x4.json",file);
+  showProjects(file);
   $("status").textContent="Saved all 8 projects, sections A–D, as compact reference records.";
 }));
 $("backup-full").addEventListener("click",()=>action(async()=>{
@@ -182,6 +236,7 @@ $("backup-full").addEventListener("click",()=>action(async()=>{
   const file=await captureFullDevice(device.request,device.name,
     (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
   downloadFile("mashina-full-fm1-backup.json",file);
+  showProjects(projectsBackup(file.projects.map(raw=>raw===null?null:{recordBytes:raw})));
   wholeBackup=true;
   backedUp=true;
   $("status").textContent="Full FM1 backup exported. It includes 64 preset positions, 32 sections, current performance and device settings. Keep it offline.";
