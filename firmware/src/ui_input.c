@@ -556,6 +556,9 @@ static void tracks_edit(uint32_t slot, int32_t steps)
         else if (slot == 1u)
             midi_fine[song.sel] = (int8_t)clamp((int32_t)midi_fine[song.sel] +
                 accel(EN_K2, steps, 100), -50, 50);
+        else if (slot == 2u)
+            drum_track_delay[song.sel] = (uint8_t)clamp((int32_t)drum_track_delay[song.sel] +
+                (steps > 0 ? 1 : -1), 0, 50);
         return;
     }
     track_t *t = TSEL;
@@ -2527,7 +2530,18 @@ static void ui_input_frame(void)
             }
         }
         panel_enc(EN_PRESET);
-        panel_enc(EN_K4);
+        if ((s = panel_enc(EN_K4)) != 0) {
+            uint32_t ti = song.sel;
+            if (trk[ti].eng_req == ENGI_DRUM || trk[ti].eng_req == ENGI_DRUMLAB ||
+                trk[ti].eng_req == ENGI_DRUMAC || trk[ti].eng_req == ENGI_DRUMIND) {
+                uint32_t lane = ui.drum_map_pad;
+                fm1_irq_off();
+                drum_pad_delay[ti][lane] = (uint8_t)clamp((int32_t)drum_pad_delay[ti][lane] +
+                    (s > 0 ? 1 : -1), 0, 50);
+                fm1_irq_on();
+                ui.force = 1u;
+            }
+        }
         return;
     }
 #endif
