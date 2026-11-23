@@ -360,6 +360,28 @@ int main(void)
         bad+=check("clean-break format is idempotent on erased project banks",
                    !mprs_init_clean_break());
     }
+    /* Real boot calls these after generating legacy track defaults. All four
+     * active tracks must receive genuine LIB32 source identities, so a fresh
+     * four-track project can be saved without manually reassigning presets. */
+    song.sel=0;
+    trk_live=4;
+    power_on_parts();
+    power_on_reference_presets();
+    {
+        int valid=1;
+        for(uint32_t k=0;k<4u;k++){
+            uint32_t factoryPreset=0,engine=library_factory_at(k,&factoryPreset);
+            char name[16];
+            library_track_name(&trk[k],name);
+            if(trk[k].user!=UP_SLOTS+k+1u || engine>=NENGINES ||
+               strncmp(name,ENGINES[engine]->presets[factoryPreset].name,12u))
+                valid=0;
+        }
+        bad+=check("boot assigns factory LIBRARY 033..036 to tracks 1..4",valid);
+        bad+=check("boot leaves selected track at T1",song.sel==0u);
+        bad+=check("fresh four-track project SAVE requires no manual preset assignments",
+                   project_save_as(0,"BOOT FOUR")==0 && project_used(0));
+    }
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
     return !!bad;
 }
