@@ -558,3 +558,32 @@ NAME UI enum that its isolated harness does not include; a separate factory
 fallback regression now resets its deliberately corrupted simulated flash.
 
 Await new GitHub Actions results before considering this fix verified.
+
+### RESTORE LAST reference-only boot behavior (23 November 2026)
+
+The experimental MPR1 emulator retains its legacy safe-idle autosave policy:
+it writes after **10 seconds without input, voices or transport activity**;
+reloading the page immediately after switching projects is not equivalent to
+a successful autosave. A project recall is not itself a destructive flash
+save. The autosave is a reference-only copy of the *currently live* preset
+identities plus project-owned settings; it does not duplicate sound patches.
+
+Two bugs in the MPR1 autosave change detector were corrected on this branch:
+(1) switching between preset sources was not part of the signature, even
+though the reference identity is essential to a snapshot; (2) enabling
+RESTORE LAST did not itself schedule any snapshot if the live patch had
+not otherwise changed. The signature now includes all track source IDs and
+active project/section context. The disabled-to-enabled transition forces
+one save **after the same quiet period**, and a first boot with RESTORE LAST
+ON but no valid previous autosave also schedules a new safe-idle snapshot.
+The existing sound-change integrity guard remains active; unsaved sound
+edits still cannot silently overwrite the last good snapshot.
+
+An actual-WASM regression in `tests/emu_mpr1_restore_last_test.mjs` boots
+one emulator against empty NOR, turns RESTORE LAST on, changes a LIBRARY
+reference, advances enough simulated time for safe idle, copies the full
+simulated NOR, boots an independent emulator instance, and verifies settings
+and the precise source reference are restored. A second scenario enables
+RESTORE LAST without any other live change and checks that a new autosave
+appears after idle. CI has to pass before treating this as emulator-verified;
+physical-device flash safety is still unverified.
