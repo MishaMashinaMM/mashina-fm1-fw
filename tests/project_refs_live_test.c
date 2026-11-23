@@ -157,6 +157,8 @@ int main(void)
     trk[0].p[P_ATK]=51;
     bad+=check("project save refuses edited but unsaved USER sound",
                project_save_as(1,"SET B")==2 && !project_used(1));
+    bad+=check("project SAVE identifies edited-but-unsaved track",
+               ui.msg[0]=='T' && ui.msg[1]=='1');
     bad+=check("reloading USER 001 restores source-sound identity",
                !project_reference_load(0,0));
     trk[0].p[P_LEVEL]=90;
