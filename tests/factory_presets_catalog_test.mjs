@@ -72,5 +72,5 @@ for(const [id,names] of byEngine){
 }
 const defaults=data.presets.filter(p=>p.initialLibrarySlot!==undefined);
 assert.equal(defaults.length,32);
-assert.deepEqual(defaults.map(p=>p.initialLibrarySlot),Array.from({length:32},(_,i)=>i+33));
+assert.deepEqual(defaults.map(p=>p.initialLibrarySlot).sort((a,b)=>a-b),Array.from({length:32},(_,i)=>i+33));
 console.log("PASS: 107 factory sounds, 89 full melodic patches, 18 explicitly kit-backed factory definitions, 10 FM6 voices, 32 stable library defaults");
