@@ -62,6 +62,7 @@ static int project_rename(uint32_t slot, const char *name);
 static void project_cur_name(char *b);
 #if FELUCCA_LIB32
 static void library_track_name(const track_t *t, char *out);
+static void library_track_name_set(const track_t *t, const char *name);
 #endif
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
 static void mpr_capture_source(const track_t *t); /* defined after project.c captures */
@@ -1725,6 +1726,10 @@ static int library_slot_apply(uint32_t slot)
     if (e >= NENGINES) return 1;
     if (e != TSEL->eng_req) set_engine(e);
     apply_preset(k);
+    /* The blank LIB32 bank falls back to a compiled factory preset. Its
+     * slot identity alone is insufficient for GLO's VOICE name column:
+     * library_track_name() reads this track-local name cache. */
+    library_track_name_set(TSEL, ENGINES[e]->presets[k].name);
     TSEL->user = (uint8_t)(UP_SLOTS + slot + 1u);
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
     mpr_capture_source(TSEL);
