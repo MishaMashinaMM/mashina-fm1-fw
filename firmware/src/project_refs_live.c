@@ -162,10 +162,14 @@ static int mpr_live_save(uint32_t section,const char *rename)
         uint32_t u=trk[k].user;
         refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
         if(refs[k]==MPR_EMPTY && k<trk_live && !trk[k].p[P_MUTE]){
-            ui_message("ASSIGN PRESET FIRST");return 2;
+            char msg[] = "T1: ASSIGN PRESET";
+            msg[1] = (char)('1' + k);
+            ui_message(msg);return 2;
         }
         if(refs[k]!=MPR_EMPTY && mpr_source_modified(&trk[k])){
-            ui_message("SAVE SOUND FIRST");return 2;
+            char msg[] = "T1: SAVE SOUND FIRST";
+            msg[1] = (char)('1' + k);
+            ui_message(msg);return 2;
         }
         if(refs[k]<UP_SLOTS && !up_used(refs[k])){
             ui_message("MISSING USER PRESET");return 2;
