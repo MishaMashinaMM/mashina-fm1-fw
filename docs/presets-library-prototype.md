@@ -306,3 +306,13 @@ slot) aborts the operation **before any project PUT**. The host WebMIDI
 regression simulates corruption and asserts zero project writes. The normal
 read-only FM1 diagnostics and first-install flash ownership verification
 remain prerequisites for any physical-device write test.
+
+### Selected-project alias consistency
+
+Projects-only restore now checks the current project's four archive aliases
+(IDs 2–5) against their canonical global MPR1 sections (IDs 40–71), after
+verifying all 32 restored positions. A stale current-project view therefore
+fails verification even when the project bank's write acknowledgements and
+read-back are otherwise correct. The browser regression fixture includes a
+stale-alias failure case. This is host-side coverage only until the branch CI
+and physical FM1 behavior are independently verified.
