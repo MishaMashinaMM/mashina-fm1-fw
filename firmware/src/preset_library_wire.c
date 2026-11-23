@@ -14,8 +14,9 @@
  * GET request: [slot], response [slot,rc,encoded bytes if rc==0].
  * PUT request: [slot,encoded 304 B], response [slot,rc].
  * ERASE request: [slot], response [slot,rc].
- * rc: 0 success, 1 malformed / slot out of range, 2 storage error,
- *     3 invalid record. No transport/save policy included here.
+ * GET rc: 0 valid record, 1 malformed, 2 unreadable/corrupt,
+ * * 3 genuinely empty (all-zero factory fallback). PUT rc=3 invalid data.
+ * No transport/save policy included here.
  */
 #include <stdint.h>
 #define LIB_WIRE_CAP 89u
@@ -95,7 +96,15 @@ static uint32_t lib_wire_reply(uint32_t cmd, const uint8_t *args, uint32_t n,
         out[0]=args[0]; out[1]=args[1];
         for (k=0;k<args[1];k++) {
             if (lib_slot_read(args[0]+k,lib_wire_record)) return 0;
-            out[2u+k]=lib_record_valid(lib_wire_record) ? 1u : 0u;
+            if (lib_record_valid(lib_wire_record)) {
+                out[2u+k]=1u;
+            } else {
+                /* LIST must also fail closed rather than report damage as
+                 * an unoccupied factory fallback. */
+                for (uint32_t i=0;i<LIB_ENTRY;i++)
+                    if (lib_wire_record[i]) return 0;
+                out[2u+k]=0u;
+            }
         }
         return 2u+args[1];
     }
@@ -106,7 +115,14 @@ static uint32_t lib_wire_reply(uint32_t cmd, const uint8_t *args, uint32_t n,
     if (cmd == LIB_WIRE_GET) {
         if(n!=1u) return 0;
         if(lib_slot_read(slot,lib_wire_record)) {out[1]=2;return 2;}
-        if(!lib_record_valid(lib_wire_record)) {out[1]=3;return 2;}
+        if(!lib_record_valid(lib_wire_record)) {
+            /* Only an actually blank record is an empty/factory slot.
+             * A CRC-valid but malformed occupied record is corruption, NOT
+             * an empty slot: backups must never silently omit it. */
+            for (k=0; k<LIB_ENTRY; k++)
+                if (lib_wire_record[k]) {out[1]=2;return 2;}
+            out[1]=3;return 2;
+        }
         out[1]=0;
         return 2u+lib_pack7(lib_wire_record,LIB_ENTRY,out+2);
     }
