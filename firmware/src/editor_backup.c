@@ -241,7 +241,8 @@ static uint32_t ed_bk_commit(void)
     } else if (ed_bk_id == 10u) {                   /* (JIANT) the song index: rows and scenes; the current song stays */
         const song_index_t *p = (const song_index_t *)raw;
         uint32_t k;
-        if (ed_bk_len != sizeof *p || p->magic != SONG_MAGIC || p->version != 2u) return 2;
+        if (ed_bk_len != sizeof *p || p->magic != SONG_MAGIC ||
+            p->version != 2u || p->cur >= NSONG) return 2;
         for (k = 0; k < NSONG; k++)
             if (!chain_valid(&p->rows[k])) return 2;
         obj = OBJ_SONGIDX;
@@ -260,8 +261,19 @@ static uint32_t ed_bk_commit(void)
 #else
     (void)obj;
 #endif
-    if (ed_bk_id == 10u) {                          /* (JIANT) into RAM: the rows now, the song playing kept */
+    if (ed_bk_id == 10u) {
         uint8_t cur = song_cur;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        /* Clean-break full-device restore also restores the selected PROJECT.
+         * The remaining 8xA-D objects arrive later in the archive. */
+        cur = ((const song_index_t *)raw)->cur;
+        song_cur = cur;
+        for(uint32_t k=0;k<4u;k++){
+            memset(proj_slot[k].raw,0,4u);
+            proj_fetch(k);
+        }
+        proj_cur=PROJ_NO_SLOT;
+#endif
         memcpy(&song_idx, raw, sizeof song_idx);
         song_idx.cur = cur;
         chain_config = song_idx.rows[cur];
