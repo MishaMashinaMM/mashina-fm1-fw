@@ -36,7 +36,7 @@ static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 
 int main(void)
 {
-    uint8_t blob[LIB_ENTRY], before[sizeof(up_rec_t)], kit[UPF_PK], after[UPF_PK];
+    uint8_t blob[LIB_ENTRY], savedAnalog[LIB_ENTRY], before[sizeof(up_rec_t)], kit[UPF_PK], after[UPF_PK];
     uint32_t selected;
     int bad=0;
     memset(lib_sim_nor,0xFF,sizeof lib_sim_nor);
@@ -96,6 +96,22 @@ int main(void)
                !upd_companion_get(1,after)&&!memcmp(kit,after,UPF_PK));
     bad+=check("library data writes never touch the 32 existing USER slots or projects",
                lib_sim_outside==0);
+    /* Simulate an updater erasing the entire transient LIBRARY region. This
+     * must not erase USER data; built-in factory fallback remains playable. */
+    bad+=check("capture exact binary library sound before upgrade",
+               lib_slot_read(0,savedAnalog)==0);
+    memset(lib_sim_nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
+    preset_go(UP_SLOTS);
+    bad+=check("after update erase, LIBRARY 33 falls back to compiled factory sound",
+               TSEL->user==0 && lib_slot_read(0,savedAnalog)==0);
+    bad+=check("restore USER-derived LIBRARY 34 from offline binary JSON record",
+               lib_slot_write(1,blob)==0);
+    preset_go(UP_SLOTS+1u);
+    bad+=check("DRUM-AC sound returns after update and offline restoration",
+               TSEL->eng_req==ENGI_DRUMAC && ac_patch[TSEL-trk][AC_KICK][0]==37u &&
+               ac_patch[TSEL-trk][AC_SNARE][4]==84u);
+    bad+=check("update/restore preserves original USER 1 record",
+               !memcmp(before,up_rec(0),sizeof before));
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
 }
