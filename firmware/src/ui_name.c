@@ -254,10 +254,19 @@ static void name_ok(void)
         up_ui_named(3, nm.slot, b);
         break;
     case NK_PROJ_SAVE:
-        project_save_as(nm.slot, b);
+        /* MPR1 refuses active tracks without preset references and any
+         * edited-but-unsaved sound. Do not dismiss the NAME editor after a
+         * rejected save: the slot is still EMPTY and the user must see why. */
+        if (project_save_as(nm.slot, b)) {
+            ui.force = 1;
+            return;
+        }
         break;
     default:
-        project_rename(nm.slot, b);
+        if (project_rename(nm.slot, b)) {
+            ui.force = 1;
+            return;
+        }
         break;
     }
     name_close();
