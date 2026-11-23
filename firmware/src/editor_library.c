@@ -14,10 +14,30 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 #else
         ed_b(0u);
 #endif
+#if FELUCCA_PROJECT_REFS_FORMAT
+        ed_b(flash_ok?1u:0u);
+#else
+        ed_b(0u);
+#endif
         return 1;
 #else
         ed_b(0u);ed_b(0u);ed_b(0u);return 1;
 #endif
+    }
+    if (cmd == 96u) { /* MPR1_INIT, NOT enabled in ordinary builds */
+#if FELUCCA_PROJECT_REFS && FELUCCA_PROJECT_REFS_FORMAT
+        static const uint8_t key[4]={0x4Du,0x50u,0x52u,0x31u}; /* "MPR1" */
+        if(n!=4u || memcmp(args,key,4u)) {
+            ed_b(1u);
+        } else if(ed_flash_stop()) {
+            ed_b(2u);
+        } else {
+            ed_b((uint32_t)mprs_init_clean_break());
+        }
+#else
+        ed_b(2u); /* always reject destructive initialization */
+#endif
+        return 1;
     }
     if (cmd == 94u) { /* CAPTURE_USER, never changes sound or writes flash */
         uint32_t slot = n ? args[0] : UP_SLOTS;
