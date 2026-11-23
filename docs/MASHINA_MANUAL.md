@@ -14,7 +14,7 @@ MASHINA turns the M-VAVE FM1 into a **six-track sound module for external MIDI k
 | **FX** | Track effects and global effect buses. |
 | **SCL / ARP** | Scale/chord and arpeggiator settings. |
 | **SAVE** | Store sounds, presets and projects; manage the library. |
-| **SEQ** | Drum MIDI note, pan and pitch mapping. It does **not** start a song sequencer. |
+| **SEQ** | Drum MIDI note, pan, pitch and timing mapping. It does **not** start a song sequencer. |
 | **PLAY** | Drum performance settings: velocity, choke and retrigger. |
 | **REC** | Live MIDI CC macros, up to 32 per project. |
 | **ALGORITHM** | Select a track (except on pages where it has a dedicated action). |
@@ -83,13 +83,14 @@ Example: Give T1 the lower keyboard range and T2 the upper range, while both use
 
 **Important:** Zones filter incoming **external** MIDI; the FM1's built-in mini-keyboard still addresses only the selected track. Zones are evaluated before transposition.
 
-### Per-track transpose and fine tuning
+### Per-track transpose, fine tuning and timing
 
 Open **GLO → MIX → TUNING**:
 
 - **K1 TRN:** −36 to +36 semitones (three octaves in either direction).
 - **K2 FINE:** −50 to +50 cents (subtle detuning).
-- **K3/K4:** reserved.
+- **K3 DLY:** universal per-track note-onset delay, 0–50 ms, including melodic engines. On drum tracks it adds to the selected pad's K4 delay.
+- **K4:** reserved.
 
 Use TRN to shift one layer up or down and FINE to thicken two sounds played in unison. A note already sounding keeps its current pitch when TRN changes; later notes use the new tuning. Note Off and sustain still release the correct voices. DRUM-X and DRUM-LAB retain their drum pitches and MIDI note maps regardless of TRN/FINE.
 
@@ -123,7 +124,7 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
-### Factory sounds in v0.12
+### Factory sounds in v0.13
 
 The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
 
@@ -219,13 +220,13 @@ Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selec
 | **K1** | Pad MIDI note, 0–127 |
 | **K2** | Pad pan |
 | **K3** | Pad pitch offset, −24 to +24 semitones |
-| **K4** | Unused |
+| **K4** | Extra pad onset delay, 0–50 ms |
 
 **DEFAULT / CUSTOM — all four drum engines.** In **DEFAULT** mode DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND repeat all 12 pads across every octave: C at MIDI 36, 48, 60 and 72 triggers the same sound without transposing it. 
 
 Changing any pad's MIDI note using **K1** activates **CUSTOM mode for the selected track only**. All 12 pads then respond exclusively to their exact assigned MIDI notes (0–127). Unchanged pads keep their original notes in 36–47 but stop repeating in other octaves. Multiple pads can share a note and play simultaneously. **DEFAULT / CUSTOM** appears in the screen's upper right.
 
-To return to DEFAULT, hold the **physical SEL button** (not the rotary SELECT encoder) for about **0.7 seconds** to display **RESET MIDI MAP?**. Press **OCT− to cancel** or **OCT+ to reset only the selected track**. This restores octave repetition without altering sound parameters, pitch/pan offsets or other tracks. Returning MIDI note values manually to their defaults does not exit CUSTOM mode; use RESET. Custom maps are saved with projects. **K2 PAN** sets the selected pad's stereo position (L64–C–R64), and **K3 PITCH** adjusts its tuning by −24 to +24 semitones, on all four drum engines. On DRUM-AC and DRUM-IND, non-tonal sounds change spectral resonance/character rather than acquiring a melodic pitch.
+To return to DEFAULT, hold the **physical SEL button** (not the rotary SELECT encoder) for about **0.7 seconds** to display **RESET MIDI MAP?**. Press **OCT− to cancel** or **OCT+ to reset only the selected track**. This restores octave repetition without altering sound parameters, pitch/pan offsets or other tracks. Returning MIDI note values manually to their defaults does not exit CUSTOM mode; use RESET. Custom maps are saved with projects. **K2 PAN** sets the selected pad's stereo position (L64–C–R64), and **K3 PITCH** adjusts its tuning by −24 to +24 semitones, on all four drum engines. On DRUM-AC and DRUM-IND, non-tonal sounds change spectral resonance/character rather than acquiring a melodic pitch. **K4 DLY** adds 0–50 ms to that pad's trigger. **GLO → MIX → TUNING → K3 DLY** applies another 0–50 ms to every drum pad on that track; both values are additive (for example 12 ms + 7 ms = 19 ms). They default to zero and are saved with the project. The track delay also applies to every melodic sound engine: for example, ANALOG at 0 ms, BRASS at 12 ms and ATMOS at 25 ms can be layered on one MIDI channel. Melodic Note On and Note Off are shifted by the same captured amount, preserving note duration; MIDI sustain ownership remains unchanged. Timing never plays early and does not buffer rendered audio. Existing FLAM behavior remains independent.
 
 
 ### PLAY: drum performance
@@ -339,4 +340,4 @@ Before flashing or changing to an earlier firmware, save a complete backup of pr
 
 ---
 
-MASHINA v0.12 · M-VAVE FM1 · Usage reference
+MASHINA v0.13 · M-VAVE FM1 · Usage reference

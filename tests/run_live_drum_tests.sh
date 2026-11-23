@@ -20,7 +20,7 @@ python3 tests/check_font_atlas_pruning.py
 
 out=build/host/live_drums
 mkdir -p "$out"
-for test in drum_all_pan_pitch_test drum_map_reset_ui_test drum_all_midi_test drumx_bell_edit_test drumac_eq_test user_preset_isolation_test drum_edit_redraw_test drum_midi_map_test keyboard_zones_ui_test tuning_pitch_test drumlab_ui_test industrial_ui_test brass_ui_test atmos_ui_test cc_macro_ui_test drums_clock_test midi_rx_test \
+for test in universal_track_timing_test drum_additive_timing_test drum_all_pan_pitch_test drum_map_reset_ui_test drum_all_midi_test drumx_bell_edit_test drumac_eq_test user_preset_isolation_test drum_edit_redraw_test drum_midi_map_test keyboard_zones_ui_test tuning_pitch_test drumlab_ui_test industrial_ui_test brass_ui_test atmos_ui_test cc_macro_ui_test drums_clock_test midi_rx_test \
             drumlab_engine_test drumind_engine_test industrial_engine_test brass_engine_test atmos_engine_test brass_stress_test drumlab_stage24b_test project_test drumx_test \
             drum_stage27_test drum_stage27b_stress_test; do
     echo "== $test (FELUCCA_NO_SEQUENCER=1)"

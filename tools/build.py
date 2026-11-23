@@ -431,7 +431,7 @@ def mmio_check():
 def main():
     global PRODUCT, VERSION
     ap = argparse.ArgumentParser()
-    ap.add_argument("--release", metavar="X.Y", help="release build: vX.Y, including v0.12 (FM-1_912)")
+    ap.add_argument("--release", metavar="X.Y", help="release build: vX.Y, including v0.13 (FM-1_913)")
     ap.add_argument("--sdk", type=Path, help="JieLi AC79 SDK checkout (default: $AC79_SDK)")
     a = ap.parse_args()
     name = "felucca.fwsc"

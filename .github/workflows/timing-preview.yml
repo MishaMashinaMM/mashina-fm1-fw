@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# A passing feature branch automatically builds its own browser emulator and
+# requests publication via main, which is authorized for GitHub Pages.
+name: Universal timing browser emulator preview
+
+on:
+  push:
+    branches: [feature/drum-additive-timing]
+    paths:
+      - 'firmware/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'web/emu/**'
+      - 'docs/MASHINA_MANUAL*.md'
+      - '.github/workflows/timing-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  emulator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install asset dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate firmware headers
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Run live and timing regression tests
+        run: bash tests/run_live_drum_tests.sh
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Compile branch browser emulator
+        run: |
+          EMU_VERSION="0.13-timing-${GITHUB_SHA:0:7}" EMU_PREVIEW=1 \
+            FELUCCA_NO_SEQUENCER=1 bash web/emu/build.sh
+          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+      - name: Validate standalone browser assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("build/emu")
+          for f in ("index.html", "felucca.wasm", "worklet.js",
+                    "stems.js", "sample-bank.js", "fm1backup.js",
+                    "mashina-nav.css", "mashina-nav.js", "mashina-emu-locale.js",
+                    "fonts/DotGothic16-subset.woff"):
+              assert (p/f).is_file() and (p/f).stat().st_size>0,f
+          assert "(preview)" in (p/"index.html").read_text()
+          PY
+      - name: Upload offline-testable emulator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-universal-timing-emulator-preview
+          path: build/emu/
+          retention-days: 30
+      - name: Ask authorized main workflow to publish browser preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run publish-feature-preview.yml --ref main
+      - name: Explain hosted preview
+        run: |
+          echo "Main-branch Pages publisher requested: https://mishamashinamm.github.io/mashina-fm1-fw/previews/drum-additive-timing/" >> "$GITHUB_STEP_SUMMARY"

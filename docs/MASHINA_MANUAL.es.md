@@ -92,7 +92,7 @@ Las zonas se aplican al **MIDI externo**, no al mini-teclado del FM1, que toca l
 
 ### TRN y FINE durante la interpretación
 
-En **GLO → MIX → TUNING**, **K1 TRN** ajusta **−36 a +36 semitonos**; **K2 FINE**, **−50 a +50 cents**. **K3/K4** están reservados. TRN desplaza una capa; FINE puede engrosar dos sonidos al desafinarlos apenas.
+En **GLO → MIX → TUNING**, **K1 TRN** ajusta **−36 a +36 semitonos**; **K2 FINE**, **−50 a +50 cents**. **K3 DLY** añade de 0 a 50 ms a cualquier pista, incluidos todos los motores melódicos. En batería se suma al ajuste K4 del pad; K4 sigue reservado en TUNING. Para sonidos melódicos, Note On y Note Off se desplazan por el mismo tiempo y conservan la duración original de la nota. La asignación MIDI del pedal de sustain no cambia. TRN desplaza una capa; FINE puede engrosar dos sonidos al desafinarlos apenas.
 
 Si cambiás TRN mientras suena una nota, **esa nota mantiene su altura original**; las siguientes usan el valor nuevo. Note Off y sustain siguen liberando las voces correctas. DRUM-X y DRUM-LAB no cambian ni su afinación ni su mapa de notas por TRN/FINE.
 
@@ -137,7 +137,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.12
+### Sonidos de fábrica en v0.13
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -263,13 +263,15 @@ En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y O
 | K1 | Nota MIDI del pad, **0–127** |
 | K2 | Panorama del pad |
 | K3 | Transposición del pad, **−24 a +24 semitonos** |
-| K4 | Sin uso |
+| K4 | DLY: retraso del pad, 0–50 ms |
 
 **DEFAULT / CUSTOM — los cuatro motores de batería.** En **DEFAULT**, DRUM-X, DRUM-LAB, DRUM-AC y DRUM-IND repiten los mismos 12 pads en todas las octavas: C en MIDI 36, 48, 60 y 72 dispara el mismo sonido sin transponerlo. 
 
 Cambiar la nota de cualquier pad con **K1** activa **CUSTOM solamente en la pista seleccionada**. Los 12 pads responden entonces solo a sus notas MIDI asignadas (0–127). Los pads no modificados conservan sus notas originales de 36–47, pero ya no se repiten en otras octavas. Varios pads pueden compartir una nota y sonar juntos. La indicación **DEFAULT / CUSTOM** aparece arriba a la derecha.
 
 Para volver a DEFAULT, mantené pulsado el **botón físico SEL** (no la perilla giratoria SELECT) unos **0,7 segundos**: aparece **RESET MIDI MAP?**. **OCT− cancela** y **OCT+ restaura solamente esa pista**, recuperando las octavas repetidas sin modificar sonidos, afinación, paneo ni otras pistas. Devolver las notas manualmente a sus valores originales no desactiva CUSTOM; usá RESET. Los mapas se guardan con el proyecto. En los cuatro motores, **K2 PAN** ajusta la posición estéreo del pad (L64–C–R64) y **K3 PITCH** modifica su afinación (−24 a +24 semitonos). En DRUM-AC y DRUM-IND, los sonidos no tonales cambian sus frecuencias resonantes y su carácter espectral, sin transformarse en notas melódicas.
+
+**K4 DLY** añade de 0 a 50 ms al disparo del pad seleccionado. **GLO → MIX → TUNING → K3 DLY** añade otros 0 a 50 ms a toda la pista: ambos valores se suman (por ejemplo, 12 + 7 = 19 ms). El valor inicial es cero. Los ajustes se guardan con el proyecto y funcionan con los cuatro motores de batería. La variación aleatoria de tiempo queda para una versión posterior.
 
 
 ### PLAY: respuesta de los pads
@@ -394,4 +396,4 @@ Antes de cambiar o retroceder la versión, guardá una **copia completa de proye
 
 ---
 
-MASHINA v0.12 · M-VAVE FM1
+MASHINA v0.13 · M-VAVE FM1
