@@ -3518,11 +3518,15 @@ static void proj_fill_poll(uint32_t sig)
 static void autosave_poll(void)
 {
     static uint32_t fill_poll;
-    if (fm1_ms - fill_poll >= 250u) {                   /* (JIANT 0.6) how full the music is, flash or not */
+#if !(defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS)
+    if (fm1_ms - fill_poll >= 250u) {                   /* old FUN snapshot fullness metric, not MPR1 */
         fill_poll = fm1_ms;
         proj_fill_poll(autosave_sig());
     }
-#if FELUCCA_FLASH && !(defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS)
+#else
+    (void)fill_poll; /* MPR1 has its own bounded settings payload; legacy metric is invalid. */
+#endif
+#if FELUCCA_FLASH
     uint32_t sig;
     if (!flash_ok || fm1_ms - as.poll < AS_POLL_MS)
         return;
@@ -3538,9 +3542,26 @@ static void autosave_poll(void)
         return;
     as.last = fm1_ms;
     as.wrote = 1;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* Reference-only autosave: preserve *exactly* the same project settings
+     * and six preset IDs as a user-save, never snapshot a sound. An unsaved
+     * sound edit is not representable: refuse to replace the last good
+     * autosave until the user explicitly saves the modified preset. */
+#if FELUCCA_PROJECT_REFS_WRITE
+    if (!mpr_capture_unsaved(proj_cur < 4u ? proj_cur : 0u)) {
+        as.err = 1u;
+        return;
+    }
+    proj_wire_gen++;
+    as.err = st_save(OBJ_AUTOSAVE, proj_wire_u.raw, MPR_MAX_RECORD) != 0;
+#else
+    return; /* no implicit writes on a project-write-locked build */
+#endif
+#else
     project_capture(&proj_scratch);
     proj_wire_gen++;
     as.err = !proj_pack(&proj_wire, &proj_scratch) || st_save(OBJ_AUTOSAVE, &proj_wire, sizeof proj_wire) != 0;
+#endif
     if (!as.err) {
         as.saved = sig;
         as.writes++;
@@ -3554,10 +3575,21 @@ static void autosave_poll(void)
 static int autosave_boot(int allowed)
 {
     int rc = 0;
-#if FELUCCA_FLASH && !(defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS)
+#if FELUCCA_FLASH
     if (flash_ok && allowed && (ui_prefs & PREF_RESTORE_ON)) {
         int n;
         proj_wire_gen++;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        /* Incompatible legacy FUN autosaves are ignored intentionally.
+         * An MPR1 backup is valid only with its exact fixed-size record;
+         * preset references and their current sounds are re-validated
+         * before any project settings are applied. */
+        n = st_load(OBJ_AUTOSAVE, proj_wire_u.raw, MPR_MAX_RECORD);
+        if (n == MPR_MAX_RECORD && !mpr_restore_unsaved(proj_wire_u.raw)) {
+            ui_message("RESTORED");
+            rc = 1;
+        }
+#else
         n = st_load(OBJ_AUTOSAVE, &proj_wire, sizeof proj_wire);
         if (n > 0 && proj_import(&proj_scratch, &proj_wire, n)) {
             proj_bound(&proj_scratch);
@@ -3566,6 +3598,7 @@ static int autosave_boot(int allowed)
                 rc = 1;
             }
         }
+#endif
     }
 #else
     (void)allowed;
