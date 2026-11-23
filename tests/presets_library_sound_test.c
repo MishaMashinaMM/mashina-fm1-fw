@@ -43,7 +43,7 @@ int main(void)
     ui_power_on();
     song.sel=0;
     set_engine_of(TSEL,0u);
-    TSEL->p[P_E0]=49;
+    TSEL->p[P_ATK]=49;
     bad+=check("USER 1 sound can be stored independently before library capture",
                up_store(0,"LIB ONE")==3 && up_used(0));
     memcpy(before,up_rec(0),sizeof before);
@@ -51,11 +51,11 @@ int main(void)
     memcpy(blob,up_rec(0),sizeof before);
     bad+=check("put USER 1 into LIBRARY 33 without mutating USER 1",
                lib_slot_write(0,blob)==0&&!memcmp(before,up_rec(0),sizeof before));
-    TSEL->p[P_E0]=9;
+    TSEL->p[P_ATK]=9;
     selected=song.sel;
     preset_go(UP_SLOTS);
     bad+=check("PRESETS loads LIBRARY 33 from flash into active track",
-               TSEL->p[P_E0]==49 && TSEL->user==UP_SLOTS+1u && song.sel==selected);
+               TSEL->p[P_ATK]==49 && TSEL->user==UP_SLOTS+1u && song.sel==selected);
     {
         char name[16];
         library_track_name(TSEL,name);
@@ -66,14 +66,14 @@ int main(void)
                !memcmp(before,up_rec(0),sizeof before));
     /* PC32 targets track 2 without changing track selection or track 1. */
     {
-        int16_t old=TSEL->p[P_E0];
+        int16_t old=TSEL->p[P_ATK];
         selected=song.sel;
-        trk[1].p[P_E0]=7;
+        trk[1].p[P_ATK]=7;
         midi_pc_req[1]=UP_SLOTS+1u;
         midi_pc_poll();
         bad+=check("PC32 loads LIBRARY 33 into track 2 without moving selection",
-                   trk[1].p[P_E0]==49 && trk[1].user==UP_SLOTS+1u && song.sel==selected);
-        bad+=check("track 1 remains independent",TSEL->p[P_E0]==old);
+                   trk[1].p[P_ATK]==49 && trk[1].user==UP_SLOTS+1u && song.sel==selected);
+        bad+=check("track 1 remains independent",TSEL->p[P_ATK]==old);
     }
     /* Drum-AC: complete 12-pad sidecar is an independent part of record. */
     set_engine_of(TSEL,ENGI_DRUMAC);
