@@ -88,6 +88,7 @@ try{
   await page.selectOption("#emu-target-select","2");
   await page.locator("#emu-stage").click();
   assert.equal(await page.locator("#emu-pending tr").count(),1);
+  await page.locator("#emu-project-editor summary").click();
   await page.selectOption("#emu-project-position","0");
   await page.selectOption("#emu-project-track","1");
   await page.selectOption("#emu-project-ref","1");
