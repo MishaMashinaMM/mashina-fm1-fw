@@ -42,7 +42,10 @@ int main(void)
                    engine,i,name);
             for(uint32_t b=0;b<sizeof record;b++)
                 printf("%s%u",b?",":"",(unsigned)record[b]);
-            printf("]}");
+            uint32_t checksum=2166136261u;
+            for(uint32_t byte=0;byte<sizeof record;byte++)
+                checksum=(checksum^record[byte])*16777619u;
+            printf("],\\"fnv32\\":%u}",checksum);
         }
     }
     puts("]}");
