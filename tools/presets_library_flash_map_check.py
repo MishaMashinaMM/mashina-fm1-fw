@@ -65,6 +65,22 @@ def check():
     assert "ota_crc16(r + 2, 78, 0)" in src(loader), "record CRC guard changed"
     assert "s - 0x1000u >= 0xEA000u" in src(loader) and "s - 0x1000u < 0xF2000u" in src(loader), (
         "MASHINA update loader no longer excludes LIBRARY flash sectors from cleanup")
+    # A successful build is NOT proof opt-in code was actually compiled:
+    # every feature flag must be forwarded through the native AC79 builder.
+    build = src("tools/build.py")
+    for flag in ("FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
+                 "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
+                 "FELUCCA_PROJECT_REFS_FORMAT"):
+        assert '"' + flag + '"' in build, f"tools/build.py no longer forwards {flag}"
+    hal = src(flash)
+    assert "#if defined(FELUCCA_LIB32_WRITE) && FELUCCA_LIB32_WRITE" in hal
+    assert "FL_LIB32_OK(off,n)" in hal and "|| FL_LIB32_OK(off,n)" in hal, (
+        "LIB32 writes must be bounded by an explicit flash HAL gate")
+    fw = src("firmware/src/felucca.c")
+    for flag in ("FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
+                 "FELUCCA_PROJECT_REFS_FORMAT"):
+        assert "#define " + flag + " 0" in fw, f"unsafe default for {flag}"
+    print("PASS: feature flags reach native compiler; hardware writes remain gated OFF by default")
     print("PASS: MASHINA loader explicitly skips LIBRARY flash sectors while clearing update records")
     print("CAUTION: stock bootloader/vendor update tools are still unverified on physical hardware")
     print("PASS: source-level LIB32 + compact MPR1 geometry and known app partitions")
