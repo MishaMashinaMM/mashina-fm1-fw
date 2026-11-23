@@ -32,22 +32,41 @@ export async function connectLibraryMidi(){
     const d=Uint8Array.from(e.data||[]);
     if(d.length<6||d[0]!==240||d[1]!==125||d[2]!==70||d[3]!==76||
        d[d.length-1]!==247||d[4]!==waiting.cmd)return;
+    const body=d.slice(5,-1);
+    if(waiting.match&&!waiting.match(body))return; // late chunk from an older GET
     const w=waiting;waiting=null;clearTimeout(w.timer);
-    w.resolve(d.slice(5,-1));
+    w.resolve(body);
   };
-  async function request(cmd,args=[]){
-    if(closed||out.state==="disconnected"||input.state==="disconnected")throw new Error("FM1 MIDI connection lost.");
+  /* Compatible with both request(cmd,args) and the chunked full-backup
+   * adapter request(cmd,args,{timeout,retries,match}). Only read commands
+   * should be retried: writes remain single-shot to avoid duplicate saves. */
+  async function request(cmd,args=[],options={}){
+    if(closed||out.state==="disconnected"||input.state==="disconnected")
+      throw new Error("FM1 MIDI connection lost.");
     if(waiting)throw new Error("Another library transfer is in progress.");
     const payload=Uint8Array.from(args);
     if(payload.some(x=>x>127))throw new Error("A WebMIDI payload byte exceeds 127.");
-    return new Promise((resolve,reject)=>{
-      const timer=setTimeout(()=>{
-        if(waiting?.cmd===cmd){waiting=null;reject(new Error("FM1 did not respond to library command "+cmd));}
-      },3500);
-      waiting={cmd,resolve,reject,timer};
-      try{out.send([240,125,70,76,cmd,...payload,247]);}
-      catch(error){clearTimeout(timer);waiting=null;reject(error);}
-    });
+    const retries=options.retries??0;
+    const timeout=options.timeout??3500;
+    for(let attempt=0;attempt<=retries;attempt++){
+      try{
+        return await new Promise((resolve,reject)=>{
+          const timer=setTimeout(()=>{
+            if(waiting?.cmd===cmd){
+              waiting=null;
+              const error=new Error("FM1 did not respond to command "+cmd);
+              error.timeout=true;
+              reject(error);
+            }
+          },timeout);
+          waiting={cmd,match:options.match,resolve,reject,timer};
+          try{out.send([240,125,70,76,cmd,...payload,247]);}
+          catch(error){clearTimeout(timer);waiting=null;reject(error);}
+        });
+      }catch(error){
+        if(!error.timeout||attempt===retries||closed)throw error;
+      }
+    }
   }
   return {name:out.name,request,close(){
     if(closed)return;closed=true;input.onmidimessage=old;
