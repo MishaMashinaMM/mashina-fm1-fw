@@ -14,7 +14,9 @@ jobs:
         with:
           python-version: '3.13'
       - name: Verify existing storage and report 32-slot capacity
-        run: python3 tools/presets_library_capacity.py
+        run: |
+          python3 tools/presets_library_capacity.py
+          python3 tools/presets_library_pack_experiment.py
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
