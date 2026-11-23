@@ -200,6 +200,14 @@ $("upload-device").addEventListener("click",()=>action(async()=>{
 $("probe-flash").addEventListener("click",()=>action(async()=>{
   if(!device)throw new Error("Connect first");
   const health=await probeFlash(device.request);
+  downloadFile("mashina-flash-diagnostic.json",{
+    format:"mashina-flash-diagnostic",version:1,
+    created:new Date().toISOString(),
+    projects:health.projects,library:health.library,
+    unknown:health.unknown,
+    canInitializeProjects:health.canInitializeProjects,
+    libraryAllBlank:health.libraryAllBlank
+  });
   const statuses=["blank","committed","retired project","unknown","unavailable"];
   $("status").textContent=
     "PROJECT FLASH (16 paired banks): "+health.projects.map((x,i)=>
@@ -207,7 +215,8 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     "LIBRARY FLASH (4 paired banks): "+health.library.map((x,i)=>
       `slots ${33+i*8}–${40+i*8}: ${statuses[x]}`).join(" · ")+"\n"+
     (health.unknown?"Some flash sectors are unknown/unavailable. Do NOT enable writes.":
-     "Read-only inspection completed. Physical bootloader/update ownership still requires verification.");
+     "Read-only inspection completed. Physical bootloader/update ownership still requires verification.")+
+    "\\nSaved mashina-flash-diagnostic.json — share that file for analysis.";
 }));
 $("preview-projects").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
