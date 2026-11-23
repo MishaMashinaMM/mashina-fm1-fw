@@ -1,0 +1,218 @@
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Experimental MPR1 clean-break project SAVE/RECALL integration.
+ * Included after project_capture/random_saved_live in project.c, only when
+ * FELUCCA_PROJECT_REFS=1. Device flash writes remain separately locked.
+ * Snapshot sound engines / FM6 voices / drum kit patches are NEVER written
+ * into project records. The six byte identities are the sound authority.
+ */
+static uint32_t mpr_global_section(uint32_t section)
+{
+    return (uint32_t)song_cur*4u+(section&3u);
+}
+static int mpr_cached(uint32_t section,uint8_t refs[NTRK],
+                      uint8_t name[PROJ_NAME_LEN],project_t *p)
+{
+    const uint8_t *r;
+    uint32_t version_section=0,n=0;
+    if(section>=4u)return 0;
+    r=proj_slot[section].raw;
+    if(mpr_get32(r)!=MPR_MAGIC || r[4]!=MPR_VERSION)return 0;
+    uint32_t len=MPR_HEADER+((uint32_t)r[6]|((uint32_t)r[7]<<8));
+    if(len>MPR_MAX_RECORD ||
+       !mpr_decode(r,len,&version_section,refs,name,proj_wire_u.raw,
+                   MPR_MAX_SETTINGS,&n) || version_section!=section)return 0;
+    if(p) {
+        memset(p,0,sizeof *p);
+        if(!mpr_project_settings_decode(p,proj_wire_u.raw,n))return 0;
+        p->magic=PROJ_MAGIC;p->size=sizeof *p;
+        memcpy(p->name,name,PROJ_NAME_LEN);
+        p->sum=proj_sum(p);
+    }
+    return 1;
+}
+static int mpr_slot_used(uint32_t section)
+{
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN];
+    return mpr_cached(section,refs,name,0);
+}
+static int mpr_pack_live(const project_t *p,uint32_t section,
+                         const uint8_t refs[NTRK],const uint8_t name[PROJ_NAME_LEN])
+{
+    uint8_t *r=proj_wire_u.raw;
+    uint32_t n=mpr_project_settings_encode(p,r+MPR_HEADER,MPR_MAX_SETTINGS);
+    int len;
+    if(!n)return 0;
+    /* Settings are already at their destination: mpr_encode is in-place. */
+    len=mpr_encode(r,section,refs,name,r+MPR_HEADER,n);
+    if(len<=0 || (uint32_t)len>MPR_MAX_RECORD)return 0;
+    memset(r+len,0,MPR_MAX_RECORD-(uint32_t)len);
+    return 1;
+}
+static int mpr_commit(uint32_t section)
+{
+    if(section>=4u)return 2;
+#if FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
+    if(flash_ok && mprs_save(mpr_global_section(section),proj_wire_u.raw))
+        return 2;
+#endif
+    /* On write-locked builds this is intentionally RAM-only (no persistence). */
+    memcpy(proj_slot[section].raw,proj_wire_u.raw,MPR_MAX_RECORD);
+    proj_wire_gen++;
+    return 0;
+}
+static int mpr_live_save(uint32_t section,const char *rename)
+{
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN]={0};
+    project_t *p=&proj_scratch;
+    const char *name_source=rename?rename:proj_name;
+    if(section>=4u || transport_busy())return 2;
+    for(uint32_t k=0;k<NTRK;k++){
+        uint32_t u=trk[k].user;
+        refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        if(refs[k]<UP_SLOTS && !up_used(refs[k])){
+            ui_message("MISSING USER PRESET");return 2;
+        }
+        if(refs[k]>=UP_SLOTS && refs[k]!=MPR_EMPTY &&
+           library_slot_ready(refs[k]-UP_SLOTS)){
+            ui_message("LIBRARY PRESET ERROR");return 2;
+        }
+    }
+    for(uint32_t k=0;k<PROJ_NAME_LEN && name_source[k];k++)
+        name[k]=(uint8_t)name_source[k];
+    project_capture(p);
+    if(!mpr_pack_live(p,section,refs,name)){
+        ui_message("SECTION FULL");return 2;
+    }
+    if(mpr_commit(section)){
+        ui_message("SAVE ERROR");return 2;
+    }
+    memcpy(proj_name,name,PROJ_NAME_LEN);
+    proj_name[PROJ_NAME_LEN]=0;
+    proj_cur=(uint8_t)section;
+    live.cur=(int8_t)section;
+    live.dirty&=(uint8_t)~(1u<<section);
+    random_saved_live(section);
+#if FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
+    ui_message(flash_ok?"SAVED":"SAVED (RAM ONLY)");
+#else
+    ui_message("SAVED (RAM ONLY)");
+#endif
+    return 0;
+}
+static int mpr_live_clear(uint32_t section)
+{
+    if(section>=4u || transport_busy())return 1;
+    memset(proj_wire_u.raw,0,MPR_MAX_RECORD);
+    if(mpr_commit(section)){ui_message("CLEAR ERROR");return 1;}
+    live.dirty&=(uint8_t)~(1u<<section);
+    if(proj_cur==section)proj_cur=PROJ_NO_SLOT;
+    ui_message("PROJECT SLOT CLEARED");
+    ui.force=1;
+    return 0;
+}
+static int mpr_live_name(uint32_t section,char *out)
+{
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN];
+    out[0]=0;
+    if(!mpr_cached(section,refs,name,0))return 0;
+    memcpy(out,name,PROJ_NAME_LEN);
+    out[PROJ_NAME_LEN]=0;
+    return 1;
+}
+static int mpr_live_rename(uint32_t section,const char *new_name)
+{
+    project_t *p=&proj_scratch;
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN]={0};
+    if(transport_busy()){ui_message("STOP TO RENAME");return 1;}
+    if(!mpr_cached(section,refs,name,p)){ui_message("EMPTY SLOT");return 1;}
+    memset(name,0,sizeof name);
+    for(uint32_t k=0;k<PROJ_NAME_LEN && new_name[k];k++)name[k]=(uint8_t)new_name[k];
+    if(!mpr_pack_live(p,section,refs,name)){ui_message("SECTION FULL");return 2;}
+    if(mpr_commit(section)){ui_message("SAVE ERROR");return 2;}
+    if(proj_cur==section){
+        memcpy(proj_name,name,PROJ_NAME_LEN);
+        proj_name[PROJ_NAME_LEN]=0;
+    }
+    ui_message("RENAMED");
+    return 0;
+}
+/* Apply only project-level settings AFTER the shared preset sounds load.
+ * No sound engine selection, tone parameters, FM6 or full drum-kit patches
+ * are overwritten by this function. */
+static void mpr_apply_project_settings(const project_t *p,const uint8_t refs[NTRK])
+{
+    uint32_t k,i;
+    transport_req=2;
+    panic_req=(1u<<NTRK)-1u;
+    seq_stop();
+    transport_req=0;
+    for(k=0;k<NTRK;k++)
+        lyr_set(k,p->lyr[k]);
+    fm1_irq_off();
+    for(i=0;i<3u;i++)global_eq_gain[i]=p->eq_gain[i];
+    global_eq_on=p->eq_on;
+    memcpy(midi_rx,p->rx,sizeof p->rx);
+    memcpy(midi_transpose,p->transpose,sizeof midi_transpose);
+    memcpy(midi_fine,p->fine,sizeof midi_fine);
+    memcpy(drum_track_delay,p->drum_timing,sizeof drum_track_delay);
+    memcpy(midi_zone,p->zone,sizeof midi_zone);
+    cm_count=p->cm_count;
+    memcpy(cm_rows,p->cm_rows,sizeof cm_rows);
+    memcpy(macro_v,p->macro,sizeof macro_v);
+    memcpy(pfx_lane,p->pfx_lane,sizeof pfx_lane);
+    pfx_ltgt=p->pfx_ltgt;
+    dx_mute_set(p->dx_mute);
+    for(i=0;i<G_COUNT;i++)
+        if(i!=G_SLOT && i!=G_LOAD && i!=G_SAVE)
+            song.g[i]=(int16_t)clamp(p->g[i],GP[i].min,GP[i].max);
+    for(k=0;k<NTRK;k++){
+        track_t *t=&trk[k];
+        uint32_t e=t->eng_req;
+        for(i=0;i<P_COUNT;i++)
+            if(mpr_is_project_param(i))
+                t->p[i]=(int16_t)param_fit(param_desc_of(e,i),p->t[k].p[i]);
+        memcpy(drum_pad_pan[k],p->pad_pan[k],12u);
+        memcpy(drum_pad_pitch[k],p->pad_pitch[k],12u);
+        memcpy(drum_pad_delay[k],p->pad_timing[k],12u);
+        memcpy(drum_perf_curve[k],p->perf_curve[k],12u);
+        memcpy(drum_perf_sound[k],p->perf_sound[k],12u);
+        memcpy(drum_perf_choke[k],p->perf_choke[k],12u);
+        memcpy(drum_retrigger[k],p->perf_retrigger[k],12u);
+        drum_midi_custom[k]=(uint8_t)(e==ENGI_DRUM && p->dx_note_on[k]);
+        if(drum_midi_custom[k])memcpy(drum_midi_note[k],p->dx_note[k],12u);
+        drumlab_midi_custom[k]=(uint8_t)((e==ENGI_DRUMLAB || e==ENGI_DRUMAC ||
+                                          e==ENGI_DRUMIND) && p->lab_note_on[k]);
+        if(drumlab_midi_custom[k])memcpy(drumlab_midi_note[k],p->lab_note[k],12u);
+        if(refs[k]==MPR_EMPTY)t->p[P_MUTE]=1; /* no stale sound from prior section */
+    }
+    song.sel=p->sel;
+    fm1_irq_on();
+    lfo_fade_restart((1u<<NTRK)-1u);
+    sync_reload=1;
+    ui.force=1;
+}
+static int mpr_live_load(uint32_t section)
+{
+    project_t *p=&proj_scratch;
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN];
+    if(!mpr_cached(section,refs,name,p)){
+        ui_message("EMPTY OR BAD SECTION");return 1;
+    }
+    if(project_references_load_all(refs)){
+        ui_message("MISSING OR BAD PRESET");return 1;
+    }
+    mpr_apply_project_settings(p,refs);
+    memcpy(proj_name,name,PROJ_NAME_LEN);
+    proj_name[PROJ_NAME_LEN]=0;
+    proj_cur=(uint8_t)section;
+    live.cur=(int8_t)section;
+    ui_message("LOADED");
+    return 0;
+}
+static int mpr_live_recall_sound(uint32_t section,uint32_t track)
+{
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN];
+    if(track>=NTRK || !mpr_cached(section,refs,name,0) ||
+       refs[track]==MPR_EMPTY)return 1;
+    return project_reference_load(track,refs[track]);
+}
