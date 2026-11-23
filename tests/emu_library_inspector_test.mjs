@@ -89,4 +89,14 @@ const broken={...sectors,[0xea000]:corruptLib};
 assert.throws(()=>inspectEmulatorFlash(encodeEmulatorFlash(broken)),/LIBRARY bank 0/);
 const brokenUser={...sectors,[0xdc000]:new Uint8Array(4096)};
 assert.throws(()=>inspectEmulatorFlash(encodeEmulatorFlash(brokenUser)),/USER bank 0/);
+const unknownUser=bank.slice();
+unknownUser[8]=0; // not UP_USED, but nonzero sound data is still present
+const unknownUserSector=user.slice();
+w32(unknownUserSector,16,crc(unknownUser));
+w32(unknownUserSector,28,crc(unknownUserSector.slice(0,28)));
+unknownUserSector.set(unknownUser,256);
+assert.throws(()=>inspectEmulatorFlash(encodeEmulatorFlash({
+  ...sectors,[0xdc000]:unknownUserSector
+})),/nonempty invalid record/);
+console.log("PASS: unknown nonzero USER data is never silently shown as empty");
 console.log("PASS: damaged committed banks refused, not treated as empty sound slots");
