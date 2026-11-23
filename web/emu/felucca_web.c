@@ -399,6 +399,31 @@ EXPORT uint32_t web_mpr_ref(uint32_t track)
 { return track < NTRK ? trk[track].user : 0u; }
 EXPORT uint32_t web_mpr_dirty(uint32_t track)
 { return track < NTRK ? (uint32_t)mpr_source_modified(&trk[track]) : 2u; }
+/* Investigation probes: distinguish source-fingerprint capture problems
+ * from actual sound parameter or shared drum-kit mutations at runtime. */
+EXPORT uint32_t web_mpr_origin_hash(uint32_t track)
+{ return track < NTRK ? mpr_origin_hash[track] : 0u; }
+EXPORT uint32_t web_mpr_current_hash(uint32_t track)
+{ return track < NTRK ? mpr_current_sound_hash(&trk[track]) : 0u; }
+EXPORT uint32_t web_mpr_track_hash(uint32_t track)
+{
+    if (track >= NTRK) return 0u;
+    const track_t *t=&trk[track];
+    uint32_t h=2166136261u;
+    h=mpr_hash_bytes(h,&t->eng_req,sizeof t->eng_req);
+    for(uint32_t i=0;i<P_COUNT;i++)if(!mpr_is_project_param(i)){
+        int16_t v=motion_base_value(t,i);
+        h=mpr_hash_bytes(h,&v,sizeof v);
+    }
+    return h;
+}
+EXPORT uint32_t web_mpr_drum_hash(void)
+{
+    uint32_t h=2166136261u;
+    h=mpr_hash_bytes(h,dx_kit,sizeof dx_kit);
+    h=mpr_hash_bytes(h,dx_kit12,sizeof dx_kit12);
+    return h;
+}
 EXPORT uint32_t web_mpr_test_save(void)
 { return (uint32_t)mpr_live_save(0u,"BOOT TEST"); }
 EXPORT uint32_t web_mpr_test_used(void)
