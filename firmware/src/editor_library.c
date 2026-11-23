@@ -5,6 +5,20 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 {
     uint8_t response[LIB_WIRE_MAX];
     uint32_t length;
+    if (cmd == 95u) { /* MPR1_CAP: 32 project sections, separate write gate */
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        if(n) {ed_b(127u);ed_b(1u);return 1;}
+        ed_b(1u);ed_b(32u);
+#if FELUCCA_PROJECT_REFS_WRITE
+        ed_b(flash_ok?1u:0u);
+#else
+        ed_b(0u);
+#endif
+        return 1;
+#else
+        ed_b(0u);ed_b(0u);ed_b(0u);return 1;
+#endif
+    }
     if (cmd == 94u) { /* CAPTURE_USER, never changes sound or writes flash */
         uint32_t slot = n ? args[0] : UP_SLOTS;
         uint32_t rc = 0u;
