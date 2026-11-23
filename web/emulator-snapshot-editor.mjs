@@ -236,9 +236,13 @@ function getUpfState(sectors){
   if(!current){
     const retired=[0,1].map(i=>
       readStCandidate(sectors,addresses[i],i,7,3472));
+    // Retired FM6B can contain unique user voices that the firmware migrates
+    // on next boot. Creating a fresh UPF6 now would suppress that migration.
+    // Refuse selective USER edits until the emulator has booted/migrated it.
+    check(retired.every(x=>x===null),
+      "Retired FM6 voice bank needs firmware migration first: boot the emulator and re-export the JSON before selectively editing USER sounds");
     const available=addresses.map((off,i)=>isErased(sector(sectors,off))?i:-1).filter(x=>x>=0);
-    check(available.length>0&&
-      addresses.every((off,i)=>isErased(sector(sectors,off))||retired[i]),
+    check(available.length===2,
       "UPF6 companion sectors are foreign or damaged");
     const data=new Uint8Array(3728);
     put32(data,0,0x36465055);
