@@ -6,6 +6,13 @@ const settingsBytes=Array.from({length:1792},(_,i)=>(i*73+19)&255);
 const recordBytes=encodeProject({section:1,refs,name:"SECTION B",settingsBytes});
 const parsed=decodeProject(recordBytes);
 assert.equal(recordBytes.length,1824);
+const flash=recordBytes.slice(); // already full-size payload
+assert.deepEqual(decodeProject(flash).recordBytes,recordBytes);
+const short=encodeProject({section:1,refs,name:"SECTION B",settingsBytes:[0,1,2]});
+const padded=short.concat(Array(1824-short.length).fill(0));
+assert.deepEqual(decodeProject(padded).recordBytes,short);
+padded[padded.length-1]=1;
+assert.throws(()=>decodeProject(padded),/padding/);
 assert.deepEqual(parsed.refs,refs);
 assert.equal(parsed.name,"SECTION B");
 assert.equal(parsed.section,1);
