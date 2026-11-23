@@ -11,6 +11,7 @@ on:
       - 'firmware/src/**'
       - 'tools/**'
       - 'tests/emu_library_flash_persistence_test.mjs'
+      - 'tests/emu_mpr1_fresh_save_test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -55,6 +56,8 @@ jobs:
           }
           console.log('PASS: MPR1/LIB32 simulator WASM compiled with required exports');
           JS
+      - name: Test untouched four-track project SAVE in running WASM
+        run: node tests/emu_mpr1_fresh_save_test.mjs
       - name: Include safety notes with downloadable emulator
         run: |
           cat > build/emu/EXPERIMENTAL-README.txt <<'TXT'
