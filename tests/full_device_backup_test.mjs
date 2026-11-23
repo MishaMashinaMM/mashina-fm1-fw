@@ -15,7 +15,8 @@ const raw=bytes=>({size:bytes.length,crc:bkCrc(bytes),data:Buffer.from(bytes).to
 const ids=[0,1,2,3,4,5,6,7,8,9,10,...Array.from({length:32},(_,i)=>40+i)];
 const objects=ids.map(id=>{
   const d=id===0?pad(current):id===1?Uint8Array.from([1,2,3,4]):
-          id===41?pad(section):new Uint8Array(0);
+          id===10?Uint8Array.from([83,79,78,71,2,0,0,0]):
+          (id===3||id===41)?pad(section):new Uint8Array(0);
   return {id,...raw(d)};
 });
 const base={format:"mashina-full-device",version:1,
@@ -32,6 +33,7 @@ assert.equal(valid.format,"mashina-full-device");
 assert.deepEqual(valid.projects[1],section);
 assert.deepEqual(valid.currentPerformance,current);
 assert.equal(valid.archive.objects.length,43);
+assert.equal(valid.selectedProject,1);
 const withUser=structuredClone(base);
 const storedUserBank=new Uint8Array(3080);
 storedUserBank.set([0x55,0x50,0x42,0x31,192,0,16,0]); // "UPB1" / 192 / 16
@@ -46,6 +48,9 @@ changedBank.archive.objects[6]={id:6,...raw(mismatched)};
 assert.throws(()=>validateFullDevice(changedBank),/USER 1 differs/);
 
 assert.throws(()=>validateFullDevice({...base,projects:Array(32).fill(null)}),/disagree/);
+const inconsistent=structuredClone(base);
+inconsistent.archive.objects[3]={id:3,...raw(new Uint8Array(0))};
+assert.throws(()=>validateFullDevice(inconsistent),/differs between archive aliases/);
 assert.throws(()=>validateFullDevice({...base,currentPerformance:section}),/disagree/);
 const corrupt=structuredClone(base);corrupt.archive.objects[11].crc=25;
 assert.throws(()=>validateFullDevice(corrupt),/checksum/);
