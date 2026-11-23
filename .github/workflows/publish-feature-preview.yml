@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Publishes only an isolated branch emulator; the public release is copied
+# bit-for-bit from the successful main site artifact, never rebuilt from the
+# feature branch. Trigger runs on main after the official Pages build succeeds.
+name: Publish validated feature emulator preview
+
+on:
+  workflow_run:
+    workflows: ["emulator"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish-timing-preview:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: https://mishamashinamm.github.io/mashina-fm1-fw/previews/drum-additive-timing/
+    steps:
+      - name: Check out feature branch without merging to main
+        uses: actions/checkout@v4
+        with:
+          ref: feature/drum-additive-timing
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install asset dependencies
+        run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate firmware headers
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Test all live drum and universal timing changes
+        run: bash tests/run_live_drum_tests.sh
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Build isolated browser emulator
+        run: |
+          EMU_VERSION="0.12-timing-${GITHUB_SHA:0:7}" EMU_PREVIEW=1 \
+            FELUCCA_NO_SEQUENCER=1 bash web/emu/build.sh
+          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+      - name: Validate browser preview assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("build/emu")
+          for f in ("index.html", "felucca.wasm", "worklet.js",
+                    "stems.js", "sample-bank.js", "fm1backup.js",
+                    "mashina-nav.css", "mashina-nav.js",
+                    "mashina-emu-locale.js", "fonts/DotGothic16-subset.woff"):
+            assert (p/f).is_file() and (p/f).stat().st_size>0,f
+          assert "(preview)" in (p/"index.html").read_text()
+          PY
+      - name: Restore current public main Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/pages
+          success=0
+          while IFS= read -r runid; do
+            test -n "$runid" || continue
+            rm -rf /tmp/mashina-public-pages
+            mkdir -p /tmp/mashina-public-pages
+            if ! gh run download "$runid" -n github-pages -D /tmp/mashina-public-pages >/dev/null 2>&1; then
+              continue
+            fi
+            test -f /tmp/mashina-public-pages/artifact.tar || continue
+            tar -xf /tmp/mashina-public-pages/artifact.tar -C build/pages
+            if test -s build/pages/firmware/SOURCE_COMMIT && \
+               test -s build/pages/firmware/RELEASE_SHA256 && \
+               test -s build/pages/webapp/installer/index.html && \
+               test -s build/pages/emu/felucca.wasm; then
+              echo "Preserving public release site from main run $runid"
+              success=1
+              break
+            fi
+            rm -rf build/pages && mkdir -p build/pages
+          done < <(gh run list --workflow emulator.yml --branch main --status success --limit 15 --json databaseId --jq '.[].databaseId')
+          test "$success" = 1 || { echo "::error::No verified public Pages artifact"; exit 1; }
+          cp build/pages/firmware/SOURCE_COMMIT /tmp/mashina-public-source
+          cp build/pages/firmware/RELEASE_SHA256 /tmp/mashina-public-hash
+      - name: Overlay feature preview only
+        run: |
+          set -euo pipefail
+          mkdir -p build/pages/previews/drum-additive-timing
+          cp -a build/emu/. build/pages/previews/drum-additive-timing/
+          git rev-parse HEAD > build/pages/previews/drum-additive-timing/SOURCE_COMMIT
+          cmp /tmp/mashina-public-source build/pages/firmware/SOURCE_COMMIT
+          cmp /tmp/mashina-public-hash build/pages/firmware/RELEASE_SHA256
+          test -s build/pages/previews/drum-additive-timing/felucca.wasm
+      - name: Upload standalone preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-timing-emulator
+          path: build/emu/
+          retention-days: 30
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/pages
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Link to browser emulator
+        run: |
+          echo '### [Open universal timing emulator](https://mishamashinamm.github.io/mashina-fm1-fw/previews/drum-additive-timing/)' >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
