@@ -470,9 +470,20 @@ static void song_poll(void)
         song_index_save())
         song_idx_t = fm1_ms;                          /* (failed: tried again later) */
     if (live.dirty && flash_ok && !transport_busy())
-        for (k = 0; k < 4u; k++)
-            if (((live.dirty >> k) & 1u) && !st_save(proj_obj(k), &proj_slot[k], sizeof proj_slot[k]))
-                live.dirty &= (uint8_t)~(1u << k);    /* (a failed write stays dirty: tried again) */
+        for (k = 0; k < 4u; k++) {
+            if (!((live.dirty >> k) & 1u))continue;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+#if FELUCCA_PROJECT_REFS_WRITE
+            /* Never write the legacy 3840-byte FUN record over a compact
+             * paired-section bank. A failed write stays dirty for retry. */
+            if (!mprs_save((uint32_t)song_cur*4u+k,proj_slot[k].raw))
+                live.dirty &= (uint8_t)~(1u<<k);
+#endif
+#else
+            if (!st_save(proj_obj(k), &proj_slot[k], sizeof proj_slot[k]))
+                live.dirty &= (uint8_t)~(1u << k);
+#endif
+        }
 #else
     live.dirty = 0;
     song_idx_dirty = 0;
