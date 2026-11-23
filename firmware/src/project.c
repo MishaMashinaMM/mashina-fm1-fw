@@ -3426,6 +3426,9 @@ static struct {
     uint32_t t, last, poll;                      /* fm1_ms: seen changed / busy, the last write, the last check */
     uint32_t writes;                             /* (written since power-on: the host tests count them) */
     uint8_t wrote, err;                          /* a write since power-on (last is valid); the last one failed */
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    uint8_t restore_enabled;                     /* detect OFF -> ON without a sound edit */
+#endif
 } as __attribute__((section(".pool")));
 
 static uint32_t as_mix(uint32_t h, const void *p, uint32_t n)   /* FNV-1a, continued */
@@ -3544,6 +3547,18 @@ static void autosave_poll(void)
         return;
     as.poll = fm1_ms;
     sig = autosave_sig();
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* Enabling RESTORE LAST is itself a request to preserve the current
+     * performance. The preference is NOT a sound parameter and therefore
+     * does not change autosave_sig(); without this transition check, the
+     * current project may never be saved until some other value changes. */
+    if ((ui_prefs & PREF_RESTORE_ON) && !as.restore_enabled) {
+        as.saved = ~sig;                         /* force exactly one new snapshot */
+        as.seen = sig;
+        as.t = fm1_ms;                          /* still obey the 10 s quiet period */
+    }
+    as.restore_enabled = !!(ui_prefs & PREF_RESTORE_ON);
+#endif
     if (sig != as.seen || !autosave_quiet()) {
         as.seen = sig;
         as.t = fm1_ms;
@@ -3616,6 +3631,14 @@ static int autosave_boot(int allowed)
     (void)allowed;
 #endif
     as.saved = as.seen = autosave_sig();
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    as.restore_enabled = !!(ui_prefs & PREF_RESTORE_ON);
+    /* If enabled but no usable previous MPR1 autosave exists, write the
+     * current valid startup performance after the quiet interval. This
+     * does not overwrite a previous usable snapshot after a clean boot. */
+    if (as.restore_enabled && !rc && allowed)
+        as.saved = ~as.seen;
+#endif
     as.t = fm1_ms;
     return rc;
 }
