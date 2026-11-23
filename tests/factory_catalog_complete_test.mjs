@@ -29,6 +29,26 @@ for(let i=0;i<32;i++) {
   assert.equal(r.recordBytes.length,304);
   assert.deepEqual(decodeRecord(r.recordBytes).recordBytes,r.recordBytes);
 }
+// All 107 factory sounds must be individually uploadable, not just the 32
+// defaults. Cover the remaining 75 sounds in three additional 32-slot packs.
+let covered=0;
+for(let offset=0;offset<107;offset+=32){
+  const selection=Array.from({length:32},(_,slot)=>{
+    const index=offset+slot;
+    return index<107?index:null;
+  });
+  const pack=buildFactoryUpload(catalog,selection,kits);
+  assert.equal(pack.length,Math.min(32,107-offset));
+  for(const r of pack){
+    const source=catalog.presets[offset+r.slot];
+    assert.equal(r.name,source.name);
+    assert.equal(r.engine,source.engine);
+    assert.equal(r.recordBytes.length,304);
+    if(source.engine===12)assert.deepEqual(r.fm6,source.fm6);
+  }
+  covered+=pack.length;
+}
+assert.equal(covered,107,"some firmware factory presets could not be converted");
 const exported=factorySelectionFile(catalog,selection,kits);
 const restored=importFactorySelection(JSON.parse(JSON.stringify(exported)));
 assert.equal(restored.catalog.presets.length,107);
