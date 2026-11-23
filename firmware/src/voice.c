@@ -697,14 +697,17 @@ static volatile uint8_t asleep_hit;                     /* (0.6.28) a note went 
                                                          * their sounds and steps kept (fx.c mix_part) */                                /* (0.6.15) bit k: track k muted by GLO's solo / the FX layer's
                                                          * black key (perform.c): no new notes, as MUTE (a MIDI mute: a
                                                          * silenced track's voices end, it costs nothing) */
-/* Drum timing is a trigger scheduler, not an audio delay effect.
- * Every slot retains one hit so rapid repeats stay separate. A full queue
- * falls back to an immediate hit rather than silently losing fingerdrumming.
- * Audio-block time is sample based and independent of transport/BPM. */
+/* Additive live timing: shift the note trigger, not rendered audio.
+ * Melodic Note Off receives the *same captured offset* as Note On, keeping
+ * notes' original duration even if the player releases before the hit fires.
+ * Drums are one-shot and retain their independent early-release behavior.
+ * The fixed queue is bounded; when full we play immediately, never discard a
+ * live strike. All state lives on the audio thread, with no allocations. */
 #define DRUM_DELAY_EVENTS 48u
+enum { TD_FREE, TD_WAIT_ON, TD_MELODIC_HELD, TD_WAIT_BOTH, TD_WAIT_OFF };
 typedef struct {
-    uint32_t due;
-    uint8_t track, note, vel, engine, used, released;
+    uint32_t due, off_due;
+    uint8_t track, note, vel, engine, state, released, offset_ms;
 } drum_delay_event_t;
 static drum_delay_event_t drum_delay_events[DRUM_DELAY_EVENTS] __attribute__((section(".pool")));
 static uint32_t drum_delay_clock;
@@ -712,57 +715,81 @@ static uint8_t drum_delay_pending, drum_delay_firing;
 static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel);
 static void trk_note_off_raw(track_t *t, uint32_t note);
 
+static int timing_is_drum(uint32_t engine)
+{
+    return engine == ENGI_DRUM || engine == ENGI_DRUMLAB ||
+           engine == ENGI_DRUMAC || engine == ENGI_DRUMIND;
+}
 static uint32_t drum_delay_lane(const track_t *t, uint32_t note)
 {
     if (t->eng_req == ENGI_DRUM) return drum_lane(note);
     if (t->eng_req == ENGI_DRUMAC) return ac_kind(note);
     return drumlab_lane(note);
 }
+static uint32_t timing_samples(uint32_t ms)
+{
+    return (FS * ms + 999u) / 1000u;
+}
+static void timing_event_free(drum_delay_event_t *e)
+{
+    e->state = TD_FREE;
+    if (drum_delay_pending) drum_delay_pending--;
+}
 static int drum_delay_enqueue(track_t *t, uint32_t note, uint32_t vel)
 {
-    uint32_t ti = (uint32_t)(t - trk), lane, delay;
-    if (drum_delay_firing || ti >= NPART ||
-        (t->eng_req != ENGI_DRUM && t->eng_req != ENGI_DRUMLAB &&
-         t->eng_req != ENGI_DRUMAC && t->eng_req != ENGI_DRUMIND))
-        return 0;
-    lane = drum_delay_lane(t, note);
-    if (lane >= DV_NLANE12) return 0;
-    delay = (uint32_t)drum_track_delay[ti] + drum_pad_delay[ti][lane];
+    uint32_t ti = (uint32_t)(t - trk), delay, lane;
+    if (drum_delay_firing || ti >= NTRK) return 0;
+    delay = drum_track_delay[ti];
+    if (timing_is_drum(t->eng_req) && ti < NPART) {
+        lane = drum_delay_lane(t, note);
+        if (lane < DV_NLANE12) delay += drum_pad_delay[ti][lane];
+    }
     if (!delay) return 0;
     for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++) {
         drum_delay_event_t *e = &drum_delay_events[i];
-        if (e->used) continue;
-        e->due = drum_delay_clock + (FS * delay + 999u) / 1000u;
+        if (e->state != TD_FREE) continue;
+        e->due = drum_delay_clock + timing_samples(delay);
+        e->off_due = 0u;
         e->track = (uint8_t)ti;
         e->note = (uint8_t)note;
         e->vel = (uint8_t)vel;
         e->engine = t->eng_req;
         e->released = 0u;
-        e->used = 1u;
+        e->offset_ms = (uint8_t)delay;
+        e->state = TD_WAIT_ON;
         drum_delay_pending++;
         return 1;
     }
-    return 0;
+    return 0; /* overloaded: immediate note, with normal immediate release */
 }
-/* A very short MIDI Note On/Off must still produce the delayed hit,
- * but its envelope must not be left held after the input key is released. */
-static void drum_delay_release(track_t *t, uint32_t note)
+/* Called on every raw Note Off. Melodic off events are deferred by the
+ * offset captured on Note On; no dependence on current knob position.
+ * Only the most recent matching hit receives this off (repeated notes).
+ * Return true to avoid releasing a melodic voice before its shifted off. */
+static int drum_delay_release(track_t *t, uint32_t note)
 {
-    if (drum_delay_firing || !drum_delay_pending) return;
     uint32_t ti = (uint32_t)(t - trk);
-    for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++)
-        if (drum_delay_events[i].used && drum_delay_events[i].track == ti &&
-            drum_delay_events[i].note == note)
-            drum_delay_events[i].released = 1u;
+    if (drum_delay_firing || !drum_delay_pending) return 0;
+    for (uint32_t i = DRUM_DELAY_EVENTS; i > 0u; i--) {
+        drum_delay_event_t *e = &drum_delay_events[i - 1u];
+        if (e->state == TD_FREE || e->track != ti || e->note != note ||
+            e->released || e->engine != t->eng_req) continue;
+        e->released = 1u;
+        if (timing_is_drum(e->engine))
+            return 0; /* one-shot drum: preserve its original Note Off */
+        e->off_due = drum_delay_clock + timing_samples(e->offset_ms);
+        e->state = e->state == TD_WAIT_ON ? TD_WAIT_BOTH : TD_WAIT_OFF;
+        return 1;
+    }
+    return 0;
 }
 static void drum_delay_drop_track(uint32_t ti)
 {
     if (!drum_delay_pending) return;
     for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++)
-        if (drum_delay_events[i].used && drum_delay_events[i].track == ti) {
-            drum_delay_events[i].used = 0u;
-            drum_delay_pending--;
-        }
+        if (drum_delay_events[i].state != TD_FREE &&
+            drum_delay_events[i].track == ti)
+            timing_event_free(&drum_delay_events[i]);
 }
 static void drum_delay_process(uint32_t n)
 {
@@ -770,16 +797,33 @@ static void drum_delay_process(uint32_t n)
     if (!drum_delay_pending) return;
     for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++) {
         drum_delay_event_t *e = &drum_delay_events[i];
-        if (!e->used || (int32_t)(drum_delay_clock - e->due) < 0) continue;
-        uint32_t ti = e->track, note = e->note, vel = e->vel, engine = e->engine;
-        uint8_t released = e->released;
-        e->used = 0u;
-        drum_delay_pending--;
-        if (ti < NPART && trk[ti].eng_req == engine) {
+        if (e->state == TD_FREE) continue;
+        uint32_t ti = e->track, note = e->note, vel = e->vel;
+        if (ti >= NTRK || trk[ti].eng_req != e->engine) {
+            timing_event_free(e);
+            continue;
+        }
+        if ((e->state == TD_WAIT_ON || e->state == TD_WAIT_BOTH) &&
+            (int32_t)(drum_delay_clock - e->due) >= 0) {
+            uint8_t early_release = e->released;
             drum_delay_firing = 1u;
             trk_note_on_raw(&trk[ti], note, vel);
-            if (released) trk_note_off_raw(&trk[ti], note);
+            if (timing_is_drum(e->engine)) {
+                if (early_release) trk_note_off_raw(&trk[ti], note);
+                timing_event_free(e);
+            } else if (e->state == TD_WAIT_BOTH) {
+                e->state = TD_WAIT_OFF;
+            } else {
+                e->state = TD_MELODIC_HELD;
+            }
             drum_delay_firing = 0u;
+        }
+        if (e->state == TD_WAIT_OFF &&
+            (int32_t)(drum_delay_clock - e->off_due) >= 0) {
+            drum_delay_firing = 1u;
+            trk_note_off_raw(&trk[ti], note);
+            drum_delay_firing = 0u;
+            timing_event_free(e);
         }
     }
 }
@@ -902,7 +946,7 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
 static void trk_note_off_raw(track_t *t, uint32_t note)
 {
     uint32_t i, k = 0, mode = trk_vmode(t);
-    drum_delay_release(t, note);
+    if (drum_delay_release(t, note)) return;
     for (i = 0; i < t->xp_n; i++)                       /* not sounding yet (engine switch): forget it */
         if (t->xp_note[i] != note) {
             t->xp_note[k] = t->xp_note[i];
