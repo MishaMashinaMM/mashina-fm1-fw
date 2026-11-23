@@ -218,3 +218,17 @@ assert.equal(edited.web_mpr_test_used(),1,"edited project section lost after ind
 assert.equal(edited.web_mpr_ref(0),1,"project T1 USER 001 reference not restored in real firmware");
 assert.equal(edited.web_mpr_ref(1),34,"project T2 reference changed unexpectedly");
 console.log("PASS: real WASM fresh boot reads selective USER/LIBRARY changes and remapped MPR1 track references");
+
+
+const legacyFm6=new Uint8Array(3472);
+writeU32(legacyFm6,0,0x42364d46);
+writeU16(legacyFm6,4,1);
+writeU16(legacyFm6,6,27);
+const retiredSnapshot=encodeEmulatorFlash({
+  ...decodeEmulatorFlash(initial),
+  [0x9f000]:stSector(7,legacyFm6)
+});
+assert.throws(()=>editEmulatorUserSnapshot(retiredSnapshot,[
+  {slot:1,recordBytes:copied[0].recordBytes}
+]),/migration first/,"new UPF6 must never silently suppress legacy FM6B migration");
+console.log("PASS: retired FM6B migration is protected from selective USER write");
