@@ -26,6 +26,11 @@ const slots=Array(32).fill(null);
 slots[1]={recordBytes};
 slots[7]={section:3,refs:[0,1,2,32,63,255],name:"SET 2"};
 const backup=projectsBackup(slots);
+// Firmware archive extraction produces canonical byte arrays, not objects.
+// Those arrays must be accepted unchanged by the projects-only exporter.
+const rawSlots=slots.map((entry,i)=>entry===null?null:
+  Array.isArray(entry)?entry:(entry.recordBytes??encodeProject(entry)));
+assert.deepEqual(projectsBackup(rawSlots),backup);
 const restored=restoreProjectsBackup(JSON.parse(JSON.stringify(backup)));
 assert.deepEqual(restored[1],recordBytes);
 assert.deepEqual(restored[7],encodeProject(slots[7]));
