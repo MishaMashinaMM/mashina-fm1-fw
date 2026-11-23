@@ -35,7 +35,7 @@ assert.throws(()=>makePerformanceBundle({userPresets:missing,libraryPresets:libr
 const factory=[...library];factory[12]=null;
 const fallback=makePerformanceBundle({userPresets:user,libraryPresets:factory,projects});
 assert.equal(planPerformanceRestore(fallback).libraryWrites,0);
-const bad=[...projects];bad[5]=[...projects[5]];bad[5][40]^=1;
+const bad=[...projects];bad[5]=[...projects[5]];bad[5][33]^=1;
 assert.throws(()=>makePerformanceBundle({userPresets:user,libraryPresets:library,projects:bad}),/checksum/);
 assert.throws(()=>parsePerformanceBundle({...bundle,version:2}),/unsupported/);
 console.log("PASS: self-contained USER/LIBRARY/project bundle, fallback, JSON round-trip, missing-reference safety and restore ordering");
