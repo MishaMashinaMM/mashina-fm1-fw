@@ -103,13 +103,13 @@ jobs:
           This build is deliberately NOT published to GitHub Pages.
           EOF
           (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
-          cd build
-          zip -qr drumx-bell-device-test.zip drumx-bell-preview
       - name: Upload separate device-test package
         uses: actions/upload-artifact@v4
         with:
           name: drumx-bell-device-test
-          path: build/drumx-bell-device-test.zip
+          # upload-artifact already produces a ZIP; upload the directory
+          # contents directly so there is no ZIP-inside-ZIP nesting.
+          path: build/drumx-bell-preview/
           if-no-files-found: error
       - name: Save validation log only
         if: always()
