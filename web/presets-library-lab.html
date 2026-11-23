@@ -80,8 +80,8 @@ tr:nth-child(2n){background:#161616}
  <p id="emu-import-status" class="stats" role="status" aria-live="polite">Choose an emulator JSON to inspect. No data will be changed.</p>
  <p id="emu-summary" class="stats">No emulator snapshot loaded.</p>
  <div class="catalog-shell" id="emu-editor" aria-label="Selective offline LIBRARY patching">
-  <h2>SELECTIVE LIBRARY RESTORE · OFFLINE JSON ONLY</h2>
-  <p>Build a new complete emulator backup with selected LIBRARY 033–064 sounds. The source can be a validated factory preset, a saved LIBRARY override, or a complete USER sound (including matching FM6/drum companion) from this or a second emulator JSON. USER slots, project settings, and all unrelated flash sectors remain byte-identical. The current browser saves and FM1 are never changed.</p>
+  <h2>SELECTIVE USER &amp; LIBRARY RESTORE · OFFLINE JSON ONLY</h2>
+  <p>Build a new complete emulator backup with selected USER 001–032 and/or LIBRARY 033–064 sounds. The source can be a validated factory preset, a saved LIBRARY override, or a complete USER sound (including matching FM6/drum companion) from this or a second emulator JSON. Unselected USER and LIBRARY records, project references/settings, and unrelated flash sectors remain byte-identical. The current browser saves and FM1 are never changed.</p>
   <div class="toolbar">
    <label class="file">Optional: Load source emulator JSON <input id="emu-source-file" type="file" accept=".json,application/json"/></label>
    <span class="subtle" id="emu-source-info">No second snapshot selected.</span>
@@ -90,13 +90,14 @@ tr:nth-child(2n){background:#161616}
    <label for="emu-source-type">Source</label>
    <select id="emu-source-type" class="catalog-select"><option value="factory">Factory 107-preset catalog</option><option value="snapshot">Saved LIBRARY overrides from source JSON</option><option value="user">Saved USER presets from source JSON (complete records only)</option></select>
    <select id="emu-source-select" class="catalog-select" aria-label="Source sound"></select>
-   <label for="emu-target-select">Destination</label>
-   <select id="emu-target-select" class="catalog-select" aria-label="Destination LIBRARY position"></select>
+   <label for="emu-target-type">Destination</label>
+   <select id="emu-target-type" class="catalog-select"><option value="library">LIBRARY 033–064</option><option value="user">USER 001–032</option></select>
+   <select id="emu-target-select" class="catalog-select" aria-label="Destination sound slot"></select>
    <button id="emu-stage" type="button" disabled>Queue replacement</button>
    <button id="emu-clear-target" type="button" disabled>Queue factory fallback</button>
   </div>
   <p id="emu-impact" class="catalog-note">Import a target emulator JSON above to enable staging.</p>
-  <table aria-label="Pending LIBRARY replacements"><thead><tr><th>LIBRARY</th><th>Current</th><th>Proposed</th><th>References</th><th>Action</th></tr></thead><tbody id="emu-pending"></tbody></table>
+  <table aria-label="Pending USER and LIBRARY replacements"><thead><tr><th>Destination</th><th>Current</th><th>Proposed</th><th>References</th><th>Action</th></tr></thead><tbody id="emu-pending"></tbody></table>
   <div class="toolbar">
    <button id="emu-export-patched" type="button" disabled>Export modified complete emulator JSON</button>
    <button id="emu-reset-pending" type="button" disabled>Discard queued changes</button>
@@ -109,7 +110,7 @@ tr:nth-child(2n){background:#161616}
  <table aria-label="Snapshot LIBRARY presets"><thead><tr><th>LIBRARY</th><th>Name</th><th>Engine</th><th>State</th><th>Project usage</th></tr></thead><tbody id="emu-library"></tbody></table>
  <h2 style="margin-top:24px">PROJECTS · 8 × A–D</h2>
  <table aria-label="Snapshot project sections"><thead><tr><th>Project</th><th>Section</th><th>Name</th><th>Tracks T1–T6</th></tr></thead><tbody id="emu-projects"></tbody></table>
- <p class="catalog-note">USER names are read from saved 192-byte sound records. Full USER FM6/drum companions are not converted into standalone upload records here. LIBRARY slots without a saved override show their compiled factory name and engine from the validated, bundled 107-sound catalog. Their state remains “Factory default”, not “Custom override”. The original snapshot remains the lossless recovery file.</p>
+ <p class="catalog-note">USER sound sources are reconstructed from exact saved 192-byte records; FM6 and drum transfers require a matching tagged 112-byte companion, otherwise they are disabled. A sound without its required companion is never substituted. LIBRARY slots without a saved override show their compiled factory name and engine from the validated, bundled 107-sound catalog. Their state remains “Factory default”, not “Custom override”. The original snapshot remains the lossless recovery file.</p>
 </section>
 <div class="toolbar">
  <label class="file">Import prepared 304-byte records JSON <input id="import" type="file" accept=".json,application/json"/></label>
@@ -155,7 +156,7 @@ import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDev
 import {restoreProjectsBackup,projectsBackup} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
 import {inspectEmulatorFlash,resolveFactoryFallbacks} from "./emulator-library-inspector.mjs";
-import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulatorLibrarySnapshot} from "./emulator-snapshot-editor.mjs";
+import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulatorLibrarySnapshot,editEmulatorUserSnapshot} from "./emulator-snapshot-editor.mjs";
 import {inspectProjectReferences as inspectUsage} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
@@ -561,28 +562,36 @@ function emuRefLabel(slot){
 }
 function emuUpdateEditor(){
   const ready=!!emuInspection&&!!emuOriginalFlash;
-  const target=$("emu-target-select");target.replaceChildren();
-  if(ready)for(const item of emuInspection.library){
+  const destType=$("emu-target-type").value;
+  const target=$("emu-target-select"),previous=target.value;
+  target.replaceChildren();
+  if(ready)for(const item of destType==="user"?emuInspection.users:emuInspection.library){
     const o=document.createElement("option");
     o.value=String(item.slot);
-    const proposed=emuPending.get(item.slot);
-    o.textContent=String(item.slot).padStart(3,"0")+" · "+(item.name||"—")+
+    const proposed=emuPending.get(destType+item.slot);
+    o.textContent=String(item.slot).padStart(3,"0")+" · "+
+      (item.name||(destType==="user"?"Empty":"Factory default"))+
       (proposed?" (queued)":"");
     target.append(o);
   }
-  const type=$("emu-source-type").value;
-  const choices=type==="factory"?emuFactorySources:type==="user"?emuUserSources:emuSnapshotSources;
-  const selected=choices.find(x=>x.id===$("emu-source-select").value);
+  if([...target.options].some(o=>o.value===previous))target.value=previous;
+  const sourceType=$("emu-source-type").value;
+  const sources=sourceType==="factory"?emuFactorySources:sourceType==="user"?emuUserSources:emuSnapshotSources;
+  const selected=sources.find(x=>x.id===$("emu-source-select").value);
   $("emu-stage").disabled=!ready||!selected?.available;
   $("emu-clear-target").disabled=!ready;
+  $("emu-clear-target").textContent=destType==="user"?"Queue empty USER slot":"Queue factory fallback";
   $("emu-reset-pending").disabled=!emuPending.size;
   $("emu-export-patched").disabled=!ready||!emuPending.size;
   const body=$("emu-pending");body.replaceChildren();
-  for(const [slot,edit] of [...emuPending].sort((a,b)=>a[0]-b[0])){
+  for(const [key,edit] of [...emuPending].sort((a,b)=>
+    a[1].kind.localeCompare(b[1].kind)||a[1].slot-b[1].slot)){
     const row=document.createElement("tr");
-    const prior=emuInspection.library[slot-33];
-    const fields=[String(slot).padStart(3,"0"),prior.name||"—",
-      edit.recordBytes===null?"Factory default":edit.name,emuRefLabel(slot)];
+    const prior=(edit.kind==="user"?emuInspection.users:emuInspection.library)[
+      edit.slot-(edit.kind==="user"?1:33)];
+    const fields=[(edit.kind==="user"?"USER ":"LIBRARY ")+String(edit.slot).padStart(3,"0"),
+      prior.name||"Empty",edit.recordBytes===null?
+      (edit.kind==="user"?"Empty":"Factory default"):edit.name,emuRefLabel(edit.slot)];
     fields.forEach((value,i)=>{
       const td=document.createElement("td");td.textContent=value;
       if(i===0)td.className="num";if(i===3)td.className="refs";
@@ -590,36 +599,45 @@ function emuUpdateEditor(){
     });
     const action=document.createElement("td"),remove=document.createElement("button");
     remove.textContent="Remove";remove.addEventListener("click",()=>{
-      emuPending.delete(slot);emuUpdateEditor();
-    });action.append(remove);row.append(action);body.append(row);
+      emuPending.delete(key);emuUpdateEditor();
+    });
+    action.append(remove);row.append(action);body.append(row);
   }
   emuSetText("emu-impact",ready?
-    emuPending.size+" queued destination(s). References remain unchanged, so all listed projects will use the new sound at each destination. Original JSON is not overwritten.":
+    emuPending.size+" destination(s) queued. Shared project references remain unchanged, so every project track using a replaced slot will hear the new sound. Original JSON is never overwritten.":
     "Import a target emulator JSON above to enable staging.");
 }
 $("emu-source-type").addEventListener("change",emuRefreshSource);
 $("emu-source-select").addEventListener("change",emuUpdateEditor);
+$("emu-target-type").addEventListener("change",emuUpdateEditor);
 $("emu-stage").addEventListener("click",()=>{
   if(!emuInspection||!emuOriginalFlash)return;
   const type=$("emu-source-type").value;
   const items=type==="factory"?emuFactorySources:type==="user"?emuUserSources:emuSnapshotSources;
   const source=items.find(x=>x.id===$("emu-source-select").value);
   const slot=Number($("emu-target-select").value);
-  if(!source?.available||!Number.isInteger(slot)||slot<33||slot>64)return;
+  const kind=$("emu-target-type").value;
+  const low=kind==="user"?1:33,high=kind==="user"?32:64;
+  if(!source?.available||!Number.isInteger(slot)||slot<low||slot>high)return;
   const ref=emuRefLabel(slot);
-  emuPending.set(slot,{slot,recordBytes:source.recordBytes.slice(),name:source.name});
+  emuPending.set(kind+slot,{kind,slot,recordBytes:source.recordBytes.slice(),name:source.name});
   emuUpdateEditor();
-  emuSetText("emu-edit-status","Queued "+source.name+" → LIBRARY "+
+  emuSetText("emu-edit-status","Queued "+source.name+" → "+kind.toUpperCase()+" "+
     String(slot).padStart(3,"0")+". Affected project tracks: "+ref+
-    ". This will not change project references or your existing backup.");
+    ". No browser/USB writes have occurred.");
 });
 $("emu-clear-target").addEventListener("click",()=>{
   if(!emuInspection||!emuOriginalFlash)return;
   const slot=Number($("emu-target-select").value);
-  if(!Number.isInteger(slot)||slot<33||slot>64)return;
-  emuPending.set(slot,{slot,recordBytes:null,name:"Factory default"});
+  const kind=$("emu-target-type").value;
+  const low=kind==="user"?1:33,high=kind==="user"?32:64;
+  if(!Number.isInteger(slot)||slot<low||slot>high)return;
+  emuPending.set(kind+slot,{kind,slot,recordBytes:null,
+    name:kind==="user"?"Empty":"Factory default"});
   emuUpdateEditor();
-  emuSetText("emu-edit-status","Queued LIBRARY "+slot+" to use its built-in factory default; no data has been written.");
+  emuSetText("emu-edit-status","Queued "+kind.toUpperCase()+" "+slot+
+    " for "+(kind==="user"?"emptying":"factory fallback")+
+    ". Project references continue to point to the slot; review its project usage above.");
 });
 $("emu-reset-pending").addEventListener("click",()=>{
   emuPending.clear();emuUpdateEditor();
@@ -628,11 +646,19 @@ $("emu-reset-pending").addEventListener("click",()=>{
 $("emu-export-patched").addEventListener("click",()=>{
   if(!emuOriginalFlash||!emuPending.size)return;
   try{
-    const changes=[...emuPending.values()].map(x=>({slot:x.slot,recordBytes:x.recordBytes}));
-    const modified=editEmulatorLibrarySnapshot(emuOriginalFlash,changes);
-    downloadFile("mashina-emulator-selective-library.json",modified.snapshot);
-    emuSetText("emu-edit-status","Exported a complete checked emulator JSON with "+
-      changes.length+" LIBRARY changes; import it into an isolated emulator session first. Original target JSON and browser storage were not modified.");
+    const edits=[...emuPending.values()];
+    const library=edits.filter(x=>x.kind==="library").map(x=>({slot:x.slot,recordBytes:x.recordBytes}));
+    const users=edits.filter(x=>x.kind==="user").map(x=>({slot:x.slot,recordBytes:x.recordBytes}));
+    let current=emuOriginalFlash;
+    if(library.length)current=editEmulatorLibrarySnapshot(current,library).snapshot;
+    if(users.length)current=editEmulatorUserSnapshot(current,users).snapshot;
+    // Last full pass confirms all 64 slots and 32 project sections remain parseable.
+    inspectEmulatorFlash(current);
+    const out=typeof current==="string"?JSON.parse(current):current;
+    downloadFile("mashina-emulator-selective-restore.json",out);
+    emuSetText("emu-edit-status","Exported a verified complete emulator JSON with "+
+      library.length+" LIBRARY and "+users.length+
+      " USER slot changes. First import it in the emulator's isolated session and test sounds and projects. Neither original backup nor saved browser data was overwritten.");
   }catch(error){
     emuSetText("emu-edit-status","Export refused: "+error.message+". No data was changed.");
   }
