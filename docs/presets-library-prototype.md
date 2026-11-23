@@ -9,7 +9,7 @@
 - User may fill all 32 USER slots, capture their complete presets in the browser, save an offline **JSON backup**, then upload those sounds to the 32 LIBRARY positions **without reflashing firmware**.
 - A firmware update **may erase LIBRARY data**; this is accepted by the user, since offline JSON makes restoration possible. Never assume a firmware update safely preserves USER or project data without a separate complete device backup.
 - The browser sends compact 304-byte binary sound records over 7-bit-safe WebMIDI; the FM1 does **not** parse JSON.
-- All six live tracks play independent sound snapshots. A library load changes only its target track; it never stages a preset in a USER slot. Eight projects × four sections (A–D) remain snapshots, not references into the library.
+- Each live track loads its sound independently from the shared USER/LIBRARY bank. Under the experimental MPR1 project format, all 8 projects × 4 sections A–D store only preset references, so replacing one preset intentionally changes all sections that reference it. Project-specific mixer, tuning, routing, effects, macros, zones and pad controls remain independent.
 
 ## Flash design and measured headroom
 
@@ -73,8 +73,13 @@ track's reference source.
 
 Under these opt-in flags, the old FUN snapshot persistence is replaced by
 the two-sections-per-bank MPR1 store, but legacy formats are intentionally
-not imported. Legacy sound-snapshot autosave has been disabled; a compact
-reference-only autosave replacement is **still pending**. Old sequencer
+not imported. Legacy sound-snapshot autosave has been replaced in the experimental
+MPR1 build by a **reference-only RESTORE LAST** record in the existing
+A/B autosave flash sectors. It writes only during safe idle periods, preserves
+project-owned settings, refuses unsaved sound edits, and rejects incompatible
+legacy FUN records at boot. It never embeds sound snapshots or modifies
+any preset. Simulated NOR tests cover persistence, refusal and unsafe-boot
+suppression; hardware validation is still pending. Old sequencer
 staging is removed in MASHINA's normal NO_SEQUENCER build and is not
 a requirement for reference-based section switching.
 
@@ -110,8 +115,7 @@ and the experimental Web Library has a read-only inspection button.
 
 **Remaining requirements:** validate physical flash ownership and
 hardware persistence, exercise the actual browser against the FM1,
-resolve any remaining legacy UI backup/slot behaviors, complete and test
-the new reference-only RESTORE LAST/autosave behavior, and establish
+resolve any remaining legacy UI backup/slot behaviors, verify the new reference-only RESTORE LAST/autosave behavior on hardware, and establish
 safe initialization of the clean-break flash sectors on a first
 installation. No write-enabled experimental image is approved for
 hardware yet. All changes remain branch-local; no main merge.
