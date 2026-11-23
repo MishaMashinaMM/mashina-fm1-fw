@@ -391,6 +391,19 @@ EXPORT uint8_t *web_nor(void) { return nor; }
 EXPORT uint32_t web_nor_size(void) { return sizeof nor; }
 EXPORT void web_nor_erase(void) { memset(nor, 0xFF, sizeof nor); }
 EXPORT uint32_t web_flash_writes_count(void) { return web_flash_writes; }
+#if MASHINA_EMU_REFS
+/* Browser CI-only inspection of REAL firmware MPR1 invariants. These are
+ * read-only probes apart from web_mpr_test_save(), which writes only the
+ * emulator's in-memory NOR and is never called by the browser page. */
+EXPORT uint32_t web_mpr_ref(uint32_t track)
+{ return track < NTRK ? trk[track].user : 0u; }
+EXPORT uint32_t web_mpr_dirty(uint32_t track)
+{ return track < NTRK ? (uint32_t)mpr_source_modified(&trk[track]) : 2u; }
+EXPORT uint32_t web_mpr_test_save(void)
+{ return (uint32_t)mpr_live_save(0u,"BOOT TEST"); }
+EXPORT uint32_t web_mpr_test_used(void)
+{ return (uint32_t)mpr_slot_used(0u); }
+#endif
 EXPORT void web_seed(uint32_t s) { web_seed_v = s; }   /* (JIANT 0.4) the session's macros: a seed of the page's */
 EXPORT void web_boot(void)
 {
