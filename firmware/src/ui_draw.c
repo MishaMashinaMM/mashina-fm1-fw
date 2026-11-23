@@ -2905,6 +2905,9 @@ static void draw_drum_midi_map(void)
     b[0] = 'T'; b[1] = (char)('1' + ti); b[2] = ' '; b[3] = 0;
     str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : ac ? "DRUM-AC" : ind ? "DRUM-IND" : "NO DRUM", sizeof b - 3u);
     cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_VALUE);
+    cv_text_in(163, 30 + CAP_IN(S, 10), 74, &AF_S,
+               (drum ? drum_midi_custom[ti] : drumlab_midi_custom[ti]) ?
+               "CUSTOM" : "DEFAULT", T_ACCENT, T_BG);
     cv_blit(0, 0);
 
     cv_begin(240, 16, T_BG);
@@ -2924,6 +2927,21 @@ static void draw_drum_midi_map(void)
     ui.force = 0;
 }
 
+/* Small centered modal over SEQ > MIDI MAP. Never alter the actual map
+ * before OCT+; track number is captured when long-SEL fired. */
+static void draw_drum_map_reset_prompt(void)
+{
+    char trk[18] = "TRACK 1 / RESET";
+    trk[6] = (char)('1' + ui.drum_map_reset_trk);
+    cv_begin(212, 126, T_BG);
+    cv_rrect(0, 0, 212, 126, 5, RGB(28,28,28), T_BG);
+    cv_text_in(7, 12, 198, &AF_M, "RESET MIDI MAP?", T_TEXT, RGB(28,28,28));
+    cv_text_in(7, 38, 198, &AF_S, trk, T_ACCENT, RGB(28,28,28));
+    cv_text_in(7, 58, 198, &AF_S, "RESTORE ALL OCTAVES", T_TEXT, RGB(28,28,28));
+    cv_text_in(8, 91, 95, &AF_S, "OCT- CANCEL", T_DIM, RGB(28,28,28));
+    cv_text_in(108, 91, 95, &AF_S, "OCT+ RESET", T_ACCENT, RGB(28,28,28));
+    cv_blit(14, 65);
+}
 static void draw_drum_perf(void)
 {
     const uint32_t ti = song.sel, first = ui.drum_map_pad < 6u ? 0u : 6u;
@@ -2962,6 +2980,7 @@ static void ui_draw_body(uint32_t counting)
 #if FELUCCA_NO_SEQUENCER
     static uint32_t live_rows[6];
     static uint8_t live_kind, live_track, live_bank, live_pad;
+    static uint8_t live_custom = 0xFFu, live_reset_open;
     static uint8_t cc_old[6][CM_ROW_SIZE], cc_status[6];
     static uint8_t cc_open, cc_pick_old, cc_count_old, cc_delete_old, cc_wait_old, cc_first_old;
 #endif
@@ -3022,7 +3041,11 @@ static void ui_draw_body(uint32_t counting)
         uint8_t kind = ui.drum_perf_open ? 2u : 1u;
         uint8_t bank = ui.drum_map_pad < 6u ? 0u : 6u;
         uint32_t next[6], changed = 0u;
-        int full = live_kind != kind || live_track != song.sel || live_bank != bank;
+        uint8_t custom = trk[song.sel].eng_req == ENGI_DRUM ?
+                         drum_midi_custom[song.sel] : drumlab_midi_custom[song.sel];
+        int full = live_kind != kind || live_track != song.sel ||
+                   live_bank != bank || live_custom != custom ||
+                   live_reset_open != ui.drum_map_reset_confirm;
         for (uint32_t i = 0; i < 6u; i++) {
             next[i] = drum_live_row_signature(kind == 2u, bank + i);
             if (next[i] != live_rows[i]) changed |= 1u << i;
@@ -3045,9 +3068,14 @@ static void ui_draw_body(uint32_t counting)
         live_track = (uint8_t)song.sel;
         live_bank = bank;
         live_pad = ui.drum_map_pad;
+        live_custom = custom;
+        live_reset_open = ui.drum_map_reset_confirm;
+        if (ui.drum_map_open && ui.drum_map_reset_confirm)
+            draw_drum_map_reset_prompt();
         return;
     }
     live_kind = 0u;
+    live_reset_open = 0u;
 #endif
     if (ui.menu) {
         draw_menu();
