@@ -159,8 +159,14 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
   const after=records(await readLibrary(request));
   insist(JSON.stringify(after)===JSON.stringify(full.libraryPresets),
          "LIBRARY verification failed after restore");
+  const usersAfter=records(await captureUser(request));
+  insist(JSON.stringify(usersAfter)===JSON.stringify(full.userPresets),
+         "USER or FM6/drum-kit sound verification failed after restore");
   const projectVerify=await captureBackup(archiveRequest(request),full.firmware);
-  insist(JSON.stringify(archiveSections(readBackup(projectVerify)))===
+  const archiveAfter=readBackup(projectVerify);
+  insist(JSON.stringify(archiveSections(archiveAfter))===
          JSON.stringify(full.projects),"Project verification failed after restore");
-  return {restoredProjects:32,librarySlots:32,settingsRestored:true};
+  insist(JSON.stringify(archiveCurrent(archiveAfter))===
+         JSON.stringify(full.currentPerformance),"Current performance verification failed");
+  return {restoredProjects:32,librarySlots:32,userSlots:32,settingsRestored:true};
 }
