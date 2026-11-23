@@ -788,9 +788,12 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
         } else {
             /* Factory kit is chromatic in EVERY octave, matching other drums.
              * Keep internal GM sound notes independent of incoming MIDI pitch. */
-            lane = note % DV_NLANE12;
-            trk_note_on_raw(t, lane < DV_NLANE ?
-                                DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane], vel);
+            for (lane = 0; lane < DV_NLANE12; lane++)
+                if (DRUM_NOTE12[lane] % 12u == note % 12u) {
+                    trk_note_on_raw(t, lane < DV_NLANE ?
+                                        DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane], vel);
+                    break;
+                }
         }
         return;
     }
@@ -850,9 +853,12 @@ static void trk_note_off(track_t *t, uint32_t note)
                     trk_note_off_raw(t, lane < DV_NLANE ?
                                          DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
         } else {
-            lane = note % DV_NLANE12;
-            trk_note_off_raw(t, lane < DV_NLANE ?
-                                 DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
+            for (lane = 0; lane < DV_NLANE12; lane++)
+                if (DRUM_NOTE12[lane] % 12u == note % 12u) {
+                    trk_note_off_raw(t, lane < DV_NLANE ?
+                                         DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
+                    break;
+                }
         }
         return;
     }
