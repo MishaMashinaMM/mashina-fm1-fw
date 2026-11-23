@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Experimental library WebMIDI transfer protocol, host-only.
  *
- * Commands 68 LIST, 69 GET, 70 PUT, 71 ERASE in the existing
+ * Commands 90 LIST, 91 GET, 92 PUT, 93 ERASE in the existing
  * F0 7D 46 4C CMD <args> F7 envelope. The device firmware MUST NOT
  * include this file until flash partition ownership is established.
  *
@@ -19,10 +19,10 @@
  */
 #include <stdint.h>
 #include <string.h>
-#define LIB_WIRE_LIST 68u
-#define LIB_WIRE_GET 69u
-#define LIB_WIRE_PUT 70u
-#define LIB_WIRE_ERASE 71u
+#define LIB_WIRE_LIST 90u
+#define LIB_WIRE_GET 91u
+#define LIB_WIRE_PUT 92u
+#define LIB_WIRE_ERASE 93u
 #define LIB_WIRE_PAYLOAD ((LIB_ENTRY + 6u) / 7u + LIB_ENTRY)
 #define LIB_WIRE_MAX 400u
 _Static_assert(LIB_ENTRY == 304, "wire compatibility with 192+112 record");
