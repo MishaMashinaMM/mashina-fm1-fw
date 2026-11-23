@@ -1679,6 +1679,7 @@ static void select_engine(uint32_t e)
 #define LIB_FACTORY_SLOTS 32u
 #if FELUCCA_LIB32
 static int library_sound_load(uint32_t slot); /* implemented after USER storage in felucca.c */
+static int library_slot_ready(uint32_t slot); /* 0 playable/factory; 1 corrupt/unreadable */
 #endif
 static uint32_t library_factory_at(uint32_t n, uint32_t *k)
 {
@@ -1748,7 +1749,7 @@ static int project_reference_load(uint32_t track, uint32_t ref)
  * project-owned settings once the new serializer is connected. */
 static int project_references_load_all(const uint8_t refs[NTRK])
 {
-    uint32_t k, i;
+    uint32_t k;
     if (!refs) return 1;
     for (k = 0; k < NTRK; k++) {
         uint32_t ref = refs[k];
@@ -1756,12 +1757,8 @@ static int project_references_load_all(const uint8_t refs[NTRK])
         if (ref >= UP_SLOTS + LIB_FACTORY_SLOTS) return 1;
         if (ref < UP_SLOTS) {
             if (!up_used(ref)) return 1;
-        } else {
-            up_rec_t *record = (up_rec_t *)library_record;
-            if (lib_slot_read(ref - UP_SLOTS, library_record)) return 1;
-            if (lib_record_valid(library_record) && up_valid(record)) continue;
-            for (i = 0; i < LIB_ENTRY; i++)
-                if (library_record[i]) return 1; /* damaged, not empty */
+        } else if (library_slot_ready(ref - UP_SLOTS)) {
+            return 1;
         }
     }
     for (k = 0; k < NTRK; k++)
