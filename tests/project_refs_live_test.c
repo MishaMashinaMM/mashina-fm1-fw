@@ -70,6 +70,9 @@ static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
     return st_prog(off,p,n);
 }
 #include "../firmware/src/preset_library_runtime.c"
+/* The gated clean-break formatter references the watchdog before project.c
+ * finishes including its helper modules. Declare the host stub first. */
+static void fm1_wdt_feed(void){}
 #include "../firmware/src/project.c"
 
 /* Existing WebMIDI backup commands: chunked read/write of all 8xA-D MPR1
@@ -95,7 +98,6 @@ static uint32_t ed_unpack7(const uint8_t *a,uint32_t na,uint8_t *out,uint32_t ma
     return na?0:n;
 }
 static uint8_t ed_smp_buf[512];
-static void fm1_wdt_feed(void){}
 static int ed_flash_stop(void){return transport_busy();}
 #include "../firmware/src/editor_backup.c"
 
