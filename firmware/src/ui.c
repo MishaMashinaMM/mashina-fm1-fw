@@ -1712,8 +1712,11 @@ static uint32_t library_factory_rank(uint32_t engine, uint32_t preset)
 static int library_slot_apply(uint32_t slot)
 {
     uint32_t e, k;
+    int status;
     if (slot >= LIB_FACTORY_SLOTS) return 1;
-    if (!library_sound_load(slot)) return 0;
+    status = library_sound_load(slot);
+    if (status == 0) return 0;
+    if (status != 1) return 1; /* corrupt or unreadable: do not substitute */
     e = library_factory_at(slot, &k);
     if (e >= NENGINES) return 1;
     if (e != TSEL->eng_req) set_engine(e);
