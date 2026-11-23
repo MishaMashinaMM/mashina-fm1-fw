@@ -138,6 +138,10 @@ static int mpr_capture_unsaved(uint32_t section)
     for(uint32_t k=0;k<NTRK;k++){
         uint32_t u=trk[k].user;
         refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        /* Only muted/inactive tracks may be unassigned. An audible track
+         * without a preset reference has a live sound that MPR1 cannot
+         * represent; refuse a misleading backup instead of losing it. */
+        if(refs[k]==MPR_EMPTY && k<trk_live && !trk[k].p[P_MUTE])return 0;
         if(refs[k]!=MPR_EMPTY && mpr_source_modified(&trk[k]))return 0;
         if(refs[k]<UP_SLOTS && !up_used(refs[k]))return 0;
         if(refs[k]>=UP_SLOTS && refs[k]!=MPR_EMPTY &&
@@ -157,6 +161,9 @@ static int mpr_live_save(uint32_t section,const char *rename)
     for(uint32_t k=0;k<NTRK;k++){
         uint32_t u=trk[k].user;
         refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        if(refs[k]==MPR_EMPTY && k<trk_live && !trk[k].p[P_MUTE]){
+            ui_message("ASSIGN PRESET FIRST");return 2;
+        }
         if(refs[k]!=MPR_EMPTY && mpr_source_modified(&trk[k])){
             ui_message("SAVE SOUND FIRST");return 2;
         }
