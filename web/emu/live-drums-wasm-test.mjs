@@ -28,6 +28,17 @@ function render(ms) {
 
 render(2500); // Finish the startup splash and enter GLO > MIX > MIXER.
 assert.equal(ex.web_playing(), 0);
+const HOME = 6, GLO = 5;
+assert.equal((ex.web_lit_buttons() >> GLO) & 1, 1,
+             'GLO LED must be active immediately after startup');
+assert.equal((ex.web_lit_buttons() >> HOME) & 1, 0,
+             'HOME must not be the active startup page');
+ex.web_buttons(1 << HOME); render(80); ex.web_buttons(0); render(80);
+assert.equal((ex.web_lit_buttons() >> HOME) & 1, 1,
+             'HOME button must still open the HOME page');
+ex.web_buttons(1 << GLO); render(80); ex.web_buttons(0); render(80);
+assert.equal((ex.web_lit_buttons() >> GLO) & 1, 1,
+             'GLO button must return to the live mixer');
 // The physical key bypasses configurable external MIDI RX routing. Host
 // midi_rx_test and drum_midi_map_test separately verify per-track MIDI input.
 ex.web_keys(1 << 7); // C4 on the FM1 keybed, as in the upstream emulator test.
