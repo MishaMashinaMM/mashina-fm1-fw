@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Experimental MPR1 project JSON codec; not connected to live FM1 yet.
+ * MPR1 reference-only project JSON codec, with fixed flash-record backup support.
  * Carries all bytes of a project-only settings payload without converting
  * sound references into embedded sounds. The firmware's new settings map
  * and WebMIDI commands still have to be implemented.
@@ -50,7 +50,12 @@ export function decodeProject(input){
   check(r.length>=MPR_HEADER && MAGIC.every((v,i)=>r[i]===v) &&
     r[4]===1 && r[5]<SECTION_COUNT && !r[26]&&!r[27],"invalid MPR1 header");
   const n=r[6]|r[7]<<8;
-  check(n<=MAX_SETTINGS && r.length===MPR_HEADER+n,"invalid MPR1 payload size");
+  check(n<=MAX_SETTINGS && (r.length===MPR_HEADER+n || r.length===MAX_RECORD),
+        "invalid MPR1 payload size");
+  // Firmware backup stores the fixed 1,824-byte flash slot including zero
+  // padding. Validate that padding, but export the canonical compact record.
+  if(r.length===MAX_RECORD)
+    check(r.slice(MPR_HEADER+n).every(x=>x===0),"MPR1 nonzero trailing padding");
   check(r.slice(8,14).every(x=>x===EMPTY_REFERENCE||x<PRESET_COUNT),"invalid MPR1 references");
   check(get32(r,28)===crc(r,n),"MPR1 checksum mismatch");
   const title=Array.from(r.slice(14,26));
@@ -59,9 +64,11 @@ export function decodeProject(input){
     if(b===0)zero=true;
     else check(!zero&&b>=32&&b<=126,"invalid MPR1 name");
   }
+  const canonical=r.slice(0,MPR_HEADER+n);
   return {section:r[5],refs:Array.from(r.slice(8,14)),
           name:String.fromCharCode(...title).replace(/\x00+$/,""),
-          settingsBytes:Array.from(r.slice(MPR_HEADER)),recordBytes:Array.from(r)};
+          settingsBytes:Array.from(canonical.slice(MPR_HEADER)),
+          recordBytes:Array.from(canonical)};
 }
 /* Complete project export explicitly includes 8 x 4 positions. Null=empty.
  * Settings are encoded as opaque bytes, not silently discarded. */
