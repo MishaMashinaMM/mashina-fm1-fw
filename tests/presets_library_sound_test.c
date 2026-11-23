@@ -177,6 +177,19 @@ int main(void)
             }
         }
     }
+    /* Blank LIB32 positions play compiled factory presets. They still need
+     * the exact factory sound name in GLO's VOICE column, not an empty cache. */
+    {
+        uint32_t preset=0, engine=library_factory_at(2u,&preset);
+        char name[16];
+        bad+=check("blank LIBRARY slot loads a compiled factory fallback",
+                   engine<NENGINES && !library_slot_apply(2u) &&
+                   TSEL->user==UP_SLOTS+3u);
+        library_track_name(TSEL,name);
+        bad+=check("factory fallback shows its name on GLO MIXER",
+                   engine<NENGINES &&
+                   !strcmp(name,ENGINES[engine]->presets[preset].name));
+    }
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
 }
