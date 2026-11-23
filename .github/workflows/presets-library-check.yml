@@ -17,6 +17,11 @@ jobs:
         run: |
           python3 tools/presets_library_capacity.py
           python3 tools/presets_library_pack_experiment.py
+      - name: Verify host-only atomic 32-slot flash storage (no device writes)
+        run: |
+          mkdir -p build/host
+          cc -O2 -Wall -Wextra -o build/host/preset_library_storage_test tests/preset_library_storage_test.c
+          build/host/preset_library_storage_test
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
