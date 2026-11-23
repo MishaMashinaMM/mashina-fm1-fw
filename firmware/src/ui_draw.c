@@ -2765,8 +2765,9 @@ static void draw_mixer_table(void)
             cv_text(4, CAP_IN(S, 14), &AF_S, "K1 MIN  K2 MAX", T_DIM);
             cv_text(127, CAP_IN(S, 14), &AF_S, "K3 V.MIN K4 V.MAX", T_DIM);
         } else {
-            cv_text(4, CAP_IN(S, 14), &AF_S, "K1 TRN: +/-36 ST", T_DIM);
-            cv_text(127, CAP_IN(S, 14), &AF_S, "K2 FINE: +/-50 CT", T_DIM);
+            cv_text(4, CAP_IN(S, 14), &AF_S, "K1 TRN", T_DIM);
+            cv_text(86, CAP_IN(S, 14), &AF_S, "K2 FINE", T_DIM);
+            cv_text(167, CAP_IN(S, 14), &AF_S, "K3 DLY MS", T_DIM);
         }
         cv_blit(0, 198);
         return;
