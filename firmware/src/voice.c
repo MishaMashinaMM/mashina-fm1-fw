@@ -706,11 +706,11 @@ static volatile uint8_t asleep_hit;                     /* (0.6.28) a note went 
 #define DRUM_DELAY_EVENTS 48u
 enum { TD_FREE, TD_WAIT_ON, TD_MELODIC_HELD, TD_WAIT_BOTH, TD_WAIT_OFF };
 typedef struct {
-    uint32_t due, off_due;
+    uint32_t due, off_due, sequence;
     uint8_t track, note, vel, engine, state, released, offset_ms;
 } drum_delay_event_t;
 static drum_delay_event_t drum_delay_events[DRUM_DELAY_EVENTS] __attribute__((section(".pool")));
-static uint32_t drum_delay_clock;
+static uint32_t drum_delay_clock, drum_delay_sequence;
 static uint8_t drum_delay_pending, drum_delay_firing;
 static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel);
 static void trk_note_off_raw(track_t *t, uint32_t note);
@@ -750,6 +750,7 @@ static int drum_delay_enqueue(track_t *t, uint32_t note, uint32_t vel)
         if (e->state != TD_FREE) continue;
         e->due = drum_delay_clock + timing_samples(delay);
         e->off_due = 0u;
+        e->sequence = ++drum_delay_sequence;
         e->track = (uint8_t)ti;
         e->note = (uint8_t)note;
         e->vel = (uint8_t)vel;
@@ -770,18 +771,21 @@ static int drum_delay_release(track_t *t, uint32_t note)
 {
     uint32_t ti = (uint32_t)(t - trk);
     if (drum_delay_firing || !drum_delay_pending) return 0;
-    for (uint32_t i = DRUM_DELAY_EVENTS; i > 0u; i--) {
-        drum_delay_event_t *e = &drum_delay_events[i - 1u];
+    drum_delay_event_t *best = 0;
+    for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++) {
+        drum_delay_event_t *e = &drum_delay_events[i];
         if (e->state == TD_FREE || e->track != ti || e->note != note ||
             e->released || e->engine != t->eng_req) continue;
-        e->released = 1u;
-        if (timing_is_drum(e->engine))
-            return 0; /* one-shot drum: preserve its original Note Off */
-        e->off_due = drum_delay_clock + timing_samples(e->offset_ms);
-        e->state = e->state == TD_WAIT_ON ? TD_WAIT_BOTH : TD_WAIT_OFF;
-        return 1;
+        if (!best || (int32_t)(e->sequence - best->sequence) > 0)
+            best = e;
     }
-    return 0;
+    if (!best) return 0;
+    best->released = 1u;
+    if (timing_is_drum(best->engine))
+        return 0; /* one-shot drum: preserve its original Note Off */
+    best->off_due = drum_delay_clock + timing_samples(best->offset_ms);
+    best->state = best->state == TD_WAIT_ON ? TD_WAIT_BOTH : TD_WAIT_OFF;
+    return 1;
 }
 static void drum_delay_drop_track(uint32_t ti)
 {
