@@ -240,17 +240,17 @@ static int upd_store(uint32_t k, track_t *t)
 }
 /* Called after the standard USER values are applied, before the load ends.
  * Reset previous kits even when a legacy USER slot has no companion entry. */
-static void upd_track_load(track_t *t, uint32_t k)
+static void upd_track_load_data(track_t *t, const up_rec_t *r, const uint8_t *data, int have)
 {
     uint32_t ti = (uint32_t)(t - trk), lane, field;
-    uint8_t data[UPF_PK], values[120];
+    uint8_t values[120];
     uint16_t mask;
     if (ti >= NPART || !upd_engine(t->eng_req)) return;
     if (t->eng_req == ENGI_DRUM) {
-        if (!upd_companion_get(k, data)) upd_dx_decode(up_rec(k), data);
+        if (have) upd_dx_decode(r, data);
         return;
     }
-    upd_globals_load(t, up_rec(k));
+    upd_globals_load(t, r);
     if (t->eng_req == ENGI_DRUMLAB) {
         drumlab_kit_ready[ti] = 0u;
         drumlab_kit_dirty[ti] = 0u;
@@ -262,7 +262,7 @@ static void upd_track_load(track_t *t, uint32_t k)
         ind_patch_reset(t);
         ind_patch_ensure(t);
     }
-    if (upd_companion_get(k, data)) return;
+    if (!have) return;
     if (t->eng_req == ENGI_DRUMLAB) {
         upd_unpack7(values, data, 120u);
         for (lane = 0; lane < 12u; lane++) {
@@ -295,4 +295,12 @@ static void upd_track_load(track_t *t, uint32_t k)
         if (t->eng_req == ENGI_DRUMAC) ac_dirty[ti] = mask;
         else ind_dirty[ti] = mask;
     }
+}
+/* USER bank uses the same independent-data loader as the flash-backed library.
+ * Neither path copies kits into another USER slot. */
+static void upd_track_load(track_t *t, uint32_t k)
+{
+    uint8_t data[UPF_PK];
+    int have = !upd_companion_get(k, data);
+    upd_track_load_data(t, up_rec(k), data, have);
 }
