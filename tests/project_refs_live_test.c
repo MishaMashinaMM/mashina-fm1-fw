@@ -129,6 +129,10 @@ int main(void)
     bad+=check("assign USER 001 to track 1",!project_reference_load(0,0));
     bad+=check("assign built-in LIBRARY 033 to track 2",!project_reference_load(1,32));
     bad+=check("assign USER 001 to track 3",!project_reference_load(2,0));
+    trk[3].p[P_MUTE]=0;
+    bad+=check("active unassigned track cannot be silently lost on save",
+               project_save_as(1,"SET B")==2 && !project_used(1));
+    for(uint32_t k=3;k<NTRK;k++)trk[k].p[P_MUTE]=1;
     /* MPR1 must not silently discard an edited sound simply because its
      * track still carries the source USER slot. */
     trk[0].p[P_ATK]=51;
