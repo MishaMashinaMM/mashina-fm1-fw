@@ -14,7 +14,7 @@ MASHINA turns the M-VAVE FM1 into a **six-track sound module for external MIDI k
 | **FX** | Track effects and global effect buses. |
 | **SCL / ARP** | Scale/chord and arpeggiator settings. |
 | **SAVE** | Store sounds, presets and projects; manage the library. |
-| **SEQ** | Drum MIDI note, pan and pitch mapping. It does **not** start a song sequencer. |
+| **SEQ** | Drum MIDI note, pan, pitch and timing mapping. It does **not** start a song sequencer. |
 | **PLAY** | Drum performance settings: velocity, choke and retrigger. |
 | **REC** | Live MIDI CC macros, up to 32 per project. |
 | **ALGORITHM** | Select a track (except on pages where it has a dedicated action). |
@@ -83,7 +83,7 @@ Example: Give T1 the lower keyboard range and T2 the upper range, while both use
 
 **Important:** Zones filter incoming **external** MIDI; the FM1's built-in mini-keyboard still addresses only the selected track. Zones are evaluated before transposition.
 
-### Per-track transpose and fine tuning
+### Per-track transpose, fine tuning and timing
 
 Open **GLO → MIX → TUNING**:
 
@@ -124,7 +124,7 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
-### Factory sounds in v0.12
+### Factory sounds in v0.13
 
 The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
 
@@ -340,4 +340,4 @@ Before flashing or changing to an earlier firmware, save a complete backup of pr
 
 ---
 
-MASHINA v0.12 · M-VAVE FM1 · Usage reference
+MASHINA v0.13 · M-VAVE FM1 · Usage reference
