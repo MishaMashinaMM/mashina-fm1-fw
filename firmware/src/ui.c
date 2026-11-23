@@ -63,6 +63,9 @@ static void project_cur_name(char *b);
 #if FELUCCA_LIB32
 static void library_track_name(const track_t *t, char *out);
 #endif
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+static void mpr_capture_source(const track_t *t); /* defined after project.c captures */
+#endif
 static uint32_t user_of(const track_t *t)    /* user preset slot its sound came from, UP_SLOTS = none */
 {
     return t->user && up_used(t->user - 1u) ? t->user - 1u : UP_SLOTS;
@@ -1723,6 +1726,9 @@ static int library_slot_apply(uint32_t slot)
     if (e != TSEL->eng_req) set_engine(e);
     apply_preset(k);
     TSEL->user = (uint8_t)(UP_SLOTS + slot + 1u);
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    mpr_capture_source(TSEL);
+#endif
     return 0;
 }
 
