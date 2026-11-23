@@ -153,7 +153,7 @@ const collected=await captureFullDevice(mock,"MPR1 MOCK");
 assert.equal(collected.format,"mashina-full-device");
 assert.equal(collected.libraryPresets[0]?.length,304);
 assert.equal(collected.projects[1]?.length,section.length);
-assert.ok(archiveGets>40);
+assert.ok(archiveGets>=12); // sparse archive: only nonempty objects have GET chunks
 const back=await restoreFullDevice(mock,collected);
 assert.equal(back.restoredProjects,32);
 assert.equal(back.userSlots,32);
