@@ -144,7 +144,10 @@ static void felucca_init(void)
     sing_init();                              /* (0.9.0) VOICE's English generator words, resolved once (sing.c) */
     load_depth++;                             /* (the power-on loads: one outer load) */
     fm6_init();                               /* every track's FM6 patch: the init voice */
-    power_on_parts();                         /* (0.9.9: ui.c, TRK_DEF's sounds; the tests run it too) */
+    power_on_parts();                         /* legacy defaults for normal firmware */
+#if FELUCCA_LIB32 && FELUCCA_PROJECT_REFS
+    power_on_reference_presets();             /* T1..T4 = factory LIBRARY 033..036 */
+#endif
     load_depth--;
     song.sel = 0;
     song.master_q12 = 2048;                   /* (the pot's level replaces it before the audio starts: master_boot) */
