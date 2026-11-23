@@ -109,3 +109,28 @@ Support two distinct operations: **restore an entire 128-slot backup** (with exp
 - **MIDI PC precedence:** existing mappings may use PC to recall projects/sections. Define whether a special channel or configured mode preserves these commands while regular track channels select slots.
 
 Status: agreed library model specified; storage architecture and migration **not yet implemented or validated**.
+
+
+## Alternative under review: 32 USER-first + 96 load-only replaceable preset slots
+
+This section records a *new candidate*, not an approved replacement of the 128-fully-writable specification above.
+
+### Proposed addresses and navigation
+
+- Positions **001–032** = existing 32 fully editable USER slots, including empty slots; `PC 0..31` always addresses those exact slot numbers.
+- Positions **033–128** = 96 factory-style slots, load-only on the device, but optionally replaceable using the web library; `PC 32..127` addresses these fixed positions.
+- Unlike current `up_count()` / `up_nth()` logic, empty USER slots must occupy their fixed place in the 128-slot directory. Browsing may skip empties, but PC numbering must *not* collapse around them.
+- The original engine and sound identity of factory-style slots may change when the library is replaced; the slot number remains fixed. The 32 USER slots keep their existing A/B flash objects, FM6/drum sidecars, and RAM footprint.
+- Current channel 16 Program Change 0–3 and 16–23 commands have special project/section behavior. Preserve their semantics or define an explicit mode/channel policy before asserting all 128 PCs directly select sounds.
+
+### Two radically different meanings of 'replaceable from web'
+
+**Option 1 — Build a personalized firmware image (strongest RAM/flash-data safety).** Keep the 96 factory-style sounds as read-only **XIP program/constant data** just as current factory presets and imports are. When the web library changes any slot, generate a *new firmware package* containing all 96 selected sounds and flash it via the existing installer. It is a full firmware rewrite, not a live preset upload. It needs a trusted firmware build environment / service (the current static browser page alone cannot compile the native firmware), backup/restore guarantees, repeatable builds, exact engine-specific kit/FM6 serialization, and full regression tests. The v0.13 firmware uses **507,020 of 584,336 B XIP image capacity; 77,316 B free** on the measured build. Whether 96 arbitrary full sounds and their metadata fit within that headroom has not been measured; the existing factory data already occupies some XIP, so a replace-not-add design should be assessed. This option requires **essentially no new 96-slot RAM mirror** and **no new dedicated writable data partition**. Program-flashing is heavier/slower and has firmware-update compatibility implications.
+
+**Option 2 — 96 flash-data slots uploaded over MIDI/WebMIDI (more convenient live updates but flash risk).** A `96 × (192+112)` payload estimate is **29,184 B per unmirrored copy**, or **58,368 B for two copies**, before sector overhead and index/journaling. This is smaller than the 128-slot plan, but current verified unused normal data storage is only **8 KiB** (0xDA000–0xDBFFF). The firmware packager describes a **72 KiB 'USR' region** (0xEA000–0xFBFFF), but `fm1_flash.h` does not allow ordinary writes there and ownership/OTA interaction is unproven. Thus **do not treat Option 2 as safe or ready**. A small RAM index plus streaming would avoid a full 96-preset RAM cache, but the writable-storage safety problem remains.
+
+### Immediate feasibility conclusion
+
+Reordering existing USER entries ahead of factory entries is a **low-risk UI/index change** and does not require moving the 32 USER flash records. Restricting full local editing to those existing 32 also **avoids the ~29.6 KiB RAM increase** of multiplying the full current RAM mirror fourfold. But the requirement for replacing 96 sound slots *individually via WebMIDI without reflashing* is distinct: it requires trusted writable flash and robust storage management. Treat personalized firmware rebuilding and flashing as a viable alternative, **not as an invisible one-click preset upload**.
+
+No runtime code, flash map, or firmware binary has been changed by this note.
