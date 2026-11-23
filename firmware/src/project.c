@@ -3521,7 +3521,7 @@ static void autosave_poll(void)
         fill_poll = fm1_ms;
         proj_fill_poll(autosave_sig());
     }
-#if FELUCCA_FLASH
+#if FELUCCA_FLASH && !(defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS)
     uint32_t sig;
     if (!flash_ok || fm1_ms - as.poll < AS_POLL_MS)
         return;
@@ -3553,7 +3553,7 @@ static void autosave_poll(void)
 static int autosave_boot(int allowed)
 {
     int rc = 0;
-#if FELUCCA_FLASH
+#if FELUCCA_FLASH && !(defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS)
     if (flash_ok && allowed && (ui_prefs & PREF_RESTORE_ON)) {
         int n;
         proj_wire_gen++;
