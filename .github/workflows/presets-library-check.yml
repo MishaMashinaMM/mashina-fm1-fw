@@ -135,6 +135,28 @@ jobs:
           FELUCCA_PROJECT_REFS_FORMAT: "1"
         run: python3 tools/build.py --release 0.13
 
+      - name: Build read-only FM1 flash diagnostic (legacy projects, writes locked)
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_FLASH_DIAG: "1"
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "0"
+          FELUCCA_PROJECT_REFS: "0"
+          FELUCCA_PROJECT_REFS_WRITE: "0"
+          FELUCCA_PROJECT_REFS_FORMAT: "0"
+        run: |
+          python3 tools/build.py --release 0.13-diag
+          mkdir -p build/read-only-diagnostic
+          cp build/felucca-0.13-diag.fwsc build/read-only-diagnostic/
+          cp build/release-0.13-diag/SHA256SUMS build/read-only-diagnostic/
+          cp docs/diagnostic-flash-readonly.md build/read-only-diagnostic/README.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-fm1-read-only-flash-diagnostic
+          path: build/read-only-diagnostic/
+          retention-days: 14
+
       - name: Package standalone 32-slot web-library prototype
         run: |
           mkdir -p build/presets-library-preview
