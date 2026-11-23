@@ -32,6 +32,19 @@ assert.equal(valid.format,"mashina-full-device");
 assert.deepEqual(valid.projects[1],section);
 assert.deepEqual(valid.currentPerformance,current);
 assert.equal(valid.archive.objects.length,43);
+const withUser=structuredClone(base);
+const storedUserBank=new Uint8Array(3080);
+storedUserBank.set([0x55,0x50,0x42,0x31,192,0,16,0]); // "UPB1" / 192 / 16
+storedUserBank.set(preset.slice(0,192),8);
+withUser.userPresets[0]=preset;
+withUser.archive.objects[6]={id:6,...raw(storedUserBank)};
+assert.deepEqual(validateFullDevice(withUser).userPresets[0],preset);
+const changedBank=structuredClone(withUser);
+const mismatched=storedUserBank.slice();
+mismatched[8+17]^=1;
+changedBank.archive.objects[6]={id:6,...raw(mismatched)};
+assert.throws(()=>validateFullDevice(changedBank),/USER 1 differs/);
+
 assert.throws(()=>validateFullDevice({...base,projects:Array(32).fill(null)}),/disagree/);
 assert.throws(()=>validateFullDevice({...base,currentPerformance:section}),/disagree/);
 const corrupt=structuredClone(base);corrupt.archive.objects[11].crc=25;
