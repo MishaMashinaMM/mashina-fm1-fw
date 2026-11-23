@@ -30,6 +30,11 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
     }
     if (cmd == 97u) { /* MPR1_PROBE: per-bank read-only flash status */
         if(n){ed_b(127u);ed_b(1u);return 1;}
+        if(transport_busy()) {
+            ed_b(16u);
+            for(uint32_t i=0;i<16u;i++)ed_b(4u);
+            return 1; /* no long read scan while a performance is playing */
+        }
         ed_b(16u);
         for(uint32_t bank=0;bank<16u;bank++){
             uint32_t seq=0u;
@@ -57,6 +62,11 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
     }
     if (cmd == 98u) { /* LIB32_PROBE: 4 banks, read only */
         if(n){ed_b(127u);ed_b(1u);return 1;}
+        if(transport_busy()) {
+            ed_b(LIB_BANKS);
+            for(uint32_t i=0;i<LIB_BANKS;i++)ed_b(4u);
+            return 1;
+        }
         ed_b(LIB_BANKS);
         for(uint32_t bank=0;bank<LIB_BANKS;bank++){
             uint32_t seq=0u;
