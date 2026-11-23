@@ -176,6 +176,14 @@ int main(void)
                    !live.dirty && mpr_slot_used(1));
     }
     /* Persist across a simulated reboot/empty .noinit project cache. */
+    {
+        uint8_t retired=nor[0x99000u];
+        live.dirty|=1u<<1u;
+        song_poll();
+        bad+=check("background song_poll never writes old FUN project sectors",
+                   !live.dirty && nor[0x99000u]==retired &&
+                   mpr_slot_used(1));
+    }
     memset(proj_slot,0,sizeof proj_slot);
     proj_fetch(1);
     bad+=check("saved project survives reboot in atomic NOR bank",
