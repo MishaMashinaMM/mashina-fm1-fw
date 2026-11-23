@@ -301,11 +301,29 @@ static int song_flush(void)
 {
     uint32_t k;
 #if FELUCCA_FLASH
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* Never write old 3840-byte FUN snapshots to the retired song-sector
+     * addresses: those overlap the new compact project storage and would
+     * destroy unrelated sections. A dirty section must commit through its
+     * 1824-byte MPR1 A/B bank, or fail without clearing its dirty flag. */
+    if (!flash_ok && live.dirty)
+        return 1;
+    for (k = 0; k < 4u; k++) {
+        if (!((live.dirty >> k) & 1u)) continue;
+#if FELUCCA_PROJECT_REFS_WRITE
+        if (mprs_save((uint32_t)song_cur * 4u + k, proj_slot[k].raw))
+            return 1;
+#else
+        return 1; /* read-only builds cannot persist project changes */
+#endif
+    }
+#else
     if (!flash_ok)
         return 0;
     for (k = 0; k < 4u; k++)
         if (((live.dirty >> k) & 1u) && st_save(proj_obj(k), &proj_slot[k], sizeof proj_slot[k]))
             return 1;
+#endif
 #else
     (void)k;
 #endif
