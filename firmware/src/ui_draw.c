@@ -2652,6 +2652,7 @@ static void draw_mixer_table(void)
         } else if (tuning) {
             cv_text(101, CAP_IN(S, 14), &AF_S, "TRN", T_TEXT);
             cv_text(132, CAP_IN(S, 14), &AF_S, "FINE", T_TEXT);
+            cv_text(177, CAP_IN(S, 14), &AF_S, "DLY", T_TEXT);
         } else {
         cv_text(101, CAP_IN(S, 14), &AF_S, (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? "LIVE" : "MIDI", (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) ? T_ACCENT : T_TEXT);
         cv_text(132, CAP_IN(S, 14), &AF_S, "VOL", T_TEXT);
@@ -2716,6 +2717,8 @@ static void draw_mixer_table(void)
             else fmt_int(b, fine);
             cv_text(101, ry + CAP_IN(M, 20), &AF_M, a, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
             cv_text(132, ry + CAP_IN(M, 20), &AF_M, b, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
+            fmt_int(a, drum_track_delay[i]);
+            cv_text(177, ry + CAP_IN(M, 20), &AF_M, a, selected ? T_INK : i >= trk_live ? T_DIM : T_VALUE);
         } else {
         /* midi rx */
         { char m[8]; m[0]=0; /* format */
@@ -2812,6 +2815,7 @@ static uint32_t drum_live_row_signature(uint32_t perf, uint32_t lane)
         sig = (sig ^ (perf ? drum_perf_curve[ti][lane] : note)) * 16777619u;
         sig = (sig ^ (perf ? drum_perf_sound[ti][lane] : (uint8_t)drum_pad_pan[ti][lane])) * 16777619u;
         sig = (sig ^ (perf ? drum_perf_choke[ti][lane] : (uint8_t)drum_pad_pitch[ti][lane])) * 16777619u;
+        if (!perf) sig = (sig ^ drum_pad_delay[ti][lane]) * 16777619u;
         if (perf) sig = (sig ^ drum_retrigger[ti][lane]) * 16777619u;
     }
     return sig;
@@ -2871,18 +2875,22 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
             uint32_t note = drum ? (drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane])
                                  : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : (ac ? AC_NOTES[lane] : 36u + lane));
             fmt_int(b, (int32_t)note);
-            cv_text(68, CAP_IN(M, 20), ink_w(face, b) < 46 ? face : &AF_M, b, col);
+            cv_text(60, CAP_IN(M, 20), ink_w(face, b) < 42 ? face : &AF_M, b, col);
             {
                 int32_t pan = drum_pad_pan[ti][lane];
                 if (pan == 0) str_cpy(b, "C", sizeof b);
                 else { b[0] = pan < 0 ? 'L' : 'R'; fmt_int(b + 1, pan < 0 ? -pan : pan); }
-                cv_text(116, CAP_IN(M, 20), ink_w(face, b) < 54 ? face : &AF_M, b, col);
+                cv_text(102, CAP_IN(M, 20), ink_w(face, b) < 43 ? face : &AF_M, b, col);
             }
             {
                 int32_t pitch = drum_pad_pitch[ti][lane];
                 if (pitch > 0) { b[0] = '+'; fmt_int(b + 1, pitch); }
                 else fmt_int(b, pitch);
-                cv_text(174, CAP_IN(M, 20), ink_w(face, b) < 62 ? face : &AF_M, b, col);
+                cv_text(147, CAP_IN(M, 20), ink_w(face, b) < 47 ? face : &AF_M, b, col);
+            }
+            {
+                fmt_int(b, drum_pad_delay[ti][lane]);
+                cv_text(203, CAP_IN(M, 20), &AF_M, b, col);
             }
         }
     }
@@ -2912,9 +2920,10 @@ static void draw_drum_midi_map(void)
 
     cv_begin(240, 16, T_BG);
     cv_text(6, CAP_IN(S, 14), &AF_S, "PAD", T_DIM);
-    cv_text(68, CAP_IN(S, 14), &AF_S, "NOTE", T_DIM);
-    cv_text(116, CAP_IN(S, 14), &AF_S, "PAN", T_DIM);
-    cv_text(174, CAP_IN(S, 14), &AF_S, "PITCH", T_DIM);
+    cv_text(60, CAP_IN(S, 14), &AF_S, "NOTE", T_DIM);
+    cv_text(102, CAP_IN(S, 14), &AF_S, "PAN", T_DIM);
+    cv_text(147, CAP_IN(S, 14), &AF_S, "PITCH", T_DIM);
+    cv_text(203, CAP_IN(S, 14), &AF_S, "DLY", T_DIM);
     cv_blit(0, 40);
     if (drum || lab || ac || ind) for (uint32_t lane = first; lane < first + 6u; lane++)
         draw_drum_live_row(0u, lane);
