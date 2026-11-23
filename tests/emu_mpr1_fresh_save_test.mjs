@@ -8,15 +8,26 @@ import {readFileSync} from "node:fs";
 const {instance}=await WebAssembly.instantiate(readFileSync("build/emu/felucca.wasm"),{});
 const ex=instance.exports;
 for(const name of ["_initialize","web_nor_erase","web_boot","web_render",
-  "web_mpr_ref","web_mpr_dirty","web_mpr_test_save","web_mpr_test_used","web_mpr_test_edit"]){
+  "web_mpr_ref","web_mpr_dirty","web_mpr_test_save","web_mpr_test_used","web_mpr_test_edit",
+  "web_mpr_origin_hash","web_mpr_current_hash","web_mpr_track_hash","web_mpr_drum_hash"]){
   assert.equal(typeof ex[name],"function","missing WASM export "+name);
 }
 ex._initialize();
 ex.web_nor_erase();
 ex.web_boot();
+function snapshot(label){
+  console.log("MPR1 WASM "+label+" drum="+ex.web_mpr_drum_hash().toString(16));
+  for(let k=0;k<4;k++)console.log("MPR1 WASM T"+(k+1)+
+    " ref="+ex.web_mpr_ref(k)+" dirty="+ex.web_mpr_dirty(k)+
+    " base="+ex.web_mpr_origin_hash(k).toString(16)+
+    " now="+ex.web_mpr_current_hash(k).toString(16)+
+    " params="+ex.web_mpr_track_hash(k).toString(16));
+}
+snapshot("immediately after web_boot");
 // Advance beyond the splash and exercise the normal 15-ms UI/main-loop
 // processing that a static project-host test cannot reproduce.
 for(let k=0;k<220;k++)ex.web_render(1024);
+snapshot("after 220 render blocks");
 for(let k=0;k<4;k++){
   assert.equal(ex.web_mpr_ref(k),33+k,"T"+(k+1)+" is not LIBRARY 0"+(33+k));
   assert.equal(ex.web_mpr_dirty(k),0,"T"+(k+1)+" appears edited after idle boot");
