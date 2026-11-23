@@ -343,3 +343,22 @@ aliases (IDs 2–5) agree with the authoritative 8-project section records
 produce an error, not a backup presented as valid. The JavaScript fixture
 checks both a consistent capture and a deliberately mismatched alias.
 Physical flash verification remains pending.
+
+### JavaScript regression execution (23 November 2026)
+
+The project/export audit found that `projectsBackup()` wrongly interpreted a
+canonical raw MPR1 byte array as a project object, causing
+`captureProjectsOnly()` to fail with **invalid section**. The JSON codec now
+accepts raw arrays, structured project values and `{recordBytes}` wrappers.
+A permanent test covers the raw-array path. Two additional test-harness fixes
+remove a dangling undefined variable and correct an invalid regular expression
+in the full-device regression.
+
+Four source-based JavaScript regression files have been executed successfully
+in an isolated V8 environment with assertion/Node API compatibility shims:
+`projects_library_codec_test.mjs`, `full_device_backup_test.mjs`,
+`performance_backup_test.mjs`, and `presets_library_sync_test.mjs`.
+This verifies their JavaScript assertions in that environment, **not** the
+unmodified Node CI suite, native firmware build, or physical device behavior.
+The experimental firmware write paths remain gated off; do not infer flash
+safety or release readiness from these checks.
