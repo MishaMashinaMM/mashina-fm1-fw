@@ -78,3 +78,14 @@ jobs:
           FELUCCA_LIB32_WRITE: "1"
         run: python3 tools/build.py --release 0.13
 
+
+      - name: Package standalone 32-slot web-library prototype
+        run: |
+          mkdir -p build/presets-library-preview
+          cp web/presets-library-lab.html build/presets-library-preview/index.html
+          cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-preview/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-presets-library-32-preview
+          path: build/presets-library-preview/
+          retention-days: 14
