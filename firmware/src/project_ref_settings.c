@@ -179,7 +179,19 @@ static int mpr_project_settings_decode(project_t *p,const uint8_t *data,uint32_t
            p->transpose[k]>36 || p->fine[k]<-50 || p->fine[k]>50 ||
            p->drum_timing[k]>50u)return 0;
         if(p->zone[k][Z_NOTE_MIN]>p->zone[k][Z_NOTE_MAX] ||
-           p->zone[k][Z_VEL_MIN]>p->zone[k][Z_VEL_MAX])return 0;
+           p->zone[k][Z_VEL_MIN]>p->zone[k][Z_VEL_MAX] ||
+           p->zone[k][Z_NOTE_MAX]>127u || p->zone[k][Z_VEL_MAX]>127u ||
+           p->lab_note_on[k]>1u || p->dx_note_on[k]>1u)return 0;
+        for(uint32_t pad=0;pad<12u;pad++) {
+            if(p->pad_pan[k][pad]<-64 || p->pad_pan[k][pad]>64 ||
+               p->pad_pitch[k][pad]<-24 || p->pad_pitch[k][pad]>24 ||
+               p->pad_timing[k][pad]>50u ||
+               p->lab_note[k][pad]>127u ||
+               p->dx_note[k][pad]>127u)return 0;
+        }
     }
+    for(uint32_t i=0;i<3u;i++)
+        if(p->eq_gain[i]<-15 || p->eq_gain[i]>15)return 0;
+    if(p->eq_on>1u || p->pfx_ltgt>2u)return 0;
     return 1;
 }
