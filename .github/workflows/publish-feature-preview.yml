@@ -6,9 +6,8 @@ name: Publish validated feature emulator preview
 
 on:
   workflow_run:
-    workflows: ["emulator"]
+    workflows: ["emulator", "Startup mixer emulator preview"]
     types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -22,17 +21,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish-timing-preview:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+  publish-feature-preview:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && ((github.event.workflow_run.name == 'emulator' && github.event.workflow_run.head_branch == 'main') || (github.event.workflow_run.name == 'Startup mixer emulator preview' && github.event.workflow_run.head_branch == 'feature/startup-glo-mixer'))) }}
+    env:
+      PREVIEW_REF: ${{ github.event.workflow_run.name == 'Startup mixer emulator preview' && 'feature/startup-glo-mixer' || 'feature/drum-additive-timing' }}
+      PREVIEW_SLUG: ${{ github.event.workflow_run.name == 'Startup mixer emulator preview' && 'startup-glo-mixer' || 'drum-additive-timing' }}
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: https://mishamashinamm.github.io/mashina-fm1-fw/previews/drum-additive-timing/
+      url: https://mishamashinamm.github.io/mashina-fm1-fw/previews/
     steps:
       - name: Check out feature branch without merging to main
         uses: actions/checkout@v4
         with:
-          ref: feature/drum-additive-timing
+          ref: ${{ env.PREVIEW_REF }}
           fetch-depth: 1
       - uses: actions/setup-python@v5
         with:
@@ -41,14 +43,14 @@ jobs:
         run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
       - name: Generate firmware headers
         run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
-      - name: Test all live drum and universal timing changes
+      - name: Test all live firmware changes
         run: bash tests/run_live_drum_tests.sh
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: 6.0.11
       - name: Build isolated browser emulator
         run: |
-          EMU_VERSION="0.12-timing-$(git rev-parse --short=7 HEAD)" EMU_PREVIEW=1 \
+          EMU_VERSION="0.13-${PREVIEW_SLUG}-$(git rev-parse --short=7 HEAD)" EMU_PREVIEW=1 \
             FELUCCA_NO_SEQUENCER=1 bash web/emu/build.sh
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
       - name: Validate browser preview assets
@@ -99,16 +101,16 @@ jobs:
       - name: Overlay feature preview only
         run: |
           set -euo pipefail
-          mkdir -p build/pages/previews/drum-additive-timing
-          cp -a build/emu/. build/pages/previews/drum-additive-timing/
-          git rev-parse HEAD > build/pages/previews/drum-additive-timing/SOURCE_COMMIT
+          mkdir -p "build/pages/previews/$PREVIEW_SLUG"
+          cp -a build/emu/. "build/pages/previews/$PREVIEW_SLUG/"
+          git rev-parse HEAD > "build/pages/previews/$PREVIEW_SLUG/SOURCE_COMMIT"
           cmp /tmp/mashina-public-source build/pages/firmware/SOURCE_COMMIT
           cmp /tmp/mashina-public-hash build/pages/firmware/RELEASE_SHA256
-          test -s build/pages/previews/drum-additive-timing/felucca.wasm
+          test -s "build/pages/previews/$PREVIEW_SLUG/felucca.wasm"
       - name: Upload standalone preview artifact
         uses: actions/upload-artifact@v4
         with:
-          name: universal-timing-emulator
+          name: feature-emulator-preview
           path: build/emu/
           retention-days: 30
       - uses: actions/upload-pages-artifact@v3
@@ -118,5 +120,5 @@ jobs:
         uses: actions/deploy-pages@v4
       - name: Link to browser emulator
         run: |
-          echo '### [Open universal timing emulator](https://mishamashinamm.github.io/mashina-fm1-fw/previews/drum-additive-timing/)' >> "$GITHUB_STEP_SUMMARY"
+          echo "### Open emulator: https://mishamashinamm.github.io/mashina-fm1-fw/previews/$PREVIEW_SLUG/" >> "$GITHUB_STEP_SUMMARY"
           echo "Source: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
