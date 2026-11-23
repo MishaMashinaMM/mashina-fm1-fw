@@ -63,7 +63,10 @@ async function request(cmd,args){
   if(cmd===67){changed++;notes.push(args.slice(0,2));return [args[0],args[1],0];}
   throw new Error("unexpected mock command "+cmd);
 }
-assert.deepEqual(await projectCapability(request),{version:1,sections:32,writable:true});
+assert.deepEqual(await projectCapability(request),
+  {version:1,sections:32,writable:true,canInitialize:false});
+assert.deepEqual(await projectCapability(async()=>[1,32,1,1]),
+  {version:1,sections:32,writable:true,canInitialize:true});
 let progress=0;
 const result=await restoreProjectsOnly(request,
   {format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,
