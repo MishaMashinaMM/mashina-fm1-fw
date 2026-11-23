@@ -98,7 +98,13 @@ if (typeof registerProcessor === "function") {
       }
       const ex = this.ex;
       if (!ex) return;
-      if (m.type === "sample-kit") {
+      if (m.type === "flash-snapshot") {
+        // Snapshot actual WASM NOR, not potentially stale browser storage.
+        // Read-only: never changes an active sound, flash or project.
+        const snapshot = storeSectors(new Uint8Array(ex.memory.buffer, ex.web_nor(), ex.web_nor_size()));
+        this.port.postMessage({type:"flash-snapshot", sectors:snapshot});
+      }
+      else if (m.type === "sample-kit") {
         const samples = ex.web_sample_count ? ex.web_sample_count() : 0;
         const kitReady = !!(samples && ex.web_sample_kit && !ex.web_sample_kit());
         this.port.postMessage({type:"sample-ready", samples, kitReady});
