@@ -778,15 +778,24 @@ static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel)
 static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t ti = (uint32_t)(t - trk), lane;
-    if (t->eng_req == ENGI_DRUM && ti < NPART &&
-        (drum_midi_custom[ti] || FELUCCA_NO_SEQUENCER)) {
-        for (lane = 0; lane < DV_NLANE12; lane++)
-            if ((drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane]) == note)
-                trk_note_on_raw(t, lane < DV_NLANE ?
-                                    DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane], vel);
+    if (t->eng_req == ENGI_DRUM && ti < NPART) {
+        if (drum_midi_custom[ti]) {
+            /* Explicit map: exact MIDI notes, including duplicate layers. */
+            for (lane = 0; lane < DV_NLANE12; lane++)
+                if (drum_midi_note[ti][lane] == note)
+                    trk_note_on_raw(t, lane < DV_NLANE ?
+                                        DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane], vel);
+        } else {
+            /* Factory kit is chromatic in EVERY octave, matching other drums.
+             * Keep internal GM sound notes independent of incoming MIDI pitch. */
+            lane = note % DV_NLANE12;
+            trk_note_on_raw(t, lane < DV_NLANE ?
+                                DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane], vel);
+        }
         return;
     }
-    if (t->eng_req == ENGI_DRUMLAB && ti < NPART && drumlab_midi_custom[ti]) {
+    if ((t->eng_req == ENGI_DRUMLAB || t->eng_req == ENGI_DRUMAC ||
+         t->eng_req == ENGI_DRUMIND) && ti < NPART && drumlab_midi_custom[ti]) {
         /* Every matching lane is a separate hit, including duplicate MIDI
          * assignments on the same track. Voice stealing remains centralized
          * in voice_alloc: the global NVOICE budget is unchanged. */
@@ -834,15 +843,21 @@ static void trk_note_off_raw(track_t *t, uint32_t note)
 static void trk_note_off(track_t *t, uint32_t note)
 {
     uint32_t ti = (uint32_t)(t - trk), lane;
-    if (t->eng_req == ENGI_DRUM && ti < NPART &&
-        (drum_midi_custom[ti] || FELUCCA_NO_SEQUENCER)) {
-        for (lane = 0; lane < DV_NLANE12; lane++)
-            if ((drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane]) == note)
-                trk_note_off_raw(t, lane < DV_NLANE ?
-                                     DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
+    if (t->eng_req == ENGI_DRUM && ti < NPART) {
+        if (drum_midi_custom[ti]) {
+            for (lane = 0; lane < DV_NLANE12; lane++)
+                if (drum_midi_note[ti][lane] == note)
+                    trk_note_off_raw(t, lane < DV_NLANE ?
+                                         DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
+        } else {
+            lane = note % DV_NLANE12;
+            trk_note_off_raw(t, lane < DV_NLANE ?
+                                 DRUM_LANE_NOTE[lane] : DRUM_NOTE12[lane]);
+        }
         return;
     }
-    if (t->eng_req == ENGI_DRUMLAB && ti < NPART && drumlab_midi_custom[ti]) {
+    if ((t->eng_req == ENGI_DRUMLAB || t->eng_req == ENGI_DRUMAC ||
+         t->eng_req == ENGI_DRUMIND) && ti < NPART && drumlab_midi_custom[ti]) {
         for (lane = 0; lane < DLAB_LANES; lane++)
             if (drumlab_midi_note[ti][lane] == note)
                 trk_note_off_raw(t, 36u + lane);
