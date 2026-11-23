@@ -20,6 +20,9 @@ assert.deepEqual(plan.order,["USER","LIBRARY","PROJECTS"]);
 assert.equal(plan.userWrites,1);
 assert.equal(plan.libraryWrites,1);
 assert.equal(plan.projectWrites,1);
+assert.equal(plan.userErases,31);
+assert.equal(plan.libraryErases,31);
+assert.equal(plan.projectErases,31);
 const usage=analyzeProjectReferences(restored.projects,restored.userPresets);
 assert.equal(usage.missingUserPresets.length,0);
 assert.equal(usage.usedPresetCount,2);
@@ -35,6 +38,7 @@ assert.throws(()=>makePerformanceBundle({userPresets:missing,libraryPresets:libr
 const factory=[...library];factory[12]=null;
 const fallback=makePerformanceBundle({userPresets:user,libraryPresets:factory,projects});
 assert.equal(planPerformanceRestore(fallback).libraryWrites,0);
+assert.equal(planPerformanceRestore(fallback).libraryErases,32);
 const bad=[...projects];bad[5]=[...projects[5]];bad[5][33]^=1;
 assert.throws(()=>makePerformanceBundle({userPresets:user,libraryPresets:library,projects:bad}),/checksum/);
 assert.throws(()=>parsePerformanceBundle({...bundle,version:2}),/unsupported/);
