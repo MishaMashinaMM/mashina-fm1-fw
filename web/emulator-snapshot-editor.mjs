@@ -122,3 +122,59 @@ export function editEmulatorLibrarySnapshot(snapshot,edits){
         "Unrelated NOR sector changed at "+off);
   return {snapshot:result,changes:changed,inspection:after};
 }
+
+/* Source USER sounds from exported flash. Exact 192-byte record is joined
+ * to its independently committed UPF6 112-byte companion only when the
+ * UPF6 per-record tag still matches the record's content (except its name).
+ * This supports edited DRUM kits and FM6 patches without inventing bytes.
+ * Records missing required companions remain visible but nontransferable.
+ */
+export function userSourceRecords(snapshot){
+  const view=inspectEmulatorFlash(snapshot),sectors=decodeEmulatorFlash(snapshot);
+  const UPF_A=0x9f000,UPF_B=0xfe000;
+  function readUpfSector(off,copy){
+    const data=sector(sectors,off);
+    if(u32(data,0)!==0x554c4546||
+       (data[4]|data[5]<<8)!==8||
+       (data[6]|data[7]<<8)!==copy||
+       u32(data,12)!==3728||
+       u32(data,28)!==crc32(data.slice(0,28))||
+       u32(data,16)!==crc32(data.slice(256,256+3728)))return null;
+    const body=data.slice(256,256+3728);
+    if(u32(body,0)!==0x36465055||
+       (body[4]|body[5]<<8)!==1||
+       (body[6]|body[7]<<8)!==32)return null;
+    return {sequence:u32(data,8),data:body};
+  }
+  const a=readUpfSector(UPF_A,0),b=readUpfSector(UPF_B,1);
+  const upf=b&&(!a||newer(a.sequence,b.sequence))?b:a;
+  const companionFor=(slot,raw)=>{
+    const idx=slot-1,body=upf?.data;
+    if(!body||!(u32(body,8)&(1<<idx)))return null;
+    let tag=2166136261;
+    for(let i=0;i<raw.length;i++){
+      if(i>=4&&i<16)continue; // changing the name cannot detach a patch
+      tag=Math.imul(tag^raw[i],16777619)>>>0;
+    }
+    const off=16+idx*116;
+    if(u32(body,off)!==tag)return null;
+    return body.slice(off+4,off+116);
+  };
+  return view.users.filter(x=>x.status==="saved").map(user=>{
+    const raw=Uint8Array.from(user.recordBytes);
+    const needsCompanion=[10,12,15,19,20].includes(user.engine);
+    const extra=companionFor(user.slot,raw);
+    const complete=!needsCompanion||(
+      !!extra&&(user.engine===12||extra[111]===0xd3));
+    const result={id:"U"+user.slot,name:user.name,engine:user.engine,
+      available:complete,
+      ...(!complete?{issue:"USER sound needs its matching FM6/drum companion"}:{})};
+    if(complete){
+      const bytes=new Uint8Array(304);
+      bytes.set(raw);
+      if(extra)bytes.set(extra,192);
+      result.recordBytes=Array.from(decodeRecord(bytes).recordBytes);
+    }
+    return result;
+  });
+}
