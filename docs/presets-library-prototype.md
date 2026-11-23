@@ -60,3 +60,17 @@ A 32-slot, two-copy bank with the old 192-byte record and 112-byte sidecar fits 
 ### Lossless compression test
 
 CI run 45195603640 passed. 32 real factory sounds' 127 signed parameters + names encoded into an illustrative host-only record compress from **8,576 B to 1,377 B**. The same with zeroed 112-byte sidecars goes from **12,160 B to 1,423 B**. A deterministic full-data synthetic bank with independent sidecars goes from **12,160 B to 9,826 B**, which cannot fit either 3,840-byte per-copy payload. This is a strong reason **not** to use compression as an unbounded 8 KiB storage guarantee; real drum kit exports need dedicated sidecar support too.
+
+## Host-only 32 KiB persistent store prototype
+
+A new standalone module, `firmware/src/preset_library_store.c`, and simulator `tests/preset_library_storage_test.c` exercise a genuine lossless fixed-size **32-slot** data layout:
+
+- Each record is exactly **304 bytes**: 192-byte existing USER format plus 112-byte FM6/DRUM companion payload. The two parts are written together in a single CRC-checked transaction, avoiding torn kit data.
+- **8 slots × 304 = 2,432 B per bank**; four banks × two independently committed 4,096-byte sectors = **32,768 B** (eight sectors), tentatively mapped to `0xEA000–0xF1FFF` **in simulated NOR only**.
+- Read and write operate on one **2,432-byte** scratch buffer, not a 32-sound RAM mirror. Zero records represent empty slots. Slot identities never shift.
+- A/B copy-on-write commits the CRC-bearing header last. A failure during erase/write keeps the previous valid sector. Host tests cover 32 full records, individual replacement/clear, unrelated-slot isolation, CRC fallback, out-of-bounds addresses and interrupted updates.
+- This storage module is **not included in the real firmware image**, and the real flash write permissions have **not** been widened. No production `LIB_PUT` command or web uploader is enabled.
+
+This integrated design needs more sector space than the earlier split-format 24 KiB estimate, but it has simpler **atomic sound + sidecar** behavior and lower risk of desynchronizing complete kits. It fits well inside the nominal 72 KiB USR descriptor **if that descriptor can safely be used**. It does *not* fit the 8 KiB currently documented free outside that partition.
+
+Before physical testing, audit the exact FM1 bootloader/updater handling of USR, protect any existing contents, verify retention across the official installer/firmware update, provide a backup/recovery path, and expose only read-only diagnostics until this is proven.
