@@ -99,8 +99,9 @@ footer small { font-size: 11px; opacity: .8; }
   <div class="emu-flash-controls">
     <button id="flash-export" type="button">Export emulator data (.json)</button>
     <label>Import emulator data (.json) <input id="flash-import" type="file" accept=".json,application/json"></label>
+    <button id="flash-restore" type="button" disabled>Restore permanently</button>
   </div>
-  <p id="flash-status" role="status">Export includes all saved USER/LIBRARY presets, projects, settings and RESTORE LAST data. Import before Switch on: isolated session, no changes to existing browser saves.</p>
+  <p id="flash-status" role="status">Export includes all saved USER/LIBRARY presets, projects, settings and RESTORE LAST data. Select a JSON and choose Switch on for a temporary isolated session, or Restore permanently to replace browser saves after confirmation.</p>
   <details>
     <summary>Import an older MASHINA / Jiant device backup instead</summary>
     <label><span data-ml="backup">Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json):</span> <input id="backup-file" type="file" accept=".json,application/json"></label>
@@ -162,7 +163,7 @@ footer small { font-size: 11px; opacity: .8; }
 
 <script type="module">
 import { readBackup } from "./fm1backup.js";
-import {encodeEmulatorFlash,decodeEmulatorFlash} from "./emulator-flash-backup.mjs";
+import {encodeEmulatorFlash,decodeEmulatorFlash,restorePersistentEmulatorFlash} from "./emulator-flash-backup.mjs";
 const NS = "http://www.w3.org/2000/svg";
 // panel.c's labels (bit = label) and encoder roles
 const B = { FX: 0, SCL: 1, ENV: 2, LFO: 3, EDIT: 4, GLO: 5, HOME: 6, SAVE: 7, ARP: 8, SEQ: 9, PLAY: 10, REC: 11, "OCT-": 12, "OCT+": 13 };
@@ -176,6 +177,8 @@ const STORE = "felucca-emu-flash";
 const flashStatus=document.getElementById("flash-status");
 const flashImport=document.getElementById("flash-import");
 const flashExport=document.getElementById("flash-export");
+const flashRestore=document.getElementById("flash-restore");
+let checkedImport=null, flashImportGeneration=0;
 let flashSession=false;
 let snapshotRequested=false;
 function downloadFlash(sectors){
@@ -206,12 +209,39 @@ flashExport.addEventListener("click",()=>{
   }
 });
 flashImport.addEventListener("change",async()=>{
-  if(node){flashStatus.textContent="Import requires restarting the emulator page first.";return;}
-  if(!flashImport.files[0])return;
+  const generation=++flashImportGeneration;
+  checkedImport=null;
+  flashRestore.disabled=true;
+  if(node){flashStatus.textContent="Restart the emulator page before importing.";return;}
+  const file=flashImport.files[0];
+  if(!file){flashStatus.textContent="No emulator backup selected.";return;}
   try {
-    const sectors=decodeEmulatorFlash(await flashImport.files[0].text());
-    flashStatus.textContent="Validated "+Object.keys(sectors).length+" saved sectors. Switch on to open an isolated imported session; existing browser data will remain unchanged.";
-  }catch(err){flashStatus.textContent="Import refused: "+err.message;}
+    const sectors=decodeEmulatorFlash(await file.text());
+    if(generation!==flashImportGeneration)return;
+    checkedImport=sectors;
+    flashRestore.disabled=false;
+    flashStatus.textContent="Validated "+Object.keys(sectors).length+" sectors from "+file.name+". Switch on opens an isolated session; Restore permanently replaces browser saves after confirmation.";
+  }catch(err){
+    if(generation===flashImportGeneration)flashStatus.textContent="Import refused: "+err.message;
+  }
+});
+flashRestore.addEventListener("click",()=>{
+  if(node||!checkedImport||flashRestore.disabled)return;
+  if(document.getElementById("backup-file").files.length){
+    flashStatus.textContent="Remove the older device backup selection before restoring emulator data.";
+    return;
+  }
+  if(!window.confirm("REPLACE this browser's saved MASHINA emulator presets, projects, settings and RESTORE LAST data with this JSON? This cannot be undone without an earlier export. The JSON file itself will not change."))return;
+  try{
+    const count=restorePersistentEmulatorFlash(localStorage,STORE,checkedImport);
+    flashImport.value="";
+    ++flashImportGeneration;
+    checkedImport=null;
+    flashRestore.disabled=true;
+    flashStatus.textContent="Permanent restore verified: "+count+" sectors saved to this browser. Click Switch on normally. Reloads at this same address will use the restored data.";
+  }catch(err){
+    flashStatus.textContent="Permanent restore refused: "+err.message;
+  }
 });
 
 // ------------------------------------------------------------------ the panel
@@ -695,6 +725,7 @@ async function switchOn() {
     await ac.resume();
     document.getElementById("backup-file").disabled = true;
     flashImport.disabled=true;
+    flashRestore.disabled=true;
     if(flashSession)flashStatus.textContent="Isolated imported emulator running. Export any changes before closing: browser saves remain untouched.";
     document.getElementById("start").hidden = true;
     midiTestEnable(true);
