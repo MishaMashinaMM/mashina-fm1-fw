@@ -7,6 +7,7 @@
 import {encodeEmulatorFlash,decodeEmulatorFlash} from "./emu/emulator-flash-backup.mjs";
 import {inspectEmulatorFlash} from "./emulator-library-inspector.mjs";
 import {decodeRecord,encodeRecord} from "./presets-library-codec.mjs";
+import {decodeProject,encodeProject} from "./projects-library-codec.mjs";
 import {importFactoryCatalog,importFactoryDrumRecords} from "./factory-catalog-selection.mjs";
 const SECTOR=4096, LIB_BASE=0xea000, PAYLOAD=256, BANK_BYTES=2432;
 const check=(ok,msg)=>{if(!ok)throw Error(msg);};
@@ -323,4 +324,88 @@ export function editEmulatorUserSnapshot(snapshot,edits){
       check(JSON.stringify(Array.from(out[off]))===JSON.stringify(Array.from(bytes)),
         "Editing USER unexpectedly changed NOR sector "+off);
   return {snapshot:exported,changes:prepared,inspection:after};
+}
+
+/* Optional project-reference reassignments; never change a section's name,
+ * saved settings payload, or any sound. No creation of an empty section:
+ * only previously saved valid MPR1 sections can be edited offline.
+ *
+ * edits: [{project:1..8, section:"A".."D", track:1..6,
+ *          reference:0..63 | 255 for unassigned}]
+ */
+export function editEmulatorProjectReferences(snapshot,edits){
+  check(Array.isArray(edits)&&edits.length>0&&edits.length<=192,
+    "Provide 1..192 track reference changes");
+  const old=inspectEmulatorFlash(snapshot);
+  const source=decodeEmulatorFlash(snapshot),out={...source};
+  const group=new Map(),seen=new Set(),report=[];
+  for(const edit of edits){
+    const project=edit?.project,section=edit?.section,track=edit?.track,reference=edit?.reference;
+    check(Number.isInteger(project)&&project>=1&&project<=8&&
+      "ABCD".includes(section)&&typeof section==="string"&&section.length===1&&
+      Number.isInteger(track)&&track>=1&&track<=6&&
+      Number.isInteger(reference)&&(reference===255||(reference>=0&&reference<64)),
+      "Invalid project, section, track or source reference");
+    const pos=(project-1)*4+"ABCD".indexOf(section),key=pos+":"+track;
+    check(!seen.has(key),"Duplicate track reference assignment");
+    seen.add(key);
+    const sectionRecord=old.projects.sections[pos];
+    check(sectionRecord!==null,"Cannot edit empty Project "+project+" Section "+section+
+      "; create/save the project in the emulator first");
+    if(reference<32)
+      check(old.users[reference].status==="saved",
+        "USER "+(reference+1)+" is empty; refusing to reference a missing sound");
+    const bank=Math.floor(pos/2);
+    if(!group.has(bank))group.set(bank,[]);
+    group.get(bank).push({pos,track,reference});
+    const prior=decodeProject(sectionRecord);
+    report.push({project,section,track,previous:prior.refs[track-1],reference});
+  }
+  for(const [bank,items] of group){
+    const base=0xa0000+bank*8192;
+    const choices=[0,1].map(copy=>{
+      const d=sector(source,base+copy*SECTOR);
+      const valid=u32(d,0)===0x3153504d&&u32(d,4)===bank&&
+        u32(d,12)===3648&&u32(d,16)===crc32(d.slice(256,256+3648));
+      return {copy,d,valid,seq:u32(d,8)};
+    });
+    let current=null;
+    for(const c of choices)if(c.valid&&(!current||newer(current.seq,c.seq)))current=c;
+    check(current||choices.every(x=>isErased(x.d)),
+      "MPR1 project bank "+bank+" contains foreign/invalid data");
+    check(current,"Project bank "+bank+" is not initialized");
+    const payload=current.d.slice(256,256+3648);
+    for(const change of items){
+      const offset=(change.pos%2)*1824;
+      const raw=payload.slice(offset,offset+1824);
+      const oldSection=decodeProject(Array.from(raw));
+      const refs=oldSection.refs.slice();
+      refs[change.track-1]=change.reference;
+      const updated=Uint8Array.from(encodeProject({
+        section:oldSection.section,name:oldSection.name,
+        refs,settingsBytes:oldSection.settingsBytes}));
+      payload.fill(0,offset,offset+1824);
+      payload.set(updated,offset);
+    }
+    const copy=current.copy===0?1:0,seq=(current.seq+1)>>>0;
+    const next=new Uint8Array(SECTOR).fill(255);
+    put32(next,0,0x3153504d);put32(next,4,bank);
+    put32(next,8,seq);put32(next,12,3648);
+    put32(next,16,crc32(payload));next.set(payload,256);
+    out[base+copy*SECTOR]=next;
+  }
+  const image=encodeEmulatorFlash(out),result=inspectEmulatorFlash(image);
+  for(const {project,section,track,reference} of report){
+    const idx=(project-1)*4+"ABCD".indexOf(section);
+    const oldRec=decodeProject(old.projects.sections[idx]);
+    const newRec=decodeProject(result.projects.sections[idx]);
+    check(newRec.refs[track-1]===reference,"Project track edit did not persist");
+    check(JSON.stringify(newRec.settingsBytes)===JSON.stringify(oldRec.settingsBytes)&&
+      newRec.name===oldRec.name,"Project-specific settings or name changed");
+  }
+  check(JSON.stringify(result.users)===JSON.stringify(old.users),
+    "Project reference edit unexpectedly changed USER data");
+  check(JSON.stringify(result.library)===JSON.stringify(old.library),
+    "Project reference edit unexpectedly changed LIBRARY data");
+  return {snapshot:image,changes:report,inspection:result};
 }
