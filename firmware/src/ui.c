@@ -1674,6 +1674,9 @@ static void select_engine(uint32_t e)
  * across shown engines so every engine contributes before extras.
  * This does not yet implement an uploaded/replaceable bank. */
 #define LIB_FACTORY_SLOTS 32u
+#if FELUCCA_LIB32
+static int library_sound_load(uint32_t slot); /* implemented after USER storage in felucca.c */
+#endif
 static uint32_t library_factory_at(uint32_t n, uint32_t *k)
 {
     uint32_t round, r;
@@ -1703,6 +1706,10 @@ static uint32_t preset_all_pos(uint32_t *total)
     uint32_t u = user_of(TSEL);
     *total = UP_SLOTS + LIB_FACTORY_SLOTS;
     if (u < UP_SLOTS) return u;
+#if FELUCCA_LIB32
+    if (TSEL->user > UP_SLOTS && TSEL->user <= UP_SLOTS + LIB_FACTORY_SLOTS)
+        return TSEL->user - 1u; /* loaded library record, not a USER record */
+#endif
     return UP_SLOTS + library_factory_rank(TSEL->eng_req, TSEL->preset);
 }
 /* Full, fixed slot map (unlike up_count/up_nth, never collapses empty slots).
@@ -1791,9 +1798,15 @@ static void preset_go(uint32_t n)                    /* load list index n into t
         if (k >= UP_SLOTS || !up_used(k)) return; /* fixed empty address: never load a different sound */
         up_load(k);
     } else {
-        if (e != TSEL->eng_req)
-            select_engine(e);
-        apply_preset(k);
+#if FELUCCA_LIB32
+        uint32_t slot = library_factory_rank(e, k);
+        if (slot >= LIB_FACTORY_SLOTS || library_sound_load(slot))
+#endif
+        {
+            if (e != TSEL->eng_req)
+                select_engine(e);
+            apply_preset(k);
+        }
     }
     preset_hinted();
 }
@@ -1823,9 +1836,14 @@ static void midi_pc_poll(void)
                 if (e == NENGINES) {
                     up_load(k);
                 } else {
-                    if (e != TSEL->eng_req)
-                        set_engine(e);
-                    apply_preset(k);
+#if FELUCCA_LIB32
+                    if (n < UP_SLOTS || library_sound_load(n - UP_SLOTS))
+#endif
+                    {
+                        if (e != TSEL->eng_req)
+                            set_engine(e);
+                        apply_preset(k);
+                    }
                 }
                 ui.force = 1;
             }
