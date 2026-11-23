@@ -77,12 +77,15 @@ const alien=await probeFlash(async(cmd)=>cmd===97?[16,3,...Array(15).fill(0)]:
 assert.equal(alien.canInitializeProjects,false);
 assert.equal(alien.unknown,true);
 await assert.rejects(probeFlash(async()=>[0]),/diagnostics/);
-const readOnly=async(cmd,args)=>cmd===95?[1,32,0]:[args?.[0]??0,1];
-const before=changed;
+let readOnlyWrites=0;
+const readOnly=async(cmd,args)=>{
+  if(cmd===67)readOnlyWrites++;
+  return cmd===95?[1,32,0]:[args?.[0]??0,1];
+};
 await assert.rejects(restoreProjectsOnly(readOnly,
   {format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,
    sections:base.projects}),/read-only/);
-assert.equal(changed,before);
+assert.equal(readOnlyWrites,0);
 await assert.rejects(restoreFullDevice(async(cmd)=>cmd===89?[1,32,1]:cmd===95?[1,32,0]:[],base),
   /does not allow/);
 /* End-to-end mock WebMIDI service: exercise the exact chunked BACKUP and
