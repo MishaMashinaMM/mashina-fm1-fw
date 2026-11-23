@@ -9,26 +9,34 @@ static uint32_t mpr_global_section(uint32_t section)
 {
     return (uint32_t)song_cur*4u+(section&3u);
 }
+static int mpr_open_blob(const uint8_t *r,uint32_t section,
+                         uint8_t refs[NTRK],uint8_t name[PROJ_NAME_LEN],
+                         project_t *p)
+{
+    uint32_t version_section=0,n=0,len;
+    if(!r || section>=4u ||
+       mpr_get32(r)!=MPR_MAGIC || r[4]!=MPR_VERSION)return 0;
+    len=MPR_HEADER+((uint32_t)r[6]|((uint32_t)r[7]<<8));
+    if(len>MPR_MAX_RECORD)return 0;
+    /* Backup records are fixed 1824 bytes and zero-padded. Ensure a stale
+     * or malicious hidden tail can never survive an import unnoticed. */
+    for(uint32_t i=len;i<MPR_MAX_RECORD;i++)
+        if(r[i])return 0;
+    if(!mpr_decode(r,len,&version_section,refs,name,st_buf,
+                   MPR_MAX_SETTINGS,&n) || version_section!=section)return 0;
+    project_t *q=p?p:&proj_scratch;
+    memset(q,0,sizeof *q);
+    if(!mpr_project_settings_decode(q,st_buf,n))return 0;
+    q->magic=PROJ_MAGIC;q->size=sizeof *q;
+    memcpy(q->name,name,PROJ_NAME_LEN);
+    q->sum=proj_sum(q);
+    return 1;
+}
 static int mpr_cached(uint32_t section,uint8_t refs[NTRK],
                       uint8_t name[PROJ_NAME_LEN],project_t *p)
 {
-    const uint8_t *r;
-    uint32_t version_section=0,n=0;
     if(section>=4u)return 0;
-    r=proj_slot[section].raw;
-    if(mpr_get32(r)!=MPR_MAGIC || r[4]!=MPR_VERSION)return 0;
-    uint32_t len=MPR_HEADER+((uint32_t)r[6]|((uint32_t)r[7]<<8));
-    if(len>MPR_MAX_RECORD ||
-       !mpr_decode(r,len,&version_section,refs,name,st_buf,
-                   MPR_MAX_SETTINGS,&n) || version_section!=section)return 0;
-    if(p) {
-        memset(p,0,sizeof *p);
-        if(!mpr_project_settings_decode(p,st_buf,n))return 0;
-        p->magic=PROJ_MAGIC;p->size=sizeof *p;
-        memcpy(p->name,name,PROJ_NAME_LEN);
-        p->sum=proj_sum(p);
-    }
-    return 1;
+    return mpr_open_blob(proj_slot[section].raw,section,refs,name,p);
 }
 static int mpr_slot_used(uint32_t section)
 {
