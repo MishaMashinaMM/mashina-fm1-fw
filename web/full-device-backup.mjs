@@ -245,6 +245,10 @@ export async function restoreProjectsOnly(request,file,progress=()=>{}) {
   const actual=archiveSections(readBackup(verify));
   insist(actual.every((record,i)=>JSON.stringify(record)===JSON.stringify(projects[i])),
          "Project-only restore verification failed; keep the offline backup and inspect the device");
+  // The four current-project aliases (archive IDs 2..5) must resolve to the
+  // same sections as global IDs 40..71. Detect a stale selected-project view
+  // before claiming that a restored project is ready for live recall.
+  archiveProjectAliases(readBackup(verify));
   return {restored:32}; // includes 32 empty-position clears
 }
 /* Preset, project, and current-performance restoration is deliberately not
