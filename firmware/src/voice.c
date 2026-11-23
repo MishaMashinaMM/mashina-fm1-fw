@@ -704,12 +704,13 @@ static volatile uint8_t asleep_hit;                     /* (0.6.28) a note went 
 #define DRUM_DELAY_EVENTS 48u
 typedef struct {
     uint32_t due;
-    uint8_t track, note, vel, engine, used;
+    uint8_t track, note, vel, engine, used, released;
 } drum_delay_event_t;
 static drum_delay_event_t drum_delay_events[DRUM_DELAY_EVENTS] __attribute__((section(".pool")));
 static uint32_t drum_delay_clock;
 static uint8_t drum_delay_pending, drum_delay_firing;
 static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel);
+static void trk_note_off_raw(track_t *t, uint32_t note);
 
 static uint32_t drum_delay_lane(const track_t *t, uint32_t note)
 {
@@ -736,11 +737,23 @@ static int drum_delay_enqueue(track_t *t, uint32_t note, uint32_t vel)
         e->note = (uint8_t)note;
         e->vel = (uint8_t)vel;
         e->engine = t->eng_req;
+        e->released = 0u;
         e->used = 1u;
         drum_delay_pending++;
         return 1;
     }
     return 0;
+}
+/* A very short MIDI Note On/Off must still produce the delayed hit,
+ * but its envelope must not be left held after the input key is released. */
+static void drum_delay_release(track_t *t, uint32_t note)
+{
+    if (drum_delay_firing || !drum_delay_pending) return;
+    uint32_t ti = (uint32_t)(t - trk);
+    for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++)
+        if (drum_delay_events[i].used && drum_delay_events[i].track == ti &&
+            drum_delay_events[i].note == note)
+            drum_delay_events[i].released = 1u;
 }
 static void drum_delay_drop_track(uint32_t ti)
 {
@@ -759,11 +772,13 @@ static void drum_delay_process(uint32_t n)
         drum_delay_event_t *e = &drum_delay_events[i];
         if (!e->used || (int32_t)(drum_delay_clock - e->due) < 0) continue;
         uint32_t ti = e->track, note = e->note, vel = e->vel, engine = e->engine;
+        uint8_t released = e->released;
         e->used = 0u;
         drum_delay_pending--;
         if (ti < NPART && trk[ti].eng_req == engine) {
             drum_delay_firing = 1u;
             trk_note_on_raw(&trk[ti], note, vel);
+            if (released) trk_note_off_raw(&trk[ti], note);
             drum_delay_firing = 0u;
         }
     }
@@ -887,6 +902,7 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
 static void trk_note_off_raw(track_t *t, uint32_t note)
 {
     uint32_t i, k = 0, mode = trk_vmode(t);
+    drum_delay_release(t, note);
     for (i = 0; i < t->xp_n; i++)                       /* not sounding yet (engine switch): forget it */
         if (t->xp_note[i] != note) {
             t->xp_note[k] = t->xp_note[i];
