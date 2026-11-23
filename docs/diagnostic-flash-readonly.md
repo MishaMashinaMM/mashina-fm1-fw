@@ -14,10 +14,10 @@
 - **Only the diagnostic operations are read-only.** USB commands 97/98 inspect
   flash without erase/program operations. Experimental LIB32 writes and MPR1
   project writes/formatting are compile-disabled. **Existing v0.13 USER,
-  legacy project, settings and other firmware save paths are not globally
-  write-protected by these flags.** Do not save presets, projects or settings
-  while using this temporary diagnostic image; do not regard it as a
-  write-protected recovery environment.
+  legacy project, settings and automatic autosave paths are not globally
+  write-protected by these flags.** Even avoiding the SAVE button does not
+  prove the firmware will perform no writes. Do not treat this temporary
+  image as a write-protected recovery environment.
 - **Installing any firmware still flashes the application/loader.** This
   diagnostic does not prove that the installation/bootloader will preserve
   every data sector, and it cannot make a failed install harmless.
