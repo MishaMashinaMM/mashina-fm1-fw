@@ -63,7 +63,10 @@ def check():
     assert not separated(library, rec)
     assert "ota_rd16(r + 6) == 0x5441u" in src(loader), "record signature guard changed"
     assert "ota_crc16(r + 2, 78, 0)" in src(loader), "record CRC guard changed"
-    print("CAUTION: loader scans LIBRARY region for possible update records (conditional erase); device verification still required.")
+    assert "s - 0x1000u >= 0xEA000u" in src(loader) and "s - 0x1000u < 0xF2000u" in src(loader), (
+        "MASHINA update loader no longer excludes LIBRARY flash sectors from cleanup")
+    print("PASS: MASHINA loader explicitly skips LIBRARY flash sectors while clearing update records")
+    print("CAUTION: stock bootloader/vendor update tools are still unverified on physical hardware")
     print("PASS: source-level LIB32 + compact MPR1 geometry and known app partitions")
 if __name__ == "__main__":
     check()
