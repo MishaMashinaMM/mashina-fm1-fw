@@ -50,13 +50,16 @@ for(const row of plan.filter(p=>p.engine===12)){
 }
 const altered=structuredClone(catalog);
 altered.presets[0].params[0]=256;
-assert.throws(()=>importFactoryCatalog(altered),/127 valid parameter/i);
+assert.throws(()=>importFactoryCatalog(altered),/exact protected 107-preset source revision/i);
+const plausibleEdit=structuredClone(catalog);
+plausibleEdit.presets[0].params[0]=99;
+assert.throws(()=>importFactoryCatalog(plausibleEdit),/exact protected 107-preset source revision/i);
 const missing=structuredClone(catalog);
 missing.presets.pop();
 assert.throws(()=>importFactoryCatalog(missing),/107 presets/i);
 const malformed=structuredClone(catalog);
 malformed.presets[37].initialLibrarySlot=33; // duplicate default
-assert.throws(()=>importFactoryCatalog(malformed),/default LIBRARY slot/);
+assert.throws(()=>importFactoryCatalog(malformed),/exact protected 107-preset source revision/);
 assert.throws(()=>importFactorySelection({...backup,version:2}),/selection JSON/);
 assert.equal(validateFactorySelection(catalog,Array(32).fill(null)).empty,32);
 assert.ok(raw.includes('"totalFactoryPresets": 107'));
