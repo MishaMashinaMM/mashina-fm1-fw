@@ -6,7 +6,7 @@
  * until each existing per-project field has an explicit new-format mapping.
  */
 #include <stdint.h>
-#include <string.h>
+/* Embedded AC79 build uses firmware/src/libc.c; host tests provide libc. */
 
 enum {
     MPR_TRACKS = 6, MPR_PRESETS = 64, MPR_EMPTY = 255,
