@@ -5,7 +5,7 @@
 #define UI_TEST_NO_MAIN 1
 #include "ui_test.c"
 
-static int check(const char *label, int yes)
+static int timing_assert(const char *label, int yes)
 {
     printf("UNIVERSAL TIMING: %-57s %s\n", label, yes ? "PASS" : "FAIL");
     return !yes;
@@ -41,33 +41,33 @@ int main(void)
     drum_track_delay[1]=30;
     trk_note_on(a,60,100);
     trk_note_on(b,60,100);
-    bad+=check("Different engine tracks: immediate A / pending B",
+    bad+=timing_assert("Different engine tracks: immediate A / pending B",
                voices_held(a) && !voices_active(b));
     trk_note_off(b,60); /* instantaneous input note */
     drum_delay_process(FS*29u/1000u);
-    bad+=check("Short note not audible before 30 ms", !voices_active(b));
+    bad+=timing_assert("Short note not audible before 30 ms", !voices_active(b));
     drum_delay_process(FS*2u/1000u);
-    bad+=check("Short note does start after offset", voices_active(b));
-    bad+=check("Short note scheduled release is independent", !voices_held(b));
+    bad+=timing_assert("Short note does start after offset", voices_active(b));
+    bad+=timing_assert("Short note scheduled release is independent", !voices_held(b));
     trk_all_off(a); trk_all_off(b);
     choose(b,ENGI_ATMOS);
     drum_track_delay[1]=25;
     trk_note_on(b,64,100);
     drum_delay_process(FS*26u/1000u);
-    bad+=check("Delayed melodic note is held after trigger", voices_held(b));
+    bad+=timing_assert("Delayed melodic note is held after trigger", voices_held(b));
     /* Note Off arrives 26 ms after input; it must be delayed 25 ms too. */
     trk_note_off(b,64);
     drum_delay_process(FS*23u/1000u);
-    bad+=check("Original duration preserved until postponed off",voices_held(b));
+    bad+=timing_assert("Original duration preserved until postponed off",voices_held(b));
     drum_delay_process(FS*3u/1000u);
-    bad+=check("Melodic note released after equal offset",!voices_held(b));
+    bad+=timing_assert("Melodic note released after equal offset",!voices_held(b));
     trk_all_off(b);
     choose(b,ENGI_ANALOG);
     drum_track_delay[1]=25;
     trk_note_on(b,65,100);
     trk_all_off(b);
     drum_delay_process(FS/10u);
-    bad+=check("Panic/track-off cancels pending melodic note",!voices_active(b));
+    bad+=timing_assert("Panic/track-off cancels pending melodic note",!voices_active(b));
     printf("UNIVERSAL TRACK TIMING %s (%d failed)\n",bad?"FAILED":"PASSED",bad);
     return !!bad;
 }
