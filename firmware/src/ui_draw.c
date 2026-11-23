@@ -2872,13 +2872,13 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
                                  : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : (ac ? AC_NOTES[lane] : 36u + lane));
             fmt_int(b, (int32_t)note);
             cv_text(68, CAP_IN(M, 20), ink_w(face, b) < 46 ? face : &AF_M, b, col);
-            if (!(ac || ind)) {
+            {
                 int32_t pan = drum_pad_pan[ti][lane];
                 if (pan == 0) str_cpy(b, "C", sizeof b);
                 else { b[0] = pan < 0 ? 'L' : 'R'; fmt_int(b + 1, pan < 0 ? -pan : pan); }
                 cv_text(116, CAP_IN(M, 20), ink_w(face, b) < 54 ? face : &AF_M, b, col);
             }
-            if (!(ac || ind)) {
+            {
                 int32_t pitch = drum_pad_pitch[ti][lane];
                 if (pitch > 0) { b[0] = '+'; fmt_int(b + 1, pitch); }
                 else fmt_int(b, pitch);
