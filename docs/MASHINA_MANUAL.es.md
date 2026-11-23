@@ -178,12 +178,12 @@ Los ocho canales de voz de síntesis se **comparten entre todas las pistas**; BR
 
 ### DRUM-X: todas las notas
 
-B2, S2, O2 y T2 son instancias independientes con sus propios ajustes, aunque emplean las mismas opciones de síntesis de las voces originales correspondientes.
+Los pads B2, S2, O2 y T2 tienen ajustes individuales y comparten los controles de síntesis de sus correspondientes sonidos de batería.
 
 | Pad | Nota MIDI | Pad | Nota MIDI |
 | --- | --- | --- | --- |
 | BD | 36 | RM | 37 |
-| SD | 38 | BL | 56 |
+| SD | 38 | BL | 47 |
 | CP | 39 | B2 | 41 |
 | CH | 42 | S2 | 40 |
 | OH | 46 | O2 | 43 |
@@ -233,7 +233,6 @@ Al editar un pad, los nombres se adaptan al instrumento: **BEATER / TEXTURE** (b
 
 Los sonidos individuales, los volúmenes y los ocho controles globales se guardan en cada proyecto. DRUM-AC comparte las **ocho voces de síntesis** del firmware; no suma doce voces independientes. Los platos son aproximaciones sintetizadas, no grabaciones acústicas.
 
-**Compatibilidad:** guardá una copia de seguridad antes de cambiar el firmware. Las versiones anteriores pueden no reconocer proyectos con DRUM-AC.
 
 ### DRUM-IND: percusión industrial sin afinación musical
 
@@ -254,7 +253,6 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 
 Presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. 
 
-**Compatibilidad:** guardá una copia de seguridad antes de cambiar el firmware. Las versiones anteriores pueden no reconocer proyectos con DRUM-IND.
 
 ### SEQ: mapa MIDI de batería
 
@@ -267,7 +265,7 @@ En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y O
 | K3 | Transposición del pad, **−24 a +24 semitonos** |
 | K4 | Sin uso |
 
-**DEFAULT / CUSTOM — los cuatro motores de batería.** En **DEFAULT**, DRUM-X, DRUM-LAB, DRUM-AC y DRUM-IND repiten los mismos 12 pads en todas las octavas: C en MIDI 36, 48, 60 y 72 dispara el mismo sonido sin transponerlo. **BELL** de DRUM-X está en **B / MIDI 47** (también 35, 59 y 71).
+**DEFAULT / CUSTOM — los cuatro motores de batería.** En **DEFAULT**, DRUM-X, DRUM-LAB, DRUM-AC y DRUM-IND repiten los mismos 12 pads en todas las octavas: C en MIDI 36, 48, 60 y 72 dispara el mismo sonido sin transponerlo. 
 
 Cambiar la nota de cualquier pad con **K1** activa **CUSTOM solamente en la pista seleccionada**. Los 12 pads responden entonces solo a sus notas MIDI asignadas (0–127). Los pads no modificados conservan sus notas originales de 36–47, pero ya no se repiten en otras octavas. Varios pads pueden compartir una nota y sonar juntos. La indicación **DEFAULT / CUSTOM** aparece arriba a la derecha.
 
