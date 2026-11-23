@@ -149,6 +149,9 @@ static int library_sound_load(uint32_t slot)
     }
     t->user = (uint8_t)(UP_SLOTS + slot + 1u);
     load_end(t);
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    mpr_capture_source(t);
+#endif
     sync_reload = 1;
     ui.force = 1;
     return 0;
