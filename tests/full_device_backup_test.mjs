@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -139,6 +139,16 @@ async function mock(cmd,args=[],opts={}){
   }
   throw new Error("mock received unknown command "+cmd);
 }
+// Projects-only export must not silently return a self-inconsistent archive.
+const projectExport=await captureProjectsOnly(mock,"MPR1 MOCK");
+assert.equal(projectExport.sections.length,32);
+assert.deepEqual(projectExport.sections[1],section);
+const beforeBadAlias=mockObjects.get(3).slice();
+mockObjects.set(3,pad(encodeProject({section:1,refs:[33,255,255,255,255,255],
+  name:"BAD ALIAS",settingsBytes:[7]})));
+await assert.rejects(captureProjectsOnly(mock,"MPR1 MOCK"),
+  /differs between archive aliases/);
+mockObjects.set(3,beforeBadAlias);
 // Reject a corrupt occupied LIBRARY slot before changing any project.
 // The imported section references LIBRARY 033 and 034 (refs 32 and 33).
 let preflightWrites=0;
