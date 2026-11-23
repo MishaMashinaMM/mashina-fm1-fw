@@ -5,6 +5,67 @@
  * Snapshot sound engines / FM6 voices / drum kit patches are NEVER written
  * into project records. The six byte identities are the sound authority.
  */
+/* A project stores a PRESET REFERENCE, not uncommitted edits to the
+ * currently loaded sound. Remember the exact live sound at preset load/save
+ * and refuse PROJECT SAVE if it was edited without first saving the preset.
+ * Project-only mix, zones, pad mappings etc are not part of this fingerprint.
+ */
+static uint32_t mpr_origin_hash[NTRK];
+static uint8_t mpr_origin_valid[NTRK];
+static uint32_t mpr_hash_bytes(uint32_t h,const void *src,uint32_t n)
+{
+    const uint8_t *b=src;
+    while(n--){h^=*b++;h*=16777619u;}
+    return h;
+}
+static uint32_t mpr_current_sound_hash(const track_t *t)
+{
+    uint32_t k=(uint32_t)(t-trk),h=2166136261u;
+    if(k>=NTRK)return 0;
+    h=mpr_hash_bytes(h,&t->eng_req,sizeof t->eng_req);
+    for(uint32_t i=0;i<P_COUNT;i++)
+        if(!mpr_is_project_param(i)) {
+            int16_t v=motion_base_value(t,i);
+            h=mpr_hash_bytes(h,&v,sizeof v);
+        }
+    if(t->eng_req==ENGI_FM6)
+        h=mpr_hash_bytes(h,fm6_patch[k],sizeof fm6_patch[k]);
+    if(t->eng_req==ENGI_DRUM){
+        h=mpr_hash_bytes(h,dx_kit,sizeof dx_kit);
+        h=mpr_hash_bytes(h,dx_kit12,sizeof dx_kit12);
+    }
+    if(t->eng_req==ENGI_DRUMLAB) {
+        drumlab_kit_ensure((track_t *)t);
+        h=mpr_hash_bytes(h,drumlab_kit[k],sizeof drumlab_kit[k]);
+        h=mpr_hash_bytes(h,&drumlab_kit_dirty[k],sizeof drumlab_kit_dirty[k]);
+    }
+    if(t->eng_req==ENGI_DRUMAC) {
+        ac_patch_ensure((track_t *)t);
+        h=mpr_hash_bytes(h,ac_patch[k],sizeof ac_patch[k]);
+        h=mpr_hash_bytes(h,ac_override[k],sizeof ac_override[k]);
+        h=mpr_hash_bytes(h,&ac_dirty[k],sizeof ac_dirty[k]);
+    }
+    if(t->eng_req==ENGI_DRUMIND) {
+        ind_patch_ensure((track_t *)t);
+        h=mpr_hash_bytes(h,ind_patch[k],sizeof ind_patch[k]);
+        h=mpr_hash_bytes(h,ind_override[k],sizeof ind_override[k]);
+        h=mpr_hash_bytes(h,&ind_dirty[k],sizeof ind_dirty[k]);
+    }
+    return h;
+}
+static void mpr_capture_source(const track_t *t)
+{
+    uint32_t k=(uint32_t)(t-trk);
+    if(k>=NTRK)return;
+    mpr_origin_valid[k]=t->user>=1u && t->user<=64u;
+    mpr_origin_hash[k]=mpr_origin_valid[k]?mpr_current_sound_hash(t):0u;
+}
+static int mpr_source_modified(const track_t *t)
+{
+    uint32_t k=(uint32_t)(t-trk);
+    return k>=NTRK || !mpr_origin_valid[k] ||
+           mpr_current_sound_hash(t)!=mpr_origin_hash[k];
+}
 static uint32_t mpr_global_section(uint32_t section)
 {
     return (uint32_t)song_cur*4u+(section&3u);
@@ -77,6 +138,7 @@ static int mpr_capture_unsaved(uint32_t section)
     for(uint32_t k=0;k<NTRK;k++){
         uint32_t u=trk[k].user;
         refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        if(refs[k]!=MPR_EMPTY && mpr_source_modified(&trk[k]))return 0;
         if(refs[k]<UP_SLOTS && !up_used(refs[k]))return 0;
         if(refs[k]>=UP_SLOTS && refs[k]!=MPR_EMPTY &&
            library_slot_ready(refs[k]-UP_SLOTS))return 0;
@@ -95,6 +157,9 @@ static int mpr_live_save(uint32_t section,const char *rename)
     for(uint32_t k=0;k<NTRK;k++){
         uint32_t u=trk[k].user;
         refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        if(refs[k]!=MPR_EMPTY && mpr_source_modified(&trk[k])){
+            ui_message("SAVE SOUND FIRST");return 2;
+        }
         if(refs[k]<UP_SLOTS && !up_used(refs[k])){
             ui_message("MISSING USER PRESET");return 2;
         }
