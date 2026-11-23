@@ -77,16 +77,6 @@ const alien=await probeFlash(async(cmd)=>cmd===97?[16,3,...Array(15).fill(0)]:
 assert.equal(alien.canInitializeProjects,false);
 assert.equal(alien.unknown,true);
 await assert.rejects(probeFlash(async()=>[0]),/diagnostics/);
-let progress=0;
-const result=await restoreProjectsOnly(request,
-  {format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,
-   sections:base.projects},()=>progress++);
-assert.equal(result.restored,32);
-assert.equal(progress,32);
-assert.ok(changed>=32*2);
-assert.ok(notes.some(x=>x[0]===0&&x[1]===41));
-assert.ok(notes.some(x=>x[0]===2&&x[1]===41));
-assert.ok(notes.some(x=>x[0]===0&&x[1]===40));
 const readOnly=async(cmd,args)=>cmd===95?[1,32,0]:[args?.[0]??0,1];
 const before=changed;
 await assert.rejects(restoreProjectsOnly(readOnly,
@@ -149,6 +139,31 @@ async function mock(cmd,args=[],opts={}){
   }
   throw new Error("mock received unknown command "+cmd);
 }
+// Project-only restore now verifies all 32 sections by reading flash back.
+const projectFile={format:"mashina-projects-mpr1",version:1,projects:8,
+  sectionsPerProject:4,sections:base.projects};
+let projectProgress=0;
+const projectResult=await restoreProjectsOnly(mock,projectFile,
+  ()=>projectProgress++);
+assert.equal(projectResult.restored,32);
+assert.ok(projectProgress>32); // includes read-back progress
+assert.deepEqual(Array.from(mockObjects.get(41)),Array.from(pad(section)));
+assert.equal(mockObjects.get(40).length,0);
+// Simulate an acknowledged section commit that silently loses its record.
+let corruptProjectOnCommit=true;
+const projectCorruptingMock=async(cmd,args=[],opts={})=>{
+  const reply=await mock(cmd,args,opts);
+  if(corruptProjectOnCommit&&cmd===67&&args[0]===2&&args[1]===41){
+    mockObjects.set(41,new Uint8Array(0));
+    corruptProjectOnCommit=false;
+  }
+  return reply;
+};
+await assert.rejects(restoreProjectsOnly(projectCorruptingMock,projectFile),
+  /Project-only restore verification failed/);
+assert.equal(corruptProjectOnCommit,false);
+// Recover the test device before exercising the full-device archive flow.
+await restoreProjectsOnly(mock,projectFile);
 const collected=await captureFullDevice(mock,"MPR1 MOCK");
 assert.equal(collected.format,"mashina-full-device");
 assert.equal(collected.libraryPresets[0]?.length,304);
