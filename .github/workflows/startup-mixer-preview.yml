@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Validate new startup page, then build standalone development emulator.
+# On success the main-only Pages publisher publishes it under previews/.
+name: Startup mixer emulator preview
+
+on:
+  push:
+    branches: [feature/startup-glo-mixer]
+    paths:
+      - 'firmware/**'
+      - 'tests/**'
+      - 'web/emu/**'
+      - '.github/workflows/startup-mixer-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1
+      - name: Generate emulator assets
+        run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Run firmware host regressions
+        run: bash tests/run_live_drum_tests.sh
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 6.0.11
+      - name: Build and test WebAssembly emulator
+        run: |
+          EMU_VERSION="0.13-startup-${GITHUB_SHA:0:7}" EMU_PREVIEW=1 \
+            FELUCCA_NO_SEQUENCER=1 bash web/emu/build.sh
+          node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-startup-mixer-emulator
+          path: build/emu/
+          retention-days: 30
