@@ -1736,6 +1736,25 @@ static int library_slot_apply(uint32_t slot)
 #endif
     return 0;
 }
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+/* On a fresh start, the first four audible tracks must have actual
+ * referenceable sources, not merely legacy TRK_DEF sounds with user=0.
+ * LIBRARY positions 033..036 have built-in factory fallbacks, and any later
+ * user override of those slots automatically becomes the startup sound.
+ * Leave tracks 5/6 and all underlying USER/LIBRARY records untouched. */
+static void power_on_reference_presets(void)
+{
+    uint32_t selected = song.sel;
+    for (uint32_t track = 0; track < 4u && track < NTRK; track++) {
+        song.sel = (uint8_t)track;
+        /* Never invent a reference if flash is damaged or unreadable.
+         * library_slot_apply() sets source identity only on success. */
+        if (library_slot_apply(track))
+            ui_message("STARTUP PRESET ERROR");
+    }
+    song.sel = (uint8_t)selected;
+}
+#endif
 
 /* Resolve a saved 0..63 preset reference into any track without moving the
  * selected track. Refuse missing USER slots; LIB slots have factory fallback.
