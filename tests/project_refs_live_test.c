@@ -84,7 +84,9 @@ static uint32_t ed_unpack7(const uint8_t *a,uint32_t na,uint8_t *out,uint32_t ma
 {
     uint32_t n=0;
     while(na && n<max){
-        uint32_t mask=*a++,k=na-- > 7u?7u:na+1u;
+        uint32_t mask=*a++;
+        na--;
+        uint32_t k=na>7u?7u:na;
         if(!k || n+k>max || (mask>>k))return 0;
         for(uint32_t j=0;j<k;j++,na--)
             out[n++]=(uint8_t)(*a++|(((mask>>j)&1u)<<7));
