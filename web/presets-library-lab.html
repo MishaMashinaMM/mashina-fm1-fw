@@ -26,14 +26,48 @@ tr:nth-child(2n){background:#161616}
 .refs{font-variant-numeric:tabular-nums;font-size:12px;color:#c7c7c7}
 #project-map td:nth-child(1){color:#ff9900;font-weight:700}
 #project-map td:last-child{max-width:550px;word-break:break-word}
+.catalog-shell{border:1px solid #484848;border-radius:8px;padding:14px;margin:22px 0;background:#111}
+.catalog-shell h2{color:#ff9900}
+.catalog-select{width:100%;max-width:460px;background:#1e1e1e;border:1px solid #555;color:#eee;padding:7px;border-radius:5px}
+.catalog-filter{background:#202020;color:#fff;border:1px solid #666;border-radius:5px;padding:9px}
+.catalog-tables{max-height:420px;overflow:auto}
+.catalog-tables td,.catalog-tables th{padding:7px 10px}
+.catalog-tables .blocked{color:#edb070}
+.catalog-good{color:#8bd698}
+.catalog-note{font-size:12px;color:#aaa}
+.catalog-shell button:disabled{opacity:.4;cursor:not-allowed}
 </style>
 </head>
 <body>
 <h1>MASHINA</h1><h2>FM1 PERFORMANCE FW · PRESETS &amp; PROJECTS LIBRARY</h2>
 <p>This local preview models the <strong>32 USER + 32 LIBRARY</strong> layout. USER presets (001–032) remain editable on the FM1. LIBRARY positions (033–064) can be prepared from JSON, including exact 304-byte exported records.</p>
 <div class="warning"><strong>Experimental firmware required.</strong> USB library transfers work only when the FM1 reports LIB32 support. The standard firmware does not accept them. Updates may erase the 32 library slots; save an offline JSON backup before uploading or upgrading. Projects reference the same 64 shared sounds; replacing a sound changes every project that uses it. The USB feature is write-locked unless explicitly enabled in the firmware build.</div>
+<section class="catalog-shell" aria-label="Factory master catalog selector">
+ <h2>FACTORY MASTER CATALOG · 107 PRESETS</h2>
+ <p>Import the original <code>factory-presets-from-code.json</code> unchanged, or load the matching file packaged with this page. Assign any factory sound to a LIBRARY destination (033–064). The 107-preset master is never rewritten or uploaded to FM1.</p>
+ <div class="toolbar">
+  <button id="load-master" type="button">Load built-in 107-preset catalog</button>
+  <label class="file">Import factory catalog / selection JSON <input id="import-master" type="file" accept=".json,application/json"/></label>
+  <button id="defaults-master" type="button" disabled>Fill 32 factory defaults</button>
+  <button id="export-master" type="button" disabled>Export my 32-slot selection JSON</button>
+  <button id="prepare-master" type="button" disabled>Prepare 32-slot upload pack</button>
+ </div>
+ <p class="catalog-note" id="catalog-state">No factory source loaded. The original master file is not modified by this page.</p>
+ <div class="toolbar">
+  <label for="catalog-filter">Search catalog</label>
+  <input class="catalog-filter" id="catalog-filter" placeholder="Name or engine" aria-label="Search 107 factory presets" />
+  <label for="catalog-engine">Engine</label>
+  <select class="catalog-filter" id="catalog-engine"><option value="">All engines</option></select>
+ </div>
+ <div class="catalog-tables">
+  <table aria-label="107 factory source sounds"><thead><tr><th>Factory #</th><th>Preset</th><th>Engine</th><th>Complete binary?</th><th>Assign to LIBRARY</th></tr></thead><tbody id="catalog-list"></tbody></table>
+ </div>
+ <h2 style="margin-top:24px">YOUR 32 LIBRARY DESTINATIONS (033–064)</h2>
+ <p class="catalog-note">Selections can include drum sounds. Drum kits without their complete binary sidecars can be saved in the selection JSON, but preparing/uploading any incomplete pack is blocked.</p>
+ <table aria-label="Factory sound selection for 32 LIBRARY slots"><thead><tr><th>LIBRARY</th><th>Assigned factory sound</th><th>Upload readiness</th></tr></thead><tbody id="catalog-assignments"></tbody></table>
+</section>
 <div class="toolbar">
- <label class="file">Import JSON <input id="import" type="file" accept=".json,application/json"/></label>
+ <label class="file">Import prepared 304-byte records JSON <input id="import" type="file" accept=".json,application/json"/></label>
  <button id="export" type="button">Export prepared 32-slot pack</button>
  <button id="clear" type="button">Clear preview</button>
 </div>
@@ -64,6 +98,9 @@ tr:nth-child(2n){background:#161616}
 <p class="foot">All preset backups preserve the full 304-byte sound and FM6/drum-kit sidecar. Project-only JSON uses compact preset references and independent project settings. Complete backup also includes global device settings and the current unsaved performance.</p>
 <script type="module">
 import {decodeRecord,parseImportedLibrary,LIBRARY_SLOTS} from "./presets-library-codec.mjs";
+import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelection,
+        validateFactorySelection,factorySelectionFile,importFactorySelection,buildFactoryUpload}
+  from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash} from "./full-device-backup.mjs";
@@ -73,6 +110,129 @@ const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 let inspectedProjects=null;
+let sourceCatalog=null,sourceSelection=Array(32).fill(null);
+const engineLabels=new Map([[0,"ANALOG"],[10,"DRUM-X"],[5,"VOICE"],[3,"LOFI"],[12,"FM6"],[2,"PHASE"],[7,"WHEEL"],[11,"NOISE"],[15,"DRUM-LAB"],[16,"INDUSTRI"],[17,"BRASS"],[18,"ATMOS"],[19,"DRUM-AC"],[20,"DRUM-IND"]]);
+function catalogStatus(message){
+  const v=sourceCatalog?validateFactorySelection(sourceCatalog,sourceSelection):null;
+  const label=sourceCatalog?
+    `107 master presets loaded · ${v.entries.filter(Boolean).length}/32 assigned · ${v.ready} complete · ${v.blocked} need drum-kit sidecars.`:
+    "No master JSON loaded. Original 107 sounds remain available in the source file.";
+  $("catalog-state").textContent=message?label+" "+message:label;
+  $("defaults-master").disabled=!sourceCatalog;
+  $("export-master").disabled=!sourceCatalog;
+  $("prepare-master").disabled=!sourceCatalog||v.blocked>0||v.ready===0;
+}
+function renderCatalog(){
+  const list=$("catalog-list");list.replaceChildren();
+  const destinations=$("catalog-assignments");destinations.replaceChildren();
+  catalogStatus();
+  if(!sourceCatalog)return;
+  const filter=$("catalog-filter").value.trim().toLowerCase();
+  const engine=$("catalog-engine").value;
+  for(const patch of sourceCatalog.presets){
+    if(engine!==""&&String(patch.engine)!==engine)continue;
+    if(filter&&!(patch.name+" "+patch.engineName).toLowerCase().includes(filter))continue;
+    const row=document.createElement("tr");
+    [String(patch.factoryIndex).padStart(3,"0"),patch.name,patch.engineName,
+      patch.requiresEngineFactoryKit?"Kit conversion pending":"Complete sound"].forEach((value,i)=>{
+        const td=document.createElement("td");td.textContent=value;
+        if(i===0)td.className="num";
+        if(i===3)td.className=patch.requiresEngineFactoryKit?"blocked":"catalog-good";
+        row.append(td);
+      });
+    const cell=document.createElement("td"),select=document.createElement("select");
+    select.className="catalog-select";
+    const options=[["","Not assigned"],...Array.from({length:32},(_,i)=>[String(i),String(i+33).padStart(3,"0")])];
+    for(const [value,label] of options){const opt=document.createElement("option");opt.value=value;opt.textContent=label;select.append(opt)}
+    const location=sourceSelection.indexOf(patch.factoryIndex-1);
+    select.value=location>=0?String(location):"";
+    select.addEventListener("change",()=>{
+      const old=sourceSelection.indexOf(patch.factoryIndex-1);
+      if(old>=0)sourceSelection[old]=null;
+      if(select.value!=="")sourceSelection[Number(select.value)]=patch.factoryIndex-1;
+      renderCatalog();
+    });
+    cell.append(select);row.append(cell);list.append(row);
+  }
+  const view=validateFactorySelection(sourceCatalog,sourceSelection);
+  for(let i=0;i<32;i++){
+    const row=document.createElement("tr"),td=document.createElement("td");
+    td.textContent=String(i+33).padStart(3,"0");td.className="num";row.append(td);
+    const sound=document.createElement("td"),select=document.createElement("select");
+    select.className="catalog-select";
+    const empty=document.createElement("option");empty.value="";empty.textContent="— Empty —";select.append(empty);
+    for(const [engineName,id] of engineLabels){
+      const group=document.createElement("optgroup");group.label=engineName;
+      for(const p of sourceCatalog.presets.filter(x=>x.engine===id)){
+        const option=document.createElement("option");
+        option.value=String(p.factoryIndex-1);
+        option.textContent=p.name+(p.requiresEngineFactoryKit?" · kit pending":"");
+        group.append(option);
+      }
+      select.append(group);
+    }
+    select.value=sourceSelection[i]===null?"":String(sourceSelection[i]);
+    select.addEventListener("change",()=>{sourceSelection[i]=select.value===""?null:Number(select.value);renderCatalog()});
+    sound.append(select);row.append(sound);
+    const ready=document.createElement("td");const item=view.entries[i];
+    ready.textContent=!item?"EMPTY":item.ready?"Complete binary":"Needs drum kit";
+    ready.className=item&&!item.ready?"blocked":"catalog-good";row.append(ready);
+    destinations.append(row);
+  }
+}
+function loadMaster(data,description){
+  const catalog=importFactoryCatalog(data);
+  sourceCatalog=catalog;
+  sourceSelection=Array(32).fill(null);
+  const engine=$("catalog-engine");engine.replaceChildren();
+  const all=document.createElement("option");all.value="";all.textContent="All engines";engine.append(all);
+  for(const [label,id] of engineLabels){const opt=document.createElement("option");opt.value=String(id);opt.textContent=label;engine.append(opt)}
+  engine.value="";$("catalog-filter").value="";
+  renderCatalog();
+  catalogStatus("Loaded "+description+"; original JSON and prepared FM1 slots unchanged.");
+}
+$("load-master").addEventListener("click",()=>action(async()=>{
+  const response=await fetch("./factory-presets-from-code.json",{cache:"no-store"});
+  if(!response.ok)throw Error("Bundled master catalog not available: HTTP "+response.status);
+  loadMaster(await response.json(),"built-in source catalog");
+}));
+$("import-master").addEventListener("change",async event=>{
+  const file=event.target.files?.[0];event.target.value="";if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    if(data.format===SOURCE_FORMAT)loadMaster(data,file.name);
+    else if(data.format===SELECTION_FORMAT){
+      const selected=importFactorySelection(data);
+      loadMaster(selected.catalog,file.name);
+      sourceSelection=selected.selection;renderCatalog();
+      catalogStatus("Restored exact 32-slot selection from "+file.name+".");
+    }else throw Error("Expected the original 107-preset catalog or a factory-selection-32 JSON");
+  }catch(error){$("status").textContent="Catalog import rejected: "+error.message+". Previous catalog and prepared upload pack have not been changed."}
+});
+$("catalog-filter").addEventListener("input",renderCatalog);
+$("catalog-engine").addEventListener("change",renderCatalog);
+$("defaults-master").addEventListener("click",()=>{
+  if(!sourceCatalog)return;
+  sourceSelection=defaultFactorySelection(sourceCatalog);renderCatalog();
+  catalogStatus("All 32 firmware factory fallbacks selected; 8 drum kits still need complete companion conversion.");
+});
+$("export-master").addEventListener("click",()=>{
+  if(!sourceCatalog)return;
+  downloadFile("mashina-factory-selection-32.json",factorySelectionFile(sourceCatalog,sourceSelection));
+  catalogStatus("Saved self-contained 107-master + 32-slot selection JSON. The master remains unchanged.");
+});
+$("prepare-master").addEventListener("click",()=>{
+  if(!sourceCatalog)return;
+  try{
+    const entries=buildFactoryUpload(sourceCatalog,sourceSelection);
+    // Transactional: no existing prepared record is touched unless the
+    // ENTIRE new pack is independently validated and complete.
+    const next=Array(32).fill(null);
+    for(const item of entries)next[item.slot]=Uint8Array.from(item.recordBytes);
+    slots=next;render();
+    $("status").textContent=entries.length+" complete source sounds prepared for LIBRARY 033–064. FM1 flash untouched. Back up the device before any future upload.";
+  }catch(error){$("status").textContent="Cannot prepare catalog for upload: "+error.message+". Existing prepared slots untouched.";}
+});
 function showProjects(file){
   const view=inspectProjectReferences(file);
   inspectedProjects=view;
@@ -146,6 +306,8 @@ $("import").addEventListener("change",async e=>{
   const file=e.target.files?.[0];if(!file)return;
   try {
     const data=JSON.parse(await file.text());
+    if(data.format===SOURCE_FORMAT||data.format===SELECTION_FORMAT)
+      throw Error("Use 'Import factory catalog / selection JSON' above for the 107-preset master.");
     const imports=parseImportedLibrary(data);
     const next=slots.slice(),seen=new Set();
     for(const item of imports){
@@ -279,6 +441,7 @@ $("restore-full").addEventListener("change",async e=>{
 });
 connectionStatus();
 render();
+renderCatalog();
 </script>
 </body>
 </html>
