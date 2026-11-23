@@ -956,6 +956,10 @@ static void sound_name(const track_t *t, char *b)
     b[0] = 0;
     if (user_of(t) < UP_SLOTS)
         up_name(user_of(t), b);
+#if FELUCCA_LIB32
+    else if (t->user > UP_SLOTS && t->user <= UP_SLOTS + 32u)
+        library_track_name(t, b);
+#endif
     else if (e->npresets)
         str_cpy(b, e->presets[t->preset % e->npresets].name, 16);
 }
@@ -2684,6 +2688,10 @@ static void draw_mixer_table(void)
         const engine_t *e = trk_engp(t);
         if (user_of(t) < UP_SLOTS)
             up_name(user_of(t), vname);
+#if FELUCCA_LIB32
+        else if (t->user > UP_SLOTS && t->user <= UP_SLOTS + 32u)
+            library_track_name(t, vname);
+#endif
         else if (e->npresets)
             str_cpy(vname, e->presets[t->preset % e->npresets].name, 13);
         else
