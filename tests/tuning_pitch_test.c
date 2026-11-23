@@ -24,6 +24,12 @@ static uint64_t fine_digest(uint32_t eng, int8_t cents, uint64_t *energy)
      * two renders differ only in FINE, never in a previous pad tail. */
     memset(drumlab_state, 0, sizeof drumlab_state);
     memset(drumlab_kit_ready, 0, sizeof drumlab_kit_ready);
+    /* Note 60 now actually triggers the octave-repeating DRUM-X KICK.
+     * Reset its own per-voice and percussion state between FINE runs. */
+    memset(drum_kit, 0, sizeof drum_kit);
+    memset(drum_kit12, 0, sizeof drum_kit12);
+    memset(drum_overlap_voice, 0, sizeof drum_overlap_voice);
+    drum_midi_custom[0] = 0u;
     host_tracks_init();
     host_preset(t, eng, 0);
     t->p[P_ATK] = 0;
