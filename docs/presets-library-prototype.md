@@ -276,3 +276,22 @@ The library-enabled firmware **with hardware flash writes explicitly compiled ON
 The CI workflow bundles **`mashina-presets-library-32-preview`**, containing an `index.html` and required local ES modules; no installer/firmware is attached as a public release. Serve the directory from `localhost` (for instance `python -m http.server 8000`) in Chrome/Edge to inspect the 32/32 layout. A physical FM1 is usable only with an explicitly enabled experimental LIB32 build; regular v0.13 does not support the new SysEx operations.
 
 Still required: true device-side SysEx integration tests, real-device verification of the `USR` region and update/restore behavior, emulator playback testing under continuous load, final curated factory selection, and web-library localization. Once complete, the user can explicitly authorize an experimental device installer. **Not yet device-ready.**
+
+## Browser restore hardening (23 November 2026)
+
+The experimental Web Library now invalidates its prior-backup authorization **before** any
+LIBRARY upload, projects-only restore or full-device restore begins. A failed or
+interrupted write therefore cannot reuse that authorization for another destructive
+operation. Keep the independently downloaded JSON: invalidating the authorization
+does **not** delete or roll back an offline backup.
+
+A full-device restore now reads back and checks **global settings** (archive ID 1)
+and the **selected-project index** (ID 10), in addition to the existing USER,
+LIBRARY, MPR1 project section and current-performance checks. A projects-only
+restore now reads back all **32** sections, including empty positions, and
+compares their canonical MPR1 records against the imported JSON before reporting
+success. Browser regression fixtures simulate acknowledged writes with corrupted
+settings or missing project data, which must fail verification. These changes are
+committed on the experiment branch; the latest GitHub CI result has not yet been
+confirmed. Neither a host simulation nor a successful compile authorizes physical
+flash writes.
