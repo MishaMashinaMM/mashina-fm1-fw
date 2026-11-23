@@ -216,7 +216,7 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
       `slots ${33+i*8}–${40+i*8}: ${statuses[x]}`).join(" · ")+"\n"+
     (health.unknown?"Some flash sectors are unknown/unavailable. Do NOT enable writes.":
      "Read-only inspection completed. Physical bootloader/update ownership still requires verification.")+
-    "\\nSaved mashina-flash-diagnostic.json — share that file for analysis.";
+    "\nSaved mashina-flash-diagnostic.json — share that file for analysis.";
 }));
 $("preview-projects").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
