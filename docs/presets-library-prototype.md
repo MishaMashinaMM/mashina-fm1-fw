@@ -295,3 +295,14 @@ settings or missing project data, which must fail verification. These changes ar
 committed on the experiment branch; the latest GitHub CI result has not yet been
 confirmed. Neither a host simulation nor a successful compile authorizes physical
 flash writes.
+
+### Project dependency preflight
+
+Before projects-only restoration writes its first section, it checks all
+referenced USER presets against the connected FM1 and now also reads the
+LIBRARY bank when any imported section references LIBRARY 033–064. A damaged
+occupied LIBRARY record (as opposed to an actually empty factory-fallback
+slot) aborts the operation **before any project PUT**. The host WebMIDI
+regression simulates corruption and asserts zero project writes. The normal
+read-only FM1 diagnostics and first-install flash ownership verification
+remain prerequisites for any physical-device write test.
