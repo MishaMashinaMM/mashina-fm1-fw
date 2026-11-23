@@ -471,3 +471,22 @@ settings must remain independent. Test an emulator reload after the save.
 These fixes have been committed to `presets-library`; no new CI or emulator
 runtime result has yet been confirmed for the patched build, and no physical
 FM1 was flashed.
+
+### First four startup tracks use referenceable factory sounds
+
+For the experimental MPR1/LIB32 boot path, Tracks **1–4** now load the first
+four **LIBRARY factory positions** in order: **033, 034, 035, 036**.
+These are the first four slots of the curated 32-position LIBRARY map,
+not necessarily entries 1–4 of the separate full 107-sound factory catalog.
+On a blank LIBRARY bank they use their compiled fallback sounds; if the
+corresponding LIBRARY record has later been replaced, the track loads that
+current replacement instead (the reference remains valid). Each loaded
+sound receives a real per-track source reference and name cache, so a
+four-track project can be saved immediately without manually selecting
+presets on all four tracks. Tracks 5–6 keep their existing defaults, the
+selected track remains T1, and the ordinary/legacy build path is unchanged.
+Damaged LIBRARY slots are not silently substituted or marked assigned.
+
+The MPR1 host integration regression now checks all four initial identities,
+their names, and an immediate Project Section A save. The code is committed
+but still requires fresh native CI and emulator verification.
