@@ -406,3 +406,35 @@ references or uploaded LIBRARY sounds can already be exercised through the
 browser. Enable the simulator-specific feature integration and validate the
 WASM build/audio/UI separately; never substitute a hardware write-enabled
 firmware image for an emulator artifact.
+
+### Branch-only MPR1/LIB32 WebAssembly preview (24 November 2026 testing gate)
+
+The default emulator build remains unchanged. To compile the opt-in browser
+simulation with reference-only MPR1 projects and the 32 LIBRARY slots, set
+`MASHINA_EMU_REFS=1` when running `sh web/emu/build.sh` after normal generated
+headers are prepared. `web/emu/felucca_web.c` then includes the experimental
+LIBRARY runtime and project-reference modules, using bounded reads/writes
+against its **1 MiB in-memory NOR array** only. The simulation flags do not
+activate any physical FM1 SPI driver. The browser AudioWorklet now preserves
+LIB32 sectors between reloads.
+
+A dedicated `.github/workflows/presets-library-emu-preview.yml` workflow
+builds the opt-in WASM variant using Emscripten, checks its required runtime
+exports and packages **only browser assets**, under the artifact name
+`mashina-mpr1-lib32-browser-emulator-experimental`. A separate
+`EXPERIMENTAL-README.txt` explicitly forbids using it as a device installer.
+Until this exact workflow finishes successfully, compilation of the new
+simulator variant is **not confirmed**.
+
+**Emulator verification sequence after a successful build:** boot with blank
+simulated NOR, load and save independent USER sounds, assign USER/LIBRARY slot
+references across tracks, SAVE a project section B, modify a referenced USER
+sound, recall B and check the updated sound plus unchanged project tuning/mix
+settings. Then reload the page to check that saved USER/projects persist,
+exercise the other A–D sections and eight project indices, and test acoustic
+and industrial drum engines for full-kit retention. Browser MIDI/editor USB
+commands 89–98 are still absent, so uploading a 32-slot JSON selection to the
+WASM emulator is not currently a valid test. That operation must await a
+separate simulated WebMIDI interface or the later authorized physical-device
+phase. Even a successful emulator pass does not prove flash bootloader ownership
+on real FM1 hardware.
