@@ -412,8 +412,10 @@ static int up_store(uint32_t k, const char *name)
         /* In the clean-break system the sound's identity is its USER slot.
          * Saving a newly designed sound to USER 014 must immediately allow
          * PROJECT SAVE to record reference 014, without requiring a reload. */
-        if (rc == 0 || rc == 3)
+        if (rc == 0 || rc == 3) {
             TSEL->user = (uint8_t)(k + 1u);
+            mpr_capture_source(TSEL);
+        }
 #endif
         return rc;
     }
@@ -469,6 +471,9 @@ static int up_load(uint32_t k)
     }
     t->user = (uint8_t)(k + 1u);
     load_end(t);
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    mpr_capture_source(t);
+#endif
     sync_reload = 1;
     ui.force = 1;
     return 0;
