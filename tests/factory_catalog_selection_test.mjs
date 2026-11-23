@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
 import {encodeRecord} from "../web/presets-library-codec.mjs";
 import {importFactoryCatalog,defaultFactorySelection,validateFactorySelection,
         factorySelectionFile,importFactorySelection,buildFactoryUpload}
@@ -8,6 +9,12 @@ import {importFactoryCatalog,defaultFactorySelection,validateFactorySelection,
 
 const raw=readFileSync("web/factory-presets-from-code.json","utf8");
 const original=JSON.parse(raw);
+// Immutable baseline for the carefully curated 107-preset export. Updating
+// this SHA requires an explicit reviewed regeneration, never a selection UI
+// operation or automatic write-back.
+const expectedMasterBlob="2b1bd810365dc42c6491cab2cca673055e6e04e2";
+assert.equal(execFileSync("git",["hash-object","web/factory-presets-from-code.json"],{encoding:"utf8"}).trim(),
+             expectedMasterBlob,"the protected 107-preset master JSON changed");
 const catalog=importFactoryCatalog(original);
 assert.equal(JSON.stringify(original),JSON.stringify(catalog));
 assert.equal(original.presets.length,107);
