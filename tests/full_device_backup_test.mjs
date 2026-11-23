@@ -167,6 +167,13 @@ assert.ok(projectProgress>32); // includes read-back progress
 assert.deepEqual(Array.from(mockObjects.get(41)),Array.from(pad(section)));
 assert.equal(mockObjects.get(40).length,0);
 assert.equal(mockObjects.get(42).length,0); // stale section was actively cleared
+// A stale selected-project alias must also fail the post-restore check.
+const originalAlias=mockObjects.get(3).slice();
+mockObjects.set(3,pad(encodeProject({section:1,refs:[33,255,255,255,255,255],
+  name:"STALE ALIAS",settingsBytes:[7]})));
+await assert.rejects(restoreProjectsOnly(mock,projectFile),
+  /differs between archive aliases/);
+mockObjects.set(3,originalAlias);
 // Simulate an acknowledged section commit that silently loses its record.
 let corruptProjectOnCommit=true;
 const projectCorruptingMock=async(cmd,args=[],opts={})=>{
