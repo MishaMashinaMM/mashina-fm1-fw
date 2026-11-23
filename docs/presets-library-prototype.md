@@ -46,6 +46,33 @@ The first host-only modules are:
   decoder and 8 × 4 section backup structure. Round-trip, checksum and
   reference validation is covered by `tests/projects_library_codec_test.mjs`.
 
+The first firmware-side reference resolver now also exists in the
+experimental `FELUCCA_LIB32` path (`ui.c`):
+
+- `project_reference_load(track, ref)` loads one USER 0–31 or LIBRARY 32–63
+  sound into the requested track without switching the player's selected track.
+- `project_references_load_all(refs)` preflights six references before any
+  track changes; 255 means unassigned. Missing USER presets and damaged
+  LIBRARY sectors abort the entire recall before mutating any track.
+- Built-in factory fallback sounds retain their physical LIBRARY slot identity,
+  so their project references remain stable before/after WebMIDI replacement.
+- Factory fallback is reserved for fully empty LIBRARY records. A corrupted
+  occupied slot is never silently substituted with a different sound.
+
+This is a **sound-resolution primitive only**, tested on the simulated FM1.
+Project-owned mixer/zone/routing/effects settings still need a complete MPR1
+payload mapping and integration into section SAVE/RECALL before the new project
+format can be enabled on hardware.
+
+The browser now has an **offline performance bundle prototype**
+(`web/performance-backup.mjs`): exactly 32 USER positions, 32 LIBRARY positions
+and 8×A–D project positions, with byte-exact JSON round-tripping.
+It rejects broken USER references and represents empty/factory library slots
+with null. Restore planning explicitly includes erasing empty target positions,
+not merely uploading occupied ones. This is not yet a full-device backup:
+global device settings, a complete project payload map and project WebMIDI
+transport are still pending.
+
 **Not yet wired to live firmware:** the payload's per-setting mapping, sound
 reference resolution on section recall, project SAVE/RECALL, live section staging,
 WebMIDI project capture/restore, and browser full-device JSON export.
