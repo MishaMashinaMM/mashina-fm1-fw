@@ -29,6 +29,18 @@
 #define FELUCCA_CDC 1                    /* as src/felucca.c: MENU > USB SERIAL is there (nothing behind it) */
 #endif
 #define FELUCCA_FLASH 1
+/* Opt-in, browser-only reference-project preview. This code always uses the
+ * 1 MiB in-memory NOR array below, never a physical flash driver. */
+#ifndef MASHINA_EMU_REFS
+#define MASHINA_EMU_REFS 0
+#endif
+#if MASHINA_EMU_REFS
+#define FELUCCA_LIB32 1
+#define FELUCCA_PROJECT_REFS 1
+#define FELUCCA_PROJECT_REFS_WRITE 1
+#define MASHINA_LIB_HOST_FLASH 1
+#define MASHINA_MPRS_HOST_FLASH 1
+#endif
 #define FELUCCA_OTA 0
 #define FELUCCA_UAC 0
 #define FELUCCA_UART 0
@@ -199,6 +211,28 @@ static void fl_plain_window_init(void) {}
 #define FL_FAR(fn) (fn)
 #include "../../firmware/src/storage.c"
 #include "../../firmware/src/upreset.c"
+#if MASHINA_EMU_REFS
+/* Match the host-NOR integration tests: bounded simulation-only flash
+ * writes preserve CRC/A-B behavior and increment the worklet snapshot counter.
+ * No HAL/SPI flash driver or USB editor is present in the browser build. */
+static int lib_host_read(uint32_t off, void *p, uint32_t n)
+{
+    if(off<0xEA000u || off>=0xF2000u || n>0xF2000u-off)return -1;
+    return st_read(off,p,n);
+}
+static int lib_host_erase(uint32_t off)
+{
+    if(off<0xEA000u || off>=0xF2000u || (off&4095u))return -1;
+    return st_erase(off);
+}
+static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
+{
+    if(off<0xEA000u || off>=0xF2000u || n>0xF2000u-off ||
+       n>256u || ((off&255u)+n)>256u)return -1;
+    return st_prog(off,p,n);
+}
+#include "../../firmware/src/preset_library_runtime.c"
+#endif
 #include "../../firmware/src/project.c"
 
 /* ------------------------------------------------- main.c and its HAL --- */
