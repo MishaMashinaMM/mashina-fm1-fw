@@ -269,7 +269,7 @@ En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y O
 
 Cambiar la nota de cualquier pad con **K1** activa **CUSTOM solamente en la pista seleccionada**. Los 12 pads responden entonces solo a sus notas MIDI asignadas (0–127). Los pads no modificados conservan sus notas originales de 36–47, pero ya no se repiten en otras octavas. Varios pads pueden compartir una nota y sonar juntos. La indicación **DEFAULT / CUSTOM** aparece arriba a la derecha.
 
-Para volver a DEFAULT, mantené pulsado el **botón físico SEL** (no la perilla giratoria SELECT) unos **0,7 segundos**: aparece **RESET MIDI MAP?**. **OCT− cancela** y **OCT+ restaura solamente esa pista**, recuperando las octavas repetidas sin modificar sonidos, afinación, paneo ni otras pistas. Devolver las notas manualmente a sus valores originales no desactiva CUSTOM; usá RESET. Los mapas se guardan con el proyecto. **K2 PAN / K3 PITCH** corresponden a DRUM-X/DRUM-LAB; DRUM-AC/DRUM-IND admiten la reasignación de notas con K1.
+Para volver a DEFAULT, mantené pulsado el **botón físico SEL** (no la perilla giratoria SELECT) unos **0,7 segundos**: aparece **RESET MIDI MAP?**. **OCT− cancela** y **OCT+ restaura solamente esa pista**, recuperando las octavas repetidas sin modificar sonidos, afinación, paneo ni otras pistas. Devolver las notas manualmente a sus valores originales no desactiva CUSTOM; usá RESET. Los mapas se guardan con el proyecto. En los cuatro motores, **K2 PAN** ajusta la posición estéreo del pad (L64–C–R64) y **K3 PITCH** modifica su afinación (−24 a +24 semitonos). En DRUM-AC y DRUM-IND, los sonidos no tonales cambian sus frecuencias resonantes y su carácter espectral, sin transformarse en notas melódicas.
 
 
 ### PLAY: respuesta de los pads
