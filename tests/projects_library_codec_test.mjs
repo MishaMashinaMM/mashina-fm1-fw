@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 import assert from "node:assert/strict";
 import {encodeProject,decodeProject,projectsBackup,restoreProjectsBackup} from "../web/projects-library-codec.mjs";
+import {inspectProjectReferences} from "../web/projects-library-view.mjs";
 const refs=[13,44,2,51,255,60];
 const settingsBytes=Array.from({length:1792},(_,i)=>(i*73+19)&255);
 const recordBytes=encodeProject({section:1,refs,name:"SECTION B",settingsBytes});
@@ -30,4 +31,20 @@ assert.deepEqual(restored[1],recordBytes);
 assert.deepEqual(restored[7],encodeProject(slots[7]));
 assert.equal(restored.filter(x=>x!==null).length,2);
 assert.throws(()=>projectsBackup([slots[1]]),/32/);
+const view=inspectProjectReferences(backup);
+assert.equal(view.sections.length,32);
+assert.deepEqual(view.sections[1].references,refs);
+assert.equal(view.sections[1].project,1);
+assert.equal(view.sections[1].section,"B");
+assert.equal(view.sections[1].tracks[0].label,"USER 014");
+assert.equal(view.sections[1].tracks[1].label,"LIBRARY 045");
+assert.equal(view.sections[1].tracks[4].label,"UNASSIGNED");
+assert.equal(view.sections[7].project,2);
+assert.equal(view.sections[7].section,"D");
+assert.equal(view.sections[0].empty,true);
+assert.equal(view.usage[13].length,1);
+assert.deepEqual(view.usage[13][0],{project:1,section:"B",track:1});
+assert.equal(view.usage[44].length,1);
+assert.equal(view.usage[63].length,1);
+assert.throws(()=>inspectProjectReferences({...backup,sections:[]}),/32/);
 console.log("PASS: MPR1 project-only JSON exact-byte backup, 8 x A-D indexing, malformed/CRC/ref rejection");
