@@ -74,3 +74,18 @@ A new standalone module, `firmware/src/preset_library_store.c`, and simulator `t
 This integrated design needs more sector space than the earlier split-format 24 KiB estimate, but it has simpler **atomic sound + sidecar** behavior and lower risk of desynchronizing complete kits. It fits well inside the nominal 72 KiB USR descriptor **if that descriptor can safely be used**. It does *not* fit the 8 KiB currently documented free outside that partition.
 
 Before physical testing, audit the exact FM1 bootloader/updater handling of USR, protect any existing contents, verify retention across the official installer/firmware update, provide a backup/recovery path, and expose only read-only diagnostics until this is proven.
+
+## Experimental WebMIDI transport and browser library preparation
+
+The host-only `firmware/src/preset_library_wire.c` defines reserved **experimental** command numbers: `68 LIST`, `69 GET`, `70 PUT`, `71 ERASE`. They are deliberately **not included in the production `editor.c` dispatcher**, so no connected FM1 can receive these operations. All operations were tested against simulated NOR with the 32KiB bank.
+
+- PUT uses `[slot, 348 seven-bit-safe encoded data bytes]` to carry one exact **304-byte** sound + companion record, with the existing `F0 7D 46 4C` SysEx header. GET returns the complete record using the same packing. The 348-byte packed payload fits within the existing editor's 600-byte reply buffer.
+- LIST provides fixed occupied states for 32 slots. ERASE clears one record without shifting any MIDI Program Change address.
+- Receiver rejects invalid slot numbers, truncated or non-7-bit payloads, and malformed record headers/names/parameter ranges. The flash-store module commits the whole record and companion data atomically.
+- Browser codec `web/presets-library-codec.mjs` converts **standard melodic** library JSON into a sound record; FM6 also requires all 128 7-bit operator bytes and encodes these losslessly into its 112-byte auxiliary region.
+- An ordinary JSON drum preset containing *only global sound parameters* **cannot** reconstruct twelve independent pads. The codec **refuses** to generate such an incomplete DRUM-X/DRUM-LAB/DRUM-AC/DRUM-IND record. An existing complete 304-byte binary record round-trips as JSON `recordBytes`, preserving its whole kit unchanged.
+- Standalone **`web/presets-library-lab.html`** displays 32 library positions (PC 32–63), imports validated JSON, and exports complete records. It has **no hardware connection, no WebMIDI sending, and no flash-writing controls**.
+
+The next step is verifying partition persistence and device-side flash ownership, after which the emulator could expose a feature-advertised, opt-in version of the new protocol and its sound loader. Until then, ordinary online editor and firmware packages remain unchanged.
+
+Tests: `tests/preset_library_storage_test.c`, `tests/preset_library_wire_test.c`, `tests/presets_library_codec_test.mjs`, and the existing branch host/firmware regressions.
