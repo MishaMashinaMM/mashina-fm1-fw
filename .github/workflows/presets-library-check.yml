@@ -26,6 +26,11 @@ jobs:
           build/host/preset_library_storage_test
           cc -O2 -Wall -Wextra -o build/host/preset_library_wire_test tests/preset_library_wire_test.c
           build/host/preset_library_wire_test
+      - name: Verify clean-break reference-based project record
+        run: |
+          mkdir -p build/host
+          cc -std=gnu11 -O2 -Wall -Wextra -o build/host/project_refs_test tests/project_refs_test.c
+          build/host/project_refs_test
       - name: Test JSON, binary record and WebMIDI codec
         run: |
           node tests/presets_library_codec_test.mjs
