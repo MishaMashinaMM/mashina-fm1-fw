@@ -119,6 +119,24 @@ function archiveCurrent(archive) {
   insist(object?.size===MAX_RECORD,"Current performance is not reference-based MPR1");
   return decodeProject(Array.from(dataBytes(object))).recordBytes;
 }
+/* Read-only physical flash geometry diagnostic; does not erase, write,
+ * upload presets or require the experimental FORMAT permission.
+ * 0 blank, 1 committed MPR1/LIB1, 2 valid retired project, 3 unknown,
+ * 4 flash not accessible. Unknown sectors block first-install formatting.
+ */
+export async function probeFlash(request) {
+  const projects=Uint8Array.from(await request(97,[]));
+  const library=Uint8Array.from(await request(98,[]));
+  insist(projects.length===17&&projects[0]===16 &&
+         library.length===5&&library[0]===4 &&
+         projects.slice(1).every(x=>x<=4) &&
+         library.slice(1).every(x=>x<=4),
+         "FM1 does not report compatible read-only flash diagnostics");
+  const p=Array.from(projects.slice(1)),l=Array.from(library.slice(1));
+  return {projects:p,library:l,unknown:p.some(x=>x>=3)||l.some(x=>x>=3),
+          canInitializeProjects:p.every(x=>x===0||x===2),
+          libraryAllBlank:l.every(x=>x===0)};
+}
 export async function projectCapability(request) {
   const c=Uint8Array.from(await request(95,[]));
   insist((c.length===3||c.length===4)&&c[0]===1&&c[1]===32,
