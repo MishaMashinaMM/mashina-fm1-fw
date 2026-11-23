@@ -9,7 +9,7 @@
  * header, and old sector is never erased until its replacement verifies.
  */
 #include <stdint.h>
-#include <string.h>
+/* Embedded AC79 build uses firmware/src/libc.c; host tests provide libc. */
 
 enum { MPRS_SECTOR=4096, MPRS_HEADER_OFF=256, MPRS_SLOTS=32,
        MPRS_BANKS=16, MPRS_PAIR=2, MPRS_BANK_BYTES=MPR_MAX_RECORD*2 };
