@@ -7,6 +7,7 @@
 #define FELUCCA_LIB32_WRITE 1
 #define FELUCCA_PROJECT_REFS 1
 #define FELUCCA_PROJECT_REFS_WRITE 1
+#define FELUCCA_PROJECT_REFS_FORMAT 1 /* host NOR only, never a firmware release */
 #define MASHINA_LIB_HOST_FLASH 1
 #define MASHINA_MPRS_HOST_FLASH 1
 #define main hostsim_main
@@ -234,6 +235,36 @@ int main(void)
     }));
     bad+=check("shared USER 001 remains usable after project clear",up_used(0));
     bad+=check("all project writes confined to simulated 1MiB flash",!outside);
+    /* The new reference storage reuses former SONG 2..5 flash sectors. An
+     * explicit fresh-start operation may erase only CRC-verified old records
+     * or entirely blank sectors, never alien data or valid MPR1 projects. */
+    {
+        uint32_t prior=writes;
+        bad+=check("first-install initializer refuses already-initialized MPR1 sectors",
+                   mprs_init_clean_break()==1 && writes==prior);
+        memset(nor+MPRS_BASE,0xFF,MPRS_BANKS*2u*MPRS_SECTOR);
+        uint8_t legacy[16]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+        bad+=check("prepare CRC-validated legacy project section",
+                   !st_save(OBJ_SONG1+3,legacy,sizeof legacy));
+        uint8_t userBefore[sizeof up_bank[0]];
+        memcpy(userBefore,&up_bank[0],sizeof userBefore);
+        uint8_t originalOther=nor[0x97000u];
+        bad+=check("explicit initializer clears verified OLD song sector",
+                   mprs_init_clean_break()==0 && mprs_blank(3));
+        bad+=check("initialization does not modify USER sound bank",
+                   !memcmp(userBefore,&up_bank[0],sizeof userBefore));
+        bad+=check("initialization does not touch old first-project sector",
+                   nor[0x97000u]==originalOther);
+        nor[MPRS_BASE+4095u]=0x33;
+        prior=writes;
+        bad+=check("unknown nonblank flash is never silently initialized",
+                   mprs_init_clean_break()==1 && writes==prior &&
+                   nor[MPRS_BASE+4095u]==0x33);
+        nor[MPRS_BASE+4095u]=0xFF;
+        uint8_t key[4]={0x4d,0x50,0x52,0x31};
+        bad+=check("clean-break format is idempotent on erased project banks",
+                   !mprs_init_clean_break());
+    }
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
     return !!bad;
 }
