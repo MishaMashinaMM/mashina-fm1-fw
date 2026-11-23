@@ -146,6 +146,22 @@ int main(void)
         bad+=check("unwritten LIBRARY 033 retains stable reference identity",
                    !project_reference_load(5,UP_SLOTS) &&
                    trk[5].user==UP_SLOTS+1u && song.sel==chosen);
+        /* Corrupted occupied slots are not silently replaced by a different
+         * factory sound: reject the project reference instead. */
+        bad+=check("prepare occupied LIBRARY 033 for corruption test",
+                   !lib_slot_write(0,savedAnalog));
+        {
+            uint32_t seq;
+            int copy=lib_latest(0,&seq);
+            bad+=check("find committed library copy",copy>=0);
+            if(copy>=0) {
+                lib_sim_nor[lib_base(0,(uint32_t)copy)+LIB_PAYLOAD_OFF+22u]^=1u;
+                uint8_t oldUser=trk[5].user;
+                bad+=check("corrupt occupied LIBRARY 033 rejects recall without changing track",
+                           project_reference_load(5,UP_SLOTS)==1 &&
+                           trk[5].user==oldUser && song.sel==chosen);
+            }
+        }
     }
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
