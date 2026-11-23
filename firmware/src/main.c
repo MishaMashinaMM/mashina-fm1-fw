@@ -148,10 +148,10 @@ static void felucca_init(void)
     load_depth--;
     song.sel = 0;
     song.master_q12 = 2048;                   /* (the pot's level replaces it before the audio starts: master_boot) */
-    /* MASHINA: boot into the live mixer, not JIANT's HOME screen.
-     * Start at GLO's first page (MIX > MIXER) on every power-on;
-     * HOME and all ordinary navigation remain unchanged. */
-    ui.page = (uint8_t)page_first(FAM_GLO);
+    /* MASHINA boots on GLO > MIX > MIXER (visible page 1/7).
+     * The first raw FAM_GLO page is not necessarily the first navigation
+     * entry: use the same chain mapping as pressing GLO in normal use. */
+    ui.page = (uint8_t)nv_page(SEC_GLO, 0u);
     ui.home = 0;
     page_entered();
 }
