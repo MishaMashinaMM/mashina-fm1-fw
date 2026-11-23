@@ -26,7 +26,7 @@ function render(ms) {
   return peak;
 }
 
-render(2500); // Finish the startup splash and enter the live HOME screen.
+render(2500); // Finish the startup splash and enter GLO > MIX > MIXER.
 assert.equal(ex.web_playing(), 0);
 // The physical key bypasses configurable external MIDI RX routing. Host
 // midi_rx_test and drum_midi_map_test separately verify per-track MIDI input.
