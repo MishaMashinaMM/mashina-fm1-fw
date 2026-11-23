@@ -143,12 +143,14 @@ typedef struct {
     uint8_t rx[6];                              /* one-based channels, 1..16 */
     int8_t transpose[NTRK];                     /* melodic MIDI transpose, -36..36 */
     int8_t fine[NTRK];                          /* per-track melodic fine cents, -50..50 */
+    uint8_t drum_timing[NTRK];                  /* per-track onset ms, 0..50 */
     uint8_t zone_on;                            /* keyboard-zones optional 'Z''N' project block */
     uint8_t zone[NTRK][Z_FIELDS];              /* MIN, MAX, V.MIN, V.MAX per track */
     uint8_t cm_count;                           /* optional REC CC macros, zero in older projects */
     uint8_t cm_rows[CM_N][CM_ROW_SIZE];         /* 32 independent seven-byte assignments */
     int8_t pad_pan[NPART][12];                   /* Stage 22B: optional per-track drum pan */
     int8_t pad_pitch[NPART][12];                 /* Stage 22B: extra semitones, -24..+24 */
+    uint8_t pad_timing[NPART][12];              /* per-pad extra onset ms, 0..50 */
     uint8_t perf_curve[NPART][12], perf_sound[NPART][12];
     uint8_t perf_choke[NPART][12], perf_retrigger[NPART][12];
     uint8_t lab_global[NPART][8];              /* Stage 25E: 100 = neutral, absent in older projects */
@@ -913,6 +915,7 @@ static uint32_t proj_packed_size(const project_t *q)
         if (q->transpose[i]) { n += 8u; break; } /* 'TR' legacy ±24, or 'T2' ±36 */
     for (i = 0; i < NTRK; i++)
         if (q->fine[i]) { n += 8u; break; } /* 'FN' six signed cents biased by 50 */
+    for (i = 0; i < NTRK; i++) if (q->drum_timing[i]) { n += 2u + NTRK; break; }
     if (q->zone_on) {
         for (i = 0; i < NTRK; i++)
             if (q->zone[i][Z_NOTE_MIN] || q->zone[i][Z_NOTE_MAX] != 127u ||
@@ -985,6 +988,15 @@ static uint32_t proj_packed_size(const project_t *q)
                 q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
                 for (i = 0; i < 12u; i++)
                     if (q->pad_pitch[t][i]) { count++; break; }
+        if (count) n += 3u + 12u * count;
+    }
+    {   /* optional per-pad additive delay 'PD' */
+        uint32_t count = 0;
+        for (t = 0; t < NPART; t++)
+            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB ||
+                q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
+                for (i = 0; i < 12u; i++)
+                    if (q->pad_timing[t][i]) { count++; break; }
         if (count) n += 3u + 12u * count;
     }
     {   /* optional sparse per-pad performance ('P' 'F') */
@@ -1204,6 +1216,21 @@ static int proj_pack(project_store_t *out, const project_t *q)
                 }
         }
     }
+    {   /* per-pad additive onset delay 'PD' */
+        uint32_t mask = 0, lane;
+        for (t = 0; t < NPART; t++)
+            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB ||
+                q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
+                for (lane = 0; lane < 12u; lane++)
+                    if (q->pad_timing[t][lane]) { mask |= 1u << t; break; }
+        if (mask) {
+            b[pos++] = 'P'; b[pos++] = 'D'; b[pos++] = (uint8_t)mask;
+            for (t = 0; t < NPART; t++) if (mask & (1u << t)) {
+                memcpy(b + pos, q->pad_timing[t], 12u);
+                pos += 12u;
+            }
+        }
+    }
     {   /* Stage 25B: changed pads only, two bytes each: flags + V->SOUND. */
         uint32_t mask = 0, lane;
         for (t = 0; t < NPART; t++) if (proj_perf_mask(q, t)) mask |= 1u << t;
@@ -1314,6 +1341,12 @@ static int proj_pack(project_store_t *out, const project_t *q)
     if (i < NTRK) {
         b[pos++] = 'F'; b[pos++] = 'N';
         for (i = 0; i < NTRK; i++) b[pos++] = (uint8_t)(clamp(q->fine[i], -50, 50) + 50);
+    }
+    for (i = 0; i < NTRK; i++) if (q->drum_timing[i]) break;
+    if (i < NTRK) {
+        b[pos++] = 'T'; b[pos++] = 'D';
+        memcpy(b + pos, q->drum_timing, NTRK);
+        pos += NTRK;
     }
     if (q->zone_on) {
         for (i = 0; i < NTRK; i++)
@@ -1642,6 +1675,22 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
             pos += 12u;
         }
     }
+    memset(q->pad_timing, 0, sizeof q->pad_timing);
+    if (pos + 3u <= room && b[pos] == 'P' && b[pos + 1u] == 'D') {
+        uint32_t mask = b[pos + 2u], lane;
+        if (!mask || (mask >> NPART)) return 0;
+        pos += 3u;
+        for (t = 0; t < NPART; t++) {
+            if (!(mask & (1u << t))) continue;
+            if ((q->t[t].engine != ENGI_DRUM && q->t[t].engine != ENGI_DRUMLAB &&
+                 q->t[t].engine != ENGI_DRUMAC && q->t[t].engine != ENGI_DRUMIND) ||
+                pos + 12u > room) return 0;
+            for (lane = 0; lane < 12u; lane++)
+                if (b[pos + lane] > 50u) return 0;
+            memcpy(q->pad_timing[t], b + pos, 12u);
+            pos += 12u;
+        }
+    }
     memset(q->perf_curve, 0, sizeof q->perf_curve);
     memset(q->perf_sound, 0, sizeof q->perf_sound);
     memset(q->perf_choke, 0, sizeof q->perf_choke);
@@ -1790,6 +1839,13 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
             q->fine[i] = (int8_t)((int32_t)b[pos + 2u + i] - 50);
         }
         pos += 8u;
+    }
+    memset(q->drum_timing, 0, sizeof q->drum_timing);
+    if (pos + 2u <= room && b[pos] == 'T' && b[pos + 1u] == 'D') {
+        if (pos + 2u + NTRK > room) return 0;
+        for (i = 0; i < NTRK; i++) if (b[pos + 2u + i] > 50u) return 0;
+        memcpy(q->drum_timing, b + pos + 2u, NTRK);
+        pos += 2u + NTRK;
     }
     if (pos + 2u <= room && b[pos] == 'Z' && b[pos + 1u] == 'N') {
         if (pos + 2u + sizeof q->zone > room) return 0;
@@ -2110,6 +2166,7 @@ static void project_capture(project_t *p)
     for (i = 0; i < 6u; i++) p->rx[i] = (uint8_t)midi_rx_channel(i);
     memcpy(p->transpose, midi_transpose, sizeof p->transpose);
     memcpy(p->fine, midi_fine, sizeof p->fine);
+    memcpy(p->drum_timing, drum_track_delay, sizeof p->drum_timing);
     p->zone_on = 1u;
     memcpy(p->zone, midi_zone, sizeof p->zone);
     p->cm_count = cm_count;
@@ -2143,6 +2200,9 @@ static void project_capture(project_t *p)
         if (trk[i].eng_req == ENGI_DRUM || trk[i].eng_req == ENGI_DRUMLAB ||
             trk[i].eng_req == ENGI_DRUMAC || trk[i].eng_req == ENGI_DRUMIND)
             memcpy(p->pad_pitch[i], drum_pad_pitch[i], 12u);
+        if (trk[i].eng_req == ENGI_DRUM || trk[i].eng_req == ENGI_DRUMLAB ||
+            trk[i].eng_req == ENGI_DRUMAC || trk[i].eng_req == ENGI_DRUMIND)
+            memcpy(p->pad_timing[i], drum_pad_delay[i], 12u);
         memcpy(p->perf_curve[i], drum_perf_curve[i], 12u);
         memcpy(p->perf_sound[i], drum_perf_sound[i], 12u);
         memcpy(p->perf_choke[i], drum_perf_choke[i], 12u);
@@ -2462,6 +2522,7 @@ static void sound_put(project_t *p, uint32_t k)
     }
     memcpy(drum_pad_pan[k % NTRK], p->pad_pan[k % NTRK], 12u);
     memcpy(drum_pad_pitch[k % NTRK], p->pad_pitch[k % NTRK], 12u);
+    memcpy(drum_pad_delay[k % NTRK], p->pad_timing[k % NTRK], 12u);
     memcpy(drum_perf_curve[k % NTRK], p->perf_curve[k % NTRK], 12u);
     memcpy(drum_perf_sound[k % NTRK], p->perf_sound[k % NTRK], 12u);
     memcpy(drum_perf_choke[k % NTRK], p->perf_choke[k % NTRK], 12u);
@@ -2569,6 +2630,7 @@ static int project_restore_runtime(const project_t *input)
     if (p->rx_on) memcpy(midi_rx, p->rx, sizeof p->rx);
     memcpy(midi_transpose, p->transpose, sizeof midi_transpose);
     memcpy(midi_fine, p->fine, sizeof midi_fine);
+    memcpy(drum_track_delay, p->drum_timing, sizeof drum_track_delay);
     if (p->zone_on) memcpy(midi_zone, p->zone, sizeof midi_zone);
     else midi_zone_reset();
     cm_count = p->cm_count;
@@ -2635,6 +2697,7 @@ static int project_restore_runtime(const project_t *input)
         uint32_t lane;
         memcpy(drum_pad_pan[k], p->pad_pan[k], 12u);
         memcpy(drum_pad_pitch[k], p->pad_pitch[k], 12u);
+        memcpy(drum_pad_delay[k], p->pad_timing[k], 12u);
         memcpy(drum_perf_curve[k], p->perf_curve[k], 12u);
         memcpy(drum_perf_sound[k], p->perf_sound[k], 12u);
         memcpy(drum_perf_choke[k], p->perf_choke[k], 12u);
@@ -2736,6 +2799,8 @@ static void system_init(void)
     midi_zone_reset();
     memset(midi_transpose, 0, sizeof midi_transpose);
     memset(midi_fine, 0, sizeof midi_fine);
+    memset(drum_track_delay, 0, sizeof drum_track_delay);
+    memset(drum_pad_delay, 0, sizeof drum_pad_delay);
     chain_defaults(&chain_config);
     memset(song_idx.scene[song_cur], 0, sizeof song_idx.scene[song_cur]);
     memset(pfx_lane, 0, sizeof pfx_lane);
@@ -3272,6 +3337,8 @@ static uint32_t autosave_sig(void)
     }
     h = as_mix(h, midi_transpose, sizeof midi_transpose);
     h = as_mix(h, midi_fine, sizeof midi_fine);
+    h = as_mix(h, drum_track_delay, sizeof drum_track_delay);
+    h = as_mix(h, drum_pad_delay, sizeof drum_pad_delay);
     h = as_mix(h, midi_zone, sizeof midi_zone);
     h = as_mix(h, &cm_count, sizeof cm_count);
     h = as_mix(h, cm_rows, sizeof cm_rows);
