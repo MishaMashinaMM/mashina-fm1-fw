@@ -140,6 +140,20 @@ int main(void)
                    project_reference_load(0,64u)==1);
         bad+=check("reference recall never mutates stored USER data",
                    !memcmp(sound_before,up_rec(0),sizeof sound_before));
+        /* Whole-section preflight refuses a missing USER sound BEFORE any
+         * of the earlier tracks are modified. */
+        {
+            uint8_t refs[NTRK] = {0u, UP_SLOTS+1u, 255u, 31u, 0u, 255u};
+            uint8_t prev = trk[0].user;
+            bad+=check("invalid section reference preflight prevents partial recall",
+                       project_references_load_all(refs)==1 &&
+                       trk[0].user==prev && song.sel==chosen);
+            refs[3]=0u;
+            bad+=check("valid section references restore multiple tracks without moving selection",
+                       project_references_load_all(refs)==0 &&
+                       trk[0].user==1u && trk[1].user==UP_SLOTS+2u &&
+                       trk[3].user==1u && song.sel==chosen);
+        }
         /* Erase the simulated LIBRARY bank: the same slot ID now resolves
          * through its built-in factory sound, not a dangling reference. */
         memset(lib_sim_nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
