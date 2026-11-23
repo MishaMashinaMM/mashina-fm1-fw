@@ -27,6 +27,22 @@
 #if FELUCCA_LIB32_WRITE && (!FELUCCA_LIB32 || !FELUCCA_FLASH || !FELUCCA_OTA)
 #error "Library flash writes require the experimental library, flash and editor"
 #endif
+/* Clean-break 64-preset project reference format. Unrelated to the existing
+ * FUN* project snapshots unless explicitly enabled. Writing to its candidate
+ * 128 KiB partition is independently locked by default; never ship these
+ * experimental switches in a normal firmware build. */
+#ifndef FELUCCA_PROJECT_REFS
+#define FELUCCA_PROJECT_REFS 0
+#endif
+#ifndef FELUCCA_PROJECT_REFS_WRITE
+#define FELUCCA_PROJECT_REFS_WRITE 0
+#endif
+#if FELUCCA_PROJECT_REFS && (!FELUCCA_LIB32 || !FELUCCA_FLASH)
+#error "Project references require both the 64-preset library and flash support"
+#endif
+#if FELUCCA_PROJECT_REFS_WRITE && (!FELUCCA_PROJECT_REFS || !FELUCCA_LIB32_WRITE)
+#error "Project reference writes require explicit project and library write gates"
+#endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
 #endif
