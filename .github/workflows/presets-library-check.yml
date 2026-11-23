@@ -42,6 +42,7 @@ jobs:
           node tests/presets_library_sync_test.mjs
           node tests/projects_library_codec_test.mjs
           node tests/performance_backup_test.mjs
+          node tests/full_device_backup_test.mjs
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
@@ -117,6 +118,7 @@ jobs:
           mkdir -p build/presets-library-preview
           cp web/presets-library-lab.html build/presets-library-preview/index.html
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-preview/
+          cp web/fm1backup.js web/projects-library-codec.mjs web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-preview/
       - uses: actions/upload-artifact@v4
         with:
           name: mashina-presets-library-32-preview
