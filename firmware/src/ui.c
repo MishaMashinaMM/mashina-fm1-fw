@@ -1704,6 +1704,42 @@ static uint32_t library_factory_rank(uint32_t engine, uint32_t preset)
     }
     return LIB_FACTORY_SLOTS;  /* no physical library slot holds this sound */
 }
+/* One stable LIBRARY slot is a sound identity even before any WebMIDI
+ * replacement is uploaded. Remember that identity when its built-in factory
+ * fallback is loaded, so reference-based projects can address it later.
+ * This routine changes only TSEL, just like normal preset browsing. */
+#if FELUCCA_LIB32
+static int library_slot_apply(uint32_t slot)
+{
+    uint32_t e, k;
+    if (slot >= LIB_FACTORY_SLOTS) return 1;
+    if (!library_sound_load(slot)) return 0;
+    e = library_factory_at(slot, &k);
+    if (e >= NENGINES) return 1;
+    if (e != TSEL->eng_req) set_engine(e);
+    apply_preset(k);
+    TSEL->user = (uint8_t)(UP_SLOTS + slot + 1u);
+    return 0;
+}
+
+/* Resolve a saved 0..63 preset reference into any track without moving the
+ * selected track. Refuse missing USER slots; LIB slots have factory fallback.
+ * This is an experimental primitive, NOT connected to project SAVE yet. */
+static int project_reference_load(uint32_t track, uint32_t ref)
+{
+    uint32_t selected = song.sel;
+    int rc;
+    if (track >= NTRK || ref >= UP_SLOTS + LIB_FACTORY_SLOTS)
+        return 1;
+    if (ref < UP_SLOTS && !up_used(ref))
+        return 1;
+    song.sel = (uint8_t)track;
+    rc = ref < UP_SLOTS ? up_load(ref) : library_slot_apply(ref - UP_SLOTS);
+    song.sel = (uint8_t)selected;
+    return rc;
+}
+#endif
+
 static uint32_t preset_all_pos(uint32_t *total)
 {
     uint32_t u = user_of(TSEL);
@@ -1803,7 +1839,9 @@ static void preset_go(uint32_t n)                    /* load list index n into t
     } else {
 #if FELUCCA_LIB32
         uint32_t slot = library_factory_rank(e, k);
-        if (slot >= LIB_FACTORY_SLOTS || library_sound_load(slot))
+        if (slot < LIB_FACTORY_SLOTS) {
+            (void)library_slot_apply(slot);
+        } else
 #endif
         {
             if (e != TSEL->eng_req)
@@ -1840,7 +1878,9 @@ static void midi_pc_poll(void)
                     up_load(k);
                 } else {
 #if FELUCCA_LIB32
-                    if (n < UP_SLOTS || library_sound_load(n - UP_SLOTS))
+                    if (n >= UP_SLOTS) {
+                        (void)library_slot_apply(n - UP_SLOTS);
+                    } else
 #endif
                     {
                         if (e != TSEL->eng_req)
