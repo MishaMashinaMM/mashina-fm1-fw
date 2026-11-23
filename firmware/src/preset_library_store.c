@@ -70,17 +70,21 @@ static int lib_latest(uint32_t bank, uint32_t *sequence)
     *sequence = a.sequence;
     return 0;
 }
-/* No valid commit can mean genuinely new storage OR corrupted data.
- * Refuse to silently treat a damaged committed bank as empty. A header that
- * is all 0xFF is uncommitted (including an interrupted first write). */
+/* No valid commit can mean genuinely new storage OR foreign/corrupt data.
+ * On first use, require BOTH whole sectors to be erased, not just their
+ * headers: otherwise an old partition owner with blank first bytes could
+ * be destroyed. A torn first write fails closed until explicit recovery.
+ * Never auto-erase an unknown/partly programmed bank. */
 static int lib_uncommitted(uint32_t bank)
 {
-    lib_head_t h;
+    uint8_t page[256];
     for (uint32_t copy = 0; copy < 2u; copy++) {
-        const uint8_t *p = (const uint8_t *)&h;
-        if (lib_flash_read(lib_base(bank,copy),&h,sizeof h)) return 0;
-        for (uint32_t i = 0; i < sizeof h; i++)
-            if (p[i] != 0xFFu) return 0;
+        for (uint32_t off = 0; off < LIB_SECTOR; off += sizeof page) {
+            if (lib_flash_read(lib_base(bank,copy) + off,page,sizeof page))
+                return 0;
+            for (uint32_t i = 0; i < sizeof page; i++)
+                if (page[i] != 0xFFu) return 0;
+        }
     }
     return 1;
 }
