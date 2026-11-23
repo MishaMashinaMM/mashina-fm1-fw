@@ -59,31 +59,53 @@ experimental `FELUCCA_LIB32` path (`ui.c`):
 - Factory fallback is reserved for fully empty LIBRARY records. A corrupted
   occupied slot is never silently substituted with a different sound.
 
-This is a **sound-resolution primitive only**, tested on the simulated FM1.
-Project-owned mixer/zone/routing/effects settings still need a complete MPR1
-payload mapping and integration into section SAVE/RECALL before the new project
-format can be enabled on hardware.
+The clean-break project format is now integrated with **experimental,
+compile-gated** project SAVE, LOAD, RENAME, CLEAR, and LIVE recall. The
+`firmware/src/project_ref_settings.c` encoder saves project-owned mixer
+parameters, MIDI channels, transposition, fine tuning, zones, EQ, macros,
+pad note maps/pan/pitch/performance and six lyrics, without copying sound
+parameters, engines, FM6 patches or full drum-kit voices. A worst-case
+32-macro, six-full-lyric simulated section fits the 1,792-byte budget.
+`firmware/src/project_refs_live.c` resolves all six preset IDs before
+restoring these settings; a missing preset refuses the section instead of
+partially loading it. New USER sound saves mark the USER slot as the
+track's reference source.
 
-The browser now has an **offline performance bundle prototype**
-(`web/performance-backup.mjs`): exactly 32 USER positions, 32 LIBRARY positions
-and 8×A–D project positions, with byte-exact JSON round-tripping.
-It rejects broken USER references and represents empty/factory library slots
-with null. Restore planning explicitly includes erasing empty target positions,
-not merely uploading occupied ones. This is not yet a full-device backup:
-global device settings, a complete project payload map and project WebMIDI
-transport are still pending.
+Under these opt-in flags, the old FUN snapshot persistence is replaced by
+the two-sections-per-bank MPR1 store, but legacy formats are intentionally
+not imported. Legacy sound-snapshot autosave has been disabled; a compact
+reference-only autosave replacement is **still pending**. Old sequencer
+staging is removed in MASHINA's normal NO_SEQUENCER build and is not
+a requirement for reference-based section switching.
 
-**Not yet wired to live firmware:** the payload's per-setting mapping, sound
-reference resolution on section recall, project SAVE/RECALL, live section staging,
-WebMIDI project capture/restore, and browser full-device JSON export.
-The 1,792-byte settings budget is a design constraint, not a proven maximum:
-all actual project-level features must be inventoried and stress-tested before
-replacing the current codec. The proposed allocation overlaps old project
-sections, which is acceptable only for the explicitly agreed clean-break
-installation with an external backup; it must NOT be activated on existing
-firmware by surprise. The apparent 128 KiB gain is **reserved sector capacity
-if this format and allocation are adopted**, not extra free CPU RAM and not
-space already reclaimed in the firmware.
+`firmware/src/editor_backup.c` now uses the existing chunked WebMIDI
+archive protocol **65 LIST / 66 GET / 67 PUT** for all 32 MPR1 project
+sections (archive IDs 40–71) and for the current unsaved MPR1 performance
+(ID 0); it retains existing settings, USER banks and FM6 companion archive
+IDs. Ref-only project writes remain disabled unless the separate
+`FELUCCA_PROJECT_REFS_WRITE` gate is enabled. WebMIDI command **95**
+reports MPR1 protocol/version/32-section/write capability.
+The browser module `web/full-device-backup.mjs` builds projects-only
+and full-device JSON backups, including the 32 LIBRARY overrides, 32 USER
+records, all 32 project sections, unsaved current performance, global
+settings and existing user-bank archive. Restore validates the offline
+records and both write capabilities before any destructive operation,
+includes clearing empty slots, and verifies library/project/User records
+after restoring. The new Web Library preview has UI controls for each
+operation and requires the user to save an existing complete backup and
+explicitly confirm before restoring.
+
+**Remaining requirements:** validate physical flash ownership and
+hardware persistence, exercise the actual browser against the FM1,
+resolve any remaining legacy UI backup/slot behaviors, complete and test
+the new reference-only RESTORE LAST/autosave behavior, and establish
+safe initialization of the clean-break flash sectors on a first
+installation. No write-enabled experimental image is approved for
+hardware yet. All changes remain branch-local; no main merge.
+
+The 128 KiB saving is a **planned flash-sector reservation reduction**,
+not additional free CPU RAM until the old layout is actually replaced on
+a clean installation.
 
 The existing 32/32 preset loader remains experimental, and main is unchanged.
 
@@ -116,6 +138,11 @@ The firmware's `tools/build.py` now accepts two independent flags:
 - `FELUCCA_LIB32=1 FELUCCA_LIB32_WRITE=0`: supports reading library records and exposes the experimental WebMIDI protocol in **read-only** mode. The browser must refuse uploads.
 - `FELUCCA_LIB32=1 FELUCCA_LIB32_WRITE=1`: **experimental write implementation**, only compiled for explicit write-enabled testing. No write-enabled firmware is published or automatically installed.
 
+MPR1 references have separate `FELUCCA_PROJECT_REFS=0` (default) and
+`FELUCCA_PROJECT_REFS_WRITE=0` (default) gates. Enabling reference writes
+requires the explicit LIB32 write gate too. The branch CI compiles a
+reference-enabled image with both physical write paths **disabled**.
+
 Both read-only and write-enabled builds are compiled separately in the dedicated branch CI. Both preserve the exact existing USER 32-slot physical layout. Nothing from this branch is merged to `main`.
 
 ## WebMIDI protocol
@@ -130,6 +157,7 @@ F0 7D 46 4C `cmd` ... F7, distinct from existing FM6 68–71 and other commands:
 | **92 PUT** | Upload one full record atomically, with strict record/slot checks; write must be enabled |
 | **93 ERASE** | Clear one independent LIBRARY slot; does not affect USER |
 | **94 CAPTURE_USER** | Read a complete existing USER record **plus its tagged FM6/drum companion**; no flash writes. Missing or incomplete kit sidecars are rejected |
+| **95 MPR1_CAP** | Return `[version=1, sections=32, project_write_enabled]`; a separate gate from LIB32 sound writes |
 
 Web backup/restore code:
 
