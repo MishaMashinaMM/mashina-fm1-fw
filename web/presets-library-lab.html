@@ -126,7 +126,9 @@ function catalogStatus(message){
   $("load-drum-kits").disabled=!sourceCatalog;
   $("defaults-master").disabled=!sourceCatalog;
   $("export-master").disabled=!sourceCatalog;
-  $("prepare-master").disabled=!sourceCatalog||v.blocked>0||v.ready===0;
+  // A catalog upload is an exact 32-sound snapshot: never silently leave
+  // stale LIBRARY slots from a previous pack when positions are unassigned.
+  $("prepare-master").disabled=!sourceCatalog||v.blocked!==0||v.ready!==32;
   connectionStatus();
 }
 function renderCatalog(){
@@ -278,6 +280,9 @@ $("export-master").addEventListener("click",()=>{
 $("prepare-master").addEventListener("click",()=>{
   if(!sourceCatalog)return;
   try{
+    const view=validateFactorySelection(sourceCatalog,sourceSelection,sourceKitRecords);
+    if(view.ready!==32||view.blocked||view.empty)
+      throw Error("Fill all 32 LIBRARY positions with complete sounds before preparing a 32-slot snapshot");
     const entries=buildFactoryUpload(sourceCatalog,sourceSelection,sourceKitRecords);
     // Transactional: no existing prepared record is touched unless the
     // ENTIRE new pack is independently validated and complete.
