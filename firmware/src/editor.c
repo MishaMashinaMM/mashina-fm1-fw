@@ -300,6 +300,9 @@ static int ed_flash_stop(void)
     return song.playing || chain_busy();
 }
 
+#if FELUCCA_LIB32
+#include "editor_library.c"
+#endif
 #include "editor_preferences.c"
 #include "editor_backup.c"
 #include "editor_fm6.c"
@@ -384,6 +387,9 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
     if (cmd >= ED_BACKUP_LIST && cmd <= ED_BACKUP_PUT)
         autosave_hold();                                /* (a transfer: no autosave meanwhile, project.c) */
     ed_begin(cmd);
+#if FELUCCA_LIB32
+    if (ed_library_handle(cmd, a, na)) { ed_send(); return; }
+#endif
     if (ed_ui_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_backup_handle(cmd, a, na)) { ed_send(); return; }
     if (ed_fm6_handle(cmd, a, na)) { ed_send(); return; }
@@ -429,6 +435,10 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         ed_b(0x52); ed_b(1); ed_b(4);   /* RATCH: a step's ratchet (1..4 hits) after its chance */
         ed_b(0x4C); ed_b(1); ed_b(1);   /* 1.1 parameter locks: MOTION ops 5..7, the kinds after the records */
         ed_b(0x56); ed_b(1); ed_b(FM6_NBANK);   /* (JIANT 0.6.11, Felucca 1.4.1) FM6's voice bank: cmds 74..77, SLOT 9..40 */
+#if FELUCCA_LIB32
+        ed_b(0x51); ed_b(2); ed_b(LIB_SLOTS);
+        ed_b(FELUCCA_LIB32_WRITE ? 1u : 0u); /* 'Q': LIB32 capability/read-only vs writable */
+#endif
         ed_b(0x4A); ed_b(1); ed_b(1);   /* (JIANT 0.6.62) 'J': this is JIANT (the web installer writes over it, web/index_pkg.html) */
         ed_b(0x4F); ed_b(1); ed_b(LM_N);   /* (0.8.5) 'O': the DRUM-X octaves, a step's lane modes 0..6 after its ratchet */
         ed_b(0x59); ed_b(1); ed_b(LYR_LEN - 1u);   /* (JIANT 0.8.5) 'Y': LYRIC (cmd 39), a track's lyric, at most 63 bytes */
