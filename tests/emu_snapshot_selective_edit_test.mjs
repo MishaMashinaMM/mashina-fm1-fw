@@ -215,6 +215,9 @@ restoreSectors(new Uint8Array(edited.memory.buffer,edited.web_nor(),edited.web_n
   decodeEmulatorFlash(mixRefs.snapshot));
 edited.web_boot();
 assert.equal(edited.web_mpr_test_used(),1,"edited project section lost after independent WASM reboot");
+// A cold boot loads the last LIVE state, not a saved project section unless
+// RESTORE LAST is enabled. Explicitly recall section A to test its references.
+assert.equal(edited.web_mpr_test_load(),0,"saved Project 1 Section A failed to recall in real firmware");
 assert.equal(edited.web_mpr_ref(0),1,"project T1 USER 001 reference not restored in real firmware");
 assert.equal(edited.web_mpr_ref(1),34,"project T2 reference changed unexpectedly");
 console.log("PASS: real WASM fresh boot reads selective USER/LIBRARY changes and remapped MPR1 track references");
