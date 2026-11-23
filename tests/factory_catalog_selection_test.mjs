@@ -1,0 +1,55 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {encodeRecord} from "../web/presets-library-codec.mjs";
+import {importFactoryCatalog,defaultFactorySelection,validateFactorySelection,
+        factorySelectionFile,importFactorySelection,buildFactoryUpload}
+  from "../web/factory-catalog-selection.mjs";
+
+const raw=readFileSync("web/factory-presets-from-code.json","utf8");
+const original=JSON.parse(raw);
+const catalog=importFactoryCatalog(original);
+assert.equal(JSON.stringify(original),JSON.stringify(catalog));
+assert.equal(original.presets.length,107);
+assert.equal(original.presets.filter(p=>p.fm6).length,10);
+const defaults=defaultFactorySelection(catalog);
+assert.equal(defaults.length,32);
+assert.equal(defaults.filter(i=>i!==null).length,32);
+const view=validateFactorySelection(catalog,defaults);
+assert.equal(view.ready+view.blocked,32);
+assert.equal(view.blocked,8); // two across four drum engines
+assert.equal(view.ready,24);
+assert.throws(()=>buildFactoryUpload(catalog,defaults),/drum kit|kit is not yet serialized/i);
+const backup=factorySelectionFile(catalog,defaults);
+const again=importFactorySelection(JSON.parse(JSON.stringify(backup)));
+assert.deepEqual(again.selection,defaults);
+assert.equal(JSON.stringify(again.catalog),JSON.stringify(catalog));
+assert.equal(JSON.stringify(original),JSON.stringify(JSON.parse(raw)),
+  "source master JSON must remain untouched");
+const melodic=catalog.presets.flatMap((p,i)=>p.params?[i]:[]).slice(0,32);
+assert.equal(melodic.length,32);
+const plan=buildFactoryUpload(catalog,melodic);
+assert.equal(plan.length,32);
+for(let i=0;i<32;i++){
+  assert.equal(plan[i].slot,i);
+  assert.deepEqual(plan[i].recordBytes,Array.from(encodeRecord(catalog.presets[melodic[i]])));
+}
+assert.equal(plan.filter(p=>p.engine===12).length,10);
+// The complete FM6 voices must survive catalog -> WebMIDI record conversion.
+for(const row of plan.filter(p=>p.engine===12)){
+  const patch=catalog.presets[melodic[row.slot]];
+  assert.deepEqual(row.fm6,patch.fm6);
+}
+const altered=structuredClone(catalog);
+altered.presets[0].params[0]=256;
+assert.throws(()=>importFactoryCatalog(altered),/127 valid parameter/i);
+const missing=structuredClone(catalog);
+missing.presets.pop();
+assert.throws(()=>importFactoryCatalog(missing),/107 presets/i);
+const malformed=structuredClone(catalog);
+malformed.presets[37].initialLibrarySlot=33; // duplicate default
+assert.throws(()=>importFactoryCatalog(malformed),/default LIBRARY slot/);
+assert.throws(()=>importFactorySelection({...backup,version:2}),/selection JSON/);
+assert.equal(validateFactorySelection(catalog,Array(32).fill(null)).empty,32);
+assert.ok(raw.includes('"totalFactoryPresets": 107'));
+console.log("PASS: original 107-entry JSON imports unchanged; 32 defaults, strict drum blocking, 32 complete melodic records and 10 full FM6 voices survive export/import");
