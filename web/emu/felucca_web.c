@@ -403,6 +403,11 @@ EXPORT uint32_t web_mpr_test_save(void)
 { return (uint32_t)mpr_live_save(0u,"BOOT TEST"); }
 EXPORT uint32_t web_mpr_test_used(void)
 { return (uint32_t)mpr_slot_used(0u); }
+EXPORT void web_mpr_test_edit(uint32_t track)
+{
+    if (track < NTRK)
+        trk[track].p[P_ATK] = (int16_t)(trk[track].p[P_ATK] + 1);
+}
 #endif
 EXPORT void web_seed(uint32_t s) { web_seed_v = s; }   /* (JIANT 0.4) the session's macros: a seed of the page's */
 EXPORT void web_boot(void)
