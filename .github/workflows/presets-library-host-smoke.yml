@@ -54,8 +54,16 @@ jobs:
           node tests/performance_backup_test.mjs
           node tests/full_device_backup_test.mjs
           node web/test_backup.mjs
-      - name: Check source-level flash boundaries
-        run: python3 tools/presets_library_flash_map_check.py
+      - name: Guard protected 107-preset factory catalog and offline selection
+        run: |
+          node tools/export_factory_catalog.mjs --check
+          node tests/factory_presets_catalog_test.mjs
+          node tests/factory_catalog_selection_test.mjs
+      - name: Check source-level flash boundaries and preset storage capacity
+        run: |
+          python3 tools/presets_library_flash_map_check.py
+          python3 tools/presets_library_capacity.py
+          python3 tools/presets_library_pack_experiment.py
       - name: Compile and execute pure host NOR and WebMIDI tests
         run: |
           mkdir -p build/host
