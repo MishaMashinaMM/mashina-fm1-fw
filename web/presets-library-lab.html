@@ -429,6 +429,9 @@ $("upload-device").addEventListener("click",()=>action(async()=>{
   if(catalogNeedsPrepare)throw new Error("Factory selection has changed: click Prepare 32-slot upload pack first.");
   if(!entries.length)throw new Error("Import or capture some sounds first.");
   if(!confirm(`Upload ${entries.length} sound records from: ${preparedOrigin}? Only occupied destination slots are replaced; unselected slots remain unchanged. Existing USER slots are untouched. Keep your offline JSON backups before proceeding.`))return;
+  // Invalidate the pre-write snapshot before the first possible flash change.
+  // A failed/interrupted transfer must not silently authorize another write.
+  backedUp=false;wholeBackup=false;
   const n=await uploadPrepared(device.request,cap,entries,(i,total)=>$("status").textContent=`Writing and verifying ${i}/${total} LIBRARY slots...`);
   $("status").textContent=`Verified ${n} complete LIBRARY presets on FM1. Keep your JSON backup for firmware updates.`;
 }));
@@ -493,9 +496,10 @@ $("restore-projects").addEventListener("change",async e=>{
     const parsed=JSON.parse(await file.text());
     const sections=restoreProjectsBackup(parsed); // validate everything before confirmation
     if(!confirm(`Replace all 32 project sections from ${file.name}? This changes projects A–D in all 8 projects, including clearing empty slots. Presets are not changed. Keep your previous full FM1 backup.`))return;
+    // A partial restore changes the target even when an exception is thrown.
+    wholeBackup=false;backedUp=false;
     const result=await restoreProjectsOnly(device.request,parsed,
       (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
-    wholeBackup=false;backedUp=false;
     $("status").textContent=`Restored ${result.restored} sections, including empty slots. Export another complete FM1 backup now.`;
   });
 });
@@ -506,9 +510,9 @@ $("restore-full").addEventListener("change",async e=>{
       throw new Error("Make a complete offline backup of the target FM1 and connect write-enabled firmware first");
     const parsed=validateFullDevice(JSON.parse(await file.text()));
     if(!confirm(`Restore ALL USER presets, LIBRARY sounds, 8 projects × A–D, current performance and device settings from ${file.name}? Existing data will be replaced. Retain your backup in case the connection fails.`))return;
+    wholeBackup=false;backedUp=false;
     const result=await restoreFullDevice(device.request,parsed,
       (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
-    wholeBackup=false;backedUp=false;
     $("status").textContent=`Verified ${result.restoredProjects} project sections and all 32 LIBRARY slots. Device settings and USER sounds restored. Export a new full backup now.`;
   });
 });
