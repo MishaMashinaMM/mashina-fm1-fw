@@ -554,7 +554,16 @@ static void session_dice(uint32_t seed)
 #else
     gp.seed = (uint16_t)(rng() % 10000u);
 #endif
+#if FELUCCA_PROJECT_REFS
+    /* MPR1 stores source references, not per-project copies of sound params.
+     * Automatic macro generation edits P_M1SRC/... after the factory/USER
+     * sounds have been loaded and fingerprinted, falsely making untouched
+     * T2..T4 look edited on the very first PROJECT SAVE. Keep the sound
+     * exactly as its source preset defines it. Users can still explicitly
+     * use the MACRO layer's DICE command when they want new mappings. */
+#else
     macro_dice(0);
+#endif
 }
 
 /* GLO's white keys after the SOLOs (F3 ..): unmute all, tap tempo; KNOB 1..4: the levels from track trk_base4() */
