@@ -15,8 +15,8 @@ jobs:
           python-version: '3.13'
       - name: Verify existing storage and report 32-slot capacity
         run: python3 tools/presets_library_capacity.py
-      - name: Check web preset interface regressions
-        run: node web/test_web.mjs
+      - name: Check existing web backup regressions
+        run: node web/test_backup.mjs
       - name: Live drum and firmware host regressions
         run: bash tests/run_live_drum_tests.sh
       - name: JieLi build toolchain cache
