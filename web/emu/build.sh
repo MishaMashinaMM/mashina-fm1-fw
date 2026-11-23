@@ -39,7 +39,7 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" \
     -e 's#../mashina-emu-locale.js#./mashina-emu-locale.js#g' \
     web/emu/index.html > build/emu/index.html
 cp web/mashina-nav.css web/mashina-nav.js web/mashina-emu-locale.js build/emu/
-cp web/emu/worklet.js web/emu/stems.js web/emu/sample-bank.js web/fm1backup.js build/emu/
+cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs web/emu/stems.js web/emu/sample-bank.js web/fm1backup.js build/emu/
 cp web/factory-voices.json web/factory-samples.json build/emu/
 cp web/emu/fonts/DotGothic16-subset.woff web/emu/fonts/OFL.txt build/emu/fonts/
 echo "emu: build/emu ($(wc -c < build/emu/felucca.wasm | tr -d ' ') B wasm, $VERSION)"
