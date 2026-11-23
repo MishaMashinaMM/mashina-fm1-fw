@@ -587,3 +587,11 @@ and the precise source reference are restored. A second scenario enables
 RESTORE LAST without any other live change and checks that a new autosave
 appears after idle. CI has to pass before treating this as emulator-verified;
 physical-device flash safety is still unverified.
+
+### Emulator full-flash JSON export/import (experimental branch)
+
+The browser emulator now offers **Export emulator data (.json)** and **Import emulator data (.json)** above its panel. Export while the emulator is running requests a fresh, read-only snapshot of the *actual WebAssembly NOR*, including recent saves; exporting before Switch on uses the existing browser-persisted sectors. The versioned `mashina-emulator-flash` JSON format records every non-erased owned 4-KiB flash sector, its offset, base64 bytes and checksum. This includes USER presets, LIBRARY banks, all 8 projects × A–D, settings and RESTORE LAST autosaves, but excludes bootloader/OTA/reserved sectors. Import validates the entire file (format/version, offsets, sizes, duplicate offsets, checksum) before boot.
+
+**Import is isolated intentionally:** choose the exported JSON *before* clicking Switch on. The imported emulator uses the provided snapshot, and any changes made inside that session stay isolated; existing browser localStorage is not overwritten. Export those changes separately before closing the imported session. This is a byte-exact emulator recovery format, **not yet the Web Library's individual editable preset/project JSON** and not a hardware flashing or WebMIDI transfer mechanism.
+
+Build artifact includes `web/emu/emulator-flash-backup.mjs` and the new UI. The `tests/emu_flash_backup_roundtrip_test.mjs` regression verifies identical flash round-trip, rejects corrupt/unsupported/reserved entries, and boots a second real WASM emulator from the JSON after the first saves a project. CI must pass before browser validation. The original 107-sound master catalog is untouched.
