@@ -44,5 +44,5 @@ for (const lang of ['en', 'es', 'ja', 'ru', 'sr', 'hi']) {
   assert.match(translations, new RegExp('"'+lang+'"\\s*:\\s*\\{'), 'homepage missing '+lang+' translation');
 }
 assert.ok((translations.match(/DRUM-IND/g)||[]).length >= 6, 'homepage must describe DRUM-IND in all six languages');
-assert.doesNotMatch(readme, /New in v0\.11|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
+assert.doesNotMatch(readme, /New in v0\.12|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
 console.log('PASS: MASHINA site pages, links, metadata and build source');
