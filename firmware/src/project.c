@@ -3455,6 +3455,12 @@ static uint32_t autosave_sig(void)
     h = as_mix(h, cm_rows, sizeof cm_rows);
     for (i = 0; i < NTRK; i++) {
         const track_t *t = &trk[i];
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        /* MPR1 autosave stores source SLOT identities. Two presets can have
+         * identical engine/parameter values but different USER/LIBRARY
+         * identities; a project recall must still update RESTORE LAST. */
+        h = as_mix(h, &t->user, sizeof t->user);
+#endif
         for (j = 0; j < P_COUNT; j++) {
             int16_t v = motion_base_value(t, j);
             h = as_mix(h, &v, sizeof v);
@@ -3472,6 +3478,12 @@ static uint32_t autosave_sig(void)
     h = as_mix(h, &motion, sizeof motion);
     h = as_mix(h, &chain_config, sizeof chain_config);
     h = as_mix(h, lyr_txt, sizeof lyr_txt);             /* (0.8.5) VOICE's lyrics */
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* Include the active project context: RESTORE LAST follows section
+     * changes even when the two sections contain identical sound values. */
+    h = as_mix(h, &song_cur, sizeof song_cur);
+    h = as_mix(h, &proj_cur, sizeof proj_cur);
+#endif
     return as_mix(h, proj_name, sizeof proj_name);
 }
 
