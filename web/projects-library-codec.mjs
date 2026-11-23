@@ -77,7 +77,7 @@ export function projectsBackup(slots){
         "projects backup needs exactly 32 section positions");
   const sections=slots.map((x,i)=>{
     if(x===null)return null;
-    const p=decodeProject(x.recordBytes??encodeProject(x));
+    const p=decodeProject(Array.isArray(x)?x:(x.recordBytes??encodeProject(x)));
     check(p.section===i%SECTION_COUNT,"project section index mismatch");
     return p.recordBytes;
   });
