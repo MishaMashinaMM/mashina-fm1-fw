@@ -103,6 +103,11 @@ export function importFactoryDrumRecords(input,catalog){
     fail(decoded.engine===p.engine&&decoded.name===p.name&&
          decoded.recordBytes[303]===0xD3,
          "Invalid or incomplete drum-kit sidecar: "+p.name);
+    let checksum=2166136261;
+    for(const value of decoded.recordBytes)
+      checksum=Math.imul(checksum^value,16777619)>>>0;
+    fail(record.fnv32===checksum,
+         "Factory drum-kit integrity checksum mismatch: "+p.name);
     map.set(p.factoryIndex-1,decoded.recordBytes);
   }
   fail(map.size===18,"Factory drum sidecars are incomplete");
