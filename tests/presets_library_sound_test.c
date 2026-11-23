@@ -36,7 +36,7 @@ static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 
 int main(void)
 {
-    uint8_t blob[LIB_ENTRY], savedAnalog[LIB_ENTRY], before[sizeof(up_rec_t)], kit[UPF_PK], after[UPF_PK];
+    uint8_t blob[LIB_ENTRY], savedAnalog[LIB_ENTRY], erased[LIB_ENTRY], before[sizeof(up_rec_t)], kit[UPF_PK], after[UPF_PK];
     uint32_t selected;
     int bad=0;
     memset(lib_sim_nor,0xFF,sizeof lib_sim_nor);
@@ -103,7 +103,12 @@ int main(void)
     memset(lib_sim_nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
     preset_go(UP_SLOTS);
     bad+=check("after update erase, LIBRARY 33 falls back to compiled factory sound",
-               TSEL->user==0 && lib_slot_read(0,savedAnalog)==0);
+               TSEL->user==0 && lib_slot_read(0,erased)==0 && !memcmp(erased,(uint8_t[LIB_ENTRY]){0},LIB_ENTRY));
+    bad+=check("restore melodic LIBRARY 33 from saved offline record",
+               lib_slot_write(0,savedAnalog)==0);
+    preset_go(UP_SLOTS);
+    bad+=check("melodic sound returns after offline library restore",
+               TSEL->p[P_ATK]==49 && TSEL->user==UP_SLOTS+1u);
     bad+=check("restore USER-derived LIBRARY 34 from offline binary JSON record",
                lib_slot_write(1,blob)==0);
     preset_go(UP_SLOTS+1u);
