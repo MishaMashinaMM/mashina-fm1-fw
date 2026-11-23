@@ -95,6 +95,19 @@ after restoring. The new Web Library preview has UI controls for each
 operation and requires the user to save an existing complete backup and
 explicitly confirm before restoring.
 
+A separate, disabled-by-default `FELUCCA_PROJECT_REFS_FORMAT=0`
+flag reserves one-time first-install initialization of the new 128 KiB
+project flash bank. It is available only with both experimental write
+gates enabled, through WebMIDI command **96**, and accepts only an
+explicit `MPR1` request. Its preflight recognizes completely blank
+sectors or CRC-verified old project records in the exact corresponding
+legacy positions. Unknown data and already-initialized MPR1 sectors
+are refused. It never touches the USER bank or global settings.
+**The browser does not expose an initialization button yet**: read-only
+device diagnostics and physical flash ownership checks are required first.
+WebMIDI commands **97/98** report per-bank status without changing flash,
+and the experimental Web Library has a read-only inspection button.
+
 **Remaining requirements:** validate physical flash ownership and
 hardware persistence, exercise the actual browser against the FM1,
 resolve any remaining legacy UI backup/slot behaviors, complete and test
@@ -119,11 +132,12 @@ depending only on a hand-maintained diagram.
 
 The MASHINA-owned updater (`firmware/loader/ldr_core.c`) writes app sectors
 `0x4000..0x92FFF` and skips the existing USER/project store in its update-record
-sweep. **Important:** its record sweep *does* inspect the area containing LIBRARY
-sectors for special update-record signatures; an eligible signature and CRC could
-trigger erasure of that sector. The LIBRARY format normally leaves the final
-bytes of each sector erased and has no matching update-record footer, but the
-partition is **not** formally reserved against future loaders.
+sweep. Its record-cleanup logic now **explicitly skips all
+`0xEA000..0xF1FFF` LIBRARY sectors**, even if the contents resemble a
+valid update record. The source-level flash-map CI verifies this exclusion,
+and the loader host test plants a forged update-record signature in LIBRARY
+flash to confirm it survives upgrades. This protects the MASHINA update
+path, **not every possible stock/vendor flashing method or bootloader**.
 
 This is a **source-level regression gate only**: it does not establish ownership
 by the stock SPL/bootloader, every possible flashing path, or actual on-device
@@ -139,7 +153,9 @@ The firmware's `tools/build.py` now accepts two independent flags:
 - `FELUCCA_LIB32=1 FELUCCA_LIB32_WRITE=1`: **experimental write implementation**, only compiled for explicit write-enabled testing. No write-enabled firmware is published or automatically installed.
 
 MPR1 references have separate `FELUCCA_PROJECT_REFS=0` (default) and
-`FELUCCA_PROJECT_REFS_WRITE=0` (default) gates. Enabling reference writes
+`FELUCCA_PROJECT_REFS_WRITE=0` (default) gates.
+The destructive first-install formatter has an additional independent
+`FELUCCA_PROJECT_REFS_FORMAT=0` gate, and is not enabled in any release. Enabling reference writes
 requires the explicit LIB32 write gate too. The branch CI compiles a
 reference-enabled image with both physical write paths **disabled**.
 
@@ -157,7 +173,10 @@ F0 7D 46 4C `cmd` ... F7, distinct from existing FM6 68–71 and other commands:
 | **92 PUT** | Upload one full record atomically, with strict record/slot checks; write must be enabled |
 | **93 ERASE** | Clear one independent LIBRARY slot; does not affect USER |
 | **94 CAPTURE_USER** | Read a complete existing USER record **plus its tagged FM6/drum companion**; no flash writes. Missing or incomplete kit sidecars are rejected |
-| **95 MPR1_CAP** | Return `[version=1, sections=32, project_write_enabled]`; a separate gate from LIB32 sound writes |
+| **95 MPR1_CAP** | Return `[version=1, sections=32, project_write_enabled, initialization_available]`; separate write gates |
+| **96 MPR1_INIT** | Explicit one-time initialization of CRC-recognized retired project sectors; additionally gated, never enabled in normal firmware |
+| **97 MPR1_PROBE** | Read-only status for 16 paired project banks: blank, MPR1, retired, unknown, unavailable |
+| **98 LIB32_PROBE** | Read-only status for 4 paired 8-preset banks: blank, LIB32, unknown, unavailable |
 
 Web backup/restore code:
 
