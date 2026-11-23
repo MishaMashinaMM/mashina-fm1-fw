@@ -27,8 +27,10 @@ jobs:
         with:
           python-version: '3.13'
       - uses: emscripten-core/setup-emsdk@v15
-      - name: Check simulator flash snapshot safety
-        run: node tests/emu_library_flash_persistence_test.mjs
+      - name: Check simulator flash snapshot and GLO boot navigation
+        run: |
+          node tests/emu_library_flash_persistence_test.mjs
+          node tests/glo_boot_page_test.mjs
       - name: Generate firmware tables and UI assets
         run: |
           python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
