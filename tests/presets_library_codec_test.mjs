@@ -28,7 +28,7 @@ const base=Array.from({length:127},(_,i)=>i%128);
 const fmRec=encodeRecord({name:"TEST FM6",engine:12,params:base,fm6});
 assert.deepEqual(decodeRecord(fmRec).fm6,fm6);
 const kit=Uint8Array.from({length:304},(_,i)=>i&255);
-kit[0]=0xA5;kit[1]=4;kit[2]=19;kit[3]=127;kit.set(Buffer.from("KIT TEST"),4);
+kit[0]=0xA5;kit[1]=4;kit[2]=19;kit[3]=127;kit.fill(0,4,16);kit.set(Buffer.from("KIT TEST"),4);
 for(let i=0;i<127;i++)kit[16+i]=(i*7)%192;
 kit[159]=0x47;
 const dKit=decodeRecord(kit);
