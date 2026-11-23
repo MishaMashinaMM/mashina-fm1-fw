@@ -61,6 +61,11 @@ an `initialLibrarySlot` for the 32 curated factory fallbacks.
   18 complete 304-byte sound records, which is packaged alongside the Web
   Library preview. The master catalog is not modified by this process.
   Validation matches every kit by engine, factory index and name.
+  For DRUM-X, all nine BUTTLER factory kits are captured through the
+  **full preset-loader path**, not a parameter-only load; a regression
+  checks their complete kit sidecars remain distinct instead of accidentally
+  duplicating the previous kit. Each generated kit has its own FNV checksum
+  checked again at browser import.
 - Once the separate kit records are loaded, **all 107 factory sounds can
   be assigned**, and all 32 chosen sounds can become complete uploadable
   records (including FM6 voices and synthesized drum kits). Exporting
