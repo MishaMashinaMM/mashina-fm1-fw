@@ -120,6 +120,19 @@ safe initialization of the clean-break flash sectors on a first
 installation. No write-enabled experimental image is approved for
 hardware yet. All changes remain branch-local; no main merge.
 
+The compact MPR1 flash writer now **streams 256-byte pages** rather than
+holding a second whole 3,648-byte bank in memory. This restored the required
+pool safety margin, without removing atomic A/B CRC validation or redundant
+copy protection. Full experimental CI run
+[45233452089](https://github.com/MishaMashinaMM/mashina-fm1-fw/actions/runs/45233452089)
+passed host project/flash/power-loss regressions, the main and read-only
+firmware builds, the separately gated write adapters and optional first-install
+formatter *compile checks*, plus the standalone Web Library preview packaging.
+Measured experimental MPR1+LIB32 write build:
+**518,624 B / 584,336 B** image and **11,040 B pool spare**;
+separately gated formatter build: **518,944 B** image, same pool spare.
+These are build measurements only, NOT approval for physical flash writes.
+
 The 128 KiB saving is a **planned flash-sector reservation reduction**,
 not additional free CPU RAM until the old layout is actually replaced on
 a clean installation.
