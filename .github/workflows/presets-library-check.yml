@@ -53,6 +53,7 @@ jobs:
           node tests/projects_library_codec_test.mjs
           node tests/performance_backup_test.mjs
           node tests/full_device_backup_test.mjs
+          node tests/emu_library_flash_persistence_test.mjs
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
