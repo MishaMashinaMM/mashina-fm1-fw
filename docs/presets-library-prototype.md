@@ -36,3 +36,11 @@ The `ui.c` browsing and MIDI program index are prototyped as **fixed USER-first 
 4. Audit presets list, favorites, filter, SAVE navigation, and the fixed PC map with device/emulator tests. Stage a dedicated browser preview; never merge before physical testing.
 
 The earlier `presets-editable` proposal remains a separate branch and is intentionally not merged here.
+
+## Follow-up measurements, 23 November 2026
+
+- Experimental build from workflow 45194185147: **506,588 B** application image out of **584,336 B**, leaving **77,748 B**. RAM **95,952/98,304 B**; pool **305,316 B used / 14,144 B spare**. This confirms the fixed 32/32 browse scheme adds no meaningful RAM load.
+- Fixed a browse correctness issue: a sound not among the curated 32 factory sounds must be shown as **off-list**, not misidentified as factory slot 033. The 32 USER slot positions remain reserved regardless of how many are occupied.
+- `tools/presets_library_pack_experiment.py` measures real exported sound JSON using a lossless 127-signed-parameter encoding, plus synthetic random full FM6/drum sidecars; CI runs this in addition to the conservative 24 KiB A/B capacity gate. The real fixture compression ratio is **not** a guarantee of available flash capacity, and the experiment's binary format is **not yet a firmware serializer**.
+- Current editor library exports **FM6 patches**, but the general JSON patch/fixture does **not** by itself encode every independent DRUM-AC/DRUM-IND/DRUM-LAB kit control in a compatible companion payload. Any end-to-end LIB_PUT implementation must explicitly capture and restore **full drum kit sidecars**. Do not use an incomplete JSON-to-binary conversion and claim full kit isolation.
+- The app-image slack is **code/constant capacity, not spare persistent data storage**. The 8 KiB nonvolatile area would need all arbitrary 32 library sounds, metadata, and two safe A/B copies; the worst-case requirement is considerably greater. Native direct WebMIDI swapping therefore stays blocked without a safe storage redesign.
