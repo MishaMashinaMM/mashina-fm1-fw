@@ -22,6 +22,8 @@ jobs:
           mkdir -p build/host
           cc -O2 -Wall -Wextra -o build/host/preset_library_storage_test tests/preset_library_storage_test.c
           build/host/preset_library_storage_test
+          cc -O2 -Wall -Wextra -o build/host/preset_library_wire_test tests/preset_library_wire_test.c
+          build/host/preset_library_wire_test
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
