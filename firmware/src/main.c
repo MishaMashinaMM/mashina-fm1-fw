@@ -148,8 +148,12 @@ static void felucca_init(void)
     load_depth--;
     song.sel = 0;
     song.master_q12 = 2048;                   /* (the pot's level replaces it before the audio starts: master_boot) */
-    ui.home = 1;
-    ui.force = 1;
+    /* MASHINA: boot into the live mixer, not JIANT's HOME screen.
+     * Start at GLO's first page (MIX > MIXER) on every power-on;
+     * HOME and all ordinary navigation remain unchanged. */
+    ui.page = (uint8_t)page_first(FAM_GLO);
+    ui.home = 0;
+    page_entered();
 }
 
 /* The power-on LED sweep (1.1, hal/fm1_led_anim.h: a soft light over the keys left to right, then the buttons swell
