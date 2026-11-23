@@ -71,6 +71,31 @@ static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 #include "../firmware/src/preset_library_runtime.c"
 #include "../firmware/src/project.c"
 
+/* Existing WebMIDI backup commands: chunked read/write of all 8xA-D MPR1
+ * sections and independent USER/settings objects. */
+enum { ED_BACKUP_LIST=65,ED_BACKUP_GET,ED_BACKUP_PUT };
+static uint8_t ed_rep[4096];
+static uint32_t ed_rep_n;
+static void ed_b(uint32_t v)
+{
+    if(ed_rep_n<sizeof ed_rep)ed_rep[ed_rep_n++]=(uint8_t)(v&127u);
+}
+static uint32_t ed_unpack7(const uint8_t *a,uint32_t na,uint8_t *out,uint32_t max)
+{
+    uint32_t n=0;
+    while(na && n<max){
+        uint32_t mask=*a++,k=na-- > 7u?7u:na+1u;
+        if(!k || n+k>max || (mask>>k))return 0;
+        for(uint32_t j=0;j<k;j++,na--)
+            out[n++]=(uint8_t)(*a++|(((mask>>j)&1u)<<7));
+    }
+    return na?0:n;
+}
+static uint8_t ed_smp_buf[512];
+static void fm1_wdt_feed(void){}
+static int ed_flash_stop(void){return transport_busy();}
+#include "../firmware/src/editor_backup.c"
+
 static int check(const char *what,int yes)
 {
     printf("MPR LIVE %-61s %s\n",what,yes?"PASS":"FAIL");
@@ -163,6 +188,37 @@ int main(void)
     proj_fetch(1);
     bad+=check("renamed project survives reboot",
                project_name(1,name)&&!strcmp(name,"SET NEW"));
+    /* WebMIDI full-backup has a fixed 1824-byte project object in both the
+     * current section aliases and 40..71 global project addresses. */
+    {
+        uint32_t length=0;
+        const uint8_t *body;
+        bad+=check("capture current live MPR1 state via existing WebMIDI backup",
+                   ed_bk_capture()==0 &&
+                   ed_bk_object(0,&length)==ED_BK_RAW &&
+                   length==MPR_MAX_RECORD);
+        body=ed_bk_object(41u,&length);
+        bad+=check("backup ID 41 exports project 1 section B MPR1 record",
+                   body && length==MPR_MAX_RECORD &&
+                   !memcmp(body,proj_slot[1].raw,MPR_MAX_RECORD));
+        bad+=check("old FUN snapshots are forbidden on clean-break imports",
+                   !proj_store_len(PROJ_STORE_SIZE) &&
+                   proj_store_len(MPR_MAX_RECORD));
+        memcpy(ED_BK_RAW,proj_slot[1].raw,MPR_MAX_RECORD);
+        ed_bk_id=41u;ed_bk_len=MPR_MAX_RECORD;
+        ed_bk_pos=ed_bk_len;ed_bk_crc=st_crc32(ED_BK_RAW,ed_bk_len);
+        bad+=check("backup PUT commits a validated reference-only section",
+                   ed_bk_commit()==0);
+        ED_BK_RAW[37]^=1u;
+        ed_bk_crc=st_crc32(ED_BK_RAW,ed_bk_len);
+        bad+=check("backup PUT refuses damaged MPR1 data even with outer CRC",
+                   ed_bk_commit()==2u);
+        ED_BK_RAW[37]^=1u;
+        ed_bk_crc=st_crc32(ED_BK_RAW,ed_bk_len);
+        ed_bk_id=0u;
+        bad+=check("restore live unsaved MPR1 state without changing a saved slot",
+                   ed_bk_commit()==0u && project_used(1));
+    }
     bad+=check("clear the new project without touching presets",!project_clear_slot(1));
     bad+=check("cleared project remains empty after reboot",({
         memset(proj_slot,0,sizeof proj_slot);proj_fetch(1);!project_used(1);
