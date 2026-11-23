@@ -61,3 +61,50 @@ export function decodeEmulatorFlash(value) {
   }
   return sectors;
 }
+
+/* Existing emulator browser persistence uses a sparse offset -> base64 map.
+ * Preserve that exact on-disk representation so ordinary emulator startup
+ * reads restored backups without migration or another import step. */
+export function persistentEmulatorFlash(sectors) {
+  const checked=decodeEmulatorFlash(encodeEmulatorFlash(sectors));
+  const data={};
+  for(const [off,bytes] of Object.entries(checked))data[off]=b64(bytes);
+  return JSON.stringify(data);
+}
+export function readPersistentEmulatorFlash(raw) {
+  if(raw===null)return {};
+  const parsed=JSON.parse(raw);
+  if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))
+    throw Error("Stored emulator flash is invalid");
+  const sectors={};
+  for(const [key,base64] of Object.entries(parsed)) {
+    const off=Number(key);
+    if(!allowed(off)||String(off)!==key||typeof base64!=="string")
+      throw Error("Invalid stored flash sector");
+    sectors[off]=unb64(base64);
+  }
+  return decodeEmulatorFlash(encodeEmulatorFlash(sectors));
+}
+export function restorePersistentEmulatorFlash(storage,key,source) {
+  // Caller must request explicit confirmation BEFORE calling. Validate and
+  // serialize everything before touching the existing stored session.
+  const expected=decodeEmulatorFlash(encodeEmulatorFlash(source));
+  const serialized=persistentEmulatorFlash(expected);
+  const before=storage.getItem(key);
+  try{
+    storage.setItem(key,serialized); // one atomic browser storage value
+    const actual=readPersistentEmulatorFlash(storage.getItem(key));
+    const expectedJSON=JSON.stringify(encodeEmulatorFlash(expected));
+    if(JSON.stringify(encodeEmulatorFlash(actual))!==expectedJSON)
+      throw Error("Restored browser flash does not match the selected backup");
+  }catch(error){
+    // Restore old bytes (if a mocked/faulty storage engine ever reports a
+    // successful write but gives a different read-back).
+    try {
+      if(before===null)storage.removeItem(key);
+      else storage.setItem(key,before);
+    }catch {}
+    throw Error("Permanent restore failed; existing data recovery attempted: "+error.message);
+  }
+  return Object.keys(expected).length;
+}
