@@ -32,7 +32,7 @@ jobs:
         run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
       - uses: mymindstorm/setup-emsdk@v14
         with:
-          version: 6.0.12                # (the version the emulator is tested with)
+          version: 6.0.11                # Emscripten toolchain version (not MASHINA release)
       - name: the emulator
         run: |
           # build.sh already copies the current browser shell, substitutes
