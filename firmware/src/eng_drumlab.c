@@ -52,6 +52,10 @@ static void drumlab_global_patch(uint32_t ti, dlab_patch_t *patch)
 static uint8_t drumlab_midi_note[NPART][DLAB_LANES];
 static uint8_t drumlab_midi_custom[NPART];
 
+/* eng_drumac.c is included after this module; its canonical pad note
+ * sequence is identical to this local compile-order-independent table. */
+static const uint8_t DLAB_AC_NOTES[12] =
+    {36, 38, 37, 42, 46, 41, 43, 45, 47, 39, 40, 44};
 static int drumlab_note_set(track_t *t, uint32_t lane, uint32_t note)
 {
     uint32_t ti = (uint32_t)(t - trk), i;
@@ -59,7 +63,7 @@ static int drumlab_note_set(track_t *t, uint32_t lane, uint32_t note)
     if (!drumlab_midi_custom[ti]) {
         for (i = 0; i < DLAB_LANES; i++)
             drumlab_midi_note[ti][i] = (uint8_t)(t->eng_req == ENGI_DRUMAC ?
-                                               AC_NOTES[i] : 36u + i);
+                                               DLAB_AC_NOTES[i] : 36u + i);
         drumlab_midi_custom[ti] = 1u;
     }
     drumlab_midi_note[ti][lane] = (uint8_t)note;
