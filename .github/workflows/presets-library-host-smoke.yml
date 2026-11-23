@@ -38,7 +38,8 @@ jobs:
             tests/projects_library_codec_test.mjs \
             tests/performance_backup_test.mjs \
             tests/full_device_backup_test.mjs \
-            tests/emu_library_flash_persistence_test.mjs; do
+            tests/emu_library_flash_persistence_test.mjs \
+            tests/glo_boot_page_test.mjs; do
             node --check "$file"
           done
       - name: Execute Web Library and backup regressions
@@ -49,6 +50,7 @@ jobs:
           node tests/performance_backup_test.mjs
           node tests/full_device_backup_test.mjs
           node tests/emu_library_flash_persistence_test.mjs
+          node tests/glo_boot_page_test.mjs
           node web/test_backup.mjs
       - name: Guard protected 107-preset factory catalog and offline selection
         run: |
