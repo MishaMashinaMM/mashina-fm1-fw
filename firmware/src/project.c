@@ -2314,6 +2314,7 @@ static void random_saved_live(uint32_t slot)
 
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
 #include "project_refs_live.c" /* clean-break project SAVE/LOAD, physical writes independently gated */
+#include "project_refs_init.c" /* one-time sector migration reset, separately disabled */
 #endif
 
 /* the music as it is now -> slot, named `name` (0: the current name; "" none); 0 saved, nonzero refused or failed.
