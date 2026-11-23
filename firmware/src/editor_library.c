@@ -24,6 +24,40 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         ed_b(0u);ed_b(0u);ed_b(0u);return 1;
 #endif
     }
+    if (cmd == 97u) { /* MPR1_PROBE: per-bank read-only flash status */
+        if(n){ed_b(127u);ed_b(1u);return 1;}
+        ed_b(16u);
+        for(uint32_t bank=0;bank<16u;bank++){
+            uint32_t seq=0u;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+            if(!flash_ok)ed_b(4u);
+            else if(mprs_latest(bank,&seq)>=0)ed_b(1u);
+            else if(mprs_blank(bank))ed_b(0u);
+            else {
+                uint32_t valid=1u;
+                for(uint32_t copy=0;copy<2u;copy++)
+                    if(!mprs_erased_sector(bank,copy) &&
+                       !mprs_legacy_sector(bank,copy))valid=0u;
+                ed_b(valid?2u:3u);
+            }
+#else
+            (void)seq;
+            ed_b(4u);
+#endif
+        }
+        return 1;
+    }
+    if (cmd == 98u) { /* LIB32_PROBE: 4 banks, read only */
+        if(n){ed_b(127u);ed_b(1u);return 1;}
+        ed_b(LIB_BANKS);
+        for(uint32_t bank=0;bank<LIB_BANKS;bank++){
+            uint32_t seq=0u;
+            if(!flash_ok)ed_b(4u);
+            else if(lib_latest(bank,&seq)>=0)ed_b(1u);
+            else ed_b(lib_uncommitted(bank)?0u:3u);
+        }
+        return 1;
+    }
     if (cmd == 96u) { /* MPR1_INIT, NOT enabled in ordinary builds */
 #if FELUCCA_PROJECT_REFS && FELUCCA_PROJECT_REFS_FORMAT
         static const uint8_t key[4]={0x4Du,0x50u,0x52u,0x31u}; /* "MPR1" */
