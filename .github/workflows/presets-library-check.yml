@@ -195,6 +195,8 @@ jobs:
           cp web/presets-library-lab.html "$OUT/web-library/index.html"
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs "$OUT/web-library/"
           cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs "$OUT/web-library/"
+          cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs "$OUT/web-library/"
+          cp build/host/factory-drum-records.json "$OUT/web-library/"
           python3 tools/check_library_preview.py "$OUT/web-library"
       - uses: actions/upload-artifact@v4
         with:
