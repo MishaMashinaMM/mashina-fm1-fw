@@ -13,6 +13,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Guard source-level flash partition geometry and installer boundaries
+        run: python3 tools/presets_library_flash_map_check.py
       - name: Verify existing storage and report 32-slot capacity
         run: |
           python3 tools/presets_library_capacity.py
