@@ -51,6 +51,10 @@ print(f"Power-safe bank layout: {basic_sectors} basic + {aux_sectors} sidecar se
 print(f"Unproven capacity gap: {required_sectors-FREE_SECTORS} sectors "
       f"({(required_sectors-FREE_SECTORS)*SECTOR:,} B)")
 print("PASS: existing USER bank untouched, existing storage definitions verified.")
+integrated_sectors = math.ceil(SLOTS / 8) * 2
+print(f"Integrated 304-byte sound+sidecar record, 8 records/copy: "
+      f"{integrated_sectors} sectors = {integrated_sectors*SECTOR:,} B "
+      "(one atomic commit updates both pieces)")
 print("GATE BLOCKED: 8 KiB is insufficient for arbitrary 32 full sounds with A/B writes.")
 print("Do not use 0xEA000..0xFBFFF USR: ownership and update safety unverified.")
 print("No firmware flash writes are enabled by this prototype.")
