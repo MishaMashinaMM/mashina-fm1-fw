@@ -139,6 +139,10 @@ async function mock(cmd,args=[],opts={}){
   }
   throw new Error("mock received unknown command "+cmd);
 }
+// Seed a stale section that the imported JSON marks empty. The restore must
+// actually clear it, not merely skip its write or report it as cleared.
+mockObjects.set(42,pad(encodeProject({section:2,refs:[32,255,255,255,255,255],
+  name:"STALE",settingsBytes:[91,92]})));
 // Project-only restore now verifies all 32 sections by reading flash back.
 const projectFile={format:"mashina-projects-mpr1",version:1,projects:8,
   sectionsPerProject:4,sections:base.projects};
@@ -149,6 +153,7 @@ assert.equal(projectResult.restored,32);
 assert.ok(projectProgress>32); // includes read-back progress
 assert.deepEqual(Array.from(mockObjects.get(41)),Array.from(pad(section)));
 assert.equal(mockObjects.get(40).length,0);
+assert.equal(mockObjects.get(42).length,0); // stale section was actively cleared
 // Simulate an acknowledged section commit that silently loses its record.
 let corruptProjectOnCommit=true;
 const projectCorruptingMock=async(cmd,args=[],opts={})=>{
