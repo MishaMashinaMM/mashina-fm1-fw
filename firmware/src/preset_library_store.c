@@ -71,6 +71,20 @@ static int lib_latest(uint32_t bank, uint32_t *sequence)
     *sequence = a.sequence;
     return 0;
 }
+/* No valid commit can mean genuinely new storage OR corrupted data.
+ * Refuse to silently treat a damaged committed bank as empty. A header that
+ * is all 0xFF is uncommitted (including an interrupted first write). */
+static int lib_uncommitted(uint32_t bank)
+{
+    lib_head_t h;
+    for (uint32_t copy = 0; copy < 2u; copy++) {
+        const uint8_t *p = (const uint8_t *)&h;
+        if (lib_flash_read(lib_base(bank,copy),&h,sizeof h)) return 0;
+        for (uint32_t i = 0; i < sizeof h; i++)
+            if (p[i] != 0xFFu) return 0;
+    }
+    return 1;
+}
 /* Return 0 for valid/empty slot, 1 for bad index, 2 for a flash error.
  * Empty banks are entirely zero bytes; records have their own 'used' flag. */
 static int lib_slot_read(uint32_t slot, uint8_t out[LIB_ENTRY])
@@ -80,8 +94,15 @@ static int lib_slot_read(uint32_t slot, uint8_t out[LIB_ENTRY])
     if (slot >= LIB_SLOTS) return 1;
     bank = slot / LIB_PER_BANK;
     copy = lib_latest(bank,&seq);
-    if (copy < 0) { memset(out,0,LIB_ENTRY); return 0; }
-    if (!lib_valid(bank,(uint32_t)copy,(lib_head_t[1]){{0}})) return 2;
+    if (copy < 0) {
+        if (!lib_uncommitted(bank)) return 2;
+        memset(out,0,LIB_ENTRY);
+        return 0;
+    }
+    {
+        lib_head_t h;
+        if (!lib_valid(bank,(uint32_t)copy,&h)) return 2;
+    }
     memcpy(out,lib_work + (slot % LIB_PER_BANK) * LIB_ENTRY,LIB_ENTRY);
     return 0;
 }
@@ -95,7 +116,10 @@ static int lib_slot_write(uint32_t slot, const uint8_t in[LIB_ENTRY])
     if (slot >= LIB_SLOTS) return 1;
     bank = slot / LIB_PER_BANK;
     old = lib_latest(bank,&sequence);
-    if (old < 0) memset(lib_work,0,sizeof lib_work);
+    if (old < 0) {
+        if (!lib_uncommitted(bank)) return 2;
+        memset(lib_work,0,sizeof lib_work);
+    }
     else if (!lib_valid(bank,(uint32_t)old,&h)) return 2;
     memcpy(lib_work + (slot % LIB_PER_BANK) * LIB_ENTRY,in,LIB_ENTRY);
     copy = old == 0 ? 1u : 0u;
