@@ -173,7 +173,7 @@ def main(pkg, version, out, prev=None):
     installer_html = html.replace("/*JIANT_UI*/", brand).replace("/*BUILD_TAG*/", release_tag)
     (inst / "index.html").write_text(installer_html, encoding="utf-8")
     # New permanent URL gives browsers a fresh document even when the older installer URL was cached.
-    fresh = out / "webapp" / "installer-orange-v012"
+    fresh = out / "webapp" / "installer-orange-v013"
     fresh.mkdir(parents=True, exist_ok=True)
     (fresh / "index.html").write_text(installer_html, encoding="utf-8")
     shutil.copy(pkg, fw / name)
