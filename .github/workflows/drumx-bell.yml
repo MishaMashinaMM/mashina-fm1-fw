@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - fix/drumx-bell-midi-edit-selection
+      - feature/drum-ac-ind-pad-pan-pitch-manual
   pull_request:
     paths:
       - 'firmware/src/eng_drum.c'
@@ -75,7 +76,7 @@ jobs:
           test -s build/felucca.bin
       - name: Package separate local-use device-test installer
         run: |
-          VERSION="v0.12-drumx-bell-${GITHUB_SHA::7}-preview"
+          VERSION="v0.12-drum-panning-${GITHUB_SHA::7}-preview"
           OUT="build/drumx-bell-preview"
           test -s build/felucca-0.12.fwsc
           python3 web/make_site.py build/felucca-0.12.fwsc "$VERSION" "$OUT"
@@ -98,7 +99,7 @@ jobs:
           cat > "$OUT/READ-ME-FIRST.txt" <<EOF
           MASHINA v0.12 - UNIVERSAL DRUM MIDI/EDIT TEST
           ==========================================
-          Source branch: fix/drumx-bell-midi-edit-selection
+          Source branch: $GITHUB_REF_NAME
           Commit: $GITHUB_SHA
           This is a device-test candidate, NOT the public MASHINA installer.
           Back up ALL projects, presets and settings before using this build.
