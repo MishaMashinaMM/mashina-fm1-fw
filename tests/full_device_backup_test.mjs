@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {bkCrc} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7} from "../web/presets-library-codec.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -67,6 +67,16 @@ assert.deepEqual(await projectCapability(request),
   {version:1,sections:32,writable:true,canInitialize:false});
 assert.deepEqual(await projectCapability(async()=>[1,32,1,1]),
   {version:1,sections:32,writable:true,canInitialize:true});
+const probe=await probeFlash(async(cmd)=>cmd===97?[16,...Array(16).fill(2)]:
+                                                  [4,...Array(4).fill(0)]);
+assert.equal(probe.canInitializeProjects,true);
+assert.equal(probe.libraryAllBlank,true);
+assert.equal(probe.unknown,false);
+const alien=await probeFlash(async(cmd)=>cmd===97?[16,3,...Array(15).fill(0)]:
+                                                  [4,...Array(4).fill(0)]);
+assert.equal(alien.canInitializeProjects,false);
+assert.equal(alien.unknown,true);
+await assert.rejects(probeFlash(async()=>[0]),/diagnostics/);
 let progress=0;
 const result=await restoreProjectsOnly(request,
   {format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,
