@@ -78,7 +78,7 @@ static int library_sound_load(uint32_t slot)
     int16_t v[P_COUNT];
     uint32_t i;
     if (slot >= LIB_SLOTS || lib_slot_read(slot, library_record) ||
-        !up_valid(r)) return 1;
+        !lib_record_valid(library_record) || !up_valid(r)) return 1;
     up_values(r, v);
     load_begin(t, LOAD_SOUND);
     panic_req |= (uint8_t)(1u << song.sel);
