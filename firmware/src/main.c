@@ -145,10 +145,12 @@ static void felucca_init(void)
     load_depth++;                             /* (the power-on loads: one outer load) */
     fm6_init();                               /* every track's FM6 patch: the init voice */
     power_on_parts();                         /* legacy defaults for normal firmware */
-#if FELUCCA_LIB32 && FELUCCA_PROJECT_REFS
-    power_on_reference_presets();             /* T1..T4 = factory LIBRARY 033..036 */
-#endif
     load_depth--;
+#if FELUCCA_LIB32 && FELUCCA_PROJECT_REFS
+    /* After outer initialization: each LIBRARY sound must run its own
+     * load_end()/motion_rebase before MPR1 records its source fingerprint. */
+    power_on_reference_presets();             /* T1..T4 = LIBRARY 033..036 */
+#endif
     song.sel = 0;
     song.master_q12 = 2048;                   /* (the pot's level replaces it before the audio starts: master_boot) */
     /* MASHINA boots on GLO > MIX > MIXER (visible page 1/7).
