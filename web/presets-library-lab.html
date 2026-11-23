@@ -47,6 +47,7 @@ tr:nth-child(2n){background:#161616}
  <p>Import the original <code>factory-presets-from-code.json</code> unchanged, or load the matching file packaged with this page. Assign any factory sound to a LIBRARY destination (033–064). The 107-preset master is never rewritten or uploaded to FM1.</p>
  <div class="toolbar">
   <button id="load-master" type="button">Load built-in 107-preset catalog</button>
+  <button id="download-master" type="button">Download untouched master backup</button>
   <label class="file">Import factory catalog / selection JSON <input id="import-master" type="file" accept=".json,application/json"/></label>
   <label class="file">Import complete drum-kit records JSON <input id="import-drum-kits" type="file" accept=".json,application/json"/></label>
   <button id="load-drum-kits" type="button" disabled>Load compiled drum kits</button>
@@ -214,6 +215,19 @@ async function loadKitSource(){
   renderCatalog();
   catalogStatus("All 18 factory drum kits now have complete binary sidecars; original 107 JSON is unchanged.");
 }
+$("download-master").addEventListener("click",()=>action(async()=>{
+  const response=await fetch("./factory-presets-from-code.json",{cache:"no-store"});
+  if(!response.ok)throw Error("The protected 107-preset master is missing (HTTP "+response.status+")");
+  const exactText=await response.text();
+  importFactoryCatalog(JSON.parse(exactText)); // refuse incomplete backup
+  // Preserve the original exact JSON bytes, including whitespace, not a
+  // potentially lossy normalized/reformatted JSON reconstruction.
+  const url=URL.createObjectURL(new Blob([exactText],{type:"application/json"}));
+  const a=document.createElement("a");
+  a.href=url;a.download="mashina-factory-master-107-unaltered.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),250);
+  $("status").textContent="Downloaded the unaltered 107-preset master catalog as a separate offline backup. No FM1 or working selection was changed.";
+}));
 $("load-master").addEventListener("click",()=>action(async()=>{
   const response=await fetch("./factory-presets-from-code.json",{cache:"no-store"});
   if(!response.ok)throw Error("Bundled master catalog not available: HTTP "+response.status);
