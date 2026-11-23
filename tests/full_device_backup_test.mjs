@@ -37,7 +37,7 @@ assert.throws(()=>validateFullDevice({...base,currentPerformance:section}),/disa
 const corrupt=structuredClone(base);corrupt.archive.objects[11].crc=25;
 assert.throws(()=>validateFullDevice(corrupt),/checksum/);
 const tampered=structuredClone(base);tampered.archive.objects[0].size=33;
-assert.throws(()=>validateFullDevice(tampered),/archive object|checksum|MPR1/);
+assert.throws(()=>validateFullDevice(tampered),/backup object|checksum|MPR1/);
 let changed=0,notes=[];
 async function request(cmd,args){
   if(cmd===95)return [1,32,1];
