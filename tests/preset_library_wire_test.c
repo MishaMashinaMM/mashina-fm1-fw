@@ -60,6 +60,25 @@ int main(void)
     bad+=check("ERASE clears exactly one library slot",ret==2&&reply[1]==0);
     ret=lib_wire_reply(LIB_WIRE_GET,args,1,out);
     bad+=check("GET of empty slot reports no content",ret==2&&out[1]==3);
+    /* A CRC-protected bank may still contain a malformed sound (e.g. after
+     * a different firmware version). It is NOT the same as a truly empty
+     * LIBRARY slot: never omit it from an offline device backup. */
+    {
+        uint8_t damaged[LIB_ENTRY]={0};
+        damaged[2]=9u; /* invalid nonempty record; not a factory fallback */
+        bad+=check("simulate CRC-valid bank with malformed occupied sound",
+                   lib_slot_write(2,damaged)==0);
+        ret=lib_wire_reply(LIB_WIRE_GET,args,1,out);
+        bad+=check("GET rejects malformed occupied slot rather than calling it empty",
+                   ret==2u && out[1]==2u);
+        uint8_t range[2]={2u,1u};
+        ret=lib_wire_reply(LIB_WIRE_LIST,range,2,reply);
+        bad+=check("LIST fails closed for malformed occupied slot",ret==0u);
+        memset(damaged,0,sizeof damaged);
+        bad+=check("restore genuinely empty slot",lib_slot_write(2,damaged)==0);
+        ret=lib_wire_reply(LIB_WIRE_GET,args,1,out);
+        bad+=check("restored empty slot reports factory fallback",ret==2u&&out[1]==3u);
+    }
     bad+=check("all wire operations stayed inside library partition",!wrong_region);
     printf("LIB WIRE: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
