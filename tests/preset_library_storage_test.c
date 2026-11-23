@@ -106,6 +106,29 @@ int main(void)
         bad+=check("two corrupt copies are reported, never treated as empty",
                    lib_slot_read(17,got)==2 && lib_slot_write(17,r[17])==2);
     }
+    /* A blank header is NOT proof that a sector belongs to the library:
+     * an unknown previous owner may have written data elsewhere. */
+    {
+        uint32_t bank=3u, addr0=lib_base(bank,0u), addr1=lib_base(bank,1u);
+        uint8_t foreign0=0xA7u, foreign1=0x5Cu;
+        memset(nor+addr0,0xFF,LIB_SECTOR);
+        memset(nor+addr1,0xFF,LIB_SECTOR);
+        nor[addr0+LIB_PAYLOAD_OFF+42u]=foreign0;
+        uint32_t before_writes=writes;
+        bad+=check("blank headers with foreign payload are NOT considered free",
+                   lib_slot_read(24u,got)==2 && lib_slot_write(24u,r[24u])==2 &&
+                   writes==before_writes && nor[addr0+LIB_PAYLOAD_OFF+42u]==foreign0);
+        memset(nor+addr0,0xFF,LIB_SECTOR);
+        nor[addr1+LIB_SECTOR-1u]=foreign1;
+        before_writes=writes;
+        bad+=check("foreign bytes at sector tail also block initialization",
+                   lib_slot_write(24u,r[24u])==2 && writes==before_writes &&
+                   nor[addr1+LIB_SECTOR-1u]==foreign1);
+        memset(nor+addr1,0xFF,LIB_SECTOR);
+        bad+=check("fully erased paired sectors can initialize normally",
+                   lib_slot_write(24u,r[24u])==0 &&
+                   lib_slot_read(24u,got)==0 && !memcmp(got,r[24u],LIB_ENTRY));
+    }
     bad+=check("bad slots rejected",lib_slot_write(LIB_SLOTS,r[0])==1&&lib_slot_read(LIB_SLOTS,got)==1);
     bad+=check("no flash operation escaped dedicated region",!wrong_region);
     printf("LIB NOR: %s (%u flash operations)\n",bad?"FAIL":"ALL TESTS PASSED",writes);
