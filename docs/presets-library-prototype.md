@@ -382,3 +382,27 @@ commit-workflow lookup is limited to pull-request-triggered runs, so an
 empty result for these push-triggered workflows is not evidence of success
 or failure. Read the actual job conclusion on GitHub Actions before treating
 it as a CI pass.
+
+### Experimental emulator flash preservation (23 November 2026)
+
+The browser AudioWorklet now includes the experimental LIBRARY bank region
+`0xEA000..0xF1FFF` among the flash sectors it persists across a page
+reload. The existing `0x97000..0xDFFFF` range already covers the new MPR1
+project sectors `0xA0000..0xBFFFF`. OTA, unknown and reserved sectors stay
+excluded. An erased LIBRARY sector is not serialized, and restoration
+requires exactly 4 KiB at a permitted sector boundary.
+
+The standalone `tests/emu_library_flash_persistence_test.mjs` checks all
+8 LIB32 sectors, MPR1 sector boundaries, erased-state behavior, and rejection
+of malformed/outside flash snapshots. It ran successfully against the actual
+branch AudioWorklet source in an isolated JavaScript runtime and is now part
+of both experimental GitHub CI workflows.
+
+**Important:** The normal `web/emu/build.sh` currently builds the legacy
+emulator configuration and `web/emu/felucca_web.c` does not yet wire a
+LIB32/MPR1-enabled browser preview or USB WebMIDI commands 89–98. This
+persistence fix is a prerequisite, **not** evidence that experimental project
+references or uploaded LIBRARY sounds can already be exercised through the
+browser. Enable the simulator-specific feature integration and validate the
+WASM build/audio/UI separately; never substitute a hardware write-enabled
+firmware image for an emulator artifact.
