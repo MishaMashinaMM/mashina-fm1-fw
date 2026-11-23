@@ -1696,7 +1696,7 @@ static uint32_t library_factory_rank(uint32_t engine, uint32_t preset)
         uint32_t k, e = library_factory_at(n, &k);
         if (e == engine && k == preset) return n;
     }
-    return 0u;  /* a sound outside the curated set has no bank address yet */
+    return LIB_FACTORY_SLOTS;  /* no physical library slot holds this sound */
 }
 static uint32_t preset_all_pos(uint32_t *total)
 {
@@ -1788,6 +1788,7 @@ static void preset_go(uint32_t n)                    /* load list index n into t
 {
     uint32_t k, e = preset_at(n, &k);
     if (e == NENGINES) {
+        if (k >= UP_SLOTS || !up_used(k)) return; /* fixed empty address: never load a different sound */
         up_load(k);
     } else {
         if (e != TSEL->eng_req)
