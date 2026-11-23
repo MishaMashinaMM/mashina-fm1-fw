@@ -110,6 +110,16 @@ int main(void)
 {
     int bad=0;
     uint8_t saved[MPR_MAX_RECORD];
+    /* The project/sound split MUST stay identical to the parameters kept
+     * by a normal preset load. If a new engine adds project-only fields,
+     * this regression forces an explicit MPR1 settings format review. */
+    {
+        int matched=1;
+        for(uint32_t i=0;i<P_COUNT;i++)
+            if(!!param_kept(i)!=!!mpr_is_project_param(i))
+                matched=0;
+        bad+=check("project-only parameter map equals actual sound-load retention",matched);
+    }
     memset(nor,0xFF,sizeof nor);
     memset(&song,0,sizeof song);
     memset(trk,0,sizeof trk);
