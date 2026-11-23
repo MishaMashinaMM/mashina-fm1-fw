@@ -960,7 +960,7 @@ static uint32_t proj_packed_size(const project_t *q)
     {   /* optional per-track DRUM-LAB MIDI map ('L' 'N') */
         uint32_t count = 0;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUMLAB && q->lab_note_on[t]) count++;
+            if ((q->t[t].engine == ENGI_DRUMLAB || q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND) && q->lab_note_on[t]) count++;
         if (count) n += 3u + 12u * count;
     }
     {   /* optional per-track DRUM-X MIDI map ('D' 'N') */
@@ -1147,7 +1147,7 @@ static int proj_pack(project_store_t *out, const project_t *q)
     {   /* Stage 22A: save customized per-pad MIDI assignments only. */
         uint32_t mask = 0;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUMLAB && q->lab_note_on[t]) mask |= 1u << t;
+            if ((q->t[t].engine == ENGI_DRUMLAB || q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND) && q->lab_note_on[t]) mask |= 1u << t;
         if (mask) {
             b[pos++] = 'L'; b[pos++] = 'N'; b[pos++] = (uint8_t)mask;
             for (t = 0; t < NPART; t++)
@@ -1564,7 +1564,7 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         pos += 3u;
         for (t = 0; t < NPART; t++) {
             if (!(mask & (1u << t))) continue;
-            if (q->t[t].engine != ENGI_DRUMLAB || pos + 12u > room) return 0;
+            if ((q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC && q->t[t].engine != ENGI_DRUMIND) || pos + 12u > room) return 0;
             for (uint32_t lane = 0; lane < 12u; lane++)
                 if (b[pos + lane] >= DLAB_KIND_COUNT || b[pos + lane] == DLAB_SNARE) return 0;
             memcpy(q->lab_kind[t], b + pos, 12u);
@@ -1579,7 +1579,7 @@ static int proj_unpack_c(project_t *q, const uint8_t *b)
         pos += 3u;
         for (t = 0; t < NPART; t++) {
             if (!(mask & (1u << t))) continue;
-            if (q->t[t].engine != ENGI_DRUMLAB || pos + 12u > room) return 0;
+            if ((q->t[t].engine != ENGI_DRUMLAB && q->t[t].engine != ENGI_DRUMAC && q->t[t].engine != ENGI_DRUMIND) || pos + 12u > room) return 0;
             for (lane = 0; lane < 12u; lane++)
                 if (b[pos + lane] > 127u) return 0;
             memcpy(q->lab_note[t], b + pos, 12u);
@@ -2123,7 +2123,7 @@ static void project_capture(project_t *p)
         p->lab_mask[i] = trk[i].eng_req == ENGI_DRUMLAB ? drumlab_kit_dirty[i] :
                          trk[i].eng_req == ENGI_DRUMAC ? ac_dirty[i] :
                           trk[i].eng_req == ENGI_DRUMIND ? ind_dirty[i] : 0u;
-        p->lab_note_on[i] = trk[i].eng_req == ENGI_DRUMLAB ? drumlab_midi_custom[i] : 0u;
+        p->lab_note_on[i] = (trk[i].eng_req == ENGI_DRUMLAB || trk[i].eng_req == ENGI_DRUMAC || trk[i].eng_req == ENGI_DRUMIND) ? drumlab_midi_custom[i] : 0u;
         if (p->lab_note_on[i])
             memcpy(p->lab_note[i], drumlab_midi_note[i], 12u);
         p->dx_note_on[i] = trk[i].eng_req == ENGI_DRUM ? drum_midi_custom[i] : 0u;
@@ -2394,6 +2394,12 @@ static void sound_put(project_t *p, uint32_t k)
         memcpy(dx_snd, p->dx_snd, sizeof dx_snd);
         memcpy(dx_lay, p->dx_lay, sizeof dx_lay);
     }
+    if (e == ENGI_DRUMAC || e == ENGI_DRUMIND) {
+        uint32_t ti = k % NTRK;
+        drumlab_midi_custom[ti] = p->lab_note_on[ti];
+        if (drumlab_midi_custom[ti])
+            memcpy(drumlab_midi_note[ti], p->lab_note[ti], 12u);
+    }
     if (e == ENGI_DRUMLAB) {
         uint32_t lane, ti = k % NTRK;
         memcpy(drumlab_global[ti], p->lab_global[ti], 8u);
@@ -2628,7 +2634,7 @@ static int project_restore_runtime(const project_t *input)
         drum_midi_custom[k] = p->t[k].engine == ENGI_DRUM ? p->dx_note_on[k] : 0u;
         if (drum_midi_custom[k])
             memcpy(drum_midi_note[k], p->dx_note[k], 12u);
-        drumlab_midi_custom[k] = p->t[k].engine == ENGI_DRUMLAB ? p->lab_note_on[k] : 0u;
+        drumlab_midi_custom[k] = (p->t[k].engine == ENGI_DRUMLAB || p->t[k].engine == ENGI_DRUMAC || p->t[k].engine == ENGI_DRUMIND) ? p->lab_note_on[k] : 0u;
         if (drumlab_midi_custom[k])
             memcpy(drumlab_midi_note[k], p->lab_note[k], 12u);
         drumlab_kit_ready[k] = 0;
