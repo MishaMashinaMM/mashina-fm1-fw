@@ -271,5 +271,15 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
          JSON.stringify(full.projects),"Project verification failed after restore");
   insist(JSON.stringify(archiveCurrent(archiveAfter))===
          JSON.stringify(full.currentPerformance),"Current performance verification failed");
+  // An acknowledged PUT is not proof that the global configuration or the
+  // selected-project index survived in flash. Check their exact raw bytes,
+  // not just the MPR1 records and the separately captured USER sounds.
+  for(const id of [1,10]) {
+    const expected=readBackup(full.archive).objects.find(x=>x.id===id);
+    const actual=archiveAfter.objects.find(x=>x.id===id);
+    insist(!!expected&&!!actual&&byteEq(Array.from(expected.bytes),Array.from(actual.bytes)),
+           (id===1?"Global settings":"Selected project index")+
+           " verification failed after restore");
+  }
   return {restoredProjects:32,librarySlots:32,userSlots:32,settingsRestored:true};
 }
