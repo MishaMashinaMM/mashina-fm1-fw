@@ -28,7 +28,7 @@ typedef struct {
     uint32_t magic, version, bank, sequence, length, crc;
 } lib_head_t;
 
-static uint8_t lib_work[LIB_BANK_BYTES]; /* 2,432 B scratch, not 32 complete presets */
+static uint8_t lib_work[LIB_BANK_BYTES] __attribute__((section(".pool"))); /* 2,432 B scratch, not 32 complete presets */
 
 static int lib_flash_read(uint32_t off, void *p, uint32_t n);
 static int lib_flash_erase(uint32_t off);
