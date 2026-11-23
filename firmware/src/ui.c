@@ -1668,37 +1668,52 @@ static void select_engine(uint32_t e)
     ui.force = 1;
 }
 
-/* the presets of every engine (in ENGINE_ORDER), then the used user presets, as one list (the PRESETS knob and the
- * PRESETS page browse it) */
-static uint32_t preset_all_pos(uint32_t *total)          /* list index of the selected track's preset */
+/* Experimental 32/32 browse layout, on presets-library only:
+ * PC 0..31 address physical USER slots, even if empty. PC 32..63 select
+ * 32 curated built-in entries. Factory entries are chosen round-robin
+ * across shown engines so every engine contributes before extras.
+ * This does not yet implement an uploaded/replaceable bank. */
+#define LIB_FACTORY_SLOTS 32u
+static uint32_t library_factory_at(uint32_t n, uint32_t *k)
 {
-    uint32_t n = 0, cur = 0, e, r;
-    for (r = 0; r < NENG_SHOWN; r++) {                  /* (engines.c ENGINE_ORDER) */
-        const engine_t *en = ENGINES[e = eng_vis(r)];
-        if (e == TSEL->eng_req)
-            cur = n + preset_rank(en, preset_orig(en, TSEL->preset % (en->npresets ? en->npresets : 1u)));
-        n += preset_shown(e);
-    }
-    if (user_of(TSEL) < UP_SLOTS)
-        cur = n + up_rank(user_of(TSEL));
-    *total = n + up_count();
-    return cur;
+    uint32_t round, r;
+    for (round = 0; round < LIB_FACTORY_SLOTS; round++)
+        for (r = 0; r < NENG_SHOWN; r++) {
+            uint32_t e = eng_vis(r);
+            if (preset_shown(e) <= round) continue;
+            if (!n--) {
+                *k = preset_nth(ENGINES[e], round);
+                return e;
+            }
+        }
+    *k = 0;
+    return NENGINES;
 }
-
-/* list index n (< total) -> engine, *k its preset; NENGINES = user preset, *k its slot. The engines in ENGINE_ORDER
- * (the list shown, and PROGRAM CHANGE's numbers) */
+static uint32_t library_factory_rank(uint32_t engine, uint32_t preset)
+{
+    uint32_t n;
+    for (n = 0; n < LIB_FACTORY_SLOTS; n++) {
+        uint32_t k, e = library_factory_at(n, &k);
+        if (e == engine && k == preset) return n;
+    }
+    return 0u;  /* a sound outside the curated set has no bank address yet */
+}
+static uint32_t preset_all_pos(uint32_t *total)
+{
+    uint32_t u = user_of(TSEL);
+    *total = UP_SLOTS + LIB_FACTORY_SLOTS;
+    if (u < UP_SLOTS) return u;
+    return UP_SLOTS + library_factory_rank(TSEL->eng_req, TSEL->preset);
+}
+/* Full, fixed slot map (unlike up_count/up_nth, never collapses empty slots).
+ * NENGINES designates a user entry; k is its physical 0-based slot. */
 static uint32_t preset_all_at(uint32_t n, uint32_t *k)
 {
-    uint32_t e, r;
-    for (r = 0; r < NENG_SHOWN && n >= preset_shown(ENGINE_ORDER[r]); r++)
-        n -= preset_shown(ENGINE_ORDER[r]);
-    if (r == NENG_SHOWN) {
-        *k = up_nth(n);
+    if (n < UP_SLOTS) {
+        *k = n;
         return NENGINES;
     }
-    e = ENGINE_ORDER[r];
-    *k = preset_nth(ENGINES[e], n);                     /* the n-th shown preset */
-    return e;
+    return library_factory_at(n - UP_SLOTS, k);
 }
 
 /* list index i's sound (engine e, its preset or user slot k) is in the LIST */
@@ -1856,10 +1871,20 @@ static void eng_list_step(int32_t direction)         /* the next / previous soun
 
 static void preset_step(int32_t direction)
 {
-    uint32_t total, cur = preset_pos(&total);
+    uint32_t total, cur = preset_pos(&total), count;
     if (!total) { ui_message("NO FAVORITES"); return; }
-    preset_go(cur >= total ? (direction > 0 ? 0 : total - 1) :
-              (cur + (direction > 0 ? 1u : total - 1u)) % total);
+    /* The fixed user addresses are present in the directory even if empty.
+     * Do not make an empty slot interrupt a live browsing gesture. */
+    for (count = 0; count < total; count++) {
+        uint32_t k, e;
+        cur = cur >= total ? (direction > 0 ? 0 : total - 1u) :
+                             (cur + (direction > 0 ? 1u : total - 1u)) % total;
+        e = preset_at(cur, &k);
+        if (e != NENGINES || up_used(k)) {
+            preset_go(cur);
+            return;
+        }
+    }
 }
 
 /* Seven display rows. Favorites use a bounded window, not a repeating carousel.
