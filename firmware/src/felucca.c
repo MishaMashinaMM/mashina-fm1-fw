@@ -16,6 +16,17 @@
 #ifndef FELUCCA_OTA_DRYRUN
 #define FELUCCA_OTA_DRYRUN 0     /* 1 = stage, ask "success", then undo: no record, no reset */
 #endif
+/* Experimental 32 USER + 32 library: opt-in build, no physical flash writes
+ * unless independently enabled after the USR partition has been verified. */
+#ifndef FELUCCA_LIB32
+#define FELUCCA_LIB32 0
+#endif
+#ifndef FELUCCA_LIB32_WRITE
+#define FELUCCA_LIB32_WRITE 0
+#endif
+#if FELUCCA_LIB32_WRITE && (!FELUCCA_LIB32 || !FELUCCA_FLASH || !FELUCCA_OTA)
+#error "Library flash writes require the experimental library, flash and editor"
+#endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
 #endif
@@ -114,6 +125,9 @@
 #include "storage.c"
 #endif
 #include "upreset.c"             /* user presets (RAM mirror; flash with FELUCCA_FLASH) */
+#if FELUCCA_LIB32
+#include "preset_library_runtime.c" /* 32 additional, uploadable sound records; opt-in only */
+#endif
 #include "project.c"
 #if FELUCCA_OTA
 #include "ota.c"
