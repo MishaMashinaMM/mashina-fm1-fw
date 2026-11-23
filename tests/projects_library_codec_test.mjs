@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
+import assert from "node:assert/strict";
+import {encodeProject,decodeProject,projectsBackup,restoreProjectsBackup} from "../web/projects-library-codec.mjs";
+const refs=[13,44,2,51,255,60];
+const settingsBytes=Array.from({length:1792},(_,i)=>(i*73+19)&255);
+const recordBytes=encodeProject({section:1,refs,name:"SECTION B",settingsBytes});
+const parsed=decodeProject(recordBytes);
+assert.equal(recordBytes.length,1824);
+assert.deepEqual(parsed.refs,refs);
+assert.equal(parsed.name,"SECTION B");
+assert.equal(parsed.section,1);
+assert.deepEqual(parsed.settingsBytes,settingsBytes);
+assert.throws(()=>decodeProject(recordBytes.slice(0,-1)),/payload size/);
+const damaged=recordBytes.slice();damaged[75]^=1;
+assert.throws(()=>decodeProject(damaged),/checksum/);
+assert.throws(()=>encodeProject({section:1,refs:[64,1,2,3,4,5]}),/references/);
+const slots=Array(32).fill(null);
+slots[1]={recordBytes};
+slots[7]={section:3,refs:[0,1,2,32,63,255],name:"SET 2"};
+const backup=projectsBackup(slots);
+const restored=restoreProjectsBackup(JSON.parse(JSON.stringify(backup)));
+assert.deepEqual(restored[1],recordBytes);
+assert.deepEqual(restored[7],encodeProject(slots[7]));
+assert.equal(restored.filter(x=>x!==null).length,2);
+assert.throws(()=>projectsBackup([slots[1]]),/32/);
+console.log("PASS: MPR1 project-only JSON exact-byte backup, 8 x A-D indexing, malformed/CRC/ref rejection");
