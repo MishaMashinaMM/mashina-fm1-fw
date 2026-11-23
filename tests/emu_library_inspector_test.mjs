@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {storeSectors} from "../web/emu/worklet.js";
 import {encodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
-import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
+import {inspectEmulatorFlash,resolveFactoryFallbacks} from "../web/emulator-library-inspector.mjs";
 import {restoreProjectsBackup} from "../web/projects-library-codec.mjs";
 const wasm=readFileSync("build/emu/felucca.wasm");
 const {instance}=await WebAssembly.instantiate(wasm,{});
@@ -20,6 +20,20 @@ assert.equal(result.users.length,32);
 assert.equal(result.library.length,32);
 assert.equal(result.projects.sections.length,32);
 assert.equal(result.library.filter(x=>x.status==="factory").length,32);
+const master=JSON.parse(readFileSync("web/factory-presets-from-code.json","utf8"));
+const named=resolveFactoryFallbacks(result,master);
+const originals=master.presets.filter(x=>x.initialLibrarySlot!==undefined);
+for(let slot=33;slot<=64;slot++){
+  const expected=originals.find(x=>x.initialLibrarySlot===slot);
+  const actual=named.library[slot-33];
+  assert.ok(expected,"factory slot "+slot+" missing in original catalog");
+  assert.equal(actual.name,expected.name,"wrong factory name at "+slot);
+  assert.equal(actual.engine,expected.engine,"wrong factory engine at "+slot);
+  assert.equal(actual.status,"factory","factory preset incorrectly marked as an override");
+}
+assert.equal(result.library[0].name,"Factory fallback","inspection's raw flash result was modified");
+console.log("PASS: 32 fallback slots resolved to exact compiled factory names/engines without mutating flash snapshot");
+
 assert.equal(result.users.filter(x=>x.status==="empty").length,32);
 const slots=restoreProjectsBackup(result.projects);
 assert.notEqual(slots[0],null,"initial saved project section A omitted");
@@ -58,6 +72,16 @@ assert.equal(parsed.users[0].status,"saved");
 assert.equal(parsed.users[0].name,"SOUND-A");
 assert.equal(parsed.library[0].status,"overridden");
 assert.equal(parsed.library[0].name,"SOUND-A");
+const namedOverride=resolveFactoryFallbacks(parsed,master);
+assert.equal(namedOverride.library[0].name,"SOUND-A","custom override must win over factory THALES");
+assert.equal(namedOverride.library[0].engine,0);
+assert.equal(namedOverride.library[0].status,"overridden");
+assert.equal(namedOverride.library[1].name,originals.find(x=>x.initialLibrarySlot===34).name);
+const altered=structuredClone(master);
+altered.presets[0].name="CHANGED";
+assert.throws(()=>resolveFactoryFallbacks(parsed,altered),/protected 107-preset source revision/);
+console.log("PASS: custom overrides win and altered 107-source catalogs are rejected");
+
 assert.equal(parsed.library[1].status,"factory");
 console.log("PASS: committed USER and LIBRARY NOR records decoded with proper names and fallback slots");
 const corruptLib=lib.slice();corruptLib[260]^=1;
