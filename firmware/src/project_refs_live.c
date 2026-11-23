@@ -19,11 +19,11 @@ static int mpr_cached(uint32_t section,uint8_t refs[NTRK],
     if(mpr_get32(r)!=MPR_MAGIC || r[4]!=MPR_VERSION)return 0;
     uint32_t len=MPR_HEADER+((uint32_t)r[6]|((uint32_t)r[7]<<8));
     if(len>MPR_MAX_RECORD ||
-       !mpr_decode(r,len,&version_section,refs,name,proj_wire_u.raw,
+       !mpr_decode(r,len,&version_section,refs,name,st_buf,
                    MPR_MAX_SETTINGS,&n) || version_section!=section)return 0;
     if(p) {
         memset(p,0,sizeof *p);
-        if(!mpr_project_settings_decode(p,proj_wire_u.raw,n))return 0;
+        if(!mpr_project_settings_decode(p,st_buf,n))return 0;
         p->magic=PROJ_MAGIC;p->size=sizeof *p;
         memcpy(p->name,name,PROJ_NAME_LEN);
         p->sum=proj_sum(p);
