@@ -255,7 +255,8 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
   await uploadPrepared(request,libcap,entries,
        (done,total)=>progress("LIBRARY upload",done,total));
   await restoreBackup(archiveRequest(request),full.archive,
-       (done,total)=>progress("Device archive",done,total),{strict:true});
+       (done,total)=>progress("Device archive",done,total),
+       {strict:true,skipProjectAliases:true});
   // Read-back checks independently verify the 32 LIBRARY positions and the
   // saved projects. A failed verification requests a retry from offline JSON.
   const after=records(await readLibrary(request));
