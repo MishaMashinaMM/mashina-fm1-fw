@@ -2279,11 +2279,12 @@ static void ui_input_frame(void)
          * leaves them and continues through the usual navigation below. */
         uint32_t navigation = 0u;
         for (uint32_t f = 0; f < FAM_COUNT; f++)
-            if (FAM_BTN[f] != B_SEQ)
+            if (FAM_BTN[f] != B_SEQ && !(ui.drum_map_open && FAM_BTN[f] == B_SCL))
                 navigation |= 1u << panel.btn[FAM_BTN[f]];
         if (pressed & navigation) {
             ui.drum_map_open = 0u;
             ui.drum_perf_open = 0u;
+            ui.drum_map_reset_confirm = 0u;
             if (pressed & ~(1u << panel.btn[B_REC])) {
                 cm_ui_open = 0u;
                 if (cm_wait == 1u) cm_wait = 0u;
@@ -2294,6 +2295,7 @@ static void ui_input_frame(void)
                             (1u << panel.btn[B_PLAY]);
         if ((pressed & (1u << panel.btn[B_SEQ])) && !ui.menu && !dlg_on() && !name_on()) {
             ui.drum_map_open ^= 1u;
+            ui.drum_map_reset_confirm = 0u;
             if (ui.drum_map_open) ui.drum_perf_open = 0;
             cm_ui_open = 0;
             if (cm_wait == 1u) cm_wait = 0u;
@@ -2413,6 +2415,61 @@ static void ui_input_frame(void)
         return;
     }
     if (ui.drum_map_open) {
+        /* Long physical SEL (B_SCL) enters a per-track confirmation.
+         * EN_SELECT remains the rotary pad picker. Never let an ordinary SEL
+         * press navigate away, and consume only the press bit, not hardware
+         * fm1_in.buttons (which is debounced elsewhere). */
+        static uint32_t map_sel_start;
+        static uint8_t map_sel_fired;
+        const uint32_t sel_bit = 1u << panel.btn[B_SCL];
+        const uint32_t held = fm1_in.buttons & sel_bit;
+        if (!ui.drum_map_reset_confirm && held) {
+            if (!map_sel_start) {
+                map_sel_start = fm1_ms | 1u;
+                map_sel_fired = 0u;
+            } else if (!map_sel_fired &&
+                       fm1_ms - (map_sel_start & ~1u) >= 700u) {
+                uint32_t ti = song.sel;
+                uint32_t e = trk[ti].eng_req;
+                map_sel_fired = 1u;
+                if (e == ENGI_DRUM || e == ENGI_DRUMLAB ||
+                    e == ENGI_DRUMAC || e == ENGI_DRUMIND) {
+                    ui.drum_map_reset_trk = (uint8_t)ti;
+                    ui.drum_map_reset_confirm = 1u;
+                    ui.force = 1u;
+                }
+            }
+        }
+        if (!held) {
+            map_sel_start = 0u;
+            map_sel_fired = 0u;
+        }
+        pressed &= ~sel_bit;
+        if (ui.drum_map_reset_confirm) {
+            uint32_t down = 1u << panel.btn[B_OCTDN];
+            uint32_t up = 1u << panel.btn[B_OCTUP];
+            if (pressed & (down | up)) {
+                if (pressed & up) {
+                    uint32_t ti = ui.drum_map_reset_trk;
+                    uint32_t e = trk[ti].eng_req;
+                    fm1_irq_off();
+                    if (e == ENGI_DRUM)
+                        drum_midi_custom[ti] = 0u;
+                    else if (e == ENGI_DRUMLAB || e == ENGI_DRUMAC ||
+                             e == ENGI_DRUMIND)
+                        drumlab_midi_custom[ti] = 0u;
+                    fm1_irq_on();
+                }
+                ui.drum_map_reset_confirm = 0u;
+                ui.force = 1u;
+            }
+            /* No notes, knobs, pad changes or transport actions while the
+             * confirmation popup is open; OCT- cancels, OCT+ applies. */
+            panel_enc(EN_ALGO); panel_enc(EN_SELECT);
+            panel_enc(EN_PRESET);
+            for (uint32_t k = 0; k < 4u; k++) panel_enc(EN_K1 + k);
+            return;
+        }
         /* Keep the assigned track and pad separate from EDIT's sound pages. */
         if ((s = panel_enc(EN_ALGO)) != 0)
             track_select((uint32_t)clamp((int32_t)song.sel + (s > 0 ? 1 : -1), 0, (int32_t)trk_live - 1));
