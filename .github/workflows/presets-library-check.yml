@@ -181,7 +181,7 @@ jobs:
               'READ-ONLY FLASH PROBE / v0.13-diag. '
               'This install STILL REFLASHES the firmware. '
               'Back up your running v0.13 projects, presets and settings first. '
-              'Only the new experimental writes are blocked; ordinary firmware SAVES may still write flash. '
+              'Only experimental writes are blocked; legacy saves and automatic autosave may still write flash. '
               'Use only Inspect flash; do not save settings, projects or presets. Not a public release.'
               '</p>\\n' + needle)
           assert "READ-ONLY FLASH PROBE" in html
