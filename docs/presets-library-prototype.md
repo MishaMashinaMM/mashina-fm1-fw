@@ -42,6 +42,9 @@ The first host-only modules are:
   unknown non-erased sectors.
 - Host-only regression tests in `tests/project_refs_test.c` and
   `tests/project_refs_store_test.c`.
+- `web/projects-library-codec.mjs`: matching versioned project JSON encoder,
+  decoder and 8 × 4 section backup structure. Round-trip, checksum and
+  reference validation is covered by `tests/projects_library_codec_test.mjs`.
 
 **Not yet wired to live firmware:** the payload's per-setting mapping, sound
 reference resolution on section recall, project SAVE/RECALL, live section staging,
