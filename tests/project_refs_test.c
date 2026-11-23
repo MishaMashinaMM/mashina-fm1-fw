@@ -46,7 +46,7 @@ int main(void)
     bad+=ck("reject truncated records",!mpr_decode(record,51,&section,refout,nameout,restored,sizeof restored,&len));
     bad+=ck("reject trailing bytes",!mpr_decode(record,53,&section,refout,nameout,restored,sizeof restored,&len));
     bad+=ck("reject out-of-range project section",!mpr_encode(record,4,refs,name,settings,10));
-    bad+=ck("reject settings exceeding flash record limit",!mpr_encode(record,0,refs,name,settings,2049));
+    bad+=ck("reject settings exceeding flash record limit",!mpr_encode(record,0,refs,name,settings,1793));
     printf("MPR1 %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
 }
