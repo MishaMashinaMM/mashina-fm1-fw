@@ -115,6 +115,9 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
     ind_voice_t *a=&ind_state[t-trk][slot];
     if(!a->active) return;
     const uint32_t kind=a->kind;
+    const uint32_t freq_ratio=drum_pad_freq_ratio((uint32_t)(t-trk),kind);
+    int32_t panq=(int32_t)dx_lpan0[kind]*256;
+    const int32_t panstep=((int32_t)dx_lpan[kind]-dx_lpan0[kind])*256/(int32_t)n;
     uint8_t *p=ind_patch_of(t,kind);
     if(!p) return;
     drumlab_global_ensure((uint32_t)(t-trk));
@@ -126,9 +129,14 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
      * GRAIN shifts spectra or pulse granularity, MOTION changes sweeps/rate,
      * WEIGHT changes low-end, AIR brightens, CRUNCH adds unstable fragments.
      * All eight values affect at least one distinct audible component. */
-    const int32_t low_k=clamp((int32_t)IND_PROFILE[kind][0]+weight*28-kit[0]*10,70,9000);
-    const int32_t mid_k=clamp((int32_t)IND_PROFILE[kind][1]+(grain-64)*85+kit[0]*60,250,19000);
-    const int32_t high_k=clamp((int32_t)IND_PROFILE[kind][2]+(air-64)*150+kit[4]*75,1100,30500);
+    int32_t low_k=clamp((int32_t)IND_PROFILE[kind][0]+weight*28-kit[0]*10,70,9000);
+    int32_t mid_k=clamp((int32_t)IND_PROFILE[kind][1]+(grain-64)*85+kit[0]*60,250,19000);
+    int32_t high_k=clamp((int32_t)IND_PROFILE[kind][2]+(air-64)*150+kit[4]*75,1100,30500);
+    if (freq_ratio != 4096u) {
+        low_k=clamp((int32_t)(((int64_t)low_k*freq_ratio)>>12),70,30000);
+        mid_k=clamp((int32_t)(((int64_t)mid_k*freq_ratio)>>12),100,30000);
+        high_k=clamp((int32_t)(((int64_t)high_k*freq_ratio)>>12),100,30500);
+    }
     const uint32_t duration=(uint32_t)clamp((int32_t)IND_PROFILE[kind][3]*1000+
        (tail-64)*12000-(damp-64)*11500-kit[1]*4500+kit[6]*2000,24000,1800000);
     const uint32_t mul_b=dlab_decay_long(n,duration);
@@ -165,6 +173,8 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
             int32_t f=clamp(center+(int32_t)sweep*
                  (kind==IND_WHISTLE?62:kind==IND_METAL?90:105)
                  +(grain-64)*75+kit[0]*20,900,26000);
+            if (freq_ratio != 4096u)
+                f=clamp((int32_t)(((int64_t)f*freq_ratio)>>12),300,30000);
             band_low+=(int32_t)(((int64_t)f*band)>>15);
             int32_t high=white-band_low-(int32_t)(((int64_t)
                 (kind==IND_WHISTLE?6700:kind==IND_METAL?9400:11500)*band)>>15);
@@ -283,7 +293,16 @@ static void ind_render(track_t *t, voice_t *v, int32_t *out, uint32_t n, const v
             raw=(raw*attack_factor)/100;
         }
         raw=clamp(raw,-32768,32767);
-        out[i]+=voice_amp((int32_t)((raw*gain)>>15),m,i);
+        {
+            int32_t x=voice_amp((int32_t)((raw*gain)>>15),m,i);
+            int32_t pan=panq>>8;
+            out[i]+=x;
+            if(dx_xon&1u) {
+                if(pan>0) dx_sl[i]+=(x>>6)*pan;
+                else if(pan<0) dx_sr[i]+=(x>>6)*-pan;
+            }
+            panq+=panstep;
+        }
     }
     a->lp=lp;a->mid=mid;a->slow=slow;a->rough=rough;
     a->band=band;a->band_low=band_low;a->bright_lp=bright_lp;
