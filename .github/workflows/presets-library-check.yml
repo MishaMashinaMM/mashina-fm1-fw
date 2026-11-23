@@ -147,10 +147,38 @@ jobs:
           FELUCCA_PROJECT_REFS_FORMAT: "0"
         run: |
           python3 tools/build.py --release 0.13-diag
-          mkdir -p build/read-only-diagnostic
-          cp build/felucca-0.13-diag.fwsc build/read-only-diagnostic/
-          cp build/release-0.13-diag/SHA256SUMS build/read-only-diagnostic/
-          cp docs/diagnostic-flash-readonly.md build/read-only-diagnostic/README.md
+          OUT=build/read-only-diagnostic
+          VERSION="v0.13-diag-${GITHUB_SHA::7}"
+          python3 web/make_site.py build/felucca-0.13-diag.fwsc "$VERSION" "$OUT"
+          test -s "$OUT/webapp/installer/index.html"
+          test -s "$OUT/firmware/felucca-$VERSION.fwsc"
+          python3 - "$OUT/webapp/installer/index.html" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          html = p.read_text(encoding="utf-8")
+          needle = '  <p><button id="go" disabled data-t="install"></button></p>'
+          assert needle in html, "Installer layout changed; refuse to package diagnostic"
+          html = html.replace(needle,
+              '<p style="border:2px solid #ff9900;padding:14px;font-weight:700">'
+              'READ-ONLY FLASH DIAGNOSTIC / v0.13-diag. '
+              'This install STILL REFLASHES the firmware. '
+              'Back up your running v0.13 projects, presets and settings first. '
+              'The diagnostic will not permit project or preset SAVES. '
+              'This is not a public firmware release.'
+              '</p>\\n' + needle)
+          assert "READ-ONLY FLASH DIAGNOSTIC" in html
+          p.write_text(html, encoding="utf-8")
+          PY
+          cp docs/diagnostic-flash-readonly.md "$OUT/README.md"
+          cp build/felucca-0.13-diag.fwsc "$OUT/"
+          (cd "$OUT" && sha256sum felucca-0.13-diag.fwsc > SHA256SUMS)
+          printf '%s\\n' "$GITHUB_SHA" > "$OUT/SOURCE_COMMIT"
+          mkdir -p "$OUT/web-library"
+          cp web/presets-library-lab.html "$OUT/web-library/index.html"
+          cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs "$OUT/web-library/"
+          cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs "$OUT/web-library/"
+          python3 tools/check_library_preview.py "$OUT/web-library"
       - uses: actions/upload-artifact@v4
         with:
           name: mashina-fm1-read-only-flash-diagnostic
