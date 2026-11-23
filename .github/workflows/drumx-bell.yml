@@ -72,12 +72,12 @@ jobs:
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
           set -o pipefail
-          python3 tools/build.py --release 0.12 2>&1 | tee drumx-bell-firmware-build.log
+          python3 tools/build.py --release 0.12 2>&1 | tee drum-pad-pan-pitch-build.log
           test -s build/felucca.bin
       - name: Package separate local-use device-test installer
         run: |
           VERSION="v0.12-drum-panning-${GITHUB_SHA::7}-preview"
-          OUT="build/drumx-bell-preview"
+          OUT="build/drum-pad-pan-pitch-preview"
           test -s build/felucca-0.12.fwsc
           python3 web/make_site.py build/felucca-0.12.fwsc "$VERSION" "$OUT"
           test -s "$OUT/webapp/installer/index.html"
@@ -90,36 +90,36 @@ jobs:
           if anchor not in html:
               raise SystemExit("Cannot safely label device-test installer: button not found")
           banner = ('<p style="border:2px solid #ff9900;padding:12px;font-weight:bold">'
-                    'ALL DRUM MIDI MAPS — DEVICE TEST ONLY. '
+                    'DRUM PAD PAN / PITCH — DEVICE TEST ONLY. '
                     'Back up your complete MASHINA library before flashing. '
                     'This preview is NOT the public v0.12 release.</p>')
           html = html.replace(anchor, banner + "\\n  " + anchor)
           p.write_text(html, encoding="utf-8")
           PY
           cat > "$OUT/READ-ME-FIRST.txt" <<EOF
-          MASHINA v0.12 - UNIVERSAL DRUM MIDI/EDIT TEST
+          MASHINA v0.12 - DRUM PAD PAN / PITCH TEST
           ==========================================
           Source branch: $GITHUB_REF_NAME
           Commit: $GITHUB_SHA
           This is a device-test candidate, NOT the public MASHINA installer.
           Back up ALL projects, presets and settings before using this build.
           The firmware splash will still read v0.12.
-          Every drum engine repeats its 12-pad kit across octaves by default. A custom pad assignment switches that track to exact-note mapping. Check DRUM-X BELL on B in several octaves, DRUM-AC/IND remapping, duplicate-note layers and saved project recall.
+          Test SEQ > MIDI MAP K2 PAN and K3 PITCH on all four drum engines. Verify stereo position and audible pitch/spectral changes on each pad; save and reload the project, then verify both values. Check the four separate drum manual sections.
           This build is deliberately NOT published to GitHub Pages.
           EOF
           (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
       - name: Upload separate device-test package
         uses: actions/upload-artifact@v4
         with:
-          name: drumx-bell-device-test
+          name: drum-pad-pan-pitch-device-test
           # upload-artifact already produces a ZIP; upload the directory
           # contents directly so there is no ZIP-inside-ZIP nesting.
-          path: build/drumx-bell-preview/
+          path: build/drum-pad-pan-pitch-preview/
           if-no-files-found: error
       - name: Save validation log only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: drumx-bell-firmware-build-log
-          path: drumx-bell-firmware-build.log
+          name: drum-pad-pan-pitch-build-log
+          path: drum-pad-pan-pitch-build.log
           if-no-files-found: ignore
