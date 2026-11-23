@@ -1,0 +1,70 @@
+name: Presets library quick host checks
+on:
+  push:
+    branches: [presets-library]
+    paths:
+      - '.github/workflows/presets-library-host-smoke.yml'
+      - 'web/**'
+      - 'tests/**'
+      - 'firmware/src/project_refs.c'
+      - 'firmware/src/project_refs_store.c'
+      - 'firmware/src/preset_library_store.c'
+      - 'firmware/src/preset_library_wire.c'
+      - 'firmware/src/flash_diagnostic.c'
+      - 'tools/presets_library_flash_map_check.py'
+      - 'firmware/loader/ldr_core.c'
+      - 'firmware/hal/fm1_flash.h'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: presets-library-quick-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  host-checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax before running regressions
+        run: |
+          for file in \
+            web/presets-library-codec.mjs \
+            web/presets-library-sync.mjs \
+            web/projects-library-codec.mjs \
+            web/projects-library-view.mjs \
+            web/performance-backup.mjs \
+            web/full-device-backup.mjs \
+            web/factory-catalog-selection.mjs \
+            tests/presets_library_codec_test.mjs \
+            tests/presets_library_sync_test.mjs \
+            tests/projects_library_codec_test.mjs \
+            tests/performance_backup_test.mjs \
+            tests/full_device_backup_test.mjs; do
+            node --check "$file"
+          done
+      - name: Execute Web Library and backup regressions
+        run: |
+          node tests/presets_library_codec_test.mjs
+          node tests/presets_library_sync_test.mjs
+          node tests/projects_library_codec_test.mjs
+          node tests/performance_backup_test.mjs
+          node tests/full_device_backup_test.mjs
+          node web/test_backup.mjs
+      - name: Check source-level flash boundaries
+        run: python3 tools/presets_library_flash_map_check.py
+      - name: Compile and execute pure host NOR and WebMIDI tests
+        run: |
+          mkdir -p build/host
+          for suite in \
+            project_refs_test \
+            project_refs_store_test \
+            preset_library_storage_test \
+            preset_library_wire_test \
+            flash_diagnostic_test; do
+            cc -std=gnu11 -O2 -Wall -Wextra -o "build/host/$suite" "tests/$suite.c"
+            "build/host/$suite"
+          done
