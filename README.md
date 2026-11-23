@@ -41,7 +41,7 @@ Open **SEQ → MIDI MAP** on any DRUM-X, DRUM-LAB, DRUM-AC or DRUM-IND track. Th
 
 Custom MIDI maps are saved with the project. Returning the visible note values to their factory numbers does **not** exit CUSTOM mode; use **RESET MIDI MAP** to restore DEFAULT.
 
-## Universal live timing — new in v0.13
+## Universal live timing
 
 Adjust **GLO → MIX → TUNING → K3 DLY** to delay the selected track's note onset by **0–50 ms** on **every engine** (melodic and drum). This makes layered sounds hit at slightly different times while sharing the same MIDI channel. The control affects note triggering, not the already-generated audio; melodic Note On and Note Off use the same captured delay, preserving note duration.
 
