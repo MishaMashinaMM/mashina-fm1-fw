@@ -26,7 +26,8 @@ assert.deepEqual(again.selection,defaults);
 assert.equal(JSON.stringify(again.catalog),JSON.stringify(catalog));
 assert.equal(JSON.stringify(original),JSON.stringify(JSON.parse(raw)),
   "source master JSON must remain untouched");
-const melodic=catalog.presets.flatMap((p,i)=>p.params?[i]:[]).slice(0,32);
+const melodic=[...catalog.presets.flatMap((p,i)=>p.engine===12?[i]:[]),
+  ...catalog.presets.flatMap((p,i)=>p.params&&p.engine!==12?[i]:[])].slice(0,32);
 assert.equal(melodic.length,32);
 const plan=buildFactoryUpload(catalog,melodic);
 assert.equal(plan.length,32);
