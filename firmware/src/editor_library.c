@@ -44,6 +44,7 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
             (void)seq;
             ed_b(4u);
 #endif
+            fm1_wdt_feed(); /* 16 banks may require many flash read windows */
         }
         return 1;
     }
@@ -55,6 +56,7 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
             if(!flash_ok)ed_b(4u);
             else if(lib_latest(bank,&seq)>=0)ed_b(1u);
             else ed_b(lib_uncommitted(bank)?0u:3u);
+            fm1_wdt_feed(); /* read-only probe must not starve watchdog */
         }
         return 1;
     }
