@@ -1117,7 +1117,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         t->mo_cur = (uint16_t)(c + clamp(g - c, -(3 << 8), 3 << 8));
     }
     dx_xon = 0;                                         /* (0.6.48) a DRUM part's IMAGE and SENDs (eng_drum.c) */
-    if (e == &ENG_DRUM || e == &ENG_DRUMLAB)
+    if (e == &ENG_DRUM || e == &ENG_DRUMLAB || e == &ENG_DRUMAC || e == &ENG_DRUMIND)
         drum_side_begin(t, n);
     if (e->block)                                       /* the engine's per-part work (WHEEL: bars, rotor) */
         e->block(t);

@@ -154,11 +154,26 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     int32_t tune, damp, strike, wire_amt, bright, metal, body_mix, ring_amt;
     int32_t mod_delta[8], kit[8];
     uint32_t mod_render, kit_timbre;
+    uint32_t freq_ratio;
+    int32_t panq, panstep;
+    int32_t lp_coef, fast_coef, wire_coef;
+
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
     a = &ac_state[t - trk][slot];
     if (!a->active) return;
     kind = a->kind;
+    freq_ratio = drum_pad_freq_ratio((uint32_t)(t - trk), kind);
+    lp_coef = 800 + ac_param_value(t, kind, 5) * 45;
+    fast_coef = 7800 + ac_param_value(t, kind, 5) * 115;
+    wire_coef = 1800 + ac_param_value(t, kind, 5) * 65;
+    if (freq_ratio != 4096u) {
+        lp_coef = clamp((int32_t)(((int64_t)lp_coef * freq_ratio) >> 12), 100, 30000);
+        fast_coef = clamp((int32_t)(((int64_t)fast_coef * freq_ratio) >> 12), 100, 30000);
+        wire_coef = clamp((int32_t)(((int64_t)wire_coef * freq_ratio) >> 12), 100, 30000);
+    }
+    panq = (int32_t)dx_lpan0[kind] * 256;
+    panstep = ((int32_t)dx_lpan[kind] - dx_lpan0[kind]) * 256 / (int32_t)n;
     /* All three instrument patches are independent; changing one pad never
      * changes the others. Initial values exactly match the old global kit. */
     if (!ac_patch_of(t, kind)) return;
@@ -207,9 +222,9 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
          * bell and crash. TUNE moves the bands, not a musical fundamental.
          * Coefficients run in a bounded, stable part of the SVF range. */
         int32_t colour = (tune - 64) * 18;
-        plate_coef[0] = clamp(6000 + colour, 3000, 10500);
-        plate_coef[1] = clamp(12200 + colour * 2, 6500, 19000);
-        plate_coef[2] = clamp(19000 + colour * 2, 13000, 26000);
+        plate_coef[0] = clamp((int32_t)(((int64_t)(6000 + colour) * freq_ratio) >> 12), 1000, 22000);
+        plate_coef[1] = clamp((int32_t)(((int64_t)(12200 + colour * 2) * freq_ratio) >> 12), 2000, 26000);
+        plate_coef[2] = clamp((int32_t)(((int64_t)(19000 + colour * 2) * freq_ratio) >> 12), 3000, 30000);
         plate_damp = kind == AC_RIDE_BELL ? 6800 : 15000;
         plate_bands = ac_plate_band[t - trk][slot];
         plate_low[0] = (int32_t)ph0;
@@ -223,7 +238,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
          * can be tuned independently across almost the entire range. */
         if (tune > 0) {
             int32_t pitch16 = clamp(27 * 16 + (tune - 1) * 6 +
-                                  (int32_t)(kind - AC_FLOOR) * 32,
+                                  (int32_t)(kind - AC_FLOOR) * 32 +
+                                  (int32_t)drum_pad_pitch[t - trk][kind] * 16,
                                   26 * 16, 83 * 16);
             tom_tone_inc = pitch_inc((uint32_t)pitch16);
         }
@@ -271,9 +287,9 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
          * 1468311675 < INT32_MAX. A 32-bit product is EXACTLY equal to
          * the previous 64-bit calculation, but cheaper on the FM1. */
         /* Noise filters are bounded and share no state between drum voices. */
-        lp += ((white - lp) * (800 + bright * 45)) >> 15;
-        fast += ((white - fast) * (7800 + bright * 115)) >> 15;
-        wire += ((white - wire) * (1800 + bright * 65)) >> 15;
+        lp += ((white - lp) * lp_coef) >> 15;
+        fast += ((white - fast) * fast_coef) >> 15;
+        wire += ((white - wire) * wire_coef) >> 15;
         if (kind == AC_KICK) {
             /* Two cascaded low-pass integrators produce a short, dull thump.
              * Unlike a resonant sine, each hit is genuinely aperiodic. The
@@ -281,6 +297,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t deep = (int32_t)ph0, low = (int32_t)ph1;
             int32_t k_low = 1400 + tune * 16;       /* broad impact around low mids */
             int32_t k_deep = 220 + tune * 4;       /* sub/low-frequency weight */
+            k_low = clamp((int32_t)(((int64_t)k_low * freq_ratio) >> 12), 80, 30000);
+            k_deep = clamp((int32_t)(((int64_t)k_deep * freq_ratio) >> 12), 50, 30000);
             low += ((white - low) * k_low) >> 15;
             deep += ((low - deep) * k_deep) >> 15;
             int32_t thud = deep * (110 + body_mix) / 128 +
@@ -303,6 +321,8 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
             int32_t low = (int32_t)ph0, mid = (int32_t)ph1;
             int32_t k_mid = 3500 + tune * 42;
             int32_t k_low = 650 + tune * 12;
+            k_mid = clamp((int32_t)(((int64_t)k_mid * freq_ratio) >> 12), 80, 30000);
+            k_low = clamp((int32_t)(((int64_t)k_low * freq_ratio) >> 12), 50, 30000);
             mid += ((white - mid) * k_mid) >> 15;
             low += ((mid - low) * k_low) >> 15;
             int32_t thud = low * (85 + body_mix) / 128 +
@@ -344,6 +364,10 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
              * only the independent resonating head so it is pitch, not thud. */
             int32_t k1 = 600 + (int32_t)height * 540 + 64 * 13;
             int32_t k2 = 150 + (int32_t)height * 130 + 64 * 3;
+            if (freq_ratio != 4096u) {
+                k1 = clamp((int32_t)(((int64_t)k1 * freq_ratio) >> 12), 80, 30000);
+                k2 = clamp((int32_t)(((int64_t)k2 * freq_ratio) >> 12), 50, 30000);
+            }
             low += (int32_t)(((int64_t)(white - low) * k1) >> 15);
             deep += (int32_t)(((int64_t)(low - deep) * k2) >> 15);
             int32_t thud = deep * (100 + body_mix) / 128 +
@@ -516,7 +540,16 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
         }
         if (raw > 32767) raw = 32767;
         if (raw < -32768) raw = -32768;
-        out[i] += voice_amp((int32_t)(((int64_t)raw * level_gain) >> 15), m, i);
+        {
+            int32_t x = voice_amp((int32_t)(((int64_t)raw * level_gain) >> 15), m, i);
+            int32_t pan = panq >> 8;
+            out[i] += x;
+            if (dx_xon & 1u) {
+                if (pan > 0) dx_sl[i] += (x >> 6) * pan;
+                else if (pan < 0) dx_sr[i] += (x >> 6) * -pan;
+            }
+            panq += panstep;
+        }
     }
     if (ac_is_metal(kind)) {
         ph0 = (uint32_t)plate_low[0];

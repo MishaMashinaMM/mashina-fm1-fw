@@ -2506,7 +2506,8 @@ static void ui_input_frame(void)
         }
         if ((s = panel_enc(EN_K2)) != 0) {
             uint32_t ti = song.sel;
-            if (trk[ti].eng_req == ENGI_DRUM || trk[ti].eng_req == ENGI_DRUMLAB) {
+            if (trk[ti].eng_req == ENGI_DRUM || trk[ti].eng_req == ENGI_DRUMLAB ||
+                trk[ti].eng_req == ENGI_DRUMAC || trk[ti].eng_req == ENGI_DRUMIND) {
                 int32_t p = drum_pad_pan[ti][ui.drum_map_pad];
                 fm1_irq_off();
                 drum_pad_pan[ti][ui.drum_map_pad] = (int8_t)clamp(p + (s > 0 ? 1 : -1), -64, 64);
@@ -2516,7 +2517,8 @@ static void ui_input_frame(void)
         }
         if ((s = panel_enc(EN_K3)) != 0) {
             uint32_t ti = song.sel;
-            if (trk[ti].eng_req == ENGI_DRUM || trk[ti].eng_req == ENGI_DRUMLAB) {
+            if (trk[ti].eng_req == ENGI_DRUM || trk[ti].eng_req == ENGI_DRUMLAB ||
+                trk[ti].eng_req == ENGI_DRUMAC || trk[ti].eng_req == ENGI_DRUMIND) {
                 int32_t pitch = drum_pad_pitch[ti][ui.drum_map_pad];
                 fm1_irq_off();
                 drum_pad_pitch[ti][ui.drum_map_pad] = (int8_t)clamp(pitch + (s > 0 ? 1 : -1), -24, 24);

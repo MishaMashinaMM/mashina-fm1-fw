@@ -130,6 +130,8 @@ The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMO
 
 ## 4. Drum engines and live pad controls
 
+### DRUM-X: 12-pad percussion engine
+
 **DRUM-X** contains twelve independent sounds. **B2, S2, O2 and T2** are individually editable pads with the same controls as their matching drum sounds.
 
 | Pad | MIDI note | Pad | MIDI note |
@@ -142,6 +144,8 @@ The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMO
 | TM | 45 | T2 | 44 |
 
 Select a DRUM-X track and open EDIT to adjust kit, individual sound controls and **LEVELS 1–3**, covering all twelve pads.
+
+### DRUM-LAB: electronic percussion engine
 
 **DRUM-LAB** also provides twelve individually editable synthesized pads, initially MIDI notes **36–47**. In EDIT, use:
 
@@ -221,7 +225,7 @@ Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selec
 
 Changing any pad's MIDI note using **K1** activates **CUSTOM mode for the selected track only**. All 12 pads then respond exclusively to their exact assigned MIDI notes (0–127). Unchanged pads keep their original notes in 36–47 but stop repeating in other octaves. Multiple pads can share a note and play simultaneously. **DEFAULT / CUSTOM** appears in the screen's upper right.
 
-To return to DEFAULT, hold the **physical SEL button** (not the rotary SELECT encoder) for about **0.7 seconds** to display **RESET MIDI MAP?**. Press **OCT− to cancel** or **OCT+ to reset only the selected track**. This restores octave repetition without altering sound parameters, pitch/pan offsets or other tracks. Returning MIDI note values manually to their defaults does not exit CUSTOM mode; use RESET. Custom maps are saved with projects. **K2 PAN / K3 PITCH** apply to DRUM-X and DRUM-LAB, while DRUM-AC and DRUM-IND support note remapping with K1 only.
+To return to DEFAULT, hold the **physical SEL button** (not the rotary SELECT encoder) for about **0.7 seconds** to display **RESET MIDI MAP?**. Press **OCT− to cancel** or **OCT+ to reset only the selected track**. This restores octave repetition without altering sound parameters, pitch/pan offsets or other tracks. Returning MIDI note values manually to their defaults does not exit CUSTOM mode; use RESET. Custom maps are saved with projects. **K2 PAN** sets the selected pad's stereo position (L64–C–R64), and **K3 PITCH** adjusts its tuning by −24 to +24 semitones, on all four drum engines. On DRUM-AC and DRUM-IND, non-tonal sounds change spectral resonance/character rather than acquiring a melodic pitch.
 
 
 ### PLAY: drum performance

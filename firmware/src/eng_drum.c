@@ -200,6 +200,18 @@ static int8_t drum_pad_pan[NPART][DV_NLANE12];
 /* Additional semitones relative to the sound's EDIT pitch, not a rewrite of
  * its patch. 0 means the original engine renders exactly as before. */
 static int8_t drum_pad_pitch[NPART][DV_NLANE12];
+/* Semitone-ratio control for percussion spectra, Q12.
+ * Default 0 -> 4096 is an exact bypass; bounds cover -24..+24. */
+static uint32_t drum_pad_freq_ratio(uint32_t ti, uint32_t lane)
+{
+    int32_t st = drum_pad_pitch[ti][lane];
+    uint32_t base, shifted;
+    if (!st) return 4096u;
+    base = pitch_inc(60u * 16u);
+    shifted = pitch_inc((uint32_t)(60 + clamp(st, -24, 24)) * 16u);
+    return (uint32_t)(((uint64_t)shifted * 4096u + base / 2u) / base);
+}
+
 
 static int drum_note_set(track_t *t, uint32_t lane, uint32_t note)
 {
@@ -481,7 +493,8 @@ static int32_t dx_img_k(const track_t *t)
 static __attribute__((noinline)) void drum_side_begin(const track_t *t, uint32_t n)
 {
     uint32_t ti = (uint32_t)(t - trk) % NTRK;
-    uint32_t lab = t->eng_req == ENGI_DRUMLAB;
+    uint32_t lab = t->eng_req == ENGI_DRUMLAB ||
+                   t->eng_req == ENGI_DRUMAC || t->eng_req == ENGI_DRUMIND;
     int32_t img = lab ? 0 : clamp(t->p[P_DXIMG], 0, 127), k = img ? dx_img_k(t) : 0;
     uint32_t l, i, on = 0;
     dx_core_t *dc = &DXC;                                /* (0.7.9: this core's, read once) */
