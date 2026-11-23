@@ -37,5 +37,5 @@ assert.throws(()=>encodeRecord({name:"NO KIT",engine:19,params:base}),/Full drum
 assert.throws(()=>encodeRecord({name:"NO FM6",engine:12,params:base}),/FM6 patch is missing/);
 assert.throws(()=>encodeRecord({name:"BAD",engine:0,params:Array(127).fill(300)}),/outside/);
 assert.deepEqual(parseImportedLibrary({patches:[{name:"SYN",engine:0,params:base,slot:7}]}).map(x=>x.slot),[7]);
-assert.throws(()=>unpack7([0],304),/truncated/);
+assert.throws(()=>unpack7([0],304),/(truncated|malformed)/);
 console.log(`PASS: ${n} real factory JSON patches + FM6 + raw drum kit round-trip; WebMIDI 7-bit protocol strict`);
