@@ -17,7 +17,7 @@ for(const p of [...data.patches,...data2.patches]){
   assert.equal(wire.length,348);
   assert.deepEqual(Array.from(unpack7(wire)),Array.from(r));
   const msg=putRequest(n%32,round);
-  assert.equal(msg[0],240);assert.equal(msg[4],70);assert.equal(msg.at(-1),247);
+  assert.equal(msg[0],240);assert.equal(msg[4],92);assert.equal(msg.at(-1),247);
   assert.deepEqual(Array.from(unpack7(msg.slice(6,-1))),Array.from(r));
   n++;
 }
