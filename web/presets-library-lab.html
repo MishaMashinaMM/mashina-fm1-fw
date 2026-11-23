@@ -78,6 +78,7 @@ tr:nth-child(2n){background:#161616}
  <button id="connect" type="button">Connect to experimental FM1</button>
  <button id="capture-user" type="button" disabled>Capture 32 USER slots</button>
  <button id="backup-device" type="button" disabled>Back up device LIBRARY to JSON</button>
+ <label class="file">Verify saved LIBRARY backup <input id="verify-library-backup" type="file" accept=".json,application/json"/></label>
  <button id="upload-device" type="button" disabled>Upload prepared LIBRARY slots</button>
 </div>
 <div class="toolbar">
@@ -86,6 +87,7 @@ tr:nth-child(2n){background:#161616}
  <button id="view-projects" type="button" disabled>Inspect FM1 project references</button>
  <label class="file">Preview projects JSON <input id="preview-projects" type="file" accept=".json,application/json"/></label>
  <button id="backup-full" type="button" disabled>Backup complete FM1</button>
+ <label class="file">Verify saved complete backup <input id="verify-full-backup" type="file" accept=".json,application/json"/></label>
  <label class="file" id="label-restore-projects">Restore projects JSON <input id="restore-projects" type="file" accept=".json,application/json" disabled/></label>
  <label class="file" id="label-restore-full">Restore complete FM1 JSON <input id="restore-full" type="file" accept=".json,application/json" disabled/></label>
 </div>
@@ -113,6 +115,9 @@ import {inspectProjectReferences} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
+// Authorization requires re-importing the exact JSON saved to disk, not just
+// clicking a download link. Evidence is invalidated on connection or writes.
+let pendingLibraryBackup=null,pendingFullBackup=null;
 let inspectedProjects=null;
 let sourceCatalog=null,sourceSelection=Array(32).fill(null),sourceKitRecords=null;
 let catalogNeedsPrepare=false,preparedOrigin="No upload pack prepared";
@@ -396,6 +401,7 @@ $("export").addEventListener("click",()=>{
 });
 $("connect").addEventListener("click",()=>action(async()=>{
   device?.close();device=null;cap=null;projectCap=null;backedUp=false;wholeBackup=false;
+  pendingLibraryBackup=null;pendingFullBackup=null;
   const d=await connectLibraryMidi();
   try{
     const c=await capability(d.request);
@@ -419,10 +425,39 @@ $("capture-user").addEventListener("click",()=>action(async()=>{
 $("backup-device").addEventListener("click",()=>action(async()=>{
   if(!device)throw new Error("Connect first");
   const list=await readLibrary(device.request,(i,n)=>$("status").textContent=`Backing up LIBRARY ${i}/${n}...`);
-  downloadFile("mashina-library-device-backup.json",libraryBackupFile(list));
-  backedUp=true;
-  $("status").textContent=`Backed up ${list.length} stored LIBRARY overrides to offline JSON. Empty positions use the firmware's built-in factory sounds.`;
+  const backup=libraryBackupFile(list);
+  pendingLibraryBackup=JSON.stringify(backup);
+  backedUp=false;
+  downloadFile("mashina-library-device-backup.json",backup);
+  $("status").textContent=`LIBRARY backup download started (${list.length} overrides). Re-import your saved JSON using Verify saved LIBRARY backup to unlock upload.`;
 }));
+// Validate a real offline copy of the just-captured target before enabling
+// any experimental flash write. A previous backup from another device or a
+// differently edited JSON never counts as current authorization.
+$("verify-library-backup").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  await action(async()=>{
+    if(!device||!pendingLibraryBackup)throw Error("Capture a fresh LIBRARY backup from this connection first");
+    const imported=JSON.parse(await file.text());
+    parseImportedLibrary(imported); // verify complete 304-byte sound records
+    if(JSON.stringify(imported)!==pendingLibraryBackup)
+      throw Error("Saved LIBRARY JSON does not exactly match the latest device backup");
+    backedUp=true;
+    $("status").textContent="Saved LIBRARY backup verified. Explicit confirmation is still required before uploading.";
+  });
+});
+$("verify-full-backup").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  await action(async()=>{
+    if(!device||!pendingFullBackup)throw Error("Capture a fresh complete FM1 backup from this connection first");
+    const imported=JSON.parse(await file.text());
+    validateFullDevice(imported);
+    if(JSON.stringify(imported)!==pendingFullBackup)
+      throw Error("Saved complete FM1 JSON does not exactly match the latest device backup");
+    wholeBackup=true;backedUp=true;
+    $("status").textContent="Saved complete FM1 backup verified. Project and full restores now require explicit confirmation.";
+  });
+});
 $("upload-device").addEventListener("click",()=>action(async()=>{
   if(!device||!cap?.writable||!backedUp)throw new Error("Writable device and prior LIBRARY backup required.");
   const entries=prepared();
@@ -432,6 +467,7 @@ $("upload-device").addEventListener("click",()=>action(async()=>{
   // Invalidate the pre-write snapshot before the first possible flash change.
   // A failed/interrupted transfer must not silently authorize another write.
   backedUp=false;wholeBackup=false;
+  pendingLibraryBackup=null;pendingFullBackup=null;
   const n=await uploadPrepared(device.request,cap,entries,(i,total)=>$("status").textContent=`Writing and verifying ${i}/${total} LIBRARY slots...`);
   $("status").textContent=`Verified ${n} complete LIBRARY presets on FM1. Keep your JSON backup for firmware updates.`;
 }));
@@ -484,9 +520,12 @@ $("backup-full").addEventListener("click",()=>action(async()=>{
     (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
   downloadFile("mashina-full-fm1-backup.json",file);
   showProjects(projectsBackup(file.projects.map(raw=>raw===null?null:{recordBytes:raw})));
-  wholeBackup=true;
-  backedUp=true;
-  $("status").textContent="Full FM1 backup exported. It includes 64 preset positions, 32 sections, current performance and device settings. Keep it offline.";
+  pendingFullBackup=JSON.stringify(file);
+  wholeBackup=false;
+  // A full backup can authorize both complete restores and LIBRARY uploads,
+  // but only after independently verifying its saved JSON file.
+  backedUp=false;
+  $("status").textContent="Complete FM1 backup download started. Re-import the saved JSON using Verify saved complete backup before enabling any restore.";
 }));
 $("restore-projects").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
@@ -498,6 +537,7 @@ $("restore-projects").addEventListener("change",async e=>{
     if(!confirm(`Replace all 32 project sections from ${file.name}? This changes projects A–D in all 8 projects, including clearing empty slots. Presets are not changed. Keep your previous full FM1 backup.`))return;
     // A partial restore changes the target even when an exception is thrown.
     wholeBackup=false;backedUp=false;
+    pendingFullBackup=null;pendingLibraryBackup=null;
     const result=await restoreProjectsOnly(device.request,parsed,
       (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
     $("status").textContent=`Restored ${result.restored} sections, including empty slots. Export another complete FM1 backup now.`;
@@ -511,6 +551,7 @@ $("restore-full").addEventListener("change",async e=>{
     const parsed=validateFullDevice(JSON.parse(await file.text()));
     if(!confirm(`Restore ALL USER presets, LIBRARY sounds, 8 projects × A–D, current performance and device settings from ${file.name}? Existing data will be replaced. Retain your backup in case the connection fails.`))return;
     wholeBackup=false;backedUp=false;
+    pendingFullBackup=null;pendingLibraryBackup=null;
     const result=await restoreFullDevice(device.request,parsed,
       (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
     $("status").textContent=`Verified ${result.restoredProjects} project sections and all 32 LIBRARY slots. Device settings and USER sounds restored. Export a new full backup now.`;
