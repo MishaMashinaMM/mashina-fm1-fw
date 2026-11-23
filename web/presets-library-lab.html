@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>MASHINA — 32/32 library prototype</title>
+<title>MASHINA — Presets &amp; Projects Web Library</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,Segoe UI,Arial,sans-serif;background:#0a0a0a;color:#ededed}
 *{box-sizing:border-box}
@@ -25,9 +25,9 @@ tr:nth-child(2n){background:#161616}
 </style>
 </head>
 <body>
-<h1>MASHINA</h1><h2>FM1 PERFORMANCE FW · PRESETS LIBRARY EXPERIMENT</h2>
+<h1>MASHINA</h1><h2>FM1 PERFORMANCE FW · PRESETS &amp; PROJECTS LIBRARY</h2>
 <p>This local preview models the <strong>32 USER + 32 LIBRARY</strong> layout. USER presets (001–032) remain editable on the FM1. LIBRARY positions (033–064) can be prepared from JSON, including exact 304-byte exported records.</p>
-<div class="warning"><strong>Experimental firmware required.</strong> USB library transfers work only when the FM1 reports LIB32 support. The standard firmware does not accept them. Updates may erase the 32 library slots; save an offline JSON backup before uploading or upgrading. The 32 USER slots and project data are independent. The USB feature is write-locked unless explicitly enabled in the firmware build.</div>
+<div class="warning"><strong>Experimental firmware required.</strong> USB library transfers work only when the FM1 reports LIB32 support. The standard firmware does not accept them. Updates may erase the 32 library slots; save an offline JSON backup before uploading or upgrading. Projects reference the same 64 shared sounds; replacing a sound changes every project that uses it. The USB feature is write-locked unless explicitly enabled in the firmware build.</div>
 <div class="toolbar">
  <label class="file">Import JSON <input id="import" type="file" accept=".json,application/json"/></label>
  <button id="export" type="button">Export prepared 32-slot pack</button>
@@ -39,24 +39,37 @@ tr:nth-child(2n){background:#161616}
  <button id="backup-device" type="button" disabled>Back up device LIBRARY to JSON</button>
  <button id="upload-device" type="button" disabled>Upload prepared LIBRARY slots</button>
 </div>
+<div class="toolbar">
+ <button id="backup-projects" type="button" disabled>Backup 8 projects (A–D)</button>
+ <button id="backup-full" type="button" disabled>Backup complete FM1</button>
+ <label class="file" id="label-restore-projects">Restore projects JSON <input id="restore-projects" type="file" accept=".json,application/json" disabled/></label>
+ <label class="file" id="label-restore-full">Restore complete FM1 JSON <input id="restore-full" type="file" accept=".json,application/json" disabled/></label>
+</div>
+<p class="foot">Project and full-device restores require write-enabled experimental firmware and a fresh offline full-device backup of the target FM1. Restores are not atomic across every bank: retain the JSON file for recovery if USB disconnects.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
 <table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
 <pre id="status" role="status" aria-live="polite"></pre>
-<p class="foot">All JSON backups include exact 304-byte records, preserving FM6 voices and independent drum kits. Uploading changes only selected LIBRARY slots, never the 32 editable USER slots. An incomplete batch can be retried from the same offline JSON file.</p>
+<p class="foot">All preset backups preserve the full 304-byte sound and FM6/drum-kit sidecar. Project-only JSON uses compact preset references and independent project settings. Complete backup also includes global device settings and the current unsaved performance.</p>
 <script type="module">
 import {decodeRecord,parseImportedLibrary,LIBRARY_SLOTS} from "./presets-library-codec.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
+import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice} from "./full-device-backup.mjs";
+import {restoreProjectsBackup} from "./projects-library-codec.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
-let device=null,cap=null,backedUp=false,busy=false;
+let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 function connectionStatus(){
-  $("conn").textContent=device?`Connected: ${device.name}. LIB32 v${cap.version}, ${cap.slots} slots. ${cap.writable?"WebMIDI writing supported":"Read-only firmware"}.`:"Not connected. No device write can occur.";
+  $("conn").textContent=device?`Connected: ${device.name}. LIB32 v${cap.version}, ${cap.slots} slots (${cap.writable?"write-enabled":"read-only"}); MPR1 projects: ${projectCap?(projectCap.writable?"write-enabled":"read-only"):"unsupported"}.`:"Not connected. No device write can occur.";
   $("connect").disabled=busy;
   $("capture-user").disabled=busy||!device;
   $("backup-device").disabled=busy||!device;
   $("upload-device").disabled=busy||!device||!cap?.writable||!backedUp;
+  $("backup-projects").disabled=busy||!device||!projectCap;
+  $("backup-full").disabled=busy||!device||!projectCap;
+  $("restore-projects").disabled=busy||!device||!projectCap?.writable||!wholeBackup;
+  $("restore-full").disabled=busy||!device||!projectCap?.writable||!cap?.writable||!wholeBackup;
 }
 async function action(fn){
   if(busy)return;busy=true;connectionStatus();
@@ -109,10 +122,14 @@ $("export").addEventListener("click",()=>{
   $("status").textContent=`Exported ${patches.length} complete records to offline JSON.`;
 });
 $("connect").addEventListener("click",()=>action(async()=>{
-  device?.close();device=null;cap=null;backedUp=false;
+  device?.close();device=null;cap=null;projectCap=null;backedUp=false;wholeBackup=false;
   const d=await connectLibraryMidi();
-  try{const c=await capability(d.request);device=d;cap=c;}
-  catch(err){d.close();throw err;}
+  try{
+    const c=await capability(d.request);
+    let pc=null;
+    try{pc=await projectCapability(d.request)}catch(_){/* LIB32-only firmware */}
+    device=d;cap=c;projectCap=pc;
+  }catch(err){d.close();throw err;}
   $("status").textContent=`Connected to ${device.name}. Download a JSON backup before writing to LIBRARY.`;
 }));
 $("capture-user").addEventListener("click",()=>action(async()=>{
@@ -139,6 +156,49 @@ $("upload-device").addEventListener("click",()=>action(async()=>{
   const n=await uploadPrepared(device.request,cap,entries,(i,total)=>$("status").textContent=`Writing and verifying ${i}/${total} LIBRARY slots...`);
   $("status").textContent=`Verified ${n} complete LIBRARY presets on FM1. Keep your JSON backup for firmware updates.`;
 }));
+$("backup-projects").addEventListener("click",()=>action(async()=>{
+  if(!device||!projectCap)throw new Error("MPR1 project protocol unavailable");
+  const file=await captureProjectsOnly(device.request,device.name,
+    (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n} bytes...`);
+  downloadFile("mashina-projects-8x4.json",file);
+  $("status").textContent="Saved all 8 projects, sections A–D, as compact reference records.";
+}));
+$("backup-full").addEventListener("click",()=>action(async()=>{
+  if(!device||!projectCap)throw new Error("MPR1 project protocol unavailable");
+  const file=await captureFullDevice(device.request,device.name,
+    (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
+  downloadFile("mashina-full-fm1-backup.json",file);
+  wholeBackup=true;
+  backedUp=true;
+  $("status").textContent="Full FM1 backup exported. It includes 64 preset positions, 32 sections, current performance and device settings. Keep it offline.";
+}));
+$("restore-projects").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  await action(async()=>{
+    if(!device||!projectCap?.writable||!wholeBackup)
+      throw new Error("Make a complete offline FM1 backup and connect write-enabled MPR1 firmware first");
+    const parsed=JSON.parse(await file.text());
+    const sections=restoreProjectsBackup(parsed); // validate everything before confirmation
+    if(!confirm(`Replace all 32 project sections from ${file.name}? This changes projects A–D in all 8 projects, including clearing empty slots. Presets are not changed. Keep your previous full FM1 backup.`))return;
+    const result=await restoreProjectsOnly(device.request,parsed,
+      (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
+    wholeBackup=false;backedUp=false;
+    $("status").textContent=`Restored ${result.restored} sections, including empty slots. Export another complete FM1 backup now.`;
+  });
+});
+$("restore-full").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  await action(async()=>{
+    if(!device||!cap?.writable||!projectCap?.writable||!wholeBackup)
+      throw new Error("Make a complete offline backup of the target FM1 and connect write-enabled firmware first");
+    const parsed=validateFullDevice(JSON.parse(await file.text()));
+    if(!confirm(`Restore ALL USER presets, LIBRARY sounds, 8 projects × A–D, current performance and device settings from ${file.name}? Existing data will be replaced. Retain your backup in case the connection fails.`))return;
+    const result=await restoreFullDevice(device.request,parsed,
+      (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
+    wholeBackup=false;backedUp=false;
+    $("status").textContent=`Verified ${result.restoredProjects} project sections and all 32 LIBRARY slots. Device settings and USER sounds restored. Export a new full backup now.`;
+  });
+});
 connectionStatus();
 render();
 </script>
