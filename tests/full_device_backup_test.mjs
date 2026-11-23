@@ -162,4 +162,20 @@ assert.equal(erasures,31);
 assert.equal(sets,1);
 assert.deepEqual(Array.from(mockLib.get(0)),preset);
 assert.equal(staged,null);
+// Simulate a device that acknowledges the global-settings write but persists
+// different bytes. The follow-up backup must catch this silent corruption.
+let corruptSettingsOnCommit=true;
+const corruptingMock=async(cmd,args=[],opts={})=>{
+  const reply=await mock(cmd,args,opts);
+  if(corruptSettingsOnCommit&&cmd===67&&args[0]===2&&args[1]===1){
+    const damaged=mockObjects.get(1).slice();
+    damaged[0]^=1;
+    mockObjects.set(1,damaged);
+    corruptSettingsOnCommit=false;
+  }
+  return reply;
+};
+await assert.rejects(restoreFullDevice(corruptingMock,collected),
+  /Global settings verification failed/);
+assert.equal(corruptSettingsOnCommit,false);
 console.log("PASS: full-device MPR1 validation, strict archive equality, 32-section chunked project restore and write gates");
