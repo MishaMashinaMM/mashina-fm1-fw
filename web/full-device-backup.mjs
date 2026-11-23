@@ -225,6 +225,14 @@ export async function restoreProjectsOnly(request,file,progress=()=>{}) {
   const check=makePerformanceBundle({userPresets:user,
     libraryPresets:Array(32).fill(null),projects});
   insist(check.projects.length===32,"Invalid project library");
+  // Projects may reference any LIBRARY 033–064 slot. Check the actual device
+  // records before the first write: CRC-damaged or malformed occupied slots
+  // must never be mistaken for empty positions with factory fallbacks.
+  if(projects.some(raw=>raw!==null&&decodeProject(raw).refs.some(ref=>ref>=32&&ref<64))) {
+    const libcap=await capability(request);
+    insist(libcap.slots===32,"Project restore needs compatible LIB32 storage");
+    await readLibrary(request);
+  }
   for(let i=0;i<32;i++){
     await writeProjectObject(request,40+i,projects[i]);
     progress("PROJECTS",i+1,32);
