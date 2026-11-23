@@ -534,3 +534,27 @@ simulator-only exported probes and an in-memory NOR flash, never the physical
 FM1 flash. The artifact-upload step is withheld if this integration test
 fails. **Do not claim the bug resolved until this workflow and a browser
 retest both pass.**
+
+### Root cause of the T2 startup-save failure (23 November 2026)
+
+The real WASM integration test proved that **T2, T3 and T4 were already marked
+modified immediately after `web_boot()`**, before any simulated audio
+rendering. T1 stayed clean. Investigation found a second boot initializer:
+`session_dice()` calls `macro_dice(0)` **after** referenceable presets are
+loaded and their source hashes captured. That code populates vacant M1–M4
+macro parameters (`P_M1SRC` etc.) and thus silently changes sound-owned
+parameters in memory. This was the actual explanation for the false
+`T2: SAVE PRESET` rejection; it was not caused by user edits.
+
+For `FELUCCA_PROJECT_REFS=1` only, startup no longer generates random macro
+assignments. Tracks retain exactly the macro parameters from their current
+factory or uploaded sound records. **Explicit MACRO DICE commands still work**
+and will correctly make an unsaved sound dirty until that preset is saved.
+Legacy/non-reference firmware keeps its previous session behavior. The
+existing running-WASM regression is required to pass initial Section A SAVE
+and to reject a genuine later unsaved sound edit before any emulator artifact
+is published. The previous host test was also fixed to stop calling the
+NAME UI enum that its isolated harness does not include; a separate factory
+fallback regression now resets its deliberately corrupted simulated flash.
+
+Await new GitHub Actions results before considering this fix verified.
