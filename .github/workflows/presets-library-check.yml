@@ -65,4 +65,11 @@ jobs:
           FELUCCA_LIB32: "1"
           FELUCCA_LIB32_WRITE: "0"
         run: python3 tools/build.py --release 0.13
+      - name: Compile opt-in hardware write path (build check ONLY; never deploy)
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "1"
+        run: python3 tools/build.py --release 0.13
 
