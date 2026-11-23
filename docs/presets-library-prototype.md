@@ -19,6 +19,32 @@
 - Normal firmware still **refuses** writes outside its existing flash regions. This experimental module uses its own bounded checks for the candidate 32 KiB **only when separately compiled for writing**. A bank may initialize only when **both complete 4 KiB sectors are erased (all bytes `0xFF`)**. Blank headers alone are insufficient: foreign payload bytes, damaged records or interrupted first writes cause a fail-closed storage error rather than automatic erasure. Manual recovery is required in those cases.
 - On a successful library-enabled build **with writes locked**, image **509,144 / 584,336 bytes**, pool **308,432 bytes used / 11,040 spare**, main RAM **95,936 / 98,304**. This is **within** the firmware's 8 KiB pool safety headroom. These numbers were measured in CI run 45205479394.
 
+## Offline factory preset catalog extracted from firmware code
+
+The file [`web/factory-presets-from-code.json`](../web/factory-presets-from-code.json)
+collects **all 107 compiled factory presets** in firmware browsing order
+from the current MASHINA engine tables, without reading a connected FM1.
+It includes the names, source engine numbers and source C file, factory
+ordinal, eight EDIT values, engine envelope/effects/pattern metadata and
+an `initialLibrarySlot` for the 32 curated factory fallbacks.
+
+- **89 melodic presets** contain all 127 parameter positions reconstructed
+  from the exact factory-import arrays and preset declarations; all ten FM6
+  presets also include their complete 128-byte operator voices.
+- **18 drum presets** are present with their exact factory values and
+  factory-kit indices. These require their full synthesized kit sidecars
+  to be serialized separately before the browser can issue a 304-byte
+  WebMIDI LIB_PUT for them. The catalog intentionally marks this requirement
+  rather than presenting incomplete drum sounds as loadable records.
+- A **107-entry offline catalog is not a 64-slot FM1 device snapshot**.
+  MASHINA holds 32 USER plus 32 LIBRARY positions simultaneously; the
+  browser can eventually choose which 64 sounds to install from this larger
+  source catalog. The catalog cannot contain sounds that users have
+  edited only on a physical FM1; those require WebMIDI export.
+- A source-audit check at `tests/factory_presets_catalog_test.mjs`
+  guards naming, engine ordering, parameter lengths, FM6 voices and
+  the default 32-slot library map.
+
 ## Clean-break project references — development in progress
 
 The new requirement is **references only**: 8 projects, each with sections A–D,
