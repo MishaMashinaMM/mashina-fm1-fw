@@ -26,6 +26,11 @@ jobs:
           build/host/preset_library_storage_test
           cc -O2 -Wall -Wextra -o build/host/preset_library_wire_test tests/preset_library_wire_test.c
           build/host/preset_library_wire_test
+      - name: Verify non-destructive candidate flash diagnostic (host NOR only)
+        run: |
+          mkdir -p build/host
+          cc -std=gnu11 -O2 -Wall -Wextra -o build/host/flash_diagnostic_test tests/flash_diagnostic_test.c
+          build/host/flash_diagnostic_test
       - name: Verify clean-break reference-based project record
         run: |
           mkdir -p build/host
