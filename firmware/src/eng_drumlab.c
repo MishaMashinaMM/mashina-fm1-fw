@@ -58,7 +58,8 @@ static int drumlab_note_set(track_t *t, uint32_t lane, uint32_t note)
     if (ti >= NPART || lane >= DLAB_LANES || note > 127u) return 0;
     if (!drumlab_midi_custom[ti]) {
         for (i = 0; i < DLAB_LANES; i++)
-            drumlab_midi_note[ti][i] = (uint8_t)(36u + i);
+            drumlab_midi_note[ti][i] = (uint8_t)(t->eng_req == ENGI_DRUMAC ?
+                                               AC_NOTES[i] : 36u + i);
         drumlab_midi_custom[ti] = 1u;
     }
     drumlab_midi_note[ti][lane] = (uint8_t)note;
