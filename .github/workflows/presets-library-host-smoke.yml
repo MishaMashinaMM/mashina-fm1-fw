@@ -79,6 +79,11 @@ jobs:
           mkdir -p build/presets-library-smoke/emu
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/presets-library-smoke/emu/
           python3 tools/check_library_preview.py build/presets-library-smoke
+      - name: Run packaged Web Library in real headless Chrome
+        run: |
+          command -v google-chrome || command -v chromium || command -v chromium-browser
+          npm install --no-save --ignore-scripts playwright-core@1.57.0
+          node tests/emu_snapshot_browser_ui_smoke.mjs build/presets-library-smoke
       - name: Downloadable read-only Web Library snapshot inspector
         uses: actions/upload-artifact@v4
         with:
