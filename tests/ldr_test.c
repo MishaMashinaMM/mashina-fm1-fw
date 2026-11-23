@@ -189,6 +189,9 @@ int main(int argc, char **argv)
         ota_wr16(r, ota_crc16(r + 2, 78, 0));
         memcpy(nor + 0xE4F00, r, sizeof r);
         memcpy(nor + 0xE8F00, r, sizeof r);
+        /* Simulate a maliciously matching update-record signature inside the
+         * reserved MASHINA library. The cleaner MUST leave this sector alone. */
+        memcpy(nor + 0xEBF00, r, sizeof r);
         for (i = 0; i < 0x1000u; i++) nor[0xA0000 + i] = (uint8_t)(i * 7u);
         memcpy(nor + 0xA0F00, r, sizeof r);
         memcpy(user, nor + 0xA0000, sizeof user);
@@ -220,6 +223,8 @@ int main(int argc, char **argv)
     bad += check("update records cleared (RAM + flash 0xE4F00, the stock firmware's 0xE8F00)",
                  record_cleared && nor[0xE4F06] == 0xFF && nor[0xE8F06] == 0xFF);
     bad += check("user data in Felucca's store that looks like a record is kept", !memcmp(nor + 0xA0000, user, sizeof user));
+    bad += check("library sector survives upgrade even if it mimics an OTA record",
+                 nor[0xEBF06] == 0x41 && nor[0xEBF07] == 0x54);
     bad += check("no write outside the allowed windows", bad_range == 0);
     bad += check("[0x93000, 1 MiB) byte-identical but the record sectors", !memcmp(nor + 0x93000, store, sizeof store));
     bad += app_area(argc > 3 ? (uint32_t)strtoul(argv[3], NULL, 0) : 0u);
