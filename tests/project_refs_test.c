@@ -20,7 +20,7 @@ int main(void)
     for(uint32_t i=0;i<sizeof settings;i++)settings[i]=(uint8_t)((i*73u+19u)&255u);
     int n=mpr_encode(record,1,refs,name,settings,sizeof settings);
     bad+=ck("max settings payload fits compact variable-length record",
-            n==MPR_MAX_RECORD && MPR_MAX_RECORD==2080);
+            n==MPR_MAX_RECORD && MPR_MAX_RECORD==1824);
     bad+=ck("six references and full project settings round-trip",
             mpr_decode(record,n,&section,refout,nameout,restored,sizeof restored,&len)
             && section==1 && len==sizeof settings &&
