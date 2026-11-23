@@ -1752,6 +1752,13 @@ static void power_on_reference_presets(void)
         if (library_slot_apply(track))
             ui_message("STARTUP PRESET ERROR");
     }
+    /* DRUM-X has one shared kit, not a separate kit for each track.
+     * Loading later tracks may update shared sound state that belongs to
+     * the previously loaded DRUM track. Capture source fingerprints only
+     * after the ENTIRE startup sound batch has finished. */
+    for (uint32_t track = 0; track < 4u && track < NTRK; track++)
+        if (trk[track].user >= 1u && trk[track].user <= UP_SLOTS + LIB_FACTORY_SLOTS)
+            mpr_capture_source(&trk[track]);
     song.sel = (uint8_t)selected;
 }
 #endif
@@ -1794,6 +1801,14 @@ static int project_references_load_all(const uint8_t refs[NTRK])
     for (k = 0; k < NTRK; k++)
         if (refs[k] != 255u && project_reference_load(k, refs[k]))
             return 1;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* A shared DRUM-X kit can change while the subsequent references load.
+     * Rebase only after the COMPLETE successful recall, never at SAVE time:
+     * real edits made after this point must still block a reference-only SAVE. */
+    for (k = 0; k < NTRK; k++)
+        if (refs[k] != 255u)
+            mpr_capture_source(&trk[k]);
+#endif
     return 0;
 }
 #endif
