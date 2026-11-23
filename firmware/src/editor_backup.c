@@ -44,10 +44,23 @@ static void ed_bk_pack(const uint8_t *p, uint32_t n)
 static const uint8_t *ed_bk_object(uint32_t id, uint32_t *len)
 {
     *len = 0;
-    if (id == 0u) { *len = sizeof(project_store_t); return ED_BK_RAW; }
+    if (id == 0u) {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        *len=MPR_MAX_RECORD; /* capture prepared it in ED_BK_RAW */
+#else
+        *len=sizeof(project_store_t);
+#endif
+        return ED_BK_RAW;
+    }
     if (id == 1u) { *len = sizeof ed_bk_settings; return (const uint8_t *)&ed_bk_settings; }
     if (id >= 2u && id <= 5u) {
-        if (project_used(id - 2u)) *len = sizeof proj_slot[0];
+        if (project_used(id - 2u)) {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+            *len=MPR_MAX_RECORD;
+#else
+            *len=sizeof proj_slot[0];
+#endif
+        }
         return (const uint8_t *)&proj_slot[id - 2u];
     }
     if (id == 6u || id == 7u) {
@@ -68,15 +81,34 @@ static const uint8_t *ed_bk_object(uint32_t id, uint32_t *len)
     if (id >= ED_BK_SONG && id < ED_BK_SONG + NSONG * 4u) {   /* (JIANT) a song's section */
         uint32_t s = (id - ED_BK_SONG) / 4u, k = (id - ED_BK_SONG) % 4u;
         if (s == song_cur) {
-            if (project_used(k)) *len = sizeof proj_slot[0];
+            if (project_used(k)) {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+                *len=MPR_MAX_RECORD;
+#else
+                *len=sizeof proj_slot[0];
+#endif
+            }
             return (const uint8_t *)&proj_slot[k];
         }
 #if FELUCCA_FLASH
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        /* Other projects are read from their NEW 128KiB paired-sector bank,
+         * never interpreted as the retired FUN* snapshot store. */
+        if(!mprs_load(s*4u+k,st_buf) &&
+           mpr_get32(st_buf)==MPR_MAGIC &&
+           st_buf[4]==MPR_VERSION && st_buf[5]==k) {
+            uint32_t body=(uint32_t)st_buf[6]|((uint32_t)st_buf[7]<<8);
+            if(body<=MPR_MAX_SETTINGS &&
+               mpr_get32(st_buf+28)==mpr_crc(st_buf,body))
+                *len=MPR_MAX_RECORD;
+        }
+#else
         {
             st_hdr_t h;
             if (st_current(ed_bk_song_obj(s, k), &h) >= 0 && proj_store_len(h.len))
                 *len = h.len;                       /* (its body in st_buf until the next flash access) */
         }
+#endif
         return st_buf;
 #else
         return ED_BK_RAW;                           /* (no flash: only the current song's) */
@@ -87,8 +119,12 @@ static const uint8_t *ed_bk_object(uint32_t id, uint32_t *len)
 static uint32_t ed_bk_capture(void)
 {
     if (ed_flash_stop()) return 3;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    if(!mpr_capture_unsaved(proj_cur<4u?proj_cur:0u))return 2;
+#else
     project_capture(&proj_scratch);
     if (!proj_pack((project_store_t *)ED_BK_RAW, &proj_scratch)) return 2;
+#endif
     ed_bk_gen = ++proj_wire_gen;
 #if FELUCCA_FLASH
     ed_bk_settings = persist_saved;                 /* fields absent from this build survive */
