@@ -229,6 +229,59 @@ int main(void)
         bad+=check("restore live unsaved MPR1 state without changing a saved slot",
                    ed_bk_commit()==0u && project_used(1));
     }
+    /* RESTORE LAST must use the same six preset references as a manual
+     * project save, never reintroduce the legacy embedded-sound snapshot.
+     * The host NOR sim uses the real autosave storage sector pair. */
+    {
+        uint8_t baseline[MPR_MAX_RECORD],after[MPR_MAX_RECORD];
+        int n;
+        ui_prefs |= PREF_RESTORE_ON;
+        for(uint32_t k=0;k<NTRK;k++)
+            for(uint32_t v=0;v<NVOICE;v++)trk[k].v[v].active=0;
+        fm1_in.notes=0;
+        fm1_in.buttons=0;
+        song.playing=0;
+        bad+=check("prepare reference sources for compact autosave",
+                   !project_reference_load(0,0u) &&
+                   !project_reference_load(1,UP_SLOTS) &&
+                   !project_reference_load(2,0u));
+        for(uint32_t k=3;k<NTRK;k++)trk[k].user=0;
+        trk[0].p[P_LEVEL]=73;
+        trk[1].p[P_PAN]=-17;
+        midi_transpose[0]=19;
+        fm1_ms=100000u;
+        autosave_poll();                  /* first observation, no write */
+        fm1_ms=111000u;                   /* 11 s of silence and stable state */
+        autosave_poll();
+        n=st_load(OBJ_AUTOSAVE,baseline,sizeof baseline);
+        bad+=check("reference-only idle autosave persists fixed MPR1 record",
+                   n==MPR_MAX_RECORD &&
+                   mpr_get32(baseline)==MPR_MAGIC &&
+                   baseline[8]==0 && baseline[9]==UP_SLOTS &&
+                   as.writes>=1u);
+        /* An unsaved tone edit must NEVER replace the last good autosave:
+         * this would otherwise silently serialize an inaccurate reference. */
+        trk[0].p[P_ATK]=(int16_t)(trk[0].p[P_ATK]+1);
+        fm1_ms=122000u;
+        autosave_poll();
+        fm1_ms=133000u;
+        autosave_poll();
+        n=st_load(OBJ_AUTOSAVE,after,sizeof after);
+        bad+=check("unsaved sound edit cannot overwrite reference-only autosave",
+                   n==MPR_MAX_RECORD && !memcmp(after,baseline,sizeof after));
+        trk[0].p[P_LEVEL]=8;
+        trk[1].p[P_PAN]=33;
+        midi_transpose[0]=0;
+        bad+=check("RESTORE LAST restores references and independent settings",
+                   autosave_boot(1)==1 && trk[0].user==1u &&
+                   trk[1].user==UP_SLOTS+1u &&
+                   trk[0].p[P_LEVEL]==73 &&
+                   trk[1].p[P_PAN]==-17 &&
+                   midi_transpose[0]==19);
+        trk[0].p[P_LEVEL]=35;
+        bad+=check("crash/unsafe boot must never restore last performance",
+                   autosave_boot(0)==0 && trk[0].p[P_LEVEL]==35);
+    }
     bad+=check("clear the new project without touching presets",!project_clear_slot(1));
     bad+=check("cleared project remains empty after reboot",({
         memset(proj_slot,0,sizeof proj_slot);proj_fetch(1);!project_used(1);
