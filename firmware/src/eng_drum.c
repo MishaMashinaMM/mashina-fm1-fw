@@ -200,6 +200,8 @@ static int8_t drum_pad_pan[NPART][DV_NLANE12];
 /* Additional semitones relative to the sound's EDIT pitch, not a rewrite of
  * its patch. 0 means the original engine renders exactly as before. */
 static int8_t drum_pad_pitch[NPART][DV_NLANE12];
+/* Extra milliseconds per drum pad (0..50), added to track delay. */
+static uint8_t drum_pad_delay[NPART][DV_NLANE12];
 /* Semitone-ratio control for percussion spectra, Q12.
  * Default 0 -> 4096 is an exact bypass; bounds cover -24..+24. */
 static uint32_t drum_pad_freq_ratio(uint32_t ti, uint32_t lane)
