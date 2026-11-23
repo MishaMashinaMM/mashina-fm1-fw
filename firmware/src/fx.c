@@ -2507,6 +2507,7 @@ static __attribute__((noinline)) void mix_block(int32_t *out, uint32_t n)   /* (
     pfx_rec_held = perf_kill ? 0u : perf_held & PF_LANE;   /* (0.9.14: the audio ones too) */
     pfx_block(n, (perf_kill ? 0u : (perf_held | perf_latched) & PF_MIDI) | scene_pfx);
     events_block(n);
+    drum_delay_process(n);           /* deferred drum hits, before audio rendering */
     if (song.playing)                                   /* (JIANT) the modulation sequences' clock (mod.c): the block's end on
                                                          * the transport's grid (through tempo changes, an external clock) */
         ms_clock = clk_pos == CLK_START ? ms_clock + n : clk_n * div_samples(2) + clk_pos + n;
