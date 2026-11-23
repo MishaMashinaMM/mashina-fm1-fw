@@ -130,12 +130,12 @@ The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMO
 
 ## 4. Drum engines and live pad controls
 
-**DRUM-X** contains twelve independent sounds. The additional **B2, S2, O2 and T2** have their own settings while using the synthesis options of the corresponding original drum voices.
+**DRUM-X** contains twelve independent sounds. **B2, S2, O2 and T2** are individually editable pads with the same controls as their matching drum sounds.
 
 | Pad | MIDI note | Pad | MIDI note |
 | --- | --- | --- | --- |
 | BD | 36 | RM | 37 |
-| SD | 38 | BL | 56 |
+| SD | 38 | BL | 47 |
 | CP | 39 | B2 | 41 |
 | CH | 42 | S2 | 40 |
 | OH | 46 | O2 | 43 |
@@ -156,7 +156,7 @@ Kit-wide multipliers scale individual pad settings without replacing them. At 10
 
 ### DRUM-AC: acoustic-style 12-pad engine
 
-**DRUM-AC** is a third, separately synthesized drum engine (no samples). Its twelve pads use acoustic-style impact, tom-head and metallic-plate models. The original DRUM-X and DRUM-LAB engines are unaffected. The DRUM-AC kit has three presets: **KRIPKE-1**, **KRIPKE-2** and **KRIPKE-3**.
+**DRUM-AC** is a third, separately synthesized drum engine (no samples). Its twelve pads use acoustic-style impact, tom-head and metallic-plate models. The DRUM-AC kit has three presets: **KRIPKE-1**, **KRIPKE-2** and **KRIPKE-3**.
 
 **Chromatic layout, repeating in every octave:** each note name plays the same pad in any octave. 
 
@@ -169,7 +169,7 @@ Kit-wide multipliers scale individual pad settings without replacing them. At 10
 | E (40) | Ride bell | A♯ (46) | Open hi-hat |
 | F (41) | Floor tom | B (47) | High tom |
 
-The MIDI numbers in parentheses are examples in the **36–47** octave. Every note 12 semitones above or below selects the same pad. A closed-hi-hat hit chokes an open-hi-hat tail even across octaves, but does not choke crash or ride. DRUM-AC has no custom per-pad MIDI-note mapping through SEQ.
+The MIDI numbers in parentheses are examples in the **36–47** octave. Every note 12 semitones above or below selects the same pad. A closed-hi-hat hit chokes an open-hi-hat tail even across octaves, but does not choke crash or ride. To reassign the notes for individual pads, use SEQ → MIDI MAP.
 
 **EDIT pages on a DRUM-AC track:**
 
@@ -185,13 +185,12 @@ The per-pad labels depend on the chosen instrument: **BEATER** and **TEXTURE** (
 
 The twelve individual sounds, pad levels and eight kit-wide settings are retained with the project. DRUM-AC uses the same **eight shared synthesis voices** as the other engines, not an independent twelve-voice sampler. The cymbal sounds are synthesized acoustic approximations, not recorded cymbals.
 
-**Compatibility:** Back up projects before changing firmware. Older versions may not recognize projects containing DRUM-AC.
 
 ### DRUM-IND: non-tonal industrial percussion
 
 **DRUM-IND** is a fourth, independent, sample-free 12-pad engine, separate from the melodic **INDUSTRIAL** synthesizer. It uses noise excitation, moving resonant filters, rough transients and irregular mechanical pulses rather than tuned note oscillators. It is intended to layer with acoustic or electronic drum kits using the same incoming MIDI channel.
 
-**Fixed chromatic layout — repeats every octave:** the MIDI numbers below are examples from 36–47.
+**Default chromatic layout — repeats every octave:** the MIDI numbers below are examples from 36–47.
 
 | Key (MIDI) | Sound / character | Key (MIDI) | Sound / character |
 | --- | --- | --- | --- |
@@ -206,7 +205,6 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 
 Three presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. 
 
-**Compatibility:** Back up projects before changing firmware. Older versions may not recognize projects containing DRUM-IND.
 
 ### SEQ: drum MIDI mapping
 
@@ -219,7 +217,7 @@ Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selec
 | **K3** | Pad pitch offset, −24 to +24 semitones |
 | **K4** | Unused |
 
-**DEFAULT / CUSTOM — all four drum engines.** In **DEFAULT** mode DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND repeat all 12 pads across every octave: C at MIDI 36, 48, 60 and 72 triggers the same sound without transposing it. DRUM-X **BELL** defaults to **B / MIDI 47** (also 35, 59 and 71).
+**DEFAULT / CUSTOM — all four drum engines.** In **DEFAULT** mode DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND repeat all 12 pads across every octave: C at MIDI 36, 48, 60 and 72 triggers the same sound without transposing it. 
 
 Changing any pad's MIDI note using **K1** activates **CUSTOM mode for the selected track only**. All 12 pads then respond exclusively to their exact assigned MIDI notes (0–127). Unchanged pads keep their original notes in 36–47 but stop repeating in other octaves. Multiple pads can share a note and play simultaneously. **DEFAULT / CUSTOM** appears in the screen's upper right.
 
