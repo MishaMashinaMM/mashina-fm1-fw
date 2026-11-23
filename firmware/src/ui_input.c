@@ -2436,7 +2436,8 @@ static void ui_input_frame(void)
                 old = drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane];
             else if (t->eng_req == ENGI_DRUMLAB || t->eng_req == ENGI_DRUMAC ||
                      t->eng_req == ENGI_DRUMIND)
-                old = drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36 + (int32_t)lane;
+                old = drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] :
+                      (t->eng_req == ENGI_DRUMAC ? (int32_t)AC_NOTES[lane] : 36 + (int32_t)lane);
             if (old >= 0) {
                 uint32_t note = (uint32_t)clamp(old + (s > 0 ? 1 : -1), 0, 127);
                 fm1_irq_off();
