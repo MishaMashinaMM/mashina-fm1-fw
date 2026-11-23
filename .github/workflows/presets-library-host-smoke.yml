@@ -69,6 +69,12 @@ jobs:
           mkdir -p build/presets-library-smoke/emu
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/presets-library-smoke/emu/
           python3 tools/check_library_preview.py build/presets-library-smoke
+      - name: Downloadable read-only Web Library snapshot inspector
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-web-library-snapshot-inspector-experimental
+          path: build/presets-library-smoke/
+          retention-days: 14
       - name: Check source-level flash boundaries and preset storage capacity
         run: |
           python3 tools/presets_library_flash_map_check.py
