@@ -13,12 +13,19 @@ cd "$(dirname "$0")/../.."
 [ -f build/gen/felucca_tables.h ] || { echo "emu: run ./build.sh once first (build/gen)"; exit 1; }
 command -v emcc >/dev/null 2>&1 || { echo "emu: no emcc (Emscripten)"; exit 1; }
 VERSION=$(sed -n 's/^#define FELUCCA_VERSION "\([^"]*\)".*/\1/p' firmware/src/felucca.c)
-# Branch-only emulator previews may show a development version without changing firmware release metadata.
-[ -z "${EMU_VERSION:-}" ] || VERSION="$EMU_VERSION"
+# Branch-only simulator for reference-only projects / 32 LIBRARY slots.
+# This is an in-browser WASM NOR simulation, not a hardware installer.
+case "${MASHINA_EMU_REFS:-0}" in 0|1) ;; *) echo "emu: MASHINA_EMU_REFS must be 0 or 1" >&2; exit 1;; esac
+if [ "${MASHINA_EMU_REFS:-0}" = 1 ]; then
+    VERSION="${EMU_VERSION:-$VERSION-mpr1-sim}"
+else
+    [ -z "${EMU_VERSION:-}" ] || VERSION="$EMU_VERSION"
+fi
 mkdir -p build/emu/fonts
 # shellcheck disable=SC2086
 emcc ${EMU_OPT:--O2} -ffp-contract=off -std=gnu99 -w ${EMU_CFLAGS:-} \
     "-DFELUCCA_NO_SEQUENCER=${FELUCCA_NO_SEQUENCER:-1}" \
+    "-DMASHINA_EMU_REFS=${MASHINA_EMU_REFS:-0}" \
     "-DFELUCCA_VERSION=\"$VERSION\"" -Ibuild/gen -Ifirmware/src \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o build/emu/felucca.wasm web/emu/felucca_web.c
