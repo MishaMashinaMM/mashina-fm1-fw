@@ -14,7 +14,7 @@ const VALID_ENGINE=new Set([0,2,3,5,7,10,11,12,15,16,17,18,19,20]);
 const uint=(x,max)=>Number.isInteger(x)&&x>=0&&x<=max;
 export const SOURCE_FORMAT="mashina-factory-presets-from-code";
 export const SELECTION_FORMAT="mashina-factory-selection-32";
-export const UNRESOLVED_DRUM_MESSAGE="Factory drum kit is not yet serialized as a complete 304-byte record. Selection can be saved, but uploading this slot is blocked.";
+export const UNRESOLVED_DRUM_MESSAGE="Factory drum kit needs the matching complete 304-byte companion records. Selection can be saved, but uploading this slot is blocked.";
 
 function validatePatch(p,at){
   fail(p&&typeof p==="object"&&uint(p.factoryIndex,107)&&p.factoryIndex===at+1,
@@ -82,6 +82,42 @@ function validSelectionIndexes(indexes){
     return v;
   });
 }
+/* A separate, firmware-derived sidecar adds complete factory kits WITHOUT
+ * changing a single byte of the original 107-preset source catalog.
+ * Exactly one full record for each of 18 factory drum sounds is mandatory;
+ * reordering, truncation, swapped names or mismatched engine is rejected.
+ */
+export function importFactoryDrumRecords(input,catalog){
+  const c=importFactoryCatalog(catalog);
+  fail(input?.format==="mashina-derived-factory-drum-records"&&input.version===1 &&
+       Array.isArray(input.records)&&input.records.length===18,
+       "Expected 18 compiled factory drum-kit records");
+  const map=new Map();
+  for(const record of input.records){
+    const p=c.presets.find(x=>x.engine===record?.engine &&
+                            x.enginePresetIndex===record?.enginePresetIndex);
+    fail(!!p&&p.requiresEngineFactoryKit,"Unknown factory drum engine/preset index");
+    fail(record.name===p.name,"Drum-kit name does not match source: "+p.name);
+    fail(!map.has(p.factoryIndex-1),"Duplicate factory drum record "+p.name);
+    const decoded=decodeRecord(record.recordBytes);
+    fail(decoded.engine===p.engine&&decoded.name===p.name&&
+         decoded.recordBytes[303]===0xD3,
+         "Invalid or incomplete drum-kit sidecar: "+p.name);
+    map.set(p.factoryIndex-1,decoded.recordBytes);
+  }
+  fail(map.size===18,"Factory drum sidecars are incomplete");
+  return structuredCloneCompatible(input);
+}
+function validatedKits(catalog,kits){
+  if(kits===null||kits===undefined)return null;
+  const list=importFactoryDrumRecords(kits,catalog);
+  return new Map(list.records.map(p=>{
+    const idx=catalog.presets.findIndex(x=>x.engine===p.engine &&
+                                      x.enginePresetIndex===p.enginePresetIndex);
+    return [idx,p.recordBytes];
+  }));
+}
+
 export function defaultFactorySelection(catalog){
   const c=importFactoryCatalog(catalog);
   const list=Array(LIBRARY_SLOTS).fill(null);
@@ -90,50 +126,61 @@ export function defaultFactorySelection(catalog){
       list[p.initialLibrarySlot-33]=p.factoryIndex-1;
   return list;
 }
-export function validateFactorySelection(catalog,indexes){
+export function validateFactorySelection(catalog,indexes,kits=null){
   const c=importFactoryCatalog(catalog);
   const refs=validSelectionIndexes(indexes);
+  const fullKits=validatedKits(c,kits);
   const entries=refs.map((factoryIndex,slot)=>{
     if(factoryIndex===null)return null;
     const sound=c.presets[factoryIndex];
     return {slot,librarySlot:slot+33,sourceFactoryIndex:factoryIndex+1,
             name:sound.name,engine:sound.engine,engineName:sound.engineName,
-            ready:!SIDECAR_ENGINES.has(sound.engine),
-            issue:SIDECAR_ENGINES.has(sound.engine)?UNRESOLVED_DRUM_MESSAGE:null};
+            ready:!SIDECAR_ENGINES.has(sound.engine)||fullKits?.has(factoryIndex)===true,
+            issue:SIDECAR_ENGINES.has(sound.engine)&&!fullKits?.has(factoryIndex)?
+                  UNRESOLVED_DRUM_MESSAGE:null};
   });
   return {entries,ready:entries.filter(x=>x?.ready).length,
           blocked:entries.filter(x=>x&&!x.ready).length,
           empty:entries.filter(x=>x===null).length};
 }
-export function factorySelectionFile(catalog,indexes){
+export function factorySelectionFile(catalog,indexes,kits=null){
   const c=importFactoryCatalog(catalog);
   const refs=validSelectionIndexes(indexes);
-  validateFactorySelection(c,refs);
+  const full= kits===null ? null : importFactoryDrumRecords(kits,c);
+  validateFactorySelection(c,refs,full);
   return {format:SELECTION_FORMAT,version:1,
-          catalog:c,selection:refs};
+          catalog:c,selection:refs,
+          ...(full?{drumRecords:full}:{})};
 }
 export function importFactorySelection(file){
   fail(file?.format===SELECTION_FORMAT&&file.version===1,
        "Not a MASHINA 32-slot factory selection JSON");
   const catalog=importFactoryCatalog(file.catalog);
   const selection=validSelectionIndexes(file.selection);
-  validateFactorySelection(catalog,selection);
-  return {catalog,selection};
+  const drumRecords=file.drumRecords===undefined?null:
+                    importFactoryDrumRecords(file.drumRecords,catalog);
+  validateFactorySelection(catalog,selection,drumRecords);
+  return {catalog,selection,drumRecords};
 }
 /* No writes and no guesswork. If even one selected drum cannot produce its
  * full kit sidecar, reject the WHOLE source-selection upload. Otherwise
  * existing prepared complete binary records are returned by slot. */
-export function buildFactoryUpload(catalog,indexes){
+export function buildFactoryUpload(catalog,indexes,kits=null){
   const c=importFactoryCatalog(catalog),refs=validSelectionIndexes(indexes);
+  const fullKits=validatedKits(c,kits);
   const records=[];
   for(let slot=0;slot<LIBRARY_SLOTS;slot++){
     const index=refs[slot];
     if(index===null)continue;
     const p=c.presets[index];
-    fail(!SIDECAR_ENGINES.has(p.engine),
-         "LIBRARY "+(slot+33)+" ("+p.name+"): "+UNRESOLVED_DRUM_MESSAGE);
-    const rec=encodeRecord(p);
-    records.push({slot,...decodeRecord(rec)});
+    if(SIDECAR_ENGINES.has(p.engine)){
+      fail(fullKits?.has(index),
+           "LIBRARY "+(slot+33)+" ("+p.name+"): "+UNRESOLVED_DRUM_MESSAGE);
+      records.push({slot,...decodeRecord(fullKits.get(index))});
+    }else{
+      const rec=encodeRecord(p);
+      records.push({slot,...decodeRecord(rec)});
+    }
   }
   return records;
 }
