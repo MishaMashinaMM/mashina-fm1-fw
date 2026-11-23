@@ -73,7 +73,8 @@ static int mpr_encode(uint8_t out[MPR_MAX_RECORD], uint32_t section,
     out[6]=(uint8_t)size;out[7]=(uint8_t)(size>>8);
     memcpy(out+8,ref,MPR_TRACKS);
     memcpy(out+14,name,MPR_NAME);
-    if(size)memcpy(out+MPR_HEADER,settings,size);
+    if(size && settings != out+MPR_HEADER)
+        memcpy(out+MPR_HEADER,settings,size); /* also permits in-place encode */
     mpr_u32(out+28,mpr_crc(out,size));
     return (int)(MPR_HEADER+size);
 }
