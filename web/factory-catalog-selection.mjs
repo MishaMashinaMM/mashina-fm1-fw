@@ -14,6 +14,16 @@ const VALID_ENGINE=new Set([0,2,3,5,7,10,11,12,15,16,17,18,19,20]);
 const uint=(x,max)=>Number.isInteger(x)&&x>=0&&x<=max;
 export const SOURCE_FORMAT="mashina-factory-presets-from-code";
 export const SELECTION_FORMAT="mashina-factory-selection-32";
+/* Fixed fingerprint of the exact 107 original curated presets' parsed JSON.
+ * Whitespace is irrelevant; changing any patch value, FM6 voice or metadata
+ * requires deliberate regeneration/review of this protected source revision. */
+export const MASTER_FNV32=0x4b96d34f;
+function masterFingerprint(source){
+  const str=JSON.stringify(source);
+  let hash=2166136261;
+  for(let i=0;i<str.length;i++)hash=Math.imul(hash^str.charCodeAt(i),16777619)>>>0;
+  return hash;
+}
 export const UNRESOLVED_DRUM_MESSAGE="Factory drum kit needs the matching complete 304-byte companion records. Selection can be saved, but uploading this slot is blocked.";
 
 function validatePatch(p,at){
@@ -51,6 +61,8 @@ export function importFactoryCatalog(input){
   fail(input.totalFactoryPresets===107&&input.fullParameterPresets===89&&
        input.drumKitFactoryReferences===18,
        "Catalog inventory counts do not match MASHINA firmware");
+  fail(masterFingerprint(input)===MASTER_FNV32,
+       "This is not the exact protected 107-preset source revision. The original sounds/metadata differ; refusing to silently substitute them.");
   const copy=structuredCloneCompatible(input);
   const perEngine=new Map(),mapped=new Set();
   let full=0,kits=0;
