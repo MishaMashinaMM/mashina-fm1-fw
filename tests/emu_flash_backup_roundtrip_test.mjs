@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {storeSectors,restoreSectors} from "../web/emu/worklet.js";
-import {FORMAT,VERSION,encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
+import {FORMAT,VERSION,encodeEmulatorFlash,decodeEmulatorFlash,restorePersistentEmulatorFlash,readPersistentEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
 
 const SIZE=0x100000,SECTOR=4096;
 const nor=new Uint8Array(SIZE).fill(255);
@@ -48,6 +48,44 @@ invalidVersion.version++;
 assert.throws(()=>decodeEmulatorFlash(invalidVersion),/compatible/);
 console.log("PASS: emulator JSON backup preserves exact USER/MPR1/LIB32/settings/autosave bytes; rejects corrupt, unowned and incompatible files");
 
+// Permanent restore is an explicit, separate operation: a validated JSON
+// replaces only the emulator's existing localStorage key.
+const KEY="felucca-emu-flash";
+class Storage {
+  constructor(){this.data=new Map();}
+  getItem(k){return this.data.has(k)?this.data.get(k):null;}
+  setItem(k,v){this.data.set(k,String(v));}
+  removeItem(k){this.data.delete(k);}
+}
+const storage=new Storage();
+const backupA=storeSectors(nor);
+const backupB=storeSectors(fresh);
+const backupBEdited={...backupB,[0xA0000]:backupB[0xA0000].slice()};
+backupBEdited[0xA0000][31]=62; // second session differs in stored project data
+storage.setItem(KEY,JSON.stringify({original:"untouched"}));
+const initial=storage.getItem(KEY);
+assert.throws(()=>restorePersistentEmulatorFlash(storage,KEY,
+  {[0xE8000]:new Uint8Array(SECTOR)}),/Invalid/);
+assert.equal(storage.getItem(KEY),initial,"invalid permanent restore mutated existing saved data");
+const n=restorePersistentEmulatorFlash(storage,KEY,decodeEmulatorFlash(JSON.stringify(encodeEmulatorFlash(backupA))));
+assert.equal(n,owned.length);
+assert.deepEqual(readPersistentEmulatorFlash(storage.getItem(KEY)),backupA,"saved backup A differs");
+restorePersistentEmulatorFlash(storage,KEY,backupBEdited);
+assert.deepEqual(readPersistentEmulatorFlash(storage.getItem(KEY)),backupBEdited,"saved backup B differs");
+restorePersistentEmulatorFlash(storage,KEY,backupA);
+assert.deepEqual(readPersistentEmulatorFlash(storage.getItem(KEY)),backupA,"backup A cannot replace backup B");
+const beforeFailure=storage.getItem(KEY);
+const failing={
+  getItem:k=>storage.getItem(k),
+  setItem:()=>{throw Error("quota exceeded");},
+  removeItem:k=>storage.removeItem(k)
+};
+assert.throws(()=>restorePersistentEmulatorFlash(failing,KEY,backupBEdited),/Permanent restore failed/);
+assert.equal(storage.getItem(KEY),beforeFailure,"failed write corrupted prior restore");
+console.log("PASS: permanent restore A -> B -> A replaces only saved emulator NOR, validates first and preserves state on quota failure");
+
+
+
 // Full firmware integration: normal emulator boot -> project SAVE -> JSON
 // snapshot -> fresh WASM boot, same stored section and preset identities.
 const wasm=readFileSync("build/emu/felucca.wasm");
@@ -71,3 +109,9 @@ for(let k=0;k<4;k++){
   assert.equal(second.web_mpr_ref(k),33+k,"lost startup factory ref T"+(k+1));
 }
 console.log("PASS: actual WASM project save -> portable JSON -> independent emulator reboot");
+const permanent=new Storage();
+restorePersistentEmulatorFlash(permanent,KEY,decodeEmulatorFlash(portable));
+const third=await boot(readPersistentEmulatorFlash(permanent.getItem(KEY)));
+assert.equal(third.web_mpr_test_used(),1,"permanent browser restore lost saved project section");
+for(let k=0;k<4;k++)assert.equal(third.web_mpr_ref(k),33+k,"persistent restored source mismatch on track "+(k+1));
+console.log("PASS: actual WASM project save -> portable JSON -> persistent browser storage -> fresh boot");
