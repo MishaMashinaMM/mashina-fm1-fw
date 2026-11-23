@@ -137,7 +137,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.11
+### Sonidos de fábrica en v0.12
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -170,7 +170,7 @@ Estos ocho motores siguen disponibles junto a los nuevos. Elegí un preset para 
 
 **INDUSTRIAL — bajos y leads melódicos agresivos.** A diferencia de DRUM-IND, sigue las notas tocadas. **WAVE** elige la onda principal; **FAT** la engrosa; **GRIND, METAL, CRUSH y FEED** generan distorsión y aspereza; **CUT/RES** moldean el filtro. La tercera página ofrece **WAVE2, MIX, SUB y MODE** para el segundo oscilador y graves adicionales. Empezá con **PASCAL**, **NEWTON**, **CAVENDISH** o **LOCKE**.
 
-**DRUM-X** tiene doce sonidos independientes: BD 36, SD 38, CP 39, CH 42, OH 46, TM 45, RM 37, BL 56, B2 41, S2 40, O2 43 y T2 44. **DRUM-LAB** tiene doce pads sintetizados, inicialmente en MIDI **36–47**. Abrí EDIT para editar cada pad y sus niveles.
+**DRUM-X** tiene doce sonidos independientes: BD 36, SD 38, CP 39, CH 42, OH 46, TM 45, RM 37, BL 47, B2 41, S2 40, O2 43 y T2 44. **DRUM-LAB** tiene doce pads sintetizados, inicialmente en MIDI **36–47**. Abrí EDIT para editar cada pad y sus niveles.
 
 En una pista de batería, **SEQ** configura la nota MIDI (**K1, 0–127**), panorama (**K2**) y afinación del pad (**K3, ±24 semitonos**). **PLAY** configura curva de velocidad (**K1**), intensidad (**K2**), grupo de choke (**K3**) y superposición/reinicio (**K4**). Elegí el pad con SELECT y cambiá el banco con OCT−/OCT+.
 
@@ -217,7 +217,7 @@ Los multiplicadores del kit escalan los valores individuales sin reemplazarlos. 
 | E (40) | Campana de ride | A♯ (46) | Hi-hat abierto |
 | F (41) | Tom de piso | B (47) | Tom agudo |
 
-El hi-hat cerrado apaga la cola del abierto, incluso entre octavas, pero no interrumpe crash ni ride. DRUM-AC usa este mapa fijo; el cambio personalizado de notas de pads mediante SEQ de otros motores no se aplica aquí.
+El hi-hat cerrado apaga la cola del abierto, incluso entre octavas, pero no interrumpe crash ni ride. 
 
 **Páginas EDIT de DRUM-AC:**
 
@@ -252,7 +252,7 @@ Los sonidos individuales, los volúmenes y los ocho controles globales se guarda
 
 **Páginas EDIT:** las dos primeras ofrecen ocho controles independientes para todo el kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (cada uno **0–200%**, con **100% neutro**). ATTACK modifica aproximadamente los primeros 80 ms; BRIGHT modifica el balance de agudos después de limitar el sonido. En **SOUND 1–3**, **K1** selecciona el pad y **K2–K4** editan ocho parámetros individuales (**0–127**): **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** permiten doce niveles independientes (**0–127**). Los controles pueden actuar de forma distinta en cada sonido.
 
-Presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. Su asignación MIDI es fija; la reasignación SEQ de DRUM-X/DRUM-LAB no se aplica.
+Presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Los sonidos, niveles y controles globales se guardan en el proyecto. DRUM-IND comparte las **ocho voces totales** del firmware. 
 
 **Compatibilidad:** guardá una copia de seguridad antes de cambiar el firmware. Las versiones anteriores pueden no reconocer proyectos con DRUM-IND.
 
@@ -266,6 +266,13 @@ En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y O
 | K2 | Panorama del pad |
 | K3 | Transposición del pad, **−24 a +24 semitonos** |
 | K4 | Sin uso |
+
+**DEFAULT / CUSTOM — los cuatro motores de batería.** En **DEFAULT**, DRUM-X, DRUM-LAB, DRUM-AC y DRUM-IND repiten los mismos 12 pads en todas las octavas: C en MIDI 36, 48, 60 y 72 dispara el mismo sonido sin transponerlo. **BELL** de DRUM-X está en **B / MIDI 47** (también 35, 59 y 71).
+
+Cambiar la nota de cualquier pad con **K1** activa **CUSTOM solamente en la pista seleccionada**. Los 12 pads responden entonces solo a sus notas MIDI asignadas (0–127). Los pads no modificados conservan sus notas originales de 36–47, pero ya no se repiten en otras octavas. Varios pads pueden compartir una nota y sonar juntos. La indicación **DEFAULT / CUSTOM** aparece arriba a la derecha.
+
+Para volver a DEFAULT, mantené pulsado el **botón físico SEL** (no la perilla giratoria SELECT) unos **0,7 segundos**: aparece **RESET MIDI MAP?**. **OCT− cancela** y **OCT+ restaura solamente esa pista**, recuperando las octavas repetidas sin modificar sonidos, afinación, paneo ni otras pistas. Devolver las notas manualmente a sus valores originales no desactiva CUSTOM; usá RESET. Los mapas se guardan con el proyecto. **K2 PAN / K3 PITCH** corresponden a DRUM-X/DRUM-LAB; DRUM-AC/DRUM-IND admiten la reasignación de notas con K1.
+
 
 ### PLAY: respuesta de los pads
 
@@ -389,4 +396,4 @@ Antes de cambiar o retroceder la versión, guardá una **copia completa de proye
 
 ---
 
-MASHINA v0.11 · M-VAVE FM1
+MASHINA v0.12 · M-VAVE FM1

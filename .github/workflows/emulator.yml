@@ -32,7 +32,7 @@ jobs:
         run: python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
       - uses: mymindstorm/setup-emsdk@v14
         with:
-          version: 6.0.11                # (the version the emulator is tested with)
+          version: 6.0.11                # Emscripten toolchain version (not MASHINA release)
       - name: the emulator
         run: |
           # build.sh already copies the current browser shell, substitutes
@@ -72,17 +72,17 @@ jobs:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
-          python3 tools/build.py --release 0.11
-          python3 web/make_site.py build/felucca-0.11.fwsc "0.11" build/site
+          python3 tools/build.py --release 0.12
+          python3 web/make_site.py build/felucca-0.12.fwsc "0.12" build/site
           printf '%s\n' "$GITHUB_SHA" > build/site/firmware/SOURCE_COMMIT
           (cd build/site/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
-          # Refuse to publish an unidentifiable or potentially cached earlier v0.11 binary.
-          test -s build/site/webapp/installer-orange-v011/index.html
-          grep -q 'v0.11 · MASHINA · BUILD' build/site/webapp/installer-orange-v011/index.html
+          # Refuse to publish an unidentifiable or potentially cached earlier v0.12 binary.
+          test -s build/site/webapp/installer-orange-v012/index.html
+          grep -q 'v0.12 · MASHINA · BUILD' build/site/webapp/installer-orange-v012/index.html
           grep -q 'cache: "no-store"' build/site/webapp/installer/index.html
           grep -q 'release=' build/site/webapp/installer/index.html
           test -s build/site/firmware/RELEASE_SHA256
-          (cd build/site/firmware && sha256sum felucca-0.11.fwsc | cut -d' ' -f1 | cmp - RELEASE_SHA256)
+          (cd build/site/firmware && sha256sum felucca-0.12.fwsc | cut -d' ' -f1 | cmp - RELEASE_SHA256)
           ! grep -q '/\\*BUILD_TAG\\*/' build/site/webapp/installer/index.html
           cp -r build/site/webapp build/site/firmware build/emu/
       # (JIANT 0.7.9) the stems app's phase-0 probe (android/probe), next to the installer: app/jiant-probe.apk

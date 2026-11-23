@@ -42,7 +42,7 @@ static void check(const char *what, int ok, const char *fmt, ...)
 
 #define MAXN (FS * 3u)
 static int32_t buf[MAXN];
-static const uint8_t NOTE[DV_NLANE12] = {36, 38, 39, 42, 46, 45, 37, 56, 41, 40, 43, 44};   /* eng_drum.c DRUM_LANE_NOTE */
+static const uint8_t NOTE[DV_NLANE12] = {36, 38, 39, 42, 46, 45, 37, 47, 41, 40, 43, 44};   /* external DRUM-X live note map; BELL is B2 */
 
 static track_t *kitx(int16_t morph, int16_t tune)
 {
@@ -647,9 +647,9 @@ int main(int argc, char **argv)
             int ok = 1;
 
             for (l = 0; l < DV_NLANE12; l++)
-                ok &= drum_lane(NOTE[l]) == l;
+                ok &= drum_lane(l < DV_NLANE ? DRUM_LANE_NOTE[l] : DRUM_NOTE12[l]) == l;
 
-            check("12 drums: canonical MIDI notes select the correct instances", ok, 0);
+            check("12 drums: internal sound notes select the correct instances", ok, 0);
         }
 
         /* CH chokes OH and O2 */

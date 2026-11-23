@@ -1,4 +1,4 @@
-# MASHINA — FM1 Performance Firmware v0.11
+# MASHINA — FM1 Performance Firmware v0.12
 
 **MASHINA** turns the **M-VAVE FM1** into a six-track sound module designed for **external MIDI keyboards, pad controllers and live performance**. Play multiple sounds together, split a keyboard into zones, shape sounds while performing and recall projects quickly.
 
@@ -18,6 +18,7 @@ MASHINA retains JIANT's sound-making capabilities while expanding the FM1 for ha
 | --- | --- |
 | **Additional melodic engines** | **ATMOS** for evolving pads, **BRASS** for synthetic wind sounds and **INDUSTRIAL** for aggressive basses and leads. |
 | **Expanded drums** | **DRUM-X** with 12 sounds, plus three additional 12-sound kits: **DRUM-LAB** (electronic percussion), **DRUM-AC** (acoustic-style drums) and **DRUM-IND** (metallic, mechanical and industrial effects). |
+| **Universal drum MIDI maps (v0.12)** | All four 12-pad drum engines repeat their sounds across every octave in **DEFAULT** mode. Reassigning any pad's MIDI note activates per-track **CUSTOM** mode: each pad responds only to its explicit MIDI note (0–127), including unchanged pads at their original notes. Different pads can share a MIDI note and play together. |
 | **Flexible MIDI routing** | Assign independent MIDI receive channels to six tracks; layer sounds, build keyboard splits and set note and velocity zones. |
 | **Track tuning** | Transpose each track by up to three octaves and adjust fine tuning independently. |
 | **Live MIDI control** | 32 assignable MIDI CC macros, MIDI Learn, performance commands and MIDI-triggered sound variations. |
@@ -29,7 +30,17 @@ MASHINA has **eight shared synthesis voices in total**, not eight per track. It 
 
 For drum note layouts, sound parameters, MIDI mappings, hardware controls and complete operating instructions, see the **[User Manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)** (available in English, Serbian, Spanish, Russian, Japanese and Hindi).
 
-## Factory sound library — v0.11
+## Drum MIDI mapping: DEFAULT and CUSTOM (v0.12)
+
+Open **SEQ → MIDI MAP** on any DRUM-X, DRUM-LAB, DRUM-AC or DRUM-IND track. The **DEFAULT / CUSTOM** indicator at the upper right describes the selected track's MIDI mode:
+
+- **DEFAULT:** the 12 factory pads repeat in every octave (for example C at MIDI 36, 48, 60, 72 and 84 triggers the same drum). The incoming octave does not transpose the drum sound. DRUM-X **BELL** is on **B / MIDI 47**, repeating on all B notes.
+- **CUSTOM:** changing any pad note with **K1** activates an exact, **per-track** 12-pad map. The edited pad sounds only on its assigned note; all other pads retain their original MIDI-note assignments but no longer repeat in other octaves. Multiple pads may intentionally share a note and sound together.
+- **RESET MIDI MAP:** hold the physical **SEL button** (not the SELECT rotary knob) for about **0.7 seconds** on SEQ → MIDI MAP. The confirmation applies only to the selected track: **OCT− cancels**, **OCT+ resets** that track to DEFAULT and restores octave repetition. Sound parameters, pan/pitch edits and the other tracks are unchanged.
+
+Custom MIDI maps are saved with the project. Returning the visible note values to their factory numbers does **not** exit CUSTOM mode; use **RESET MIDI MAP** to restore DEFAULT.
+
+## Factory sound library — v0.12
 
 The melodic banks contain 20 ANALOG presets (including CICERO and PLUTARCH), 12 INDUSTRIAL, 5 BRASS and 8 ATMOS, alongside custom PHASE, WHEEL, NOISE, VOICE, LOFI and FM6 sounds. The four drum engines retain their synthesis and have renamed factory kits: **BUTTLER-1–9** (DRUM-X), **ZIZEK-1–3** (DRUM-LAB), **KRIPKE-1–3** (DRUM-AC) and **BADIOU-1–3** (DRUM-IND).
 
@@ -47,7 +58,7 @@ Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/we
 
 **Before flashing:** back up projects, user presets and settings, and keep a known-working recovery firmware available. Projects saved with newer firmware may not be compatible with older versions.
 
-**Current version:** v0.11.
+**Current version:** v0.12.
 
 ## Credits and licensing
 

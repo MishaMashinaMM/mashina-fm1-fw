@@ -62,8 +62,9 @@ int main(void)
     }
 #if FELUCCA_NO_SEQUENCER
     before = vage;
-    trk_note_on(t, 24, 100);  /* formerly SHORT kick: not a sound slot */
-    bad += test("live-only default: no octave variation on MIDI 24", before == vage);
+    trk_note_on(t, 24, 100); /* C in lower octave repeats factory KICK */
+    bad += test("live-only default DRUM-X: MIDI 24 also plays KICK", vage > before);
+    before = vage;
     trk_note_on(t, 36, 100);
     bad += test("live-only default: MIDI 36 still plays normal kick", vage > before);
 #endif

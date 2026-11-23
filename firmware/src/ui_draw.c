@@ -2792,17 +2792,22 @@ static void draw_mixer_table(void)
 #if FELUCCA_NO_SEQUENCER
 /* Like JIANT's cached parameter cards, refresh only the table rows whose
  * displayed contents changed. The page/track/bank switch still draws once. */
+static const char *const LIVE_AC_PAD_NAMES[12] = {
+    "KICK", "SNARE", "CRASH", "C-HAT", "O-HAT", "FLOOR",
+    "LOW TOM", "MID TOM", "HIGH TOM", "CLAP", "R-BELL", "R-SPL"
+};
 static uint32_t drum_live_row_signature(uint32_t perf, uint32_t lane)
 {
     uint32_t ti = song.sel;
     const track_t *t = &trk[ti];
     uint32_t drum = t->eng_req == ENGI_DRUM, lab = t->eng_req == ENGI_DRUMLAB;
+    uint32_t ac = t->eng_req == ENGI_DRUMAC, ind = t->eng_req == ENGI_DRUMIND;
     uint32_t sig = 2166136261u;
     if (lab) drumlab_kit_ensure(&trk[ti]);
     sig = (sig ^ (lane == ui.drum_map_pad)) * 16777619u;
-    if (drum || lab) {
+    if (drum || lab || ac || ind) {
         uint32_t note = drum ? (drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane])
-                             : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36u + lane);
+                             : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : (ac ? AC_NOTES[lane] : 36u + lane));
         sig = (sig ^ (lab ? drumlab_kit[ti][lane].kind : 0u)) * 16777619u;
         sig = (sig ^ (perf ? drum_perf_curve[ti][lane] : note)) * 16777619u;
         sig = (sig ^ (perf ? drum_perf_sound[ti][lane] : (uint8_t)drum_pad_pan[ti][lane])) * 16777619u;
@@ -2838,6 +2843,7 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
     uint32_t ti = song.sel, first = ui.drum_map_pad < 6u ? 0u : 6u;
     const track_t *t = &trk[ti];
     uint32_t drum = t->eng_req == ENGI_DRUM, lab = t->eng_req == ENGI_DRUMLAB;
+    uint32_t ac = t->eng_req == ENGI_DRUMAC, ind = t->eng_req == ENGI_DRUMIND;
     uint32_t selected = lane == ui.drum_map_pad;
     uint16_t col = selected ? T_INK : T_VALUE;
     uint16_t pad_col = T_TEXT;
@@ -2846,11 +2852,13 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
     const aafont_t *face = &AF_Q;
     cv_begin(240, 23, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
     cv_rect(0, 0, 240, 23, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
-    if (drum || lab) {
+    if (drum || lab || ac || ind) {
         if (lab) {
             drumlab_pad_label(lane, drumlab_kit[ti][lane].kind, b);
-            cv_text(6, CAP_IN(M, 20), ink_w(face, b) < 52 ? face : &AF_M, b, pad_col);
-        } else cv_text(6, CAP_IN(M, 20), ink_w(face, drum_lane_abbr(t, lane)) < 52 ? face : &AF_M, drum_lane_abbr(t, lane), pad_col);
+        } else if (ac) str_cpy(b, LIVE_AC_PAD_NAMES[lane], sizeof b);
+        else if (ind) str_cpy(b, IND_NAMES[lane], sizeof b);
+        else str_cpy(b, drum_lane_abbr(t, lane), sizeof b);
+        cv_text_in(6, CAP_IN(M, 20), 51, ink_w(face, b) < 52 ? face : &AF_M, b, pad_col, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
         if (perf) {
             cv_text(61, CAP_IN(M, 20), ink_w(face, curves[drum_perf_curve[ti][lane] & 3u]) < 55 ? face : &AF_M, curves[drum_perf_curve[ti][lane] & 3u], col);
             fmt_int(b, drum_perf_sound[ti][lane]);
@@ -2861,16 +2869,16 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
             cv_text(194, CAP_IN(M, 20), ink_w(face, "OVR") < 45 ? face : &AF_M, drum_retrigger[ti][lane] ? "RST" : "OVR", col);
         } else {
             uint32_t note = drum ? (drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane])
-                                 : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36u + lane);
+                                 : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : (ac ? AC_NOTES[lane] : 36u + lane));
             fmt_int(b, (int32_t)note);
             cv_text(68, CAP_IN(M, 20), ink_w(face, b) < 46 ? face : &AF_M, b, col);
-            {
+            if (!(ac || ind)) {
                 int32_t pan = drum_pad_pan[ti][lane];
                 if (pan == 0) str_cpy(b, "C", sizeof b);
                 else { b[0] = pan < 0 ? 'L' : 'R'; fmt_int(b + 1, pan < 0 ? -pan : pan); }
                 cv_text(116, CAP_IN(M, 20), ink_w(face, b) < 54 ? face : &AF_M, b, col);
             }
-            {
+            if (!(ac || ind)) {
                 int32_t pitch = drum_pad_pitch[ti][lane];
                 if (pitch > 0) { b[0] = '+'; fmt_int(b + 1, pitch); }
                 else fmt_int(b, pitch);
@@ -2888,14 +2896,18 @@ static void draw_drum_midi_map(void)
     const uint32_t ti = song.sel, first = ui.drum_map_pad < 6u ? 0u : 6u;
     const track_t *t = &trk[ti];
     uint32_t drum = t->eng_req == ENGI_DRUM, lab = t->eng_req == ENGI_DRUMLAB;
+    uint32_t ac = t->eng_req == ENGI_DRUMAC, ind = t->eng_req == ENGI_DRUMIND;
     char b[24];
     if (lab) drumlab_kit_ensure(&trk[ti]);
     lcd_fill(0, 0, 240, 240, T_BG);
     cv_begin(240, 40, T_BG);
     cv_text(6, CAP_IN(M, 24), &AF_M, "DRUM MIDI MAP", T_TEXT);
     b[0] = 'T'; b[1] = (char)('1' + ti); b[2] = ' '; b[3] = 0;
-    str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : "NO DRUM", sizeof b - 3u);
+    str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : ac ? "DRUM-AC" : ind ? "DRUM-IND" : "NO DRUM", sizeof b - 3u);
     cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_VALUE);
+    cv_text_in(163, 30 + CAP_IN(S, 10), 74, &AF_S,
+               (drum ? drum_midi_custom[ti] : drumlab_midi_custom[ti]) ?
+               "CUSTOM" : "DEFAULT", T_ACCENT, T_BG);
     cv_blit(0, 0);
 
     cv_begin(240, 16, T_BG);
@@ -2904,7 +2916,7 @@ static void draw_drum_midi_map(void)
     cv_text(116, CAP_IN(S, 14), &AF_S, "PAN", T_DIM);
     cv_text(174, CAP_IN(S, 14), &AF_S, "PITCH", T_DIM);
     cv_blit(0, 40);
-    if (drum || lab) for (uint32_t lane = first; lane < first + 6u; lane++)
+    if (drum || lab || ac || ind) for (uint32_t lane = first; lane < first + 6u; lane++)
         draw_drum_live_row(0u, lane);
 
     cv_begin(240, 28, T_BG);
@@ -2915,18 +2927,34 @@ static void draw_drum_midi_map(void)
     ui.force = 0;
 }
 
+/* Small centered modal over SEQ > MIDI MAP. Never alter the actual map
+ * before OCT+; track number is captured when long-SEL fired. */
+static void draw_drum_map_reset_prompt(void)
+{
+    char trk[18] = "TRACK 1 / RESET";
+    trk[6] = (char)('1' + ui.drum_map_reset_trk);
+    cv_begin(212, 126, T_BG);
+    cv_rrect(0, 0, 212, 126, 5, RGB(28,28,28), T_BG);
+    cv_text_in(7, 12, 198, &AF_M, "RESET MIDI MAP?", T_TEXT, RGB(28,28,28));
+    cv_text_in(7, 38, 198, &AF_S, trk, T_ACCENT, RGB(28,28,28));
+    cv_text_in(7, 58, 198, &AF_S, "RESTORE ALL OCTAVES", T_TEXT, RGB(28,28,28));
+    cv_text_in(8, 91, 95, &AF_S, "OCT- CANCEL", T_DIM, RGB(28,28,28));
+    cv_text_in(108, 91, 95, &AF_S, "OCT+ RESET", T_ACCENT, RGB(28,28,28));
+    cv_blit(14, 65);
+}
 static void draw_drum_perf(void)
 {
     const uint32_t ti = song.sel, first = ui.drum_map_pad < 6u ? 0u : 6u;
     const track_t *t = &trk[ti];
     uint32_t drum = t->eng_req == ENGI_DRUM, lab = t->eng_req == ENGI_DRUMLAB;
+    uint32_t ac = t->eng_req == ENGI_DRUMAC, ind = t->eng_req == ENGI_DRUMIND;
     char b[24];
     if (lab) drumlab_kit_ensure(&trk[ti]);
     lcd_fill(0, 0, 240, 240, T_BG);
     cv_begin(240, 40, T_BG);
     cv_text(6, CAP_IN(M, 24), &AF_M, "DRUM PERFORMANCE", T_TEXT);
     b[0] = 'T'; b[1] = (char)('1' + ti); b[2] = ' '; b[3] = 0;
-    str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : "NO DRUM", sizeof b - 3u);
+    str_cpy(b + 3, drum ? "DRUM-X" : lab ? "DRUM-LAB" : ac ? "DRUM-AC" : ind ? "DRUM-IND" : "NO DRUM", sizeof b - 3u);
     cv_text(6, 30 + CAP_IN(S, 10), &AF_S, b, T_VALUE);
     cv_blit(0, 0);
     cv_begin(240, 16, T_BG);
@@ -2936,7 +2964,7 @@ static void draw_drum_perf(void)
     cv_text(159, CAP_IN(S, 14), &AF_S, "CH", T_DIM);
     cv_text(194, CAP_IN(S, 14), &AF_S, "RETR", T_DIM);
     cv_blit(0, 40);
-    if (drum || lab) for (uint32_t lane = first; lane < first + 6u; lane++)
+    if (drum || lab || ac || ind) for (uint32_t lane = first; lane < first + 6u; lane++)
         draw_drum_live_row(1u, lane);
     cv_begin(240, 28, T_BG);
     cv_text(6, CAP_IN(S, 14), &AF_S, "ALGO: TRACK", T_DIM);
@@ -2952,6 +2980,7 @@ static void ui_draw_body(uint32_t counting)
 #if FELUCCA_NO_SEQUENCER
     static uint32_t live_rows[6];
     static uint8_t live_kind, live_track, live_bank, live_pad;
+    static uint8_t live_custom = 0xFFu, live_reset_open;
     static uint8_t cc_old[6][CM_ROW_SIZE], cc_status[6];
     static uint8_t cc_open, cc_pick_old, cc_count_old, cc_delete_old, cc_wait_old, cc_first_old;
 #endif
@@ -3012,7 +3041,11 @@ static void ui_draw_body(uint32_t counting)
         uint8_t kind = ui.drum_perf_open ? 2u : 1u;
         uint8_t bank = ui.drum_map_pad < 6u ? 0u : 6u;
         uint32_t next[6], changed = 0u;
-        int full = live_kind != kind || live_track != song.sel || live_bank != bank;
+        uint8_t custom = trk[song.sel].eng_req == ENGI_DRUM ?
+                         drum_midi_custom[song.sel] : drumlab_midi_custom[song.sel];
+        int full = live_kind != kind || live_track != song.sel ||
+                   live_bank != bank || live_custom != custom ||
+                   live_reset_open != ui.drum_map_reset_confirm;
         for (uint32_t i = 0; i < 6u; i++) {
             next[i] = drum_live_row_signature(kind == 2u, bank + i);
             if (next[i] != live_rows[i]) changed |= 1u << i;
@@ -3035,9 +3068,14 @@ static void ui_draw_body(uint32_t counting)
         live_track = (uint8_t)song.sel;
         live_bank = bank;
         live_pad = ui.drum_map_pad;
+        live_custom = custom;
+        live_reset_open = ui.drum_map_reset_confirm;
+        if (ui.drum_map_open && ui.drum_map_reset_confirm)
+            draw_drum_map_reset_prompt();
         return;
     }
     live_kind = 0u;
+    live_reset_open = 0u;
 #endif
     if (ui.menu) {
         draw_menu();

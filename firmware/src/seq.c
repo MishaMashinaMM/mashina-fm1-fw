@@ -42,6 +42,7 @@ static int8_t kb_oct[27];                /* (0.8.5) .. on a DRUM track, the kit'
 static volatile uint8_t kb_asleep;       /* MENU > SCREEN OFF (ui.c): the screen dark or waking, a key pressed now only
                                           * wakes it (silent, no layer, its release nothing) */
 static uint8_t last_note = 60;
+static uint32_t last_note_serial; /* increments on each struck note, even repeated same pitch */
 static volatile uint8_t transport_req;   /* 1 start, 2 stop, 3 restart (from the UI) */
 static volatile uint8_t panic_req;       /* bit per track: release every sounding note (preset / engine change) */
 static volatile uint8_t panic_all_req;   /* GLO + OCT-: hard silence, including MIDI sustain and ownership */
@@ -822,6 +823,7 @@ static uint8_t in_norec;                            /* (0.6.84) input_on plays w
 static void input_on(track_t *t, uint32_t note, uint32_t vel)
 {
     last_note = (uint8_t)note;
+    last_note_serial++;
 #if !FELUCCA_NO_SEQUENCER
     if (cin_left)
         cin_keep(t, note, vel);
@@ -1118,6 +1120,7 @@ static void key_on(uint32_t k, track_t *t)
         key_next(k, t);
     kb_sdue[k] = (uint16_t)(gap < 65535u ? gap : 65535u);
     last_note = kb_note[k];                         /* (step entry, the SAMPLE zone: the key's note) */
+    last_note_serial++;
 }
 /* (0.6.81) STRUM: the keys' chords still coming in, a block on */
 static void keys_strum(uint32_t n)
