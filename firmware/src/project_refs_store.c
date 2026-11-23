@@ -19,11 +19,9 @@ _Static_assert(MPRS_BANK_BYTES<=MPRS_SECTOR-MPRS_HEADER_OFF,"two sections must f
 _Static_assert(MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR==0xC0000u,"unexpected project flash reservation");
 
 typedef struct {uint32_t magic,bank,seq,length,crc;} mprs_head_t;
-#if defined(MASHINA_MPRS_IN_POOL)
-static uint8_t mprs_buf[MPRS_BANK_BYTES] __attribute__((section(".pool")));
-#else
-static uint8_t mprs_buf[MPRS_BANK_BYTES];
-#endif
+/* Stream old and new section bytes in 256-byte pages. The former full-bank
+ * 3648-byte static pool buffer reduced AC79 safety headroom below 8 KiB.
+ * No shared scratch is needed: copy A remains untouched while copy B commits. */
 static int mprs_read(uint32_t off,void *dst,uint32_t len);
 static int mprs_erase(uint32_t off);
 static int mprs_prog(uint32_t off,const void *src,uint32_t len);
@@ -32,17 +30,21 @@ static uint32_t mprs_base(uint32_t bank,uint32_t copy)
 {
     return MPRS_BASE+(bank*2u+copy)*MPRS_SECTOR;
 }
-static uint32_t mprs_checksum(const uint8_t *p,uint32_t n)
-{
-    return ~mpr_crc_add(0xFFFFFFFFu,p,n);
-}
+/* Validate the committed sector without allocating a whole-bank image.
+ * A physical read failure or a partially written payload is never accepted. */
 static int mprs_valid(uint32_t bank,uint32_t copy,mprs_head_t *h)
 {
-    uint32_t base=mprs_base(bank,copy);
+    uint32_t base=mprs_base(bank,copy),crc=0xFFFFFFFFu;
+    uint8_t page[256];
     if(mprs_read(base,h,sizeof *h) || h->magic!=MPRS_MAGIC ||
        h->bank!=bank || h->length!=MPRS_BANK_BYTES)return 0;
-    if(mprs_read(base+MPRS_HEADER_OFF,mprs_buf,MPRS_BANK_BYTES))return 0;
-    return mprs_checksum(mprs_buf,MPRS_BANK_BYTES)==h->crc;
+    for(uint32_t off=0;off<MPRS_BANK_BYTES;off+=sizeof page) {
+        uint32_t n=MPRS_BANK_BYTES-off;
+        if(n>sizeof page)n=sizeof page;
+        if(mprs_read(base+MPRS_HEADER_OFF+off,page,n))return 0;
+        crc=mpr_crc_add(crc,page,n);
+    }
+    return ~crc==h->crc;
 }
 static int mprs_latest(uint32_t bank,uint32_t *seq)
 {
@@ -68,7 +70,7 @@ static int mprs_blank(uint32_t bank)
  * A blank slot is represented by zero bytes, NOT a valid MPR1 record. */
 static int mprs_load(uint32_t slot,uint8_t record[MPR_MAX_RECORD])
 {
-    if(slot>=MPRS_SLOTS)return 1;
+    if(slot>=MPRS_SLOTS || !record)return 1;
     uint32_t bank=slot/MPRS_PAIR,seq;
     int copy=mprs_latest(bank,&seq);
     if(copy<0){
@@ -77,7 +79,30 @@ static int mprs_load(uint32_t slot,uint8_t record[MPR_MAX_RECORD])
     }
     mprs_head_t head;
     if(!mprs_valid(bank,(uint32_t)copy,&head))return 2;
-    memcpy(record,mprs_buf+(slot%MPRS_PAIR)*MPR_MAX_RECORD,MPR_MAX_RECORD);
+    return mprs_read(mprs_base(bank,(uint32_t)copy)+MPRS_HEADER_OFF+
+                     (slot%MPRS_PAIR)*MPR_MAX_RECORD,
+                     record,MPR_MAX_RECORD)?2:0;
+}
+/* Assemble one bounded program page without buffering the whole bank.
+ * The new section comes from RAM; its paired section comes from the old,
+ * CRC-verified copy or from zeros when first initializing an erased bank.
+ * An old copy is never erased during this operation. */
+static int mprs_page(uint32_t slot,const uint8_t *record,
+                     uint32_t oldbase,uint32_t off,uint8_t *page,uint32_t n)
+{
+    uint32_t done=0,replace=slot%MPRS_PAIR;
+    while(done<n) {
+        uint32_t index=(off+done)/MPR_MAX_RECORD;
+        uint32_t within=(off+done)%MPR_MAX_RECORD;
+        uint32_t part=MPR_MAX_RECORD-within;
+        if(part>n-done)part=n-done;
+        if(index==replace)memcpy(page+done,record+within,part);
+        else if(oldbase!=0xFFFFFFFFu) {
+            if(mprs_read(oldbase+MPRS_HEADER_OFF+
+                         index*MPR_MAX_RECORD+within,page+done,part))return 2;
+        } else memset(page+done,0,part);
+        done+=part;
+    }
     return 0;
 }
 static int mprs_save(uint32_t slot,const uint8_t record[MPR_MAX_RECORD])
@@ -85,21 +110,31 @@ static int mprs_save(uint32_t slot,const uint8_t record[MPR_MAX_RECORD])
     if(slot>=MPRS_SLOTS || !record)return 1;
     uint32_t bank=slot/MPRS_PAIR,seq;
     int current=mprs_latest(bank,&seq);
+    uint32_t oldbase=0xFFFFFFFFu;
     if(current<0){
         if(!mprs_blank(bank))return 2;
-        memset(mprs_buf,0,sizeof mprs_buf);
     } else {
         mprs_head_t old;
         if(!mprs_valid(bank,(uint32_t)current,&old))return 2;
+        oldbase=mprs_base(bank,(uint32_t)current);
     }
-    memcpy(mprs_buf+(slot%MPRS_PAIR)*MPR_MAX_RECORD,record,MPR_MAX_RECORD);
     uint32_t next=current==0?1u:0u,base=mprs_base(bank,next);
-    mprs_head_t head={MPRS_MAGIC,bank,seq+1u,MPRS_BANK_BYTES,mprs_checksum(mprs_buf,MPRS_BANK_BYTES)};
-    if(mprs_erase(base))return 2;
-    for(uint32_t off=0;off<MPRS_BANK_BYTES;off+=256u){
+    uint32_t crc=0xFFFFFFFFu;
+    uint8_t page[256];
+    /* Calculate the intended complete CRC before erasing anything. */
+    for(uint32_t off=0;off<MPRS_BANK_BYTES;off+=sizeof page) {
         uint32_t n=MPRS_BANK_BYTES-off;
-        if(n>256u)n=256u;
-        if(mprs_prog(base+MPRS_HEADER_OFF+off,mprs_buf+off,n))return 2;
+        if(n>sizeof page)n=sizeof page;
+        if(mprs_page(slot,record,oldbase,off,page,n))return 2;
+        crc=mpr_crc_add(crc,page,n);
+    }
+    mprs_head_t head={MPRS_MAGIC,bank,seq+1u,MPRS_BANK_BYTES,~crc};
+    if(mprs_erase(base))return 2;
+    for(uint32_t off=0;off<MPRS_BANK_BYTES;off+=sizeof page){
+        uint32_t n=MPRS_BANK_BYTES-off;
+        if(n>sizeof page)n=sizeof page;
+        if(mprs_page(slot,record,oldbase,off,page,n) ||
+           mprs_prog(base+MPRS_HEADER_OFF+off,page,n))return 2;
     }
     if(mprs_prog(base,&head,sizeof head))return 2;
     mprs_head_t verify;
