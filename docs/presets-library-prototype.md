@@ -407,7 +407,7 @@ browser. Enable the simulator-specific feature integration and validate the
 WASM build/audio/UI separately; never substitute a hardware write-enabled
 firmware image for an emulator artifact.
 
-### Branch-only MPR1/LIB32 WebAssembly preview (24 November 2026 testing gate)
+### Branch-only MPR1/LIB32 WebAssembly preview (23 November 2026 testing gate)
 
 The default emulator build remains unchanged. To compile the opt-in browser
 simulation with reference-only MPR1 projects and the 32 LIBRARY slots, set
