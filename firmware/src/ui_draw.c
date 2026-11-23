@@ -2803,7 +2803,7 @@ static uint32_t drum_live_row_signature(uint32_t perf, uint32_t lane)
     sig = (sig ^ (lane == ui.drum_map_pad)) * 16777619u;
     if (drum || lab || ac || ind) {
         uint32_t note = drum ? (drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane])
-                             : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36u + lane);
+                             : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : (ac ? AC_NOTES[lane] : 36u + lane));
         sig = (sig ^ (lab ? drumlab_kit[ti][lane].kind : 0u)) * 16777619u;
         sig = (sig ^ (perf ? drum_perf_curve[ti][lane] : note)) * 16777619u;
         sig = (sig ^ (perf ? drum_perf_sound[ti][lane] : (uint8_t)drum_pad_pan[ti][lane])) * 16777619u;
@@ -2865,7 +2865,7 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
             cv_text(194, CAP_IN(M, 20), ink_w(face, "OVR") < 45 ? face : &AF_M, drum_retrigger[ti][lane] ? "RST" : "OVR", col);
         } else {
             uint32_t note = drum ? (drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane])
-                                 : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36u + lane);
+                                 : (drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : (ac ? AC_NOTES[lane] : 36u + lane));
             fmt_int(b, (int32_t)note);
             cv_text(68, CAP_IN(M, 20), ink_w(face, b) < 46 ? face : &AF_M, b, col);
             if (!(ac || ind)) {
