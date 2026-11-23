@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {storeSectors} from "../web/emu/worklet.js";
+import {storeSectors,restoreSectors} from "../web/emu/worklet.js";
 import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
 import {decodeProject} from "../web/projects-library-codec.mjs";
@@ -206,3 +206,15 @@ assert.equal(decodeProject(mixRefs.inspection.projects.sections[0]).refs[0],0);
 assert.equal(mixRefs.inspection.users[0].name,"PLATO");
 assert.equal(mixRefs.inspection.library[0].name,"THALES");
 console.log("PASS: project refs preserve opaque settings and sound banks, reject missing USER/empty section, support combined USER+LIBRARY+project edits");
+
+
+const {instance:bootedEdited}=await WebAssembly.instantiate(wasm,{});
+const edited=bootedEdited.exports;
+edited._initialize();edited.web_nor_erase();
+restoreSectors(new Uint8Array(edited.memory.buffer,edited.web_nor(),edited.web_nor_size()),
+  decodeEmulatorFlash(mixRefs.snapshot));
+edited.web_boot();
+assert.equal(edited.web_mpr_test_used(),1,"edited project section lost after independent WASM reboot");
+assert.equal(edited.web_mpr_ref(0),1,"project T1 USER 001 reference not restored in real firmware");
+assert.equal(edited.web_mpr_ref(1),34,"project T2 reference changed unexpectedly");
+console.log("PASS: real WASM fresh boot reads selective USER/LIBRARY changes and remapped MPR1 track references");
