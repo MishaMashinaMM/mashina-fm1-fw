@@ -212,7 +212,12 @@ export async function captureProjectsOnly(request,firmware="",progress=()=>{}) {
   await projectCapability(request);
   const archive=await captureBackup(archiveRequest(request),firmware,
       (done,total)=>progress("PROJECTS",done,total));
-  return projectsBackup(archiveSections(readBackup(archive)));
+  const parsed=readBackup(archive);
+  // Do not export an apparently valid projects-only file if the current
+  // project's live A–D aliases disagree with their canonical bank records.
+  // That mismatch indicates an inconsistent snapshot or in-flight change.
+  archiveProjectAliases(parsed);
+  return projectsBackup(archiveSections(parsed));
 }
 /* Project-only restore first scans USER slots and rejects broken references.
  * No project is changed until every imported MPR1 section has been validated
