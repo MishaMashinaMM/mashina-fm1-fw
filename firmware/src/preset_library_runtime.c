@@ -21,6 +21,13 @@ static void library_track_name(const track_t *t, char *out)
     uint32_t i = (uint32_t)(t - trk);
     str_cpy(out, i < NTRK ? library_track_names[i] : "", 13);
 }
+/* Both uploaded records and compiled-factory LIBRARY fallbacks must update
+ * this display cache; flash reads are forbidden during mixer redraw. */
+static void library_track_name_set(const track_t *t, const char *name)
+{
+    uint32_t i = (uint32_t)(t - trk);
+    if (i < NTRK) str_cpy(library_track_names[i], name ? name : "", 13);
+}
 
 static int lib_flash_read(uint32_t addr, void *p, uint32_t n)
 {
@@ -140,12 +147,10 @@ static int library_sound_load(uint32_t slot)
     /* A library source marker is NOT a USER slot: user_of() returns none.
      * A project save stores the full sound snapshot, not this reference. */
     {
-        uint32_t ti = (uint32_t)(t - trk), j;
-        if (ti < NTRK) {
-            for (j = 0; j < 12u && r->name[j]; j++)
-                library_track_names[ti][j] = r->name[j];
-            library_track_names[ti][j] = 0;
-        }
+        char name[13];
+        memcpy(name, r->name, 12u);
+        name[12] = 0;
+        library_track_name_set(t, name);
     }
     t->user = (uint8_t)(UP_SLOTS + slot + 1u);
     load_end(t);
