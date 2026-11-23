@@ -81,14 +81,14 @@ tr:nth-child(2n){background:#161616}
  <p id="emu-summary" class="stats">No emulator snapshot loaded.</p>
  <div class="catalog-shell" id="emu-editor" aria-label="Selective offline LIBRARY patching">
   <h2>SELECTIVE LIBRARY RESTORE · OFFLINE JSON ONLY</h2>
-  <p>Build a new complete emulator backup with selected LIBRARY 033–064 sounds. The source is either a validated factory preset or a saved LIBRARY override from a second emulator JSON. USER slots, project settings, and all unrelated flash sectors remain byte-identical. The current browser saves and FM1 are never changed.</p>
+  <p>Build a new complete emulator backup with selected LIBRARY 033–064 sounds. The source can be a validated factory preset, a saved LIBRARY override, or a complete USER sound (including matching FM6/drum companion) from this or a second emulator JSON. USER slots, project settings, and all unrelated flash sectors remain byte-identical. The current browser saves and FM1 are never changed.</p>
   <div class="toolbar">
    <label class="file">Optional: Load source emulator JSON <input id="emu-source-file" type="file" accept=".json,application/json"/></label>
    <span class="subtle" id="emu-source-info">No second snapshot selected.</span>
   </div>
   <div class="toolbar">
    <label for="emu-source-type">Source</label>
-   <select id="emu-source-type" class="catalog-select"><option value="factory">Factory 107-preset catalog</option><option value="snapshot">Saved LIBRARY overrides from source JSON</option></select>
+   <select id="emu-source-type" class="catalog-select"><option value="factory">Factory 107-preset catalog</option><option value="snapshot">Saved LIBRARY overrides from source JSON</option><option value="user">Saved USER presets from source JSON (complete records only)</option></select>
    <select id="emu-source-select" class="catalog-select" aria-label="Source sound"></select>
    <label for="emu-target-select">Destination</label>
    <select id="emu-target-select" class="catalog-select" aria-label="Destination LIBRARY position"></select>
@@ -155,7 +155,7 @@ import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDev
 import {restoreProjectsBackup,projectsBackup} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
 import {inspectEmulatorFlash,resolveFactoryFallbacks} from "./emulator-library-inspector.mjs";
-import {snapshotSourceRecords,factorySourceRecords,editEmulatorLibrarySnapshot} from "./emulator-snapshot-editor.mjs";
+import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulatorLibrarySnapshot} from "./emulator-snapshot-editor.mjs";
 import {inspectProjectReferences as inspectUsage} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
@@ -537,11 +537,12 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
      "Read-only inspection completed. Physical bootloader/update ownership still requires verification.")+
     "\nSaved mashina-flash-diagnostic.json — share that file for analysis.";
 }));
-let emuInspection=null,emuOriginalFlash=null,emuSnapshotSources=[],emuFactorySources=[];
+let emuInspection=null,emuOriginalFlash=null,emuSnapshotSources=[],emuUserSources=[],emuFactorySources=[];
 let emuSourceLabel="",emuPending=new Map();
 const emuSetText=(id,value)=>$(id).textContent=value;
 function emuRefreshSource(){
-  const items=$("emu-source-type").value==="factory"?emuFactorySources:emuSnapshotSources;
+  const type=$("emu-source-type").value;
+  const items=type==="factory"?emuFactorySources:type==="user"?emuUserSources:emuSnapshotSources;
   const sel=$("emu-source-select");sel.replaceChildren();
   for(const item of items){
     const opt=document.createElement("option");
@@ -569,7 +570,8 @@ function emuUpdateEditor(){
       (proposed?" (queued)":"");
     target.append(o);
   }
-  const choices=$("emu-source-type").value==="factory"?emuFactorySources:emuSnapshotSources;
+  const type=$("emu-source-type").value;
+  const choices=type==="factory"?emuFactorySources:type==="user"?emuUserSources:emuSnapshotSources;
   const selected=choices.find(x=>x.id===$("emu-source-select").value);
   $("emu-stage").disabled=!ready||!selected?.available;
   $("emu-clear-target").disabled=!ready;
@@ -599,7 +601,8 @@ $("emu-source-type").addEventListener("change",emuRefreshSource);
 $("emu-source-select").addEventListener("change",emuUpdateEditor);
 $("emu-stage").addEventListener("click",()=>{
   if(!emuInspection||!emuOriginalFlash)return;
-  const items=$("emu-source-type").value==="factory"?emuFactorySources:emuSnapshotSources;
+  const type=$("emu-source-type").value;
+  const items=type==="factory"?emuFactorySources:type==="user"?emuUserSources:emuSnapshotSources;
   const source=items.find(x=>x.id===$("emu-source-select").value);
   const slot=Number($("emu-target-select").value);
   if(!source?.available||!Number.isInteger(slot)||slot<33||slot>64)return;
@@ -638,9 +641,12 @@ $("emu-source-file").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";
   if(!file)return;
   try{
-    const sources=snapshotSourceRecords(await file.text());
-    emuSnapshotSources=sources;emuSourceLabel=file.name;
-    emuSetText("emu-source-info",file.name+": "+sources.length+" complete saved LIBRARY overrides available as copy sources.");
+    const raw=await file.text();
+    const sources=snapshotSourceRecords(raw);
+    const userSources=userSourceRecords(raw);
+    emuSnapshotSources=sources;emuUserSources=userSources;emuSourceLabel=file.name;
+    emuSetText("emu-source-info",file.name+": "+sources.length+" saved LIBRARY overrides + "+
+      userSources.filter(x=>x.available).length+"/"+userSources.length+" complete USER sounds available as copy sources.");
     emuRefreshSource();
   }catch(error){
     emuSetText("emu-source-info","Could not read "+file.name+": "+error.message+". Previous source retained.");
@@ -714,7 +720,12 @@ $("inspect-emu").addEventListener("change",async e=>{
     }
     showEmulatorSnapshot(next,file.name);
     emuInspection=next;emuOriginalFlash=snapshotFile;
-    emuPending.clear();emuUpdateEditor();
+    if(!emuSourceLabel){
+      emuSnapshotSources=snapshotSourceRecords(snapshotFile);
+      emuUserSources=userSourceRecords(snapshotFile);
+      emuSetText("emu-source-info","Using inspected target JSON as sound source. Import a second snapshot to switch sources.");
+    }
+    emuPending.clear();emuRefreshSource();
     $("export-emu-projects").disabled=false;
     $("export-emu-library").disabled=!next.library.some(x=>x.status==="overridden");
     status.textContent="Loaded "+file.name+" successfully. Saved preset data came from JSON; factory default labels come from the protected firmware catalog."+factoryNote+" Emulator and FM1 are untouched.";
