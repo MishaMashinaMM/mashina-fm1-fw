@@ -12,6 +12,7 @@
  * retired sector, verify blank. An interrupted operation can be restarted
  * only if all remaining sectors are still valid legacy records or blank.
  */
+static void fm1_wdt_feed(void); /* firmware HAL; host test supplies a stub */
 static int mprs_erased_sector(uint32_t bank,uint32_t copy)
 {
     uint8_t page[256];
