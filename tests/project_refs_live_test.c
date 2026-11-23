@@ -142,6 +142,15 @@ int main(void)
     trk[3].p[P_MUTE]=0;
     bad+=check("active unassigned track cannot be silently lost on save",
                project_save_as(1,"SET B")==2 && !project_used(1));
+    bad+=check("project SAVE error identifies active unreferenced track",
+               ui.msg[0]=='T' && ui.msg[1]=='4');
+    /* The NAME screen must remain open after a failed reference-only save.
+     * Previously it closed while the chosen project section stayed EMPTY. */
+    name_open(NK_PROJ_SAVE,1u);
+    name_ok();
+    bad+=check("failed project SAVE keeps the NAME editor open for correction",
+               name_on() && !project_used(1));
+    name_close();
     for(uint32_t k=3;k<NTRK;k++)trk[k].p[P_MUTE]=1;
     /* MPR1 must not silently discard an edited sound simply because its
      * track still carries the source USER slot. */
