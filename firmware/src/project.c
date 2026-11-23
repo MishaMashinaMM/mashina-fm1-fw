@@ -972,7 +972,8 @@ static uint32_t proj_packed_size(const project_t *q)
     {   /* optional per-track fixed drum pan ('P' 'N'), signed -64..64 */
         uint32_t count = 0;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB)
+            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB ||
+                q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
                 for (i = 0; i < 12u; i++)
                     if (q->pad_pan[t][i]) { count++; break; }
         if (count) n += 3u + 12u * count;
@@ -980,7 +981,8 @@ static uint32_t proj_packed_size(const project_t *q)
     {   /* optional per-track drum pitch offsets ('P' 'T'), signed -24..24 */
         uint32_t count = 0;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB)
+            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB ||
+                q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
                 for (i = 0; i < 12u; i++)
                     if (q->pad_pitch[t][i]) { count++; break; }
         if (count) n += 3u + 12u * count;
@@ -1173,7 +1175,8 @@ static int proj_pack(project_store_t *out, const project_t *q)
     {   /* Stage 22B: pan values only on tracks with a non-centred pad. */
         uint32_t mask = 0, lane;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB)
+            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB ||
+                q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
                 for (lane = 0; lane < 12u; lane++)
                     if (q->pad_pan[t][lane]) { mask |= 1u << t; break; }
         if (mask) {
@@ -1188,7 +1191,8 @@ static int proj_pack(project_store_t *out, const project_t *q)
     {   /* Stage 22B: pitch offsets only on tracks with a changed pad. */
         uint32_t mask = 0, lane;
         for (t = 0; t < NPART; t++)
-            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB)
+            if (q->t[t].engine == ENGI_DRUM || q->t[t].engine == ENGI_DRUMLAB ||
+                q->t[t].engine == ENGI_DRUMAC || q->t[t].engine == ENGI_DRUMIND)
                 for (lane = 0; lane < 12u; lane++)
                     if (q->pad_pitch[t][lane]) { mask |= 1u << t; break; }
         if (mask) {
@@ -2129,9 +2133,11 @@ static void project_capture(project_t *p)
         p->dx_note_on[i] = trk[i].eng_req == ENGI_DRUM ? drum_midi_custom[i] : 0u;
         if (p->dx_note_on[i])
             memcpy(p->dx_note[i], drum_midi_note[i], 12u);
-        if (trk[i].eng_req == ENGI_DRUM || trk[i].eng_req == ENGI_DRUMLAB)
+        if (trk[i].eng_req == ENGI_DRUM || trk[i].eng_req == ENGI_DRUMLAB ||
+            trk[i].eng_req == ENGI_DRUMAC || trk[i].eng_req == ENGI_DRUMIND)
             memcpy(p->pad_pan[i], drum_pad_pan[i], 12u);
-        if (trk[i].eng_req == ENGI_DRUM || trk[i].eng_req == ENGI_DRUMLAB)
+        if (trk[i].eng_req == ENGI_DRUM || trk[i].eng_req == ENGI_DRUMLAB ||
+            trk[i].eng_req == ENGI_DRUMAC || trk[i].eng_req == ENGI_DRUMIND)
             memcpy(p->pad_pitch[i], drum_pad_pitch[i], 12u);
         memcpy(p->perf_curve[i], drum_perf_curve[i], 12u);
         memcpy(p->perf_sound[i], drum_perf_sound[i], 12u);
