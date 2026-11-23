@@ -43,6 +43,14 @@
 #if FELUCCA_PROJECT_REFS_WRITE && (!FELUCCA_PROJECT_REFS || !FELUCCA_LIB32_WRITE)
 #error "Project reference writes require explicit project and library write gates"
 #endif
+/* One-time reformatting is destructive to OLD song/project section sectors.
+ * It is NEVER enabled merely by allowing normal project writes. */
+#ifndef FELUCCA_PROJECT_REFS_FORMAT
+#define FELUCCA_PROJECT_REFS_FORMAT 0
+#endif
+#if FELUCCA_PROJECT_REFS_FORMAT && (!FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_FLASH)
+#error "MPR1 first-install formatting requires separate explicit write permissions"
+#endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
 #endif
