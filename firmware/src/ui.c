@@ -1741,6 +1741,34 @@ static int project_reference_load(uint32_t track, uint32_t ref)
     song.sel = (uint8_t)selected;
     return rc;
 }
+/* Preflight every section reference BEFORE touching any track. A missing
+ * USER preset or damaged LIBRARY record must refuse the entire recall;
+ * otherwise a six-track section could be only half restored. Unassigned 255
+ * is allowed (an inactive/unused track). The caller must separately restore
+ * project-owned settings once the new serializer is connected. */
+static int project_references_load_all(const uint8_t refs[NTRK])
+{
+    uint32_t k, i;
+    if (!refs) return 1;
+    for (k = 0; k < NTRK; k++) {
+        uint32_t ref = refs[k];
+        if (ref == 255u) continue;
+        if (ref >= UP_SLOTS + LIB_FACTORY_SLOTS) return 1;
+        if (ref < UP_SLOTS) {
+            if (!up_used(ref)) return 1;
+        } else {
+            up_rec_t *record = (up_rec_t *)library_record;
+            if (lib_slot_read(ref - UP_SLOTS, library_record)) return 1;
+            if (lib_record_valid(library_record) && up_valid(record)) continue;
+            for (i = 0; i < LIB_ENTRY; i++)
+                if (library_record[i]) return 1; /* damaged, not empty */
+        }
+    }
+    for (k = 0; k < NTRK; k++)
+        if (refs[k] != 255u && project_reference_load(k, refs[k]))
+            return 1;
+    return 0;
+}
 #endif
 
 static uint32_t preset_all_pos(uint32_t *total)
