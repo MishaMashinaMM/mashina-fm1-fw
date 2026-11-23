@@ -66,6 +66,13 @@ a { color: inherit; }
 .start p { margin: 0; max-width: 32em; text-align: center; color: #fff; }
 .keys, footer { margin: 16px 0 0; color: var(--dim); text-align: center; }
 .keys span { white-space: nowrap; margin: 0 8px; }
+.emu-flash-controls { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:6px; }
+.emu-flash-controls button { font:inherit; padding:6px 12px; cursor:pointer; }
+.emu-flash-controls label { display:inline-flex; align-items:center; gap:5px; }
+.emu-flash-controls input { max-width:220px; }
+#flash-status { max-width:800px; margin:6px auto; }
+#backup-controls details { margin-top:8px; }
+#backup-controls summary { cursor:pointer; }
 kbd { font: 600 11px ui-monospace, Menlo, monospace; border: 1px solid var(--rule); padding: 0 4px; color: var(--fg); }
 footer { margin-top: 12px; font-size: 12px; }
 .midi-test { max-width: 900px; margin: 18px auto; padding: 12px 16px; border: 1px solid var(--rule); border-radius: 8px; }
@@ -89,9 +96,17 @@ footer small { font-size: 11px; opacity: .8; }
 <div class="mashina-site-header"><a class="mashina-brand" href="https://github.com/MishaMashinaMM/mashina-fm1-fw"><strong>MASHINA</strong><span>FM1 PERFORMANCE FW</span></a></div>
 <p id="emulator-build-label" style="margin:4px 0 12px;text-align:center;font:600 12px ui-monospace,monospace;color:#27272a">Build: @VERSION@@PREVIEW@</p>
 <div class="keys" id="backup-controls">
-  <label><span data-ml="backup">Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json):</span> <input id="backup-file" type="file" accept=".json,application/json"></label>
-  <span data-ml="optional">Optional: select before Switch on. The backup is validated and loaded into an isolated session; existing browser saves and your original file are not changed.</span>
-  <p id="backup-status" role="status" data-ml="none">No backup selected — normal emulator.</p>
+  <div class="emu-flash-controls">
+    <button id="flash-export" type="button">Export emulator data (.json)</button>
+    <label>Import emulator data (.json) <input id="flash-import" type="file" accept=".json,application/json"></label>
+  </div>
+  <p id="flash-status" role="status">Export includes all saved USER/LIBRARY presets, projects, settings and RESTORE LAST data. Import before Switch on: isolated session, no changes to existing browser saves.</p>
+  <details>
+    <summary>Import an older MASHINA / Jiant device backup instead</summary>
+    <label><span data-ml="backup">Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json):</span> <input id="backup-file" type="file" accept=".json,application/json"></label>
+    <span data-ml="optional">Optional: select before Switch on. The backup is validated and loaded into an isolated session; existing browser saves and your original file are not changed.</span>
+    <p id="backup-status" role="status" data-ml="none">No backup selected — normal emulator.</p>
+  </details>
 </div>
 <div class="device" id="device">
   <svg id="panel" viewBox="0 0 1000 624" aria-hidden="true"></svg>
@@ -147,6 +162,7 @@ footer small { font-size: 11px; opacity: .8; }
 
 <script type="module">
 import { readBackup } from "./fm1backup.js";
+import {encodeEmulatorFlash,decodeEmulatorFlash} from "./emulator-flash-backup.mjs";
 const NS = "http://www.w3.org/2000/svg";
 // panel.c's labels (bit = label) and encoder roles
 const B = { FX: 0, SCL: 1, ENV: 2, LFO: 3, EDIT: 4, GLO: 5, HOME: 6, SAVE: 7, ARP: 8, SEQ: 9, PLAY: 10, REC: 11, "OCT-": 12, "OCT+": 13 };
@@ -157,6 +173,46 @@ const WHITE = [0, 2, 4, 6, 7, 9, 11, 12, 14, 16, 18, 19, 21, 23, 24, 26];
 const BLACK = [1, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25];
 const BLACK_AFTER = [0, 1, 2, 4, 5, 7, 8, 9, 11, 12, 14];      // the white key each black one follows
 const STORE = "felucca-emu-flash";
+const flashStatus=document.getElementById("flash-status");
+const flashImport=document.getElementById("flash-import");
+const flashExport=document.getElementById("flash-export");
+let flashSession=false;
+let snapshotRequested=false;
+function downloadFlash(sectors){
+  const doc=encodeEmulatorFlash(sectors);
+  const blob=new Blob([JSON.stringify(doc,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="mashina-emulator-flash-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  flashStatus.textContent="Exported "+doc.sectors.length+" saved flash sectors. Keep the JSON safe.";
+}
+flashExport.addEventListener("click",()=>{
+  try {
+    if(node){
+      if(snapshotRequested)return;
+      snapshotRequested=true;
+      flashExport.disabled=true;
+      node.port.postMessage({type:"flash-snapshot"});
+      flashStatus.textContent="Capturing current emulator data...";
+    } else downloadFlash(loadFlash());
+  }catch(err){
+    snapshotRequested=false;flashExport.disabled=false;
+    flashStatus.textContent="Export failed: "+err.message;
+  }
+});
+flashImport.addEventListener("change",async()=>{
+  if(node){flashStatus.textContent="Import requires restarting the emulator page first.";return;}
+  if(!flashImport.files[0])return;
+  try {
+    const sectors=decodeEmulatorFlash(await flashImport.files[0].text());
+    flashStatus.textContent="Validated "+Object.keys(sectors).length+" saved sectors. Switch on to open an isolated imported session; existing browser data will remain unchanged.";
+  }catch(err){flashStatus.textContent="Import refused: "+err.message;}
+});
 
 // ------------------------------------------------------------------ the panel
 // Two drawings of the same controls: WIDE after the FM-1's own layout, TALL for a phone held upright (the
@@ -595,9 +651,13 @@ async function switchOn() {
   try {
     const ac = new AudioContext({ sampleRate: 44100, latencyHint: "interactive" });
     const backupFile = document.getElementById("backup-file").files[0];
+    const importFile = flashImport.files[0];
+    if (importFile && backupFile) throw Error("Choose only one import type");
     const backup = backupFile ? readBackup(await backupFile.text()) : null;
+    const importedFlash = importFile ? decodeEmulatorFlash(await importFile.text()) : null;
     const backupMode = !!backup;
-    let sectors = backupMode ? {} : loadFlash();
+    flashSession = !!importedFlash;
+    let sectors = backupMode ? {} : importedFlash || loadFlash();
     const [wasm] = await Promise.all([
       fetch("felucca.wasm", { cache: "no-cache" }).then((r) => { if (!r.ok) throw new Error(`felucca.wasm: ${r.status}`); return r.arrayBuffer(); }),
       ac.audioWorklet.addModule("worklet.js?v=" + Date.now())]);
@@ -610,6 +670,12 @@ async function switchOn() {
         if (m.type === "ready") {
           res();
         }
+        else if (m.type === "flash-snapshot") {
+          snapshotRequested=false;
+          flashExport.disabled=false;
+          try { downloadFlash(m.sectors); }
+          catch(err) { flashStatus.textContent="Export failed: "+err.message; }
+        }
         else if (m.type === "backup-ready")
           document.getElementById("backup-status").textContent =
             `Loaded ${m.objects} backup entries in an isolated emulator session.`;
@@ -618,7 +684,7 @@ async function switchOn() {
           if (m.drumPads) midiTestPadMap(m.drumPads);
           if (m.fb) drawScreen(m.fb);
           if (m.leds) drawLights(lastLeds = m.leds, m.anim);
-          if (m.sectors && !backupMode && !saveFlash(m.sectors) && !warned) {
+          if (m.sectors && !backupMode && !flashSession && !saveFlash(m.sectors) && !warned) {
             warned = true;
             console.warn("JIANT: this browser does not keep the saves; they last until the page closes.");
           }
@@ -628,6 +694,8 @@ async function switchOn() {
     });
     await ac.resume();
     document.getElementById("backup-file").disabled = true;
+    flashImport.disabled=true;
+    if(flashSession)flashStatus.textContent="Isolated imported emulator running. Export any changes before closing: browser saves remain untouched.";
     document.getElementById("start").hidden = true;
     midiTestEnable(true);
     go.textContent = "On";
@@ -638,6 +706,7 @@ async function switchOn() {
     midiOn();
   } catch (err) {
     node = null;
+    flashSession=false;
     midiTestEnable(false);
     go.disabled = false;
     go.textContent = "Switch on";
