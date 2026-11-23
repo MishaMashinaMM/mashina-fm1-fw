@@ -178,3 +178,149 @@ export function userSourceRecords(snapshot){
     return result;
   });
 }
+
+/* Selective USER destination copy. Unlike LIBRARY, USER records live in
+ * two ordinary ST/UPB1 A/B banks (16 × 192 bytes), and their matching
+ * FM6/drum sidecars live in the distinct UPF6 A/B object. Update both only
+ * inside an exported full emulator JSON; never write device or browser.
+ */
+function readStCandidate(sectors,off,copy,type,expectedLength){
+  const d=sector(sectors,off);
+  if(u32(d,0)!==0x554c4546||
+     (d[4]|d[5]<<8)!==type||
+     (d[6]|d[7]<<8)!==copy||
+     u32(d,12)!==expectedLength||
+     u32(d,28)!==crc32(d.slice(0,28)))return null;
+  const data=d.slice(256,256+expectedLength);
+  if(u32(d,16)!==crc32(data))return null;
+  return {copy,sequence:u32(d,8),data};
+}
+function newerRecord(a,b){
+  return !a?b:!b?a:newer(a.sequence,b.sequence)?b:a;
+}
+function stState(sectors,addresses,type,expectedLength,label){
+  const a=readStCandidate(sectors,addresses[0],0,type,expectedLength);
+  const b=readStCandidate(sectors,addresses[1],1,type,expectedLength);
+  const current=newerRecord(a,b);
+  check(current||addresses.every(off=>isErased(sector(sectors,off))),
+        label+" contains unknown or damaged stored data");
+  return current;
+}
+function stCommitted(type,copy,seq,data){
+  check(data.length<=3840,"ST payload too large");
+  const out=new Uint8Array(SECTOR).fill(255);
+  put32(out,0,0x554c4546);
+  out[4]=type&255;out[5]=type>>8;
+  out[6]=copy;out[7]=0;
+  put32(out,8,seq);put32(out,12,data.length);
+  put32(out,16,crc32(data));put32(out,20,0xffffffff);
+  put32(out,24,0xffffffff);put32(out,28,crc32(out.slice(0,28)));
+  out.set(data,256);return out;
+}
+function userTag(raw){
+  let h=2166136261;
+  for(let i=0;i<192;i++)if(i<4||i>=16)
+    h=Math.imul(h^raw[i],16777619)>>>0;
+  return h;
+}
+function getUpfState(sectors){
+  const addresses=[0x9f000,0xfe000];
+  const a=readStCandidate(sectors,addresses[0],0,8,3728);
+  const b=readStCandidate(sectors,addresses[1],1,8,3728);
+  const current=newerRecord(a,b);
+  if(current)check(u32(current.data,0)===0x36465055&&
+    (current.data[4]|current.data[5]<<8)===1&&
+    (current.data[6]|current.data[7]<<8)===32,
+    "UPF6 companion bank has an invalid header");
+  if(!current){
+    const retired=[0,1].map(i=>
+      readStCandidate(sectors,addresses[i],i,7,3472));
+    const available=addresses.map((off,i)=>isErased(sector(sectors,off))?i:-1).filter(x=>x>=0);
+    check(available.length>0&&
+      addresses.every((off,i)=>isErased(sector(sectors,off))||retired[i]),
+      "UPF6 companion sectors are foreign or damaged");
+    const data=new Uint8Array(3728);
+    put32(data,0,0x36465055);
+    data[4]=1;data[6]=32;
+    return {data,current:null,copy:available[0],addresses};
+  }
+  return {data:current.data.slice(),current,
+    copy:current.copy===0?1:0,addresses};
+}
+export function editEmulatorUserSnapshot(snapshot,edits){
+  check(Array.isArray(edits)&&edits.length>0&&edits.length<=32,
+    "Provide 1..32 USER changes");
+  const before=inspectEmulatorFlash(snapshot);
+  const sectors=decodeEmulatorFlash(snapshot),out={...sectors};
+  const prepared=[],seen=new Set(),banks=new Map();
+  for(const edit of edits){
+    const slot=edit?.slot;
+    check(Number.isInteger(slot)&&slot>=1&&slot<=32&&!seen.has(slot),
+      "Invalid or repeated USER slot "+slot);
+    seen.add(slot);
+    const rec=edit.recordBytes===null?new Uint8Array(304):
+      Uint8Array.from(decodeRecord(edit.recordBytes).recordBytes);
+    const index=slot-1,bank=Math.floor(index/16);
+    if(!banks.has(bank))banks.set(bank,[]);
+    banks.get(bank).push({slot,index:index%16,rec});
+    prepared.push({slot,previous:before.users[index].name||"Empty",
+      next:edit.recordBytes===null?"Empty":decodeRecord(rec).name});
+  }
+  const changedOffsets=new Set();
+  for(const [bank,items] of banks){
+    const addresses=[0xdc000+bank*8192,0xdd000+bank*8192];
+    const current=stState(sectors,addresses,5+bank,3080,"USER bank "+bank);
+    const payload=current?current.data.slice():new Uint8Array(3080);
+    if(!current){
+      put32(payload,0,0x31425055);
+      payload[4]=192;payload[6]=16;
+    }
+    check(u32(payload,0)===0x31425055&&
+      (payload[4]|payload[5]<<8)===192&&
+      (payload[6]|payload[7]<<8)===16,"Invalid USER bank payload");
+    for(const {index,rec} of items)payload.set(rec.slice(0,192),8+index*192);
+    const copy=current?.copy===0?1:0;
+    out[addresses[copy]]=stCommitted(5+bank,copy,current?((current.sequence+1)>>>0):1,payload);
+    changedOffsets.add(addresses[copy]);
+  }
+  // Rebuild only companion entries for changed USER slots. All 32 other
+  // tags and independent sound companions remain byte-for-byte unchanged.
+  const upf=getUpfState(sectors);
+  let used=u32(upf.data,8);
+  for(const {slot,rec} of [...banks.values()].flat()){
+    const index=slot-1,offset=16+index*116;
+    upf.data.fill(0,offset,offset+116);
+    if(rec[0]===0xa5&&[10,12,15,19,20].includes(rec[2])){
+      check(rec[2]===12||rec[303]===0xd3,"Missing complete USER drum-kit companion");
+      put32(upf.data,offset,userTag(rec.slice(0,192)));
+      upf.data.set(rec.slice(192,304),offset+4);
+      used=(used|(1<<index))>>>0;
+    }else used=(used&(~(1<<index)))>>>0;
+  }
+  put32(upf.data,8,used);
+  out[upf.addresses[upf.copy]]=stCommitted(8,upf.copy,
+    upf.current?((upf.current.sequence+1)>>>0):1,upf.data);
+  changedOffsets.add(upf.addresses[upf.copy]);
+  const exported=encodeEmulatorFlash(out);
+  const after=inspectEmulatorFlash(exported);
+  const sources=userSourceRecords(exported);
+  for(const {slot,recordBytes} of edits){
+    const read=after.users[slot-1];
+    if(recordBytes===null)check(read.status==="empty","USER clear did not persist");
+    else{
+      const from=sources.find(x=>x.id==="U"+slot);
+      check(read.status==="saved"&&from?.available&&
+            JSON.stringify(from.recordBytes)===JSON.stringify(recordBytes),
+        "USER "+slot+" read-back differs from requested full sound");
+    }
+  }
+  check(JSON.stringify(after.projects)===JSON.stringify(before.projects),
+    "Editing USER sounds unexpectedly changed project references");
+  check(JSON.stringify(after.library)===JSON.stringify(before.library),
+    "Editing USER sounds unexpectedly changed LIBRARY presets");
+  for(const [off,bytes] of Object.entries(sectors))
+    if(!changedOffsets.has(Number(off)))
+      check(JSON.stringify(Array.from(out[off]))===JSON.stringify(Array.from(bytes)),
+        "Editing USER unexpectedly changed NOR sector "+off);
+  return {snapshot:exported,changes:prepared,inspection:after};
+}
