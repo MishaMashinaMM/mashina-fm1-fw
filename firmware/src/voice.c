@@ -697,6 +697,78 @@ static volatile uint8_t asleep_hit;                     /* (0.6.28) a note went 
                                                          * their sounds and steps kept (fx.c mix_part) */                                /* (0.6.15) bit k: track k muted by GLO's solo / the FX layer's
                                                          * black key (perform.c): no new notes, as MUTE (a MIDI mute: a
                                                          * silenced track's voices end, it costs nothing) */
+/* Drum timing is a trigger scheduler, not an audio delay effect.
+ * Every slot retains one hit so rapid repeats stay separate. A full queue
+ * falls back to an immediate hit rather than silently losing fingerdrumming.
+ * Audio-block time is sample based and independent of transport/BPM. */
+#define DRUM_DELAY_EVENTS 48u
+typedef struct {
+    uint32_t due;
+    uint8_t track, note, vel, engine, used;
+} drum_delay_event_t;
+static drum_delay_event_t drum_delay_events[DRUM_DELAY_EVENTS] __attribute__((section(".pool")));
+static uint32_t drum_delay_clock;
+static uint8_t drum_delay_pending, drum_delay_firing;
+static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel);
+
+static uint32_t drum_delay_lane(const track_t *t, uint32_t note)
+{
+    if (t->eng_req == ENGI_DRUM) return drum_lane(note);
+    if (t->eng_req == ENGI_DRUMAC) return ac_kind(note);
+    return drumlab_lane(note);
+}
+static int drum_delay_enqueue(track_t *t, uint32_t note, uint32_t vel)
+{
+    uint32_t ti = (uint32_t)(t - trk), lane, delay;
+    if (drum_delay_firing || ti >= NPART ||
+        (t->eng_req != ENGI_DRUM && t->eng_req != ENGI_DRUMLAB &&
+         t->eng_req != ENGI_DRUMAC && t->eng_req != ENGI_DRUMIND))
+        return 0;
+    lane = drum_delay_lane(t, note);
+    if (lane >= DV_NLANE12) return 0;
+    delay = (uint32_t)drum_track_delay[ti] + drum_pad_delay[ti][lane];
+    if (!delay) return 0;
+    for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++) {
+        drum_delay_event_t *e = &drum_delay_events[i];
+        if (e->used) continue;
+        e->due = drum_delay_clock + (FS * delay + 999u) / 1000u;
+        e->track = (uint8_t)ti;
+        e->note = (uint8_t)note;
+        e->vel = (uint8_t)vel;
+        e->engine = t->eng_req;
+        e->used = 1u;
+        drum_delay_pending++;
+        return 1;
+    }
+    return 0;
+}
+static void drum_delay_drop_track(uint32_t ti)
+{
+    if (!drum_delay_pending) return;
+    for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++)
+        if (drum_delay_events[i].used && drum_delay_events[i].track == ti) {
+            drum_delay_events[i].used = 0u;
+            drum_delay_pending--;
+        }
+}
+static void drum_delay_process(uint32_t n)
+{
+    drum_delay_clock += n;
+    if (!drum_delay_pending) return;
+    for (uint32_t i = 0; i < DRUM_DELAY_EVENTS; i++) {
+        drum_delay_event_t *e = &drum_delay_events[i];
+        if (!e->used || (int32_t)(drum_delay_clock - e->due) < 0) continue;
+        uint32_t ti = e->track, note = e->note, vel = e->vel, engine = e->engine;
+        e->used = 0u;
+        drum_delay_pending--;
+        if (ti < NPART && trk[ti].eng_req == engine) {
+            drum_delay_firing = 1u;
+            trk_note_on_raw(&trk[ti], note, vel);
+            drum_delay_firing = 0u;
+        }
+    }
+}
+
 static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel)
 {
     uint32_t any = 0, i, mode = trk_vmode(t);
@@ -707,6 +779,7 @@ static void trk_note_on_raw(track_t *t, uint32_t note, uint32_t vel)
     if (t->p[P_MUTE] || ((trk_hush >> ((uint32_t)(t - trk) % NTRK)) & 1u) ||
         (t->engine == ENGI_DRUM && drum_muted(note)))   /* (DRUM: its group mutes) */
         return;
+    if (drum_delay_enqueue(t, note, vel)) return;
     if (pfx_note(t, note, vel))                         /* the punch-in effects (pfx.c): a repeat holds the track */
         return;
     if (t->xf_on || t->eng_req != t->engine) {          /* engine switch under way: after the fade */
@@ -877,6 +950,7 @@ static void trk_note_off(track_t *t, uint32_t note)
 static void trk_all_off(track_t *t)
 {
     uint32_t i;
+    drum_delay_drop_track((uint32_t)(t - trk));
     for (i = 0; i < NVOICE; i++) {
         t->v[i].gate = 0;
         t->v[i].stage = t->v[i].active ? 3 : 0;
