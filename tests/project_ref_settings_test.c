@@ -91,11 +91,24 @@ int main(void)
         uint8_t saved=buf[0];buf[0]=2;
         bad+=ck("reject different layout version",!mpr_project_settings_decode(&dst,buf,n));
         buf[0]=saved;
-        bad+=ck("reject settings buffer with trailing garbage",({
-            buf[n]=0x61;
-            !mpr_project_settings_decode(&dst,buf,n+1);
-        }));
+        if(n<MPR_MAX_SETTINGS) {
+            bad+=ck("reject settings buffer with trailing garbage",({
+                buf[n]=0x61;
+                !mpr_project_settings_decode(&dst,buf,n+1);
+            }));
+        }
     }
+    /* Stress the upper bound: 32 active CC macros plus six full 63-byte
+     * lyrics and six tracks of independent per-pad settings. */
+    for(uint32_t k=0;k<NTRK;k++){
+        memset(src.lyr[k],'A'+(int)k,LYR_LEN-1u);
+        src.lyr[k][LYR_LEN-1u]=0;
+    }
+    n=mpr_project_settings_encode(&src,buf,sizeof buf);
+    bad+=ck("full six-track lyric and CC-macro payload fits 2-in-1 bank",
+            n>0u && n<=MPR_MAX_SETTINGS &&
+            mpr_project_settings_decode(&dst,buf,n) &&
+            !memcmp(dst.lyr,src.lyr,sizeof src.lyr));
     printf("MPR SETTINGS: %s (encoded %u/%u bytes)\n",bad?"FAIL":"ALL TESTS PASSED",n,MPR_MAX_SETTINGS);
     return !!bad;
 }
