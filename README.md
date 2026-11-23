@@ -10,26 +10,32 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 
 [Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [User manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)
 
-## What MASHINA adds to JIANT
+## MASHINA offers:
 
-MASHINA retains JIANT's sound-making capabilities while expanding the FM1 for hands-on MIDI performance:
+MASHINA is a **live-performance instrument** for the FM1: six independently configured tracks, playable synths and drum kits, extensive external MIDI control, and fast access to sounds and projects without a song sequencer.
 
 | Feature | What's included |
 | --- | --- |
-| **Additional melodic engines** | **ATMOS** for evolving pads, **BRASS** for synthetic wind sounds and **INDUSTRIAL** for aggressive basses and leads. |
-| **Expanded drums** | **DRUM-X** with 12 sounds, plus three additional 12-sound kits: **DRUM-LAB** (electronic percussion), **DRUM-AC** (acoustic-style drums) and **DRUM-IND** (metallic, mechanical and industrial effects). |
-| **Per-pad drum timing** | Add 0–50 ms of delay to each pad using **SEQ → MIDI MAP → K4**. This adds to the selected track's delay, for a combined 0–100 ms on any of the four drum engines. |
-| **Drum MIDI mapping** | All four 12-pad drum engines repeat their sounds across every octave in **DEFAULT** mode. Reassigning any pad's MIDI note activates per-track **CUSTOM** mode: each pad responds only to its explicit MIDI note (0–127), including unchanged pads at their original notes. Different pads can share a MIDI note and play together. |
-| **Flexible MIDI routing** | Assign independent MIDI receive channels to six tracks; layer sounds, build keyboard splits and set note and velocity zones. |
-| **Track tuning and timing** | Transpose each track by up to three octaves, adjust fine tuning and delay each track’s note onset independently by 0–50 ms, on both melodic and drum engines. |
-| **Live MIDI control** | 32 assignable MIDI CC macros, MIDI Learn, performance commands and MIDI-triggered sound variations. |
-| **Live mixer and sound shaping** | Six-track mixer with note activity indicators, individual track controls and shared three-band EQ. |
-| **Project management** | Save and clear project slots, retain performance settings and use quick project recall during a set. |
-| **Performance interface** | Streamlined, animation-free orange-and-gray UI, repurposed hardware controls and panic mode for immediate silence. |
+| **10 melodic sound engines** | **ANALOG** (subtractive synthesis), **PHASE** (phase distortion), **LOFI** (chip, wavetable and bytebeat tones), **VOICE** (vowels, formants and speech), **WHEEL** (tonewheel organ), **NOISE** (noise and textures), **FM6** (six-operator FM), **INDUSTRIAL** (hard-edged basses and leads), **BRASS** (synthetic horns and reeds), and **ATMOS** (evolving pads and soundscapes). |
+| **4 drum engines — 48 editable pads** | **DRUM-X** (expanded classic/electronic kit), **DRUM-LAB** (electronic percussion), **DRUM-AC** (synthesized acoustic-style drums), and **DRUM-IND** (metallic, mechanical and industrial percussion). Each engine has **12 independently editable sounds**, individual levels and live pad controls. |
+| **Six-track MIDI performance** | Assign each track its own **MIDI receive channel (1–16)** or share channels for layered sounds. Choose routing for tracks 1–4, tracks 1–6 or only the selected track; select four or six active tracks as needed. |
+| **Keyboard splits and velocity layers** | Independent **minimum/maximum MIDI note and velocity zones** for each track. Split a keyboard, layer several synths on the same notes, or switch sounds with playing velocity. |
+| **Independent track tuning** | **TRN ±36 semitones** and **FINE ±50 cents** per track for octave shifts, detuned layers and custom voicings. |
+| **Universal live timing** | Delay the onset of **any melodic or drum track by 0–50 ms** using **GLO → MIX → TUNING → K3 DLY**. Melodic notes retain their duration even when triggered late. |
+| **Additive drum-pad timing** | Set **0–50 ms** of additional delay on each drum pad with **SEQ → MIDI MAP → K4 DLY**. Track and pad offsets add together (up to **100 ms**), allowing independent timing across kits. |
+| **Custom drum MIDI maps** | On all four kits, the 12 pads repeat in every octave by default. Switch to **CUSTOM** for exact per-pad MIDI notes (**0–127**), including multiple pads on one note; reset to DEFAULT per track. |
+| **Live drum performance controls** | Per-pad **PAN**, **PITCH ±24 semitones**, velocity curve and response, choke groups, and overlap/restart retrigger behavior on all four drum engines. |
+| **Hands-on MIDI control** | **32 project-specific CC macros** alongside MIDI Learn; assign controller knobs, pads and pedals to sound parameters. Dedicated MIDI CC commands provide sound randomization/reset and live channel switching for T1–T3. |
+| **Sound shaping and effects** | Engine-specific EDIT controls, envelopes, LFO and modulation, track FX/sends, a **shared three-band EQ before effects**, and a master DJ Filter on the mixer. |
+| **Projects and instant recall** | Save complete live setups, including track sounds, routing, zones, timing, mixer settings and macros. Recall four saved sections rapidly via **REC + FX / SEL / ENV / LFO**, with dedicated project and preset management. |
+| **Streamlined performance UI** | High-contrast orange-and-gray interface, clear track activity indicators, dedicated **SEQ** and **PLAY** drum pages, and a **GLO + OCT− panic shortcut** for immediate silence. No song sequencer or decorative UI animations. |
+| **Browser tools and backups** | Web emulator to test without flashing, WebMIDI installer, web editor, and project/user-preset backup and restore tools. |
 
-MASHINA has **eight shared synthesis voices in total**, not eight per track. It is focused on live playing; the original song sequencer is disabled.
+MASHINA **inherits selected sound and drum synthesis engines from JIANT**, built on Felucca, while combining them with its own engines, MIDI performance controls, drum features, project workflow and redesigned interface. The result is a substantially different firmware rather than a collection of additions to JIANT.
 
-For drum note layouts, sound parameters, MIDI mappings, hardware controls and complete operating instructions, see the **[User Manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)** (available in English, Serbian, Spanish, Russian, Japanese and Hindi).
+All six tracks share **eight synthesis voices in total**, not eight per track; **BRASS** also has a four-voice limit. The firmware is designed for real-time playing rather than song sequencing.
+
+For detailed engine parameters, drum layouts, MIDI controls and operating instructions, see the **[User Manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)** (English, Serbian, Spanish, Russian, Japanese and Hindi).
 
 ## Drum MIDI mapping: DEFAULT and CUSTOM
 
