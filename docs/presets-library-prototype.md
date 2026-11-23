@@ -362,3 +362,23 @@ This verifies their JavaScript assertions in that environment, **not** the
 unmodified Node CI suite, native firmware build, or physical device behavior.
 The experimental firmware write paths remain gated off; do not infer flash
 safety or release readiness from these checks.
+
+### Fast host verification pipeline
+
+A separate branch-only GitHub Actions workflow at
+`.github/workflows/presets-library-host-smoke.yml` now provides quick
+verification **without** the JieLi cross-compiler, generated firmware assets,
+or physical-device writes. It checks JavaScript syntax, the existing WebMIDI
+and JSON backup regressions, the protected 107-preset catalog and selection,
+flash partition boundaries/capacity, and pure C host simulations for MPR1
+records, paired project flash, 32-slot library flash, wire protocol and
+read-only diagnostics. The full `presets-library-check.yml` continues to own
+firmware compilation and the six-track audio/project integration regressions.
+
+Passing the quick pipeline will **not** mean the MPR1 firmware is safe to
+flash: full CI, toolchain/linker budgets, emulator playback and physical
+flash-region ownership must still be validated. The GitHub connector's
+commit-workflow lookup is limited to pull-request-triggered runs, so an
+empty result for these push-triggered workflows is not evidence of success
+or failure. Read the actual job conclusion on GitHub Actions before treating
+it as a CI pass.
