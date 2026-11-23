@@ -103,7 +103,7 @@ int main(void)
     memset(lib_sim_nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
     preset_go(UP_SLOTS);
     bad+=check("after update erase, LIBRARY 33 falls back to compiled factory sound",
-               TSEL->user==0 && lib_slot_read(0,erased)==0 && !memcmp(erased,(uint8_t[LIB_ENTRY]){0},LIB_ENTRY));
+               TSEL->user==UP_SLOTS+1u && lib_slot_read(0,erased)==0 && !memcmp(erased,(uint8_t[LIB_ENTRY]){0},LIB_ENTRY));
     bad+=check("restore melodic LIBRARY 33 from saved offline record",
                lib_slot_write(0,savedAnalog)==0);
     preset_go(UP_SLOTS);
@@ -117,6 +117,36 @@ int main(void)
                ac_patch[TSEL-trk][AC_SNARE][4]==84u);
     bad+=check("update/restore preserves original USER 1 record",
                !memcmp(before,up_rec(0),sizeof before));
+    /* Reference-based sections resolve six slot identities without writing
+     * USER or LIBRARY flash, and keep the player's selected track unchanged. */
+    {
+        uint32_t chosen = song.sel;
+        uint8_t sound_before[sizeof(up_rec_t)];
+        uint32_t first_track_engine = trk[0].eng_req;
+        memcpy(sound_before, up_rec(0), sizeof sound_before);
+        bad+=check("project reference USER 001 loads into track 3",
+                   !project_reference_load(2,0u) &&
+                   trk[2].user==1u && trk[2].p[P_ATK]==49 && song.sel==chosen);
+        bad+=check("project reference LIBRARY 034 loads into track 4",
+                   !project_reference_load(3,UP_SLOTS+1u) &&
+                   trk[3].user==UP_SLOTS+2u && trk[3].eng_req==ENGI_DRUMAC &&
+                   song.sel==chosen);
+        bad+=check("project reference does not alter another track",
+                   trk[0].eng_req==first_track_engine);
+        bad+=check("missing USER 032 is refused without changing selection",
+                   project_reference_load(4,31u)==1 && song.sel==chosen);
+        bad+=check("out-of-range reference and track are refused",
+                   project_reference_load(NTRK,0u)==1 &&
+                   project_reference_load(0,64u)==1);
+        bad+=check("reference recall never mutates stored USER data",
+                   !memcmp(sound_before,up_rec(0),sizeof sound_before));
+        /* Erase the simulated LIBRARY bank: the same slot ID now resolves
+         * through its built-in factory sound, not a dangling reference. */
+        memset(lib_sim_nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
+        bad+=check("unwritten LIBRARY 033 retains stable reference identity",
+                   !project_reference_load(5,UP_SLOTS) &&
+                   trk[5].user==UP_SLOTS+1u && song.sel==chosen);
+    }
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
 }
