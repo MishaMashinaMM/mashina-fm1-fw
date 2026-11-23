@@ -16,6 +16,8 @@ on:
       - 'tests/emu_flash_backup_roundtrip_test.mjs'
       - 'tests/emu_library_inspector_test.mjs'
       - 'web/emulator-library-inspector.mjs'
+      - 'web/emulator-snapshot-editor.mjs'
+      - 'tests/emu_snapshot_selective_edit_test.mjs'
       - 'web/projects-library-codec.mjs'
       - 'web/presets-library-codec.mjs'
   workflow_dispatch:
@@ -70,6 +72,8 @@ jobs:
         run: node tests/emu_flash_backup_roundtrip_test.mjs
       - name: Inspect saved project and sound banks using Web Library's NOR reader
         run: node tests/emu_library_inspector_test.mjs
+      - name: Check offline selective LIBRARY edits against real emulator NOR
+        run: node tests/emu_snapshot_selective_edit_test.mjs
       - name: Include safety notes with downloadable emulator
         run: |
           cat > build/emu/EXPERIMENTAL-README.txt <<'TXT'
