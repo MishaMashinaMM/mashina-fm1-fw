@@ -123,7 +123,7 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
-### Factory sounds in v0.11
+### Factory sounds in v0.12
 
 The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
 
@@ -158,7 +158,7 @@ Kit-wide multipliers scale individual pad settings without replacing them. At 10
 
 **DRUM-AC** is a third, separately synthesized drum engine (no samples). Its twelve pads use acoustic-style impact, tom-head and metallic-plate models. The original DRUM-X and DRUM-LAB engines are unaffected. The DRUM-AC kit has three presets: **KRIPKE-1**, **KRIPKE-2** and **KRIPKE-3**.
 
-**Chromatic layout, repeating in every octave:** each note name plays the same pad in any octave. This is the fixed DRUM-AC mapping, not the customizable mapping of the other drum engines.
+**Chromatic layout, repeating in every octave:** each note name plays the same pad in any octave. 
 
 | Key | Pad | Key | Pad |
 | --- | --- | --- | --- |
@@ -204,7 +204,7 @@ The twelve individual sounds, pad levels and eight kit-wide settings are retaine
 
 **EDIT structure:** the first two pages control the whole kit: **TONE, DAMP, BODY, ATTACK, BRIGHT, TEXTURE, RING, LEVEL** (each **0–200%**, **100% neutral**). ATTACK changes roughly the first 80 ms of the hit; BRIGHT changes its high-frequency balance after the sound's limiting. The individual SOUND 1–3 pages use **K1** for pad selection and **K2–K4** for the eight **0–127** parameters **GRAIN, DECAY, WEIGHT, STRIKE, MOTION, AIR, CRUNCH, TAIL**. **LEVELS 1–3** offer twelve independent pad volumes (**0–127**). The same parameter may act differently on different models.
 
-Three presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. The note mapping is fixed and repeats every octave; the SEQ custom-note mapping of DRUM-X/DRUM-LAB does not apply.
+Three presets: **BADIOU-1**, **BADIOU-2**, **BADIOU-3**. Pad edits, levels and independent kit-wide settings save with the project. DRUM-IND shares the firmware's **eight total voices**. 
 
 **Compatibility:** Back up projects before changing firmware. Older versions may not recognize projects containing DRUM-IND.
 
@@ -218,6 +218,13 @@ Press **SEQ** on a drum track. **ALGORITHM** selects the track, **SELECT** selec
 | **K2** | Pad pan |
 | **K3** | Pad pitch offset, −24 to +24 semitones |
 | **K4** | Unused |
+
+**DEFAULT / CUSTOM — all four drum engines.** In **DEFAULT** mode DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND repeat all 12 pads across every octave: C at MIDI 36, 48, 60 and 72 triggers the same sound without transposing it. DRUM-X **BELL** defaults to **B / MIDI 47** (also 35, 59 and 71).
+
+Changing any pad's MIDI note using **K1** activates **CUSTOM mode for the selected track only**. All 12 pads then respond exclusively to their exact assigned MIDI notes (0–127). Unchanged pads keep their original notes in 36–47 but stop repeating in other octaves. Multiple pads can share a note and play simultaneously. **DEFAULT / CUSTOM** appears in the screen's upper right.
+
+To return to DEFAULT, hold the **physical SEL button** (not the rotary SELECT encoder) for about **0.7 seconds** to display **RESET MIDI MAP?**. Press **OCT− to cancel** or **OCT+ to reset only the selected track**. This restores octave repetition without altering sound parameters, pitch/pan offsets or other tracks. Returning MIDI note values manually to their defaults does not exit CUSTOM mode; use RESET. Custom maps are saved with projects. **K2 PAN / K3 PITCH** apply to DRUM-X and DRUM-LAB, while DRUM-AC and DRUM-IND support note remapping with K1 only.
+
 
 ### PLAY: drum performance
 
@@ -330,4 +337,4 @@ Before flashing or changing to an earlier firmware, save a complete backup of pr
 
 ---
 
-MASHINA v0.11 · M-VAVE FM1 · Usage reference
+MASHINA v0.12 · M-VAVE FM1 · Usage reference
