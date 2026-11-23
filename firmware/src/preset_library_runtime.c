@@ -14,6 +14,13 @@
 _Static_assert(sizeof(up_rec_t) + UPF_PK == LIB_ENTRY,
                "library entry must contain one full USER sound and companion");
 static uint8_t library_record[LIB_ENTRY] __attribute__((section(".pool")));
+/* Selected-track display names; no flash reads during audio/display redraw. */
+static char library_track_names[NTRK][13] __attribute__((section(".pool")));
+static void library_track_name(const track_t *t, char *out)
+{
+    uint32_t i = (uint32_t)(t - trk);
+    str_cpy(out, i < NTRK ? library_track_names[i] : "", 13);
+}
 
 static int lib_flash_read(uint32_t addr, void *p, uint32_t n)
 {
@@ -104,6 +111,14 @@ static int library_sound_load(uint32_t slot)
     }
     /* A library source marker is NOT a USER slot: user_of() returns none.
      * A project save stores the full sound snapshot, not this reference. */
+    {
+        uint32_t ti = (uint32_t)(t - trk), j;
+        if (ti < NTRK) {
+            for (j = 0; j < 12u && r->name[j]; j++)
+                library_track_names[ti][j] = r->name[j];
+            library_track_names[ti][j] = 0;
+        }
+    }
     t->user = (uint8_t)(UP_SLOTS + slot + 1u);
     load_end(t);
     sync_reload = 1;
