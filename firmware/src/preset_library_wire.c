@@ -68,7 +68,7 @@ static uint32_t lib_unpack7(const uint8_t *src, uint32_t n, uint8_t *dst)
     }
     return i==n && k==LIB_ENTRY ? k : 0;
 }
-static uint8_t lib_wire_record[LIB_ENTRY];
+static uint8_t lib_wire_record[LIB_ENTRY] __attribute__((section(".pool")));
 /* The host supplies a validated copy of the persistent storage file.
  * Writes are explicitly confined to host tests; no USB handler calls here. */
 static uint32_t lib_wire_reply(uint32_t cmd, const uint8_t *args, uint32_t n,
