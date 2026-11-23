@@ -92,7 +92,7 @@ Las zonas se aplican al **MIDI externo**, no al mini-teclado del FM1, que toca l
 
 ### TRN y FINE durante la interpretación
 
-En **GLO → MIX → TUNING**, **K1 TRN** ajusta **−36 a +36 semitonos**; **K2 FINE**, **−50 a +50 cents**. **K3 DLY** añade de 0 a 50 ms de retraso a toda la pista de batería; **K4** sigue reservado. TRN desplaza una capa; FINE puede engrosar dos sonidos al desafinarlos apenas.
+En **GLO → MIX → TUNING**, **K1 TRN** ajusta **−36 a +36 semitonos**; **K2 FINE**, **−50 a +50 cents**. **K3 DLY** añade de 0 a 50 ms a cualquier pista, incluidos todos los motores melódicos. En batería se suma al ajuste K4 del pad; K4 sigue reservado en TUNING. Para sonidos melódicos, Note On y Note Off se desplazan por el mismo tiempo y conservan la duración original de la nota. La asignación MIDI del pedal de sustain no cambia. TRN desplaza una capa; FINE puede engrosar dos sonidos al desafinarlos apenas.
 
 Si cambiás TRN mientras suena una nota, **esa nota mantiene su altura original**; las siguientes usan el valor nuevo. Note Off y sustain siguen liberando las voces correctas. DRUM-X y DRUM-LAB no cambian ni su afinación ni su mapa de notas por TRN/FINE.
 
