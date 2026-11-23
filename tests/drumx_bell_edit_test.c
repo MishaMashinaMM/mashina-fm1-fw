@@ -34,20 +34,33 @@ int main(void)
                       drum_lane(56u) == DV_BELL && drum_lane(47u) == DV_TOM);
     bad += bell_check("default MIDI 47 selects BELL for EDIT",
                       dx_mapped_lane(t, 47u) == DV_BELL);
-    bad += bell_check("old BELL MIDI 56 is not in the default live pad map",
-                      dx_mapped_lane(t, 56u) == DV_NLANE12);
-    bad += bell_check("unmapped notes do not select an unrelated GM pad",
-                      dx_mapped_lane(t, 49u) == DV_NLANE12);
+    bad += bell_check("default kit repeats BELL at every B (35, 47, 59, 71)",
+                      dx_mapped_lane(t, 35u) == DV_BELL &&
+                      dx_mapped_lane(t, 59u) == DV_BELL &&
+                      dx_mapped_lane(t, 71u) == DV_BELL);
+    bad += bell_check("other pads repeat across octaves (C kick, G# TOM2)",
+                      dx_mapped_lane(t, 48u) == DV_KICK &&
+                      dx_mapped_lane(t, 56u) == DV_T2);
     memset(t->v, 0, sizeof t->v);
     v0 = vage;
     trk_note_on(t, 47u, 110u);
     bad += bell_check("MIDI 47 actually triggers the BELL sound",
                       active_lane_count(t, DV_BELL, v0) == 1u);
     trk_note_off(t, 47u);
+    memset(t->v, 0, sizeof t->v);
+    v0 = vage;
+    trk_note_on(t, 59u, 110u);
+    bad += bell_check("BELL sounds on MIDI 59 in next octave too",
+                      active_lane_count(t, DV_BELL, v0) == 1u);
+    trk_note_off(t, 59u);
+    trk_note_off(t, 47u);
     bad += bell_check("a saved custom BELL mapping can override factory 47",
                       drum_note_set(t, DV_BELL, 60u) &&
                       dx_mapped_lane(t, 60u) == DV_BELL &&
                       dx_mapped_lane(t, 47u) == DV_NLANE12);
+    bad += bell_check("custom MIDI map disables all-octave repetition",
+                      dx_mapped_lane(t, 48u) == DV_NLANE12 &&
+                      dx_mapped_lane(t, 59u) == DV_NLANE12);
     /* An EDIT note selects the pad corresponding to its live assignment. */
     dx_ui_lane = DV_KICK;
     dx_ui_seen = 36u;
