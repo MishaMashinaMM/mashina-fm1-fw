@@ -139,6 +139,19 @@ async function mock(cmd,args=[],opts={}){
   }
   throw new Error("mock received unknown command "+cmd);
 }
+// Reject a corrupt occupied LIBRARY slot before changing any project.
+// The imported section references LIBRARY 033 and 034 (refs 32 and 33).
+let preflightWrites=0;
+const brokenLibrary=async(cmd,args=[],opts={})=>{
+  if(cmd===91&&args[0]===0)return [0,2]; // damaged occupied LIBRARY record
+  if(cmd===67)preflightWrites++;
+  return mock(cmd,args,opts);
+};
+const projectPreflightFile={format:"mashina-projects-mpr1",version:1,
+  projects:8,sectionsPerProject:4,sections:base.projects};
+await assert.rejects(restoreProjectsOnly(brokenLibrary,projectPreflightFile),
+  /flash\\/data error/);
+assert.equal(preflightWrites,0);
 // Seed a stale section that the imported JSON marks empty. The restore must
 // actually clear it, not merely skip its write or report it as cleared.
 mockObjects.set(42,pad(encodeProject({section:2,refs:[32,255,255,255,255,255],
