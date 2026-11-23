@@ -14,6 +14,10 @@ on:
       - 'tests/emu_mpr1_fresh_save_test.mjs'
       - 'tests/emu_mpr1_restore_last_test.mjs'
       - 'tests/emu_flash_backup_roundtrip_test.mjs'
+      - 'tests/emu_library_inspector_test.mjs'
+      - 'web/emulator-library-inspector.mjs'
+      - 'web/projects-library-codec.mjs'
+      - 'web/presets-library-codec.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -64,6 +68,8 @@ jobs:
         run: node tests/emu_mpr1_restore_last_test.mjs
       - name: Test portable NOR backup JSON and independent emulator restore
         run: node tests/emu_flash_backup_roundtrip_test.mjs
+      - name: Inspect saved project and sound banks using Web Library's NOR reader
+        run: node tests/emu_library_inspector_test.mjs
       - name: Include safety notes with downloadable emulator
         run: |
           cat > build/emu/EXPERIMENTAL-README.txt <<'TXT'
