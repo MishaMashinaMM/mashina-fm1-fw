@@ -67,9 +67,14 @@ export function planPerformanceRestore(bundle) {
     bundle:parsed,
     order:["USER", "LIBRARY", "PROJECTS"],
     userWrites:parsed.userPresets.filter(x=>x!==null).length,
+    userErases:parsed.userPresets.filter(x=>x===null).length,
     libraryWrites:parsed.libraryPresets.filter(x=>x!==null).length,
+    libraryErases:parsed.libraryPresets.filter(x=>x===null).length,
     projectWrites:parsed.projects.filter(x=>x!==null).length,
-    // No automatic erasure/USB activity; the caller must implement atomic
-    // restore and explicit confirmation once project transport is available.
+    projectErases:parsed.projects.filter(x=>x===null).length,
+    // Null is an EXPLICIT erase on restore: otherwise a factory fallback
+    // could be replaced by stale uploaded data on the target FM1.
+    // No automatic erasure/USB activity; caller implements staged restore
+    // and explicit confirmation after project transport is available.
   };
 }
