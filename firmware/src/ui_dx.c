@@ -26,7 +26,12 @@ static uint32_t dx_mapped_lane(const track_t *t, uint32_t note)
 {
     uint32_t ti = (uint32_t)(t - trk), lane;
     if (ti >= NPART || note > 127u) return DV_NLANE12;
-    if (!drum_midi_custom[ti]) return note % DV_NLANE12;
+    if (!drum_midi_custom[ti]) {
+        for (lane = 0; lane < DV_NLANE12; lane++)
+            if (DRUM_NOTE12[lane] % 12u == note % 12u)
+                return lane;
+        return DV_NLANE12;
+    }
     for (lane = 0; lane < DV_NLANE12; lane++)
         if (drum_midi_note[ti][lane] == note)
             return lane;
