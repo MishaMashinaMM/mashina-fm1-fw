@@ -1,4 +1,4 @@
-# MASHINA FM1 — read-only flash diagnostic
+# MASHINA FM1 — read-only flash *probe* diagnostic
 
 **Status:** Optional experimental diagnostic. Not a release, not merged into main.
 **Firmware:** `v0.13-diag` — based on the v0.13 MASHINA firmware.
@@ -11,14 +11,17 @@
 - `FELUCCA_FLASH_DIAG=1`, `FELUCCA_LIB32=1`,
   `FELUCCA_LIB32_WRITE=0`, `FELUCCA_PROJECT_REFS=0`,
   `FELUCCA_PROJECT_REFS_WRITE=0`, `FELUCCA_PROJECT_REFS_FORMAT=0`.
-- Firmware-side ordinary sector erase/write functions refuse writes. Library
-  writes and MPR1 project writes/formatting are compile-disabled. USB probes
-  97/98 only **read** flash. Do not attempt to save presets/projects/settings
-  while running this temporary diagnostic image.
+- **Only the diagnostic operations are read-only.** USB commands 97/98 inspect
+  flash without erase/program operations. Experimental LIB32 writes and MPR1
+  project writes/formatting are compile-disabled. **Existing v0.13 USER,
+  legacy project, settings and other firmware save paths are not globally
+  write-protected by these flags.** Do not save presets, projects or settings
+  while using this temporary diagnostic image; do not regard it as a
+  write-protected recovery environment.
 - **Installing any firmware still flashes the application/loader.** This
   diagnostic does not prove that the installation/bootloader will preserve
   every data sector, and it cannot make a failed install harmless.
-- The diagnostic inspects the 16 proposed MPR1 banks in
+- When you explicitly invoke the probe, it inspects the 16 proposed MPR1 banks in
   `0xA0000..0xBFFFF` and four LIBRARY banks in `0xEA000..0xF1FFF`.
   It does not initialize or erase those regions.
 - The 16-bank probe checks both sectors per bank for erased data, fully
@@ -56,7 +59,7 @@ Open `http://localhost:8000/webapp/installer/` and follow the installer
 instructions. Do **not** use the public MASHINA installer for this test: it
 delivers the stable release, not the diagnostic package.
 
-## Read the flash map (no writes)
+## Read the flash map (probe performs no writes)
 
 From the same locally extracted artifact, open the experimental Web Library
 preview in a second tab at `http://localhost:8000/web-library/`.
@@ -64,8 +67,10 @@ preview in a second tab at `http://localhost:8000/web-library/`.
 1. Connect the FM1 (allow WebMIDI SysEx).
 2. Choose **Inspect flash (read-only)**.
 3. Copy the status text or take a screenshot and share it here.
-4. Do not click any restore/upload action. The diagnostic firmware advertises
-   LIBRARY and MPR1 write capability as **disabled**.
+4. Do not click any restore/upload action or save using the FM1's own controls.
+   The diagnostic firmware advertises experimental LIBRARY and MPR1 write
+   capability as **disabled**, but existing firmware save paths remain capable
+   of writing flash.
 5. After inspection, return to your known working v0.13 image if appropriate.
 
 Status codes: **blank**, **committed**, **retired project**, **unknown** or
