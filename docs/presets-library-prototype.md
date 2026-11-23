@@ -316,3 +316,21 @@ fails verification even when the project bank's write acknowledgements and
 read-back are otherwise correct. The browser regression fixture includes a
 stale-alias failure case. This is host-side coverage only until the branch CI
 and physical FM1 behavior are independently verified.
+
+### Verified offline backup authorization
+
+The experimental Web Library no longer treats clicking **Download** as proof
+that a backup was actually saved. After a read-only LIBRARY or full-device
+capture, the user must re-import the saved JSON via **Verify saved LIBRARY
+backup** or **Verify saved complete backup**. The browser validates that
+backup's records and requires its entire JSON content to match the most
+recent capture from the current connected FM1. Only then can the corresponding
+write buttons become available, still subject to explicit confirmation and
+the firmware's independent write-capability gates. Reconnecting or beginning
+any flash mutation clears the prior authorization. This does not guarantee
+an external disk backup survives forever, but it catches cancelled downloads,
+wrong files, stale backups, and edited backups before a destructive transfer.
+
+The feature is branch-only and has not been physically exercised. Do not
+publish or use a write-enabled experimental installer until CI, emulator and
+flash-region ownership checks have passed.
