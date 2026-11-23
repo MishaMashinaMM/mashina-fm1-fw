@@ -2136,6 +2136,17 @@ static void proj_bound(project_t *q)
 /* slot from flash into RAM (format 7, or format 6 / 5 / 4 / 3 / 2 / 1 converted) */
 static void proj_fetch(uint32_t slot)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* The new bank contains two MPR1 project sections per redundant sector.
+     * A blank/corrupt section is never interpreted as an old FUN snapshot. */
+    memset(proj_slot[slot & 3u].raw,0,MPR_MAX_RECORD);
+    if(mprs_load((uint32_t)song_cur*4u+(slot&3u),
+                 proj_slot[slot&3u].raw))
+        memset(proj_slot[slot&3u].raw,0,MPR_MAX_RECORD);
+    proj_wire_gen++;
+    return;
+#endif
+
     project_store_t *q = &proj_slot[slot & 3u];
     int n;
     proj_wire_gen++;
@@ -2309,6 +2320,10 @@ static void random_saved_live(uint32_t slot)
  * The current name becomes the saved one */
 static int project_save_as(uint32_t slot, const char *name)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    return mpr_live_save(slot,name);
+#endif
+
     project_t *p = &proj_scratch;
     if (transport_busy()) {                            /* a flash erase silences the audio and stalls the */
         ui_message("STOP TO SAVE");                     /* sequencer (storage_hw.c): only while stopped */
@@ -2350,6 +2365,10 @@ static int project_save_as(uint32_t slot, const char *name)
  * zeroed store so the slot stays empty across reboot and flash reload. */
 static int project_clear_slot(uint32_t slot)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    return mpr_live_clear(slot);
+#endif
+
     if (slot >= 4u) return 1;
     if (transport_busy()) { ui_message("STOP TO CLEAR"); return 1; }
 #if FELUCCA_FLASH
@@ -2376,6 +2395,10 @@ static void project_cur_name(char *b) { str_cpy(b, proj_name, PROJ_NAME_LEN + 1u
 /* slot's name -> b (PROJ_NAME_LEN + 1 bytes); 0 = an empty slot (b ""). Uses proj_scratch */
 static int project_name(uint32_t slot, char *b)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    return mpr_live_name(slot&3u,b);
+#endif
+
     b[0] = 0;
     if (!proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t)))
         return 0;
@@ -2388,6 +2411,10 @@ static int project_name(uint32_t slot, char *b)
  * an empty slot), 2 failed (the slot as it was) */
 static int project_rename(uint32_t slot, const char *name)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    return mpr_live_rename(slot&3u,name);
+#endif
+
     project_t *p = &proj_scratch;
     if (transport_busy()) {
         ui_message("STOP TO SAVE");
@@ -2431,6 +2458,10 @@ static int project_recall_slot(void)
 static void sound_put(project_t *p, uint32_t k);
 static int project_recall_sound(uint32_t slot, uint32_t k)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    return mpr_live_recall_sound(slot,k);
+#endif
+
     project_t *p = &proj_scratch;
     if (slot > 3u || !proj_import(p, &proj_slot[slot], sizeof(project_store_t)) || !proj_ok(p) || !proj_engines_ok(p))
         return 1;
@@ -3179,6 +3210,15 @@ static int undo_sound(uint32_t k)
 static void midi_live_split_reset(void); /* implemented by MIDI routing module */
 static void project_load(uint32_t slot)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    if(flash_ok && !mpr_slot_used(slot&3u))proj_fetch(slot);
+    if(!mpr_live_load(slot&3u)) {
+        midi_live_split_reset();
+        random_saved_live(slot);
+    }
+    return;
+#endif
+
 #if FELUCCA_FLASH
     if (flash_ok && !proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t))) proj_fetch(slot);
 #endif
@@ -3225,7 +3265,7 @@ static void persist_boot(void)                    /* before settings_init / pane
     {   /* projects: fill empty RAM slots from flash, so the slot list is right after power-on */
         uint32_t i;
         for (i = 0; i < 4u; i++)
-            if (!proj_import(&proj_scratch, &proj_slot[i], sizeof(project_store_t)))
+            if (!project_used(i))
                 proj_fetch(i);
     }
     song_index_boot();                             /* the current song's rows */
@@ -3233,7 +3273,14 @@ static void persist_boot(void)                    /* before settings_init / pane
 #endif
 }
 
-static int project_used(uint32_t slot) { return proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t)); }
+static int project_used(uint32_t slot)
+{
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    return mpr_slot_used(slot&3u);
+#else
+    return proj_import(&proj_scratch, &proj_slot[slot & 3u], sizeof(project_store_t));
+#endif
+}
 
 /* (0.8.5) SAVE > LIBRARY: project n's sections stored (a bit each) and its section A's name (b, PROJ_NAME_LEN + 1),
  * from the flash: the newer valid header of each section's two copies, and the name's 12 bytes of section A's
