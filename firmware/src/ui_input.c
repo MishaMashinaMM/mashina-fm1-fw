@@ -2434,7 +2434,8 @@ static void ui_input_frame(void)
             int32_t old = -1;
             if (t->eng_req == ENGI_DRUM)
                 old = drum_midi_custom[ti] ? drum_midi_note[ti][lane] : DRUM_NOTE12[lane];
-            else if (t->eng_req == ENGI_DRUMLAB)
+            else if (t->eng_req == ENGI_DRUMLAB || t->eng_req == ENGI_DRUMAC ||
+                     t->eng_req == ENGI_DRUMIND)
                 old = drumlab_midi_custom[ti] ? drumlab_midi_note[ti][lane] : 36 + (int32_t)lane;
             if (old >= 0) {
                 uint32_t note = (uint32_t)clamp(old + (s > 0 ? 1 : -1), 0, 127);
