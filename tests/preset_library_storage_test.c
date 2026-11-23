@@ -97,6 +97,15 @@ int main(void)
         }
         ok;
     }));
+    /* If both commit headers become invalid, do not replace valuable data
+     * by falsely assuming the device was freshly initialized. */
+    {
+        uint32_t bank = 17u / LIB_PER_BANK;
+        nor[lib_base(bank,0u)] ^= 1u;
+        nor[lib_base(bank,1u)] ^= 1u;
+        bad+=check("two corrupt copies are reported, never treated as empty",
+                   lib_slot_read(17,got)==2 && lib_slot_write(17,r[17])==2);
+    }
     bad+=check("bad slots rejected",lib_slot_write(LIB_SLOTS,r[0])==1&&lib_slot_read(LIB_SLOTS,got)==1);
     bad+=check("no flash operation escaped dedicated region",!wrong_region);
     printf("LIB NOR: %s (%u flash operations)\n",bad?"FAIL":"ALL TESTS PASSED",writes);
