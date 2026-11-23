@@ -25,7 +25,9 @@ jobs:
           cc -O2 -Wall -Wextra -o build/host/preset_library_wire_test tests/preset_library_wire_test.c
           build/host/preset_library_wire_test
       - name: Test JSON, binary record and WebMIDI codec
-        run: node tests/presets_library_codec_test.mjs
+        run: |
+          node tests/presets_library_codec_test.mjs
+          node tests/presets_library_sync_test.mjs
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
