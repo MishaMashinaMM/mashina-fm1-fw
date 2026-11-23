@@ -1,0 +1,70 @@
+name: Presets library MPR1 browser emulator (no device firmware)
+on:
+  push:
+    branches: [presets-library]
+    paths:
+      - '.github/workflows/presets-library-emu-preview.yml'
+      - 'web/emu/**'
+      - 'web/mashina-emu-locale.js'
+      - 'web/mashina-nav.js'
+      - 'web/mashina-nav.css'
+      - 'firmware/src/**'
+      - 'tools/**'
+      - 'tests/emu_library_flash_persistence_test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: presets-library-emulator-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  wasm-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: emscripten-core/setup-emsdk@v15
+      - name: Check simulator flash snapshot safety
+        run: node tests/emu_library_flash_persistence_test.mjs
+      - name: Generate firmware tables and UI assets
+        run: |
+          python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Compile opt-in MPR1/LIB32 simulator (WASM only)
+        env:
+          MASHINA_EMU_REFS: '1'
+          EMU_PREVIEW: '1'
+        run: |
+          sh web/emu/build.sh
+          test -s build/emu/felucca.wasm
+          grep -q -- '-mpr1-sim' build/emu/index.html
+      - name: Verify WebAssembly exports
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const mod = await WebAssembly.compile(fs.readFileSync('build/emu/felucca.wasm'));
+          const exports = new Set(WebAssembly.Module.exports(mod).map(x=>x.name));
+          for (const name of ['memory','web_boot','web_render','web_nor',
+                              'web_nor_size','web_flash_writes_count']) {
+            if (!exports.has(name)) throw Error('Missing WASM export '+name);
+          }
+          console.log('PASS: MPR1/LIB32 simulator WASM compiled with required exports');
+          JS
+      - name: Include safety notes with downloadable emulator
+        run: |
+          cat > build/emu/EXPERIMENTAL-README.txt <<'TXT'
+          MASHINA MPR1/LIB32 WebAssembly emulator (experimental branch only)
+          This ZIP contains browser simulator assets, NOT an FM1 installer or .fwsc.
+          Simulated NOR is held in browser memory and saved browser storage.
+          The factory 107-preset source catalog is not overwritten by this preview.
+          Emulator USB/editor WebMIDI commands 89-98 are NOT implemented.
+          Do not use this archive to flash, update, or initialize a physical FM1.
+          TXT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-mpr1-lib32-browser-emulator-experimental
+          path: build/emu/
+          retention-days: 14
