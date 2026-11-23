@@ -2301,6 +2301,10 @@ static void random_saved_live(uint32_t slot)
     random_reset_pending = 0u;
 }
 
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+#include "project_refs_live.c" /* clean-break project SAVE/LOAD, physical writes independently gated */
+#endif
+
 /* the music as it is now -> slot, named `name` (0: the current name; "" none); 0 saved, nonzero refused or failed.
  * The current name becomes the saved one */
 static int project_save_as(uint32_t slot, const char *name)
