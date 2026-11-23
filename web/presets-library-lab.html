@@ -85,7 +85,7 @@ tr:nth-child(2n){background:#161616}
  <table aria-label="Snapshot LIBRARY presets"><thead><tr><th>LIBRARY</th><th>Name</th><th>Engine</th><th>State</th><th>Project usage</th></tr></thead><tbody id="emu-library"></tbody></table>
  <h2 style="margin-top:24px">PROJECTS · 8 × A–D</h2>
  <table aria-label="Snapshot project sections"><thead><tr><th>Project</th><th>Section</th><th>Name</th><th>Tracks T1–T6</th></tr></thead><tbody id="emu-projects"></tbody></table>
- <p class="catalog-note">USER names are read from saved 192-byte sound records. Full USER FM6/drum companions are not converted into standalone upload records here. Empty LIBRARY overrides display “Factory fallback” rather than an invented factory name. The original snapshot remains the lossless recovery file.</p>
+ <p class="catalog-note">USER names are read from saved 192-byte sound records. Full USER FM6/drum companions are not converted into standalone upload records here. LIBRARY slots without a saved override show their compiled factory name and engine from the validated, bundled 107-sound catalog. Their state remains “Factory default”, not “Custom override”. The original snapshot remains the lossless recovery file.</p>
 </section>
 <div class="toolbar">
  <label class="file">Import prepared 304-byte records JSON <input id="import" type="file" accept=".json,application/json"/></label>
@@ -130,7 +130,7 @@ import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} fro
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash} from "./full-device-backup.mjs";
 import {restoreProjectsBackup,projectsBackup} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
-import {inspectEmulatorFlash} from "./emulator-library-inspector.mjs";
+import {inspectEmulatorFlash,resolveFactoryFallbacks} from "./emulator-library-inspector.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
@@ -515,13 +515,13 @@ let emuInspection=null;
 function inspectSnapshotTable(id,entries,view,group) {
   const body=$(id);body.replaceChildren();
   for(const item of entries){
-    const used=view.usage[group==="USER"?item.slot-1:item.slot-1];
+    const used=view.usage[item.slot-1];
     const row=document.createElement("tr");
     const cells=[
       String(item.slot).padStart(3,"0"),
       item.name||(item.status==="empty"?"EMPTY":"—"),
       item.engine===null?"—":engineLabels.get(item.engine)||String(item.engine),
-      item.status==="factory"?"Factory fallback":item.status,
+      item.status==="factory"?"Factory default":item.status==="overridden"?"Custom override":item.status==="saved"?"USER saved":"Empty",
       used.length?used.map(x=>"P"+x.project+":"+x.section+"/T"+x.track).join(", "):"—"
     ];
     cells.forEach((value,i)=>{
@@ -556,7 +556,7 @@ function showEmulatorSnapshot(snapshot,filename){
   const nlib=snapshot.library.filter(x=>x.status==="overridden").length;
   const np=view.sections.filter(x=>!x.empty).length;
   $("emu-summary").textContent=filename+" · "+nuser+"/32 USER saved · "+nlib+"/32 LIBRARY overrides ("+
-    (32-nlib)+" factory fallbacks) · "+np+"/32 project sections · "+snapshot.sectorCount+" flash sectors";
+    (32-nlib)+" factory defaults) · "+np+"/32 project sections · "+snapshot.sectorCount+" flash sectors";
 }
 $("inspect-emu").addEventListener("change",async e=>{
   const file=e.target.files?.[0];
@@ -565,12 +565,23 @@ $("inspect-emu").addEventListener("change",async e=>{
   const status=$("emu-import-status");
   status.textContent="Reading "+file.name+"...";
   try{
-    const next=inspectEmulatorFlash(await file.text());
+    const snapshot=inspectEmulatorFlash(await file.text());
+    // Factory fallback names are not in NOR: resolve separately from the
+    // exact, fingerprint-validated 107-preset catalog bundled with this page.
+    // Refuse to guess factory identities if the source is unavailable.
+    let next=snapshot,factoryNote="";
+    try {
+      const reply=await fetch("./factory-presets-from-code.json",{cache:"no-store"});
+      if(!reply.ok)throw Error("HTTP "+reply.status);
+      next=resolveFactoryFallbacks(snapshot,await reply.json());
+    }catch(error) {
+      factoryNote=" Factory names unavailable ("+(error?.message||String(error))+"); flash records still inspected.";
+    }
     showEmulatorSnapshot(next,file.name);
     emuInspection=next;
     $("export-emu-projects").disabled=false;
     $("export-emu-library").disabled=!next.library.some(x=>x.status==="overridden");
-    status.textContent="Loaded "+file.name+" successfully. All data below comes from this JSON. The emulator and FM1 are untouched.";
+    status.textContent="Loaded "+file.name+" successfully. Saved preset data came from JSON; factory default labels come from the protected firmware catalog."+factoryNote+" Emulator and FM1 are untouched.";
     status.style.color="#8bd698";
   }catch(error){
     status.textContent="Could not inspect "+file.name+": "+(error?.message||String(error))+". No existing data changed.";
