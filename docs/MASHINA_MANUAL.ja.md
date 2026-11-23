@@ -141,7 +141,7 @@ WAVE/MIX はオシレーターの混合、CUT/RES はフィルター、GRIND/MET
 
 合計 **8 ボイスを全トラックとドラム音源で共有**します。BRASS にはさらに **1 トラック最大 4 ボイス**の上限があります。音が途切れる場合は同時のレイヤーや和音数を減らしてください。
 
-### v0.12 のファクトリー音色
+### v0.13 のファクトリー音色
 
 新しいファクトリーバンクは ANALOG 20 音色、INDUSTRIAL 12 音色、BRASS 5 音色、ATMOS 8 音色に加え、PHASE、WHEEL、NOISE、FM6、VOICE、LOFI も更新しました。多くのプリセット名は、歴史上のさまざまな時代の哲学者や思想家に由来します。DRUM-X: BUTTLER-1…9、DRUM-LAB: ZIZEK-1…3、DRUM-AC: KRIPKE-1…3、DRUM-IND: BADIOU-1…3。
 
@@ -404,4 +404,4 @@ EQ は **エフェクト前に置かれた全体共通の 1 つの EQ** で、�
 
 ---
 
-MASHINA v0.12 · M-VAVE FM1
+MASHINA v0.13 · M-VAVE FM1
