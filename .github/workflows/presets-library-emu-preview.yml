@@ -12,6 +12,7 @@ on:
       - 'tools/**'
       - 'tests/emu_library_flash_persistence_test.mjs'
       - 'tests/emu_mpr1_fresh_save_test.mjs'
+      - 'tests/emu_mpr1_restore_last_test.mjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -58,6 +59,8 @@ jobs:
           JS
       - name: Test untouched four-track project SAVE in running WASM
         run: node tests/emu_mpr1_fresh_save_test.mjs
+      - name: Test RESTORE LAST across two independent WASM boots
+        run: node tests/emu_mpr1_restore_last_test.mjs
       - name: Include safety notes with downloadable emulator
         run: |
           cat > build/emu/EXPERIMENTAL-README.txt <<'TXT'
