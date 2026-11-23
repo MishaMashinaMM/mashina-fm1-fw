@@ -45,6 +45,7 @@ jobs:
         run: |
           node tools/export_factory_catalog.mjs --check
           node tests/factory_presets_catalog_test.mjs
+          node tests/factory_catalog_selection_test.mjs
       - name: Test JSON, binary record and WebMIDI codec
         run: |
           node tests/presets_library_codec_test.mjs
@@ -199,6 +200,7 @@ jobs:
           mkdir -p build/presets-library-preview
           cp web/presets-library-lab.html build/presets-library-preview/index.html
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-preview/
+          cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs build/presets-library-preview/
           cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-preview/
       - name: Check standalone Web Library JS syntax and bundled imports
         run: python3 tools/check_library_preview.py build/presets-library-preview
