@@ -82,15 +82,18 @@ jobs:
             tar -xf /tmp/mashina-public-pages/artifact.tar -C build/pages
             if test -s build/pages/firmware/SOURCE_COMMIT && \
                test -s build/pages/firmware/RELEASE_SHA256 && \
+               test -s build/pages/firmware/felucca-0.13.fwsc && \
+               test -s build/pages/webapp/installer-orange-v013/index.html && \
                test -s build/pages/webapp/installer/index.html && \
-               test -s build/pages/emu/felucca.wasm; then
+               test -s build/pages/emu/felucca.wasm && \
+               grep -q 'v0.13 · MASHINA · BUILD' build/pages/webapp/installer/index.html; then
               echo "Preserving public release site from main run $runid"
               success=1
               break
             fi
             rm -rf build/pages && mkdir -p build/pages
           done < <(gh run list --workflow emulator.yml --branch main --status success --limit 15 --json databaseId --jq '.[].databaseId')
-          test "$success" = 1 || { echo "::error::No verified public Pages artifact"; exit 1; }
+          test "$success" = 1 || { echo "::error::No verified public v0.13 Pages artifact"; exit 1; }
           cp build/pages/firmware/SOURCE_COMMIT /tmp/mashina-public-source
           cp build/pages/firmware/RELEASE_SHA256 /tmp/mashina-public-hash
       - name: Overlay feature preview only
