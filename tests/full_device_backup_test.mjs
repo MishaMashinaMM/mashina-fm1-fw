@@ -163,7 +163,7 @@ const brokenLibrary=async(cmd,args=[],opts={})=>{
 const projectPreflightFile={format:"mashina-projects-mpr1",version:1,
   projects:8,sectionsPerProject:4,sections:base.projects};
 await assert.rejects(restoreProjectsOnly(brokenLibrary,projectPreflightFile),
-  /flash\\/data error/);
+  /flash\/data error/);
 assert.equal(preflightWrites,0);
 // Seed a stale section that the imported JSON marks empty. The restore must
 // actually clear it, not merely skip its write or report it as cleared.
