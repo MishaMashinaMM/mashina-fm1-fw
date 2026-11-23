@@ -3,7 +3,7 @@
 // The browser build (build/emu/felucca.wasm, web/emu/felucca_web.c) in Node, as the worklet runs it. After X0X's
 // tests/host/emu_test.mjs (charlesvestal/fm1-x0x, GPL-3.0).
 //   node web/emu/emu_test.mjs build/emu/felucca.wasm [NATIVE.f32]
-// Checks: it boots (splash, then HOME on the screen, no decorative LED sweep; normal idle LEDs after boot),
+// Checks: it boots (splash, then GLO > MIX > MIXER on the screen, no decorative LED sweep; normal idle LEDs after boot),
 // a held key sounds and lights its LED, PLAY
 // starts the sequencer (PLAY's green LED), a user preset saved from the panel (SAVE, OCT+, OCT+) reaches the flash,
 // and the flash sectors kept as the page keeps them bring it back in a fresh instance; the same gestures twice
@@ -87,11 +87,12 @@ renderStartup(800);
 renderStartup(1200);                                         // (JIANT 0.5: the signature written, then held: ~2 s)
 check(`startup: no decorative LED sweep from boot through ${startupMs} ms` +
       (startupSweepAt === null ? "" : ` (active at ${startupSweepAt} ms)`), startupSweepAt === null);
-const home = a.screen();
-check(`boots: the splash, then HOME (${colours(home)} colours), the HOME LED lit`,
-      splash > 1 && colours(home) > 4 && (a.ex.web_lit_buttons() >> B.HOME & 1) === 1);
+const mixer = a.screen();
+check(`boots: the splash, then GLO MIXER (${colours(mixer)} colours), the GLO LED lit`,
+      splash > 1 && colours(mixer) > 4 && (a.ex.web_lit_buttons() >> B.GLO & 1) === 1 &&
+      (a.ex.web_lit_buttons() >> B.HOME & 1) === 0);
 check("after boot: normal idle glow, no note LEDs, PLAY stopped and green LED off",
-      a.ex.web_dim_keys() === (1 << 27) - 1 && (a.ex.web_dim_buttons() >> B.HOME & 1) === 1 &&
+      a.ex.web_dim_keys() === (1 << 27) - 1 && (a.ex.web_dim_buttons() >> B.GLO & 1) === 1 &&
       a.ex.web_lit_keys() === 0 && a.ex.web_playing() === 0 && (a.ex.web_lit_buttons() >> 14 & 1) === 0);
 check("silent at rest", a.peak === 0);
 a.ex.web_keys(1 << 7);                                        // C4
