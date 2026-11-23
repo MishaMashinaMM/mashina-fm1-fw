@@ -30,7 +30,7 @@ assert.deepEqual(decodeRecord(fmRec).fm6,fm6);
 const kit=Uint8Array.from({length:304},(_,i)=>i&255);
 kit[0]=0xA5;kit[1]=4;kit[2]=19;kit[3]=127;kit.fill(0,4,16);kit.set(Buffer.from("KIT TEST"),4);
 for(let i=0;i<127;i++)kit[16+i]=(i*7)%192;
-kit[159]=0x47;
+kit[159]=0x47;kit[303]=0xD3;
 const dKit=decodeRecord(kit);
 assert.deepEqual(Array.from(encodeRecord(dKit)),Array.from(kit),"full kit binary opaque round-trip");
 assert.throws(()=>encodeRecord({name:"NO KIT",engine:19,params:base}),/Full drum-kit binary sidecar/);
