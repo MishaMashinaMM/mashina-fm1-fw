@@ -408,6 +408,13 @@ static int up_store(uint32_t k, const char *name)
                     upd_engine(r.engine) ? upd_store(k, TSEL) : 0;
             if (u == 2) rc = 2;
         }
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        /* In the clean-break system the sound's identity is its USER slot.
+         * Saving a newly designed sound to USER 014 must immediately allow
+         * PROJECT SAVE to record reference 014, without requiring a reload. */
+        if (rc == 0 || rc == 3)
+            TSEL->user = (uint8_t)(k + 1u);
+#endif
         return rc;
     }
 }
