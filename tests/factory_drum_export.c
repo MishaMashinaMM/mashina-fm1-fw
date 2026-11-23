@@ -17,6 +17,11 @@ int main(void)
     unsigned n=0;
     ui_power_on();
     song.sel=0;
+    /* Factory capture is a single-track host operation. DRUM-X has one
+     * global kit shared by every live drum track. Other startup tracks may
+     * already use DRUM-X; keep them out of drum_elsewhere() so every BUTTLER
+     * preset actually loads its own DX_KITS[i] before capture. */
+    trk_live=1;
     puts("{\"format\":\"mashina-derived-factory-drum-records\",\"version\":1,\"source\":\"live-firmware-host-capture\",\"records\":[");
     for(uint32_t eidx=0;eidx<4;eidx++){
         uint32_t engine=KIT_ENGINE[eidx];
@@ -27,7 +32,10 @@ int main(void)
             int result;
             set_engine_of(TSEL,engine);
             TSEL->engine=TSEL->eng_req;
-            apply_preset_to(TSEL,i);
+            /* This public preset path also reinitializes each kit's full
+             * pad data (DX_KITS, LAB, AC, IND); apply_preset_to alone
+             * updates EDIT values but can retain a previous kit. */
+            apply_preset(i);
             result=up_store(0,name);
             if((result!=0&&result!=3)||!up_used(0)||
                upd_companion_get(0,side)||side[111]!=UPD_FMT){
