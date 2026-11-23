@@ -42,7 +42,9 @@ jobs:
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/project_refs_store_test tests/project_refs_store_test.c
           build/host/project_refs_store_test
       - name: Verify all 107 source-derived factory presets catalog
-        run: node tests/factory_presets_catalog_test.mjs
+        run: |
+          node tools/export_factory_catalog.mjs --check
+          node tests/factory_presets_catalog_test.mjs
       - name: Test JSON, binary record and WebMIDI codec
         run: |
           node tests/presets_library_codec_test.mjs
