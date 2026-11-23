@@ -56,3 +56,11 @@ jobs:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: python3 tools/build.py --release 0.13
+      - name: Compile experimental 32-slot library loader with physical writes LOCKED
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "0"
+        run: python3 tools/build.py --release 0.13
+
