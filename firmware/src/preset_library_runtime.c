@@ -24,7 +24,9 @@ static void library_track_name(const track_t *t, char *out)
 
 static int lib_flash_read(uint32_t addr, void *p, uint32_t n)
 {
-#if FELUCCA_FLASH
+#if defined(MASHINA_LIB_HOST_FLASH)
+    return lib_host_read(addr,p,n);
+#elif FELUCCA_FLASH
     if (!flash_ok || addr < LIB_BASE || addr+n > LIB_BASE+LIB_BANKS*2u*LIB_SECTOR)
         return -1;
     return st_read(addr, p, n);
@@ -39,7 +41,9 @@ static int lib_range_write(uint32_t addr, uint32_t n)
 }
 static int lib_flash_erase(uint32_t addr)
 {
-#if FELUCCA_FLASH && FELUCCA_LIB32_WRITE
+#if defined(MASHINA_LIB_HOST_FLASH)
+    return lib_host_erase(addr);
+#elif FELUCCA_FLASH && FELUCCA_LIB32_WRITE
     uint32_t took, f; int rc;
     if (!flash_ok || !lib_range_write(addr, LIB_SECTOR) ||
         (addr & (LIB_SECTOR - 1u)) || transport_busy()) return -1;
@@ -54,7 +58,9 @@ static int lib_flash_erase(uint32_t addr)
 }
 static int lib_flash_prog(uint32_t addr, const void *src, uint32_t n)
 {
-#if FELUCCA_FLASH && FELUCCA_LIB32_WRITE
+#if defined(MASHINA_LIB_HOST_FLASH)
+    return lib_host_prog(addr,src,n);
+#elif FELUCCA_FLASH && FELUCCA_LIB32_WRITE
     uint32_t took, f; int rc;
     if (!flash_ok || !lib_range_write(addr, n) ||
         n > 256u || (addr & 255u)+n > 256u || transport_busy()) return -1;
