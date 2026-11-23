@@ -90,7 +90,11 @@ static uint32_t mpr_project_settings_encode(const project_t *p,uint8_t *data,uin
     for(uint32_t i=0;i<G_COUNT;i++)mpr_short(&o,p->g[i]);
     for(uint32_t k=0;k<NTRK;k++)
         for(uint32_t i=0;i<P_COUNT;i++)
-            if(mpr_is_project_param(i))mpr_short(&o,p->t[k].p[i]);
+            if(mpr_is_project_param(i)) {
+                int32_t v=p->t[k].p[i];
+                if(v < -64 || v > 127) return 0;
+                mpr_byte(&o,(uint32_t)(v+64));
+            }
     mpr_write(&o,p->rx,NTRK);
     mpr_write(&o,p->transpose,NTRK);
     mpr_write(&o,p->fine,NTRK);
@@ -138,7 +142,7 @@ static int mpr_project_settings_decode(project_t *p,const uint8_t *data,uint32_t
     for(uint32_t i=0;i<G_COUNT;i++)p->g[i]=mpr_take_short(&o);
     for(uint32_t k=0;k<NTRK;k++)
         for(uint32_t i=0;i<P_COUNT;i++)
-            if(mpr_is_project_param(i))p->t[k].p[i]=mpr_take_short(&o);
+            if(mpr_is_project_param(i))p->t[k].p[i]=(int16_t)mpr_take(&o)-64;
     mpr_read(&o,p->rx,NTRK);p->rx_on=1u;
     mpr_read(&o,p->transpose,NTRK);
     mpr_read(&o,p->fine,NTRK);
