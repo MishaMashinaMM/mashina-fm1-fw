@@ -98,7 +98,18 @@ tr:nth-child(2n){background:#161616}
   </div>
   <p id="emu-impact" class="catalog-note">Import a target emulator JSON above to enable staging.</p>
   <table aria-label="Pending USER and LIBRARY replacements"><thead><tr><th>Destination</th><th>Current</th><th>Proposed</th><th>References</th><th>Action</th></tr></thead><tbody id="emu-pending"></tbody></table>
-  <div class="toolbar">
+  <details id="emu-project-editor" style="margin:16px 0">
+   <summary>Optional: reassign project track preset references (8 projects × A–D)</summary>
+   <p>Only existing saved sections can be edited. Their names, per-project settings, and every sound remain unchanged; only the selected T1–T6 preset reference is reassigned. Empty USER destinations are blocked.</p>
+   <div class="toolbar">
+    <select id="emu-project-position" class="catalog-select" aria-label="Saved project section"></select>
+    <select id="emu-project-track" class="catalog-select" aria-label="Track"><option value="1">T1</option><option value="2">T2</option><option value="3">T3</option><option value="4">T4</option><option value="5">T5</option><option value="6">T6</option></select>
+    <select id="emu-project-ref" class="catalog-select" aria-label="New preset reference"></select>
+    <button id="emu-project-stage" type="button" disabled>Queue reference reassignment</button>
+   </div>
+   <table aria-label="Queued project reference reassignments"><thead><tr><th>Section</th><th>Track</th><th>Current ref</th><th>New ref</th><th>Action</th></tr></thead><tbody id="emu-project-pending"></tbody></table>
+ </details>
+ <div class="toolbar">
    <button id="emu-export-patched" type="button" disabled>Export modified complete emulator JSON</button>
    <button id="emu-reset-pending" type="button" disabled>Discard queued changes</button>
   </div>
@@ -153,10 +164,10 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash} from "./full-device-backup.mjs";
-import {restoreProjectsBackup,projectsBackup} from "./projects-library-codec.mjs";
+import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
 import {inspectEmulatorFlash,resolveFactoryFallbacks} from "./emulator-library-inspector.mjs";
-import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulatorLibrarySnapshot,editEmulatorUserSnapshot} from "./emulator-snapshot-editor.mjs";
+import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulatorLibrarySnapshot,editEmulatorUserSnapshot,editEmulatorProjectReferences} from "./emulator-snapshot-editor.mjs";
 import {inspectProjectReferences as inspectUsage} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
@@ -539,7 +550,7 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     "\nSaved mashina-flash-diagnostic.json — share that file for analysis.";
 }));
 let emuInspection=null,emuOriginalFlash=null,emuSnapshotSources=[],emuUserSources=[],emuFactorySources=[];
-let emuSourceLabel="",emuPending=new Map();
+let emuSourceLabel="",emuPending=new Map(),emuPendingRefs=new Map();
 const emuSetText=(id,value)=>$(id).textContent=value;
 function emuRefreshSource(){
   const type=$("emu-source-type").value;
@@ -581,8 +592,8 @@ function emuUpdateEditor(){
   $("emu-stage").disabled=!ready||!selected?.available;
   $("emu-clear-target").disabled=!ready;
   $("emu-clear-target").textContent=destType==="user"?"Queue empty USER slot":"Queue factory fallback";
-  $("emu-reset-pending").disabled=!emuPending.size;
-  $("emu-export-patched").disabled=!ready||!emuPending.size;
+  $("emu-reset-pending").disabled=!(emuPending.size||emuPendingRefs.size);
+  $("emu-export-patched").disabled=!ready||!(emuPending.size||emuPendingRefs.size);
   const body=$("emu-pending");body.replaceChildren();
   for(const [key,edit] of [...emuPending].sort((a,b)=>
     a[1].kind.localeCompare(b[1].kind)||a[1].slot-b[1].slot)){
@@ -603,6 +614,7 @@ function emuUpdateEditor(){
     });
     action.append(remove);row.append(action);body.append(row);
   }
+  emuRefreshProjectControls();
   emuSetText("emu-impact",ready?
     emuPending.size+" destination(s) queued. Shared project references remain unchanged, so every project track using a replaced slot will hear the new sound. Original JSON is never overwritten.":
     "Import a target emulator JSON above to enable staging.");
@@ -640,11 +652,11 @@ $("emu-clear-target").addEventListener("click",()=>{
     ". Project references continue to point to the slot; review its project usage above.");
 });
 $("emu-reset-pending").addEventListener("click",()=>{
-  emuPending.clear();emuUpdateEditor();
+  emuPending.clear();emuPendingRefs.clear();emuUpdateEditor();
   emuSetText("emu-edit-status","Discarded all queued edits; original backups remain untouched.");
 });
 $("emu-export-patched").addEventListener("click",()=>{
-  if(!emuOriginalFlash||!emuPending.size)return;
+  if(!emuOriginalFlash||!(emuPending.size||emuPendingRefs.size))return;
   try{
     const edits=[...emuPending.values()];
     const library=edits.filter(x=>x.kind==="library").map(x=>({slot:x.slot,recordBytes:x.recordBytes}));
@@ -652,13 +664,14 @@ $("emu-export-patched").addEventListener("click",()=>{
     let current=emuOriginalFlash;
     if(library.length)current=editEmulatorLibrarySnapshot(current,library).snapshot;
     if(users.length)current=editEmulatorUserSnapshot(current,users).snapshot;
+    if(emuPendingRefs.size)current=editEmulatorProjectReferences(current,[...emuPendingRefs.values()]).snapshot;
     // Last full pass confirms all 64 slots and 32 project sections remain parseable.
     inspectEmulatorFlash(current);
     const out=typeof current==="string"?JSON.parse(current):current;
     downloadFile("mashina-emulator-selective-restore.json",out);
     emuSetText("emu-edit-status","Exported a verified complete emulator JSON with "+
       library.length+" LIBRARY and "+users.length+
-      " USER slot changes. First import it in the emulator's isolated session and test sounds and projects. Neither original backup nor saved browser data was overwritten.");
+      " USER slot changes and "+emuPendingRefs.size+" project track reference changes. First import it in the emulator's isolated session and test sounds and projects. Neither original backup nor saved browser data was overwritten.");
   }catch(error){
     emuSetText("emu-edit-status","Export refused: "+error.message+". No data was changed.");
   }
@@ -677,6 +690,95 @@ $("emu-source-file").addEventListener("change",async e=>{
   }catch(error){
     emuSetText("emu-source-info","Could not read "+file.name+": "+error.message+". Previous source retained.");
   }
+});
+function emuProjectRefLabel(ref){
+  if(ref===255)return "UNASSIGNED";
+  if(ref<32){
+    const u=emuInspection?.users[ref];
+    const staged=emuPending.get("user"+(ref+1));
+    return "USER "+String(ref+1).padStart(3,"0")+" · "+(staged?
+      staged.recordBytes===null?"EMPTY (queued)":staged.name:(u?.name||"EMPTY"));
+  }
+  const lib=emuInspection?.library[ref-32];
+  const staged=emuPending.get("library"+(ref+1));
+  return "LIBRARY "+String(ref+1).padStart(3,"0")+" · "+(staged?
+    staged.recordBytes===null?"Factory default":staged.name:(lib?.name||"Factory default"));
+}
+function emuRefreshProjectControls(){
+  const position=$("emu-project-position"),oldPosition=position.value;
+  position.replaceChildren();
+  if(emuInspection)for(let pos=0;pos<32;pos++){
+    const record=emuInspection.projects.sections[pos];
+    if(record===null)continue;
+    const option=document.createElement("option");
+    option.value=String(pos);
+    option.textContent="Project "+(Math.floor(pos/4)+1)+" · "+"ABCD"[pos%4];
+    position.append(option);
+  }
+  if([...position.options].some(o=>o.value===oldPosition))position.value=oldPosition;
+  const ref=$("emu-project-ref"),prior=ref.value;ref.replaceChildren();
+  for(let value=255;value<320;value++){
+    const n=value===255?255:value-256;
+    const option=document.createElement("option");
+    option.value=String(n);option.textContent=emuProjectRefLabel(n);
+    if(n<32){
+      const saved=emuInspection?.users[n]?.status==="saved";
+      const proposed=emuPending.get("user"+(n+1));
+      option.disabled=!((proposed&&proposed.recordBytes!==null)||(!proposed&&saved));
+    }
+    ref.append(option);
+  }
+  if([...ref.options].some(o=>o.value===prior&&!o.disabled))ref.value=prior;
+  const pos=Number(position.value),track=Number($("emu-project-track").value);
+  const record=emuInspection?.projects.sections[pos];
+  if(record){
+    const info=restoreProjectsBackup(emuInspection.projects);
+    const bytes=info[pos];
+    const decoded=bytes?decodeProject(bytes):null;
+    if(decoded&&!emuPendingRefs.has(pos+":"+track)){
+      const current=String(decoded.refs[track-1]);
+      if([...ref.options].some(o=>o.value===current&&!o.disabled))ref.value=current;
+    }
+  }
+  $("emu-project-stage").disabled=!record||![...ref.options].some(o=>o.value===ref.value&&!o.disabled);
+  const body=$("emu-project-pending");body.replaceChildren();
+  for(const [key,change] of [...emuPendingRefs].sort((a,b)=>
+    a[1].project-b[1].project||"ABCD".indexOf(a[1].section)-"ABCD".indexOf(b[1].section)||a[1].track-b[1].track)){
+    const pos=(change.project-1)*4+"ABCD".indexOf(change.section);
+    const old=decodeProject(emuInspection.projects.sections[pos]).refs[change.track-1];
+    const row=document.createElement("tr");
+    ["P"+change.project+":"+change.section,"T"+change.track,
+      emuProjectRefLabel(old),emuProjectRefLabel(change.reference)].forEach((value,i)=>{
+      const td=document.createElement("td");td.textContent=value;
+      if(i===0)td.className="num";row.append(td);
+    });
+    const cell=document.createElement("td"),button=document.createElement("button");
+    button.textContent="Remove";button.addEventListener("click",()=>{
+      emuPendingRefs.delete(key);emuUpdateEditor();
+    });cell.append(button);row.append(cell);body.append(row);
+  }
+}
+$("emu-project-position").addEventListener("change",emuRefreshProjectControls);
+$("emu-project-track").addEventListener("change",emuRefreshProjectControls);
+$("emu-project-ref").addEventListener("change",()=>{
+  const ref=$("emu-project-ref");
+  $("emu-project-stage").disabled=!emuInspection||
+    ![...ref.options].some(o=>o.value===ref.value&&!o.disabled);
+});
+$("emu-project-stage").addEventListener("click",()=>{
+  if(!emuInspection)return;
+  const pos=Number($("emu-project-position").value);
+  const track=Number($("emu-project-track").value);
+  const reference=Number($("emu-project-ref").value);
+  if(!Number.isInteger(pos)||pos<0||pos>=32||!emuInspection.projects.sections[pos]||
+     !Number.isInteger(track)||track<1||track>6||
+     !Number.isInteger(reference)||(reference!==255&&(reference<0||reference>=64)))return;
+  const change={project:Math.floor(pos/4)+1,section:"ABCD"[pos%4],track,reference};
+  emuPendingRefs.set(pos+":"+track,change);
+  emuUpdateEditor();
+  emuSetText("emu-edit-status","Queued Project "+change.project+":"+change.section+
+    " Track "+change.track+" → "+emuProjectRefLabel(reference)+
+    ". Existing section settings, sounds and original backup remain untouched.");
 });
 function inspectSnapshotTable(id,entries,view,group) {
   const body=$(id);body.replaceChildren();
@@ -751,7 +853,7 @@ $("inspect-emu").addEventListener("change",async e=>{
       emuUserSources=userSourceRecords(snapshotFile);
       emuSetText("emu-source-info","Using inspected target JSON as sound source. Import a second snapshot to switch sources.");
     }
-    emuPending.clear();emuRefreshSource();
+    emuPending.clear();emuPendingRefs.clear();emuRefreshSource();
     $("export-emu-projects").disabled=false;
     $("export-emu-library").disabled=!next.library.some(x=>x.status==="overridden");
     status.textContent="Loaded "+file.name+" successfully. Saved preset data came from JSON; factory default labels come from the protected firmware catalog."+factoryNote+" Emulator and FM1 are untouched.";
