@@ -490,3 +490,22 @@ Damaged LIBRARY slots are not silently substituted or marked assigned.
 The MPR1 host integration regression now checks all four initial identities,
 their names, and an immediate Project Section A save. The code is committed
 but still requires fresh native CI and emulator verification.
+
+### Startup T2 fingerprint correction (23 November 2026)
+
+The first browser test of startup-assigned LIBRARY 033..036 reported
+`T2: SAVE SOUND F...` when saving a project before touching any sound.
+The startup source assignment had run **inside the outer load-depth scope**,
+so individual LIBRARY sound loads could exit their `load_end()` early,
+without normal motion-rebase/finalization before capturing the reference
+fingerprint. The four LIBRARY startup loads now run **after** the outer
+`power_on_parts()` loading scope closes, using the same complete sound-load
+sequence as ordinary preset selection. No protection against genuinely
+unsaved user edits was disabled.
+
+The on-device message is now the shorter `T2: SAVE PRESET` (with the offending
+track number substituted), fitting the screen better. The simulated NOR
+integration test now reproduces the nested boot load and checks all four
+sound fingerprints, plus T2 after a motion rebase, before attempting a
+fresh project SAVE. This source change still requires a new successful CI
+build and browser retest; it is not yet confirmed on the emulator.
