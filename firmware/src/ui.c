@@ -60,6 +60,9 @@ static int project_save_as(uint32_t slot, const char *name);
 static int project_name(uint32_t slot, char *b);
 static int project_rename(uint32_t slot, const char *name);
 static void project_cur_name(char *b);
+#if FELUCCA_LIB32
+static void library_track_name(const track_t *t, char *out);
+#endif
 static uint32_t user_of(const track_t *t)    /* user preset slot its sound came from, UP_SLOTS = none */
 {
     return t->user && up_used(t->user - 1u) ? t->user - 1u : UP_SLOTS;
