@@ -199,6 +199,9 @@ jobs:
           cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs "$OUT/web-library/"
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs "$OUT/web-library/"
           cp build/host/factory-drum-records.json "$OUT/web-library/"
+          cp web/emulator-library-inspector.mjs "$OUT/web-library/"
+          mkdir -p "$OUT/web-library/emu"
+          cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs "$OUT/web-library/emu/"
           python3 tools/check_library_preview.py "$OUT/web-library"
       - uses: actions/upload-artifact@v4
         with:
@@ -215,6 +218,11 @@ jobs:
           cp build/host/factory-drum-records.json build/presets-library-preview/
           cp web/full-device-backup.mjs web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/fm1backup.js build/presets-library-preview/
           cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-preview/
+      - name: Copy emulator inspection dependencies to standalone library
+        run: |
+          cp web/emulator-library-inspector.mjs build/presets-library-preview/
+          mkdir -p build/presets-library-preview/emu
+          cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/presets-library-preview/emu/
       - name: Check standalone Web Library JS syntax and bundled imports
         run: python3 tools/check_library_preview.py build/presets-library-preview
       - uses: actions/upload-artifact@v4
