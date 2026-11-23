@@ -1,94 +1,88 @@
-# Editable Presets — architecture and UI proposal (discussion draft)
+# Unified 128-slot editable presets — revised design (discussion draft)
 
-Branch: `presets-editable`. This document is a proposal, not a firmware implementation or a release.
+Branch: `presets-editable`. **Design only**; firmware storage and UI have not been modified.
 
-## Goal
+## Agreed direction
 
-Remove the *factory vs USER* distinction from daily operation. Every sound in one numbered preset library should be loadable, editable, renamed, saved back to its own slot, duplicated to another slot, and restored to its original default where one exists. No separate USER bank in the UI.
+- Exactly **128 numbered slots**, displayed **001–128** on the device and addressed by incoming **MIDI Program Change 0–127**, with the exact mapping `PC 0 → slot 001`, `PC 127 → slot 128`. No bank switching is needed.
+- **No factory versus USER distinction** in the playable library. Every slot is equally editable, renameable, overwriteable, moveable and **deletable**, even if it originally held a factory sound.
+- A **fresh/empty install seeds** the 128 slots with a curated selection of available factory presets. Any factory sounds beyond the initial 128 are accessible in the web library, not permanently reserved on the FM1.
+- The **web library** provides downloadable/reimportable factory preset packs, user exports/imports and full library backups. Restoring a factory sound is an explicit import, **not an automatic fallback** after deleting a preset.
+- **No special protected factory region** in device preset storage. The firmware may still need compiled defaults for sound-engine initialization, hardware recovery or the seed *delivery* mechanism; these are not addressable writable preset slots and do not make deleted sounds reappear.
+- Each project continues to save its **own complete sound snapshots**. Changing or deleting a library preset must never mutate the existing eight projects with four sections A–D.
+- Stop at **design, storage audit and UI proposal** until approved. Do not modify real user data or flash maps until migration, downgrade and backup behavior is proven.
 
-Preserve MASHINA's eight projects × four sections (A–D), current on-stage sounds, engine IDs, MIDI Program Change compatibility wherever possible, backups, FM6 patches, and complete per-kit edits.
+## Findings from existing source (v0.13)
 
-## Verified current architecture
+The code currently has (a) engine-defined factory presets and import arrays, (b) 32 USER flash records, two banks of 16. Each USER `up_rec_t` is 192 bytes and has sidecar support for FM6 patches and full drum-engine kit state. Existing `UP_PUT`, `UP_STORE`, `UP_LOAD`, `UP_ERASE` and factory `PRESET` operations are distinct. Projects embed their actual engine parameters and drum/FM6 state and clear USER association upon load.
 
-- Factory presets live in compiled `engine_t.presets` and engine-specific import arrays; `apply_preset_to` loads sound parameters plus engine special data, including FM6 imported patch and drum-kit resets.
-- USER bank has exactly 32 slots in two flash objects, 16 records/bank. A record is 192 bytes (engine, 12-character name, parameter payload, optional 16-step pattern); FM6 patch and drum-engine state use auxiliary storage.
-- PRESETS rotary and SAVE > PRESETS already browse factory entries followed by occupied USER entries, while SAVE > USER has separate LOAD / ERASE / SAVE operations.
-- Projects serialize complete track settings and additional patch/kit data. Project restore explicitly clears `track.user`; it does not reload the sound from a library reference. Thus existing project sounds should remain unchanged when a library preset is later edited.
-- Storage uses CRC-checked A/B sector pairs for power-loss resilience. Project and song storage occupies 8 projects × 4 sections; user bank and auxiliary kit/FM6 storage have specific allocated sectors. A flash-map audit is mandatory before allocating more writable sounds.
-- The web editor uses distinct factory-PRESET and user-slot SysEx operations; changing the device UI alone does not unify external tools.
-- A USER record can also store a 16-step pattern, but loading the sound does not load the pattern. A unified *sound preset* should not silently load or erase steps.
+The current 1 MiB SPI NOR mapping has dedicated A/B sectors for 8 × 4 project sections, USER banks, FM6/drum companion records, autosave, OTA, preferences and the voice bank. Explicitly unused 0xDA000–0xDBFFF is just **8 KiB**, insufficient for 128 independent complete sounds. **We must audit firmware/update/bootloader regions and flash usage before reserving new sectors.** Do not repurpose project, OTA, or existing backup data.
 
-## Proposed model: fixed preset identities with writable overrides
+A baseline of 128 × 192 = **24,576 bytes** covers only the current USER-type records, excluding full drum kits, FM6 patches, names/index metadata, CRC/transaction structures and write redundancy. At an indicative 192+112 auxiliary bytes per slot, 128 entries are about **38,912 bytes per copy** (77,824 bytes for two copies), before sector overhead; the actual worst case must be calculated from concrete serializations. The existing auxiliary formats are capped at 32 slots, and `up_fm6.c` currently occupies almost a whole flash payload, so simply increasing `UP_SLOTS` from 32 to 128 will **not work**.
 
-Use one logical table of numbered slots. For a built-in slot, immutable factory data serves as the **reset default**, not a second category of preset. If a user saves edits in the slot, load the saved override instead. Empty additional slots behave exactly the same as occupied slots once saved. The UI should not label slots FACTORY or USER.
+## Factory initialization — crucial distinction
 
-- **LOAD:** select a slot -> resolve writable override if present, otherwise its compiled default.
-- **EDIT:** alter the selected track's working sound as today, independently of the library. Show an unsaved-change marker if the current sound differs from the loaded slot.
-- **SAVE:** write the current sound into the selected slot. Existing occupied slots require a clear OVERWRITE confirmation.
-- **SAVE AS / COPY:** choose any target slot (including an additional slot) while retaining the original. Confirmation on occupied slots.
-- **RENAME:** any slot, saved in writable metadata; never changes an engine's public name.
-- **RESTORE DEFAULT:** only slots that had a built-in original. Discards the persisted override after confirmation; keeps the factory contents in ROM.
-- **DELETE/CLEAR:** additional slots can become empty. Built-in slots cannot become empty; clearing restores the default instead.
-- **FAVORITES / filters:** operate on unified slot identities, not an engine+preset versus USER discriminator.
-- **Projects:** keep independent embedded snapshots, by default. Editing a library entry never mutates saved projects or currently playing tracks. On an explicit preset load, a project receives that preset's current sound snapshot. Add a *source slot* label as non-authoritative metadata only if size allows.
-- **PC/MIDI:** retain legacy factory numbering for existing entries and provide an explicit compatibility/migration plan for old USER presets and Program Changes. Do not renumber engine IDs.
+There are **two** safe cases, with different behavior:
 
-Important: a limited override cache (e.g. only 32 edited factory sounds) would **not** meet the stated 'ALL presets editable' requirement if edits cannot coexist. Full-capacity persistent storage, with optional export/restore, must be designed and measured first.
+1. **Completely new library:** all new-library headers invalid/absent **and** no legacy USER data detected. Install/seed the preset bank once, possibly by a first-run web-installer provisioning package, with an interrupted-provisioning restart mechanism. If a factory pack has fewer than 128 sounds, remaining slots are **empty**.
+2. **Existing FM1 / firmware upgrade:** detect and preserve the current 32 USER slots, FM6 and drum sidecars, user projects and backups. Do **not** automatically seed or overwrite them. Require a backup and a preview of slot assignments/migration conflicts; commit only after a validated migration path or a user-initiated provisioning/import. A simple 'new format absent' check would falsely treat existing v0.13 data as a new installation and must not initialize over it.
 
-## Proposed device UI
+If it is not possible to distinguish a truly empty store from a legacy installation reliably, use **explicit provisioning on the web installer** rather than attempting to guess. A firmware reflash/update should **never reset the user's 128-slot library**.
 
-### PRESETS browsing (one list)
+A deleted factory-origin slot stays **EMPTY after reboot**, even if that slot was in the first-install factory assortment.
 
-```text
-PRESETS                         023/160
-> 023  ANALOG   CICERO
-  024  ANALOG   PLUTARCH
-  025  DRUM-X   BUTTLER-1
-  026  VOICE    SINGER EN
-  ...
-```
+## Firmware performance and sound behavior
 
-Exact names/numbers illustrative; current engine order and position must be retained. Orange selected row; small `*` beside a name when a saved override exists, a `•` when the loaded track has **unsaved** edits. No FACTORY or USER tags.
+- Selecting a slot loads its **full independent sound**, not a reference to another slot; changing one drum kit must not modify any other kit.
+- Saving a sound to a slot updates that **one slot only**, plus its dependent patch/kit data in a transaction-safe way.
+- The engine may change freely: slot 017 could initially hold ANALOG and later hold DRUM-IND, or be EMPTY.
+- Save/move/copy/rename/delete operations require confirmation where destructive, safe failure handling and an explicit unsaved-work indicator. Do not silently overwrite a library slot on each knob movement.
+- Leave project A–D snapshots independent. For a recalled project with a preset now deleted, its saved sound still plays normally.
+- Preserve a stable PC mapping (0→001 … 127→128) and make PC on **each track's configured MIDI channel** recall the corresponding sound to that track; ensure global live recall and existing PC functionality do not conflict.
 
-### SAVE > PRESETS (single library manager, replaces separate PRESETS and USER pages)
+## Proposed on-device UI (mockup)
 
-Keep the six-row, alternating-shade list and predictable rotary behavior. PRESETS or SELECT navigates slots (final control assignments to be decided, avoiding conflicts with current PRESETS behavior). Use a small action page tied to the highlighted slot:
+**PRESETS browser: one numbered list, no factory/user split**
 
 ```text
-SAVE > PRESETS                  023/160
- 023  ANALOG    CICERO       *
- K1 SLOT    K2 LOAD    K3 SAVE    K4 MORE
+SAVE > PRESETS                 017/128
+ 015  FM6       SPARK
+ 016  DRUM-AC   KRIPKE-1
+>017  ANALOG    CICERO            •
+ 018  EMPTY     —
+ 019  ATMOS     KANT
+
+ K1 SLOT   K2 LOAD   K3 SAVE   K4 MORE
 ```
 
-`MORE` opens a compact action list: **SAVE AS**, **RENAME**, **RESTORE**, **COPY**, **CLEAR** (as applicable). Confirm any destructive operation with existing OCT− cancel / OCT+ confirm. Preserve the ability to browse with minimal button presses. On the selected track's normal EDIT pages, modifications remain immediate but do not rewrite flash until SAVE.
+Names and slot positions are illustrative; `•` denotes **unsaved changes on the current track**, not 'factory' or 'user'. Favorites and type/engine filtering may remain available. The slot number is the primary identity. The list must remain readable on the 240×240 FM1 display, keep MASHINA's six-row/alternating-shade visual style, and follow its orange/gray high-contrast palette.
 
-### Web library
+**MORE** opens `RENAME`, `SAVE AS` / `COPY`, `MOVE`, `DELETE`, and `IMPORT` only where device transfer permits it. Avoid a hidden 'RESET TO FACTORY' action because no slot owns a permanent factory default. To restore a supplied factory sound, import/select it from the web library and save it to any chosen position.
 
-One grid/table with slot, name, engine, favorite and modified/default marker. Support audition/load, edit/rename, duplicate, restore default, and full backup/import. Include a migration report and preview before rewriting old user-bank content. The full backup must include all editable overrides and engine-specific payloads.
+**PRESETS rotary:** stays a sound browser for rapid live selection, including EMPTY slots only in library-management mode; ordinary playing should skip EMPTY. Current project and global MIDI controls remain available. Confirm whether a dedicated SAVE page has any controls that should be preserved before replacing it.
 
-## Storage constraints and implementation alternatives to measure
+## Proposed web library
 
-**A. Preferred:** compressed/delta writable overlays (factory base + complete replacement data when changed). Factory defaults remain in ROM. Slot identity is stable. Must guarantee sufficient persisted entries for **all** factory slots plus any expansion slots, even in worst case, including full FM6 patch and 12-pad drum-engine state; do not rely on typical compression ratio.
+A 128-slot table with direct **PC number**, slot number, name, engine, favorites, and occupied/empty state. Actions: audition/load, rename, edit, duplicate, move, remove, export, import into any slot, select many and perform bulk operations, and backup/restore **all** 128 slots including full FM6 and drum data.
 
-**B. Full writable bank:** move preset data to flash. Simpler semantics but potentially large flash, RAM and backup cost; extra sidecars for large kits. Requires audited sector allocation and safety migration.
+Provide an independent **Factory Collection** catalogue in the browser (not installed permanently on the FM1), with categorized presets for all 10 melodic and 4 drum engines, preview/audition where feasible, and a target-slot selector. The user can repopulate any cleared slot at any time. Factory packs should be downloadable/offline-capable and versioned; user collections must be exportable.
 
-Existing USER `up_rec_t` is 192 bytes. At 160 entries this alone is 30,720 bytes before names/metadata/sidecars and A/B redundancy. The project map has only explicitly documented 0xDA000–0xDBFFF (8 KiB) free inside the old song region; do **not** assume unallocated-looking addresses elsewhere are safe without checking firmware, OTA and flash layout. Preserving 8×4 projects is non-negotiable.
+Support two distinct operations: **restore an entire 128-slot backup** (with explicit overwrite warning), and **import selected factory/user sounds into chosen slots**. Avoid silently shifting slot numbers and PC addresses.
 
-## Migration and acceptance criteria
+## Flash architecture gates (must pass before implementation)
 
-1. Prior to any write: read all existing 32 USER slots and auxiliary FM6/drum payloads; preserve them losslessly with original names. Never erase legacy objects until new format is verified and rollback/recovery is available.
-2. Resolve the placement of 32 legacy USER sounds in the unified list without silently overwriting factory edits. Keep stable mapping to old Program Changes where possible, and document any unavoidable remapping.
-3. Prove 160-or-more independently edited sound slots can persist across power cycles **including distinct full drum kits and FM6 patches**. This is the critical feasibility gate.
-4. Confirm saving one DRUM-AC/IND/LAB/X entry never alters another (repeat previous isolation regression with full per-pad parameter data).
-5. Confirm existing eight projects/four sections are bit-for-bit safe, and changing a sound in the library does not alter their stored sound snapshots.
-6. Test favorites, ordering, filters, name editing, overwrite/restore prompts, device MIDI PC, web editor and full backup/restore.
-7. Validate flash/RAM footprint and power-loss behavior, then publish isolated web emulator automatically when host/firmware checks pass. Physical-device tests before merge/release.
+1. Map every 4 KiB flash sector, firmware image capacity, OTA staging region, all legacy project/USER/sidecar objects and both A/B copies. Determine a guaranteed **minimum** space budget for 128 complete presets, including worst-case 12-pad drum kits, FM6 patches and metadata.
+2. Choose record layout/index format that allows independent per-slot writes with power-loss-safe commits, recovery and consistent companion payloads. Check wear/endurance and flash writing while audio is active.
+3. Verify 128 distinct presets survive power cycling, especially **128 full drum kits**, and that saving slot A does not change B. Do not rely on optimistic compression ratios.
+4. Specify backup format, migration from 32 USER slots, preservation of 8×4 projects, and rollback/downgrade behavior. Establish first-install provisioning vs firmware-upgrade detection.
+5. Modify firmware SysEx protocol and **web editor** together; existing tools know separate factory PRESET and USER operations.
+6. Check MIDI Program Change mapping on all 16 channels and per-track routing, and keep any previous project-recall PC behavior explicitly documented/handled.
+7. Once implementation and host tests pass, **automatically build and publish an isolated web emulator**. Device flash testing and explicit approval precede merge/release.
 
-## Decision points before writing storage code
+## Decisions to explore next
 
-- Should the unified library keep **all current factory positions plus the 32 former USER slots** as extra slots, or fold the USER slots into a fixed 160-entry total? Safest default: keep existing factory positions and append the 32.
-- Should an existing slot's name be editable immediately while its engine identity remains changeable only through SAVE AS? Proposed: saving any engine into any slot is allowed; confirmation protects replacement.
-- Should project sounds auto-follow later changes to their source preset? Proposed: **no**, projects remain self-contained snapshots.
-- Should presets store musical patterns/steps? Proposed: keep legacy pattern data for migration, but the future unified *sound* preset only loads sound, not steps; separate any pattern management.
+- **Seeding selection:** current firmware may contain more than 128 factory sounds. Which 128 will populate an empty device? Proposal: curated broad coverage of all 14 engines, with remaining originals available in Factory Collection online.
+- **Provisioning responsibility:** safest proposal is web-installer-driven first-install seeding, with a firmware fallback only if provably pristine. Offline first boot must have predictable behavior.
+- **MIDI PC precedence:** existing mappings may use PC to recall projects/sections. Define whether a special channel or configured mode preserves these commands while regular track channels select slots.
 
-Status: source review complete and proposal drafted; **no preset data format or device UI changed**.
+Status: agreed library model specified; storage architecture and migration **not yet implemented or validated**.
