@@ -21,7 +21,10 @@ static int mprs_read(uint32_t off,void *dst,uint32_t len)
 }
 static int mprs_erase(uint32_t off)
 {
-#if FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
+#if defined(MASHINA_MPRS_HOST_FLASH)
+    if(!mprs_allowed(off,MPRS_SECTOR) || (off&(MPRS_SECTOR-1u)))return -1;
+    return st_erase(off);
+#elif FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
     uint32_t took,f;int rc;
     if(!flash_ok || !mprs_allowed(off,MPRS_SECTOR) ||
        (off&(MPRS_SECTOR-1u)) || transport_busy())return -1;
@@ -36,7 +39,10 @@ static int mprs_erase(uint32_t off)
 }
 static int mprs_prog(uint32_t off,const void *src,uint32_t len)
 {
-#if FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
+#if defined(MASHINA_MPRS_HOST_FLASH)
+    if(!src || !mprs_allowed(off,len) || len>256u || (off&255u)+len>256u)return -1;
+    return st_prog(off,src,len);
+#elif FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
     uint32_t took,f;int rc;
     if(!flash_ok || !src || !mprs_allowed(off,len) ||
        len>256u || (off&255u)+len>256u || transport_busy())return -1;
