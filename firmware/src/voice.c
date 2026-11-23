@@ -804,7 +804,8 @@ static void trk_note_on(track_t *t, uint32_t note, uint32_t vel)
          * in voice_alloc: the global NVOICE budget is unchanged. */
         for (lane = 0; lane < DLAB_LANES; lane++)
             if (drumlab_midi_note[ti][lane] == note)
-                trk_note_on_raw(t, 36u + lane, vel);
+                trk_note_on_raw(t, t->eng_req == ENGI_DRUMAC ?
+                                    AC_NOTES[lane] : 36u + lane, vel);
         return;
     }
     trk_note_on_raw(t, note, vel);
@@ -866,7 +867,8 @@ static void trk_note_off(track_t *t, uint32_t note)
          t->eng_req == ENGI_DRUMIND) && ti < NPART && drumlab_midi_custom[ti]) {
         for (lane = 0; lane < DLAB_LANES; lane++)
             if (drumlab_midi_note[ti][lane] == note)
-                trk_note_off_raw(t, 36u + lane);
+                trk_note_off_raw(t, t->eng_req == ENGI_DRUMAC ?
+                                     AC_NOTES[lane] : 36u + lane);
         return;
     }
     trk_note_off_raw(t, note);
