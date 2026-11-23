@@ -509,3 +509,28 @@ integration test now reproduces the nested boot load and checks all four
 sound fingerprints, plus T2 after a motion rebase, before attempting a
 fresh project SAVE. This source change still requires a new successful CI
 build and browser retest; it is not yet confirmed on the emulator.
+
+### Corrected startup reference fingerprinting; real WASM SAVE gate (23 November 2026)
+
+A subsequent browser retest still rejected an untouched initial four-track
+project with `T2: SAVE PRESET`. The earlier change to finish the outer load
+scope first was necessary but insufficient. The second factory position is a
+DRUM-X kit, and DRUM-X maintains a **shared kit** rather than independent
+per-track kit storage. Fingerprinting one track in the middle of a multi-track
+load is unsafe: later loads can change shared sound state. The experimental
+startup now refreshes all four loaded preset-source fingerprints only **after
+all four tracks have finished loading**. Multi-track project recalls likewise
+refresh their referenced sources only after the entire batch loads. This is
+not done at SAVE time and does not waive the check for edits after loading.
+
+Most importantly, the dedicated WebAssembly emulator workflow now **runs the
+compiled browser firmware** after the normal boot and roughly five seconds of
+simulated audio/UI frames. The new `tests/emu_mpr1_fresh_save_test.mjs`
+requires all four startup references 033–036, all four sound fingerprints to
+remain unchanged, and Section A to save successfully without touching a
+preset. It then deliberately edits Track 2 and requires the exact same SAVE
+to be rejected while the earlier section remains present. These checks use
+simulator-only exported probes and an in-memory NOR flash, never the physical
+FM1 flash. The artifact-upload step is withheld if this integration test
+fails. **Do not claim the bug resolved until this workflow and a browser
+retest both pass.**
