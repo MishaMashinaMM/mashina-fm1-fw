@@ -34,6 +34,11 @@ jobs:
         run: |
           python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
           python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Test full six-track firmware sound loading with simulated LIBRARY flash
+        run: |
+          mkdir -p build/host
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DMASHINA_HOST_TEST=1 -Ibuild/gen -Ifirmware/src -o build/host/presets_library_sound_test tests/presets_library_sound_test.c -lm
+          build/host/presets_library_sound_test
       - name: Live drum and firmware host regressions
         run: bash tests/run_live_drum_tests.sh
       - name: JieLi build toolchain cache
