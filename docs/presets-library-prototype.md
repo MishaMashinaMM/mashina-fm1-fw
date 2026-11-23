@@ -334,3 +334,12 @@ wrong files, stale backups, and edited backups before a destructive transfer.
 The feature is branch-only and has not been physically exercised. Do not
 publish or use a write-enabled experimental installer until CI, emulator and
 flash-region ownership checks have passed.
+
+### Projects-only export integrity
+
+The projects-only WebMIDI capture now verifies that current-project archive
+aliases (IDs 2–5) agree with the authoritative 8-project section records
+(IDs 40–71) **before** exporting the JSON. An inconsistent live view must
+produce an error, not a backup presented as valid. The JavaScript fixture
+checks both a consistent capture and a deliberately mismatched alias.
+Physical flash verification remains pending.
