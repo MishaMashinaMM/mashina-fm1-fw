@@ -154,6 +154,43 @@ static uint32_t ed_bk_commit(void)
     uint8_t *raw = ED_BK_RAW;
     uint32_t obj;
     if (ed_bk_pos != ed_bk_len || st_crc32(raw, ed_bk_len) != ed_bk_crc) return 2;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* The old FUN* importer is intentionally NOT available under MPR1.
+     * All 8x4 sections use reference-only records in compact flash banks.
+     * The current live state (ID 0) is never persisted as a project. */
+    if(ed_bk_id==0u ||
+       (ed_bk_id>=2u && ed_bk_id<=5u) ||
+       (ed_bk_id>=ED_BK_SONG && ed_bk_id<ED_BK_SONG+NSONG*4u)){
+        uint32_t section=ed_bk_id==0u? (ed_bk_len?raw[5]:4u) :
+                         ed_bk_id<=5u ? ed_bk_id-2u :
+                         (ed_bk_id-ED_BK_SONG)%4u;
+        uint32_t song_id=ed_bk_id<=5u?(uint32_t)song_cur:
+                         (ed_bk_id-ED_BK_SONG)/4u;
+        uint8_t refs[NTRK],name[PROJ_NAME_LEN];
+        if(ed_bk_id==0u){
+            if(ed_bk_len!=MPR_MAX_RECORD || mpr_restore_unsaved(raw))
+                return 2;
+            return 0;
+        }
+        if(ed_bk_len && (ed_bk_len!=MPR_MAX_RECORD ||
+           !mpr_open_blob(raw,section,refs,name,0)))return 2;
+#if FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
+        if(!flash_ok)return 4;
+        if(!ed_bk_len)memset(raw,0,MPR_MAX_RECORD);
+        if(mprs_save(song_id*4u+section,raw))return 4;
+        if(song_id==song_cur){
+            memcpy(proj_slot[section].raw,raw,MPR_MAX_RECORD);
+            if(proj_cur==section)proj_cur=PROJ_NO_SLOT;
+        }
+        sync_reload=1;ui.force=1;
+        return 0;
+#else
+        /* No partial RAM-only 'success': the browser must know a restore
+         * cannot be persisted on this write-locked experimental firmware. */
+        return 4;
+#endif
+    }
+#endif
     if (ed_bk_id == 0u || (ed_bk_id >= 2u && ed_bk_id <= 5u)) {
         if (ed_bk_len && !proj_import(&proj_scratch, raw, (int)ed_bk_len)) return 2;
         if (ed_bk_len) {                            /* an older format becomes FUN9 inside its ranges */
@@ -261,8 +298,14 @@ static uint32_t ed_bk_commit(void)
 /* a project object's length: FUN9 (today's), FUN8 (before the DRUM lane levels, 1.0.x), FUN7 */
 static int proj_store_len(uint32_t len)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* Clean-break archive: old embedded sound snapshots must never enter
+     * the new project flash allocation. */
+    return len == MPR_MAX_RECORD;
+#else
     return len == sizeof(project_store_t) || len == PROJ_STORE_VA || len == PROJ_STORE_V9 || len == PROJ_STORE_V8 ||
            len == PROJ_STORE_V7;
+#endif
 }
 static uint32_t ed_bk_write(const uint8_t *a, uint32_t n)
 {
