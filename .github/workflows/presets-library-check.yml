@@ -41,6 +41,7 @@ jobs:
           node tests/presets_library_codec_test.mjs
           node tests/presets_library_sync_test.mjs
           node tests/projects_library_codec_test.mjs
+          node tests/performance_backup_test.mjs
       - name: Check existing web backup regressions
         run: node web/test_backup.mjs
       - name: Prepare generated firmware headers
