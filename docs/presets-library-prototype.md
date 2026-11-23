@@ -19,6 +19,44 @@
 - Normal firmware still **refuses** writes outside its existing flash regions. This experimental module uses its own bounded checks for the candidate 32 KiB **only when separately compiled for writing**. A bank may initialize only when **both complete 4 KiB sectors are erased (all bytes `0xFF`)**. Blank headers alone are insufficient: foreign payload bytes, damaged records or interrupted first writes cause a fail-closed storage error rather than automatic erasure. Manual recovery is required in those cases.
 - On a successful library-enabled build **with writes locked**, image **509,144 / 584,336 bytes**, pool **308,432 bytes used / 11,040 spare**, main RAM **95,936 / 98,304**. This is **within** the firmware's 8 KiB pool safety headroom. These numbers were measured in CI run 45205479394.
 
+## Clean-break project references — development in progress
+
+The new requirement is **references only**: 8 projects, each with sections A–D,
+and each section with six references to one of 64 USER/LIBRARY presets. A preset
+replacement intentionally changes every section using that slot. Project-owned
+mixer, routing, global FX, EQ, macros, zoning, tuning, pad-performance controls
+and other section settings remain separately stored. Loading a section must not
+write or overwrite any preset. No automatic migration from previous FUN*
+snapshot formats is required.
+
+The first host-only modules are:
+
+- `firmware/src/project_refs.c`: versioned `MPR1` record with six references,
+  12-byte section name, up to 1,792 bytes of project-only payload, and CRC32.
+  References 0–31 select USER, 32–63 select LIBRARY, 255 means unassigned.
+- `firmware/src/project_refs_store.c`: sixteen atomic paired-section banks,
+  each with two alternating 4 KiB flash sectors. Maximum records are
+  1,824 bytes; two occupy 3,648 bytes in a 3,840-byte available sector payload.
+  Candidate allocation: `0xA0000..0xBFFFF`, **128 KiB** instead of the old
+  project's **256 KiB** allocated sectors. Fail-closed initialization protects
+  unknown non-erased sectors.
+- Host-only regression tests in `tests/project_refs_test.c` and
+  `tests/project_refs_store_test.c`.
+
+**Not yet wired to live firmware:** the payload's per-setting mapping, sound
+reference resolution on section recall, project SAVE/RECALL, live section staging,
+WebMIDI project capture/restore, and browser full-device JSON export.
+The 1,792-byte settings budget is a design constraint, not a proven maximum:
+all actual project-level features must be inventoried and stress-tested before
+replacing the current codec. The proposed allocation overlaps old project
+sections, which is acceptable only for the explicitly agreed clean-break
+installation with an external backup; it must NOT be activated on existing
+firmware by surprise. The apparent 128 KiB gain is **reserved sector capacity
+if this format and allocation are adopted**, not extra free CPU RAM and not
+space already reclaimed in the firmware.
+
+The existing 32/32 preset loader remains experimental, and main is unchanged.
+
 ## Source-level flash ownership audit (23 November 2026)
 
 A new CI check (`tools/presets_library_flash_map_check.py`) asserts that the proposed
