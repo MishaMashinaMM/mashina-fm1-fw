@@ -205,6 +205,18 @@ typedef union { uint32_t align; uint8_t raw[PROJ_STORE_SIZE]; } project_store_t;
 _Static_assert(G_NSTORE == 27u && G_NSTORE == PROJ_NG_V2, "FUN7 globals retain original IDs");
 _Static_assert(sizeof(project_store_t) == 3840u && PROJ_STORE_V7 == sizeof(project_v6_t), "FUNB / FUN7 sizes");
 _Static_assert(sizeof(dx_lane_t[8]) == 88u && PROJ_DX_OFF == 3216u, "the kit's place: FUNA's, 96 bytes on");
+/* Experimental MPR1 clean-break project format: six preset references
+ * plus project-owned controls. New flash banks remain WRITE LOCKED unless
+ * explicit firmware flags permit them. Existing FUN* behavior is unchanged
+ * in every normal build. */
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS && !defined(PROJ_HOST)
+#include "project_refs.c"
+#include "project_ref_settings.c"
+#define MASHINA_MPRS_IN_POOL 1
+#include "project_refs_store.c"
+#undef MASHINA_MPRS_IN_POOL
+#include "project_refs_hw.c"
+#endif
 #define PROJ_GX_OFF (PROJ_PFX_OFF + 37u)        /* (FUNB) after the lane, its tracks and the macros: 1, then the globals */
 #define G_GX_END G_SLMODE                       /* (0.6.3: the SLICER's globals after them, in their own block) */
 _Static_assert(37u + 1u + (G_GX_END - G_NSTORE) <= 48u, "the new globals in the punch-in block's spare bytes");
