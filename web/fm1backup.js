@@ -131,11 +131,13 @@ export async function captureBackup(request, firmware, onProgress = () => {}, op
 }
 export async function restoreBackup(request, file, onProgress = () => {}, options = {}) {
   const archive = readBackup(file); // Validate every byte before the first destructive request.
-  const total = archive.objects.reduce((n, o) => n + o.size, 0); let done = 0;
+  const ordered=archive.objects.filter(o=>
+    !options.skipProjectAliases || o.id<2 || o.id>5);
+  const total = ordered.reduce((n, o) => n + o.size, 0); let done = 0;
   const ask = async (r, o = {}) => request(r, { timeout: 4000, retries: 0, ...o });
   const put = async (args) => { const a = await ask([BACKUP_CMD.PUT, args]); bkCheck(a[2]); return a; };
   // Restore live music last. Other objects commit individually; a disconnect can leave a partial restore.
-  for (const o of [...archive.objects.slice(2), archive.objects[1], archive.objects[0]]) {
+  for (const o of [...ordered.filter(x=>x.id>=2), ordered.find(x=>x.id===1), ordered.find(x=>x.id===0)]) {
     if (o.id >= 9) {                     // firmware before 1.0.3 does not take id 9, before JIANT 0.3 the songs (10, 40..71):
                                          // rc 1 at begin, nothing written: skip it
       const a = await ask([BACKUP_CMD.PUT, [0, o.id, ...bkU32(o.size), ...bkU32(o.crc)]]);
