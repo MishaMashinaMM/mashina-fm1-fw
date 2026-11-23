@@ -1,91 +1,62 @@
-# Presets Library: 32 editable + 32 web-replaceable (experimental)
+# Presets Library — experimental 32 USER + 32 LIBRARY
 
-This branch is isolated from `main`; **do not flash to a physical device yet**.
+**Branch:** `presets-library`, branched from `main`. Not merged, not released, not yet tested on a physical FM1. Do **not** flash this experimental build until its full read/write and recovery tests are approved.
 
-## Intended behavior
+## Agreed workflow
 
-- USER slots **001–032** are the *existing* 32 fully editable, persistent sounds. Their stored sector addresses and formats remain unchanged.
-- LIBRARY slots **033–064** are intended to be load-only on the FM1, independently replaceable by the web library via USB/WebMIDI, without reflashing the firmware.
-- The eventual first-install package should populate 32 LIBRARY slots with a curated cross-engine assortment; USER slots initially empty.
-- JSON is a web/interchange format, not a JSON parser on the FM1. The browser sends compact, validated binary records (including FM6/drum sidecars).
-- Program Change **0..31 → USER 001..032** and **32..63 → LIBRARY 033..064**, with empty USER slots preserving their PC numbers. MIDI channel 16 keeps its existing project/section command reservation.
-- Projects remain full independent snapshots and must not change when preset slots are replaced.
+- **001–032**: the existing 32 fully editable USER presets, in fixed positions even when empty, `PC 0–31`.
+- **033–064**: 32 fixed LIBRARY positions, `PC 32–63`, read-only on the device but replaceable individually or as a batch from the web library. Fresh/uninitialized positions play 32 compiled factory sounds spanning the available engines; selection is still provisional, not a final curated bank.
+- User may fill all 32 USER slots, capture their complete presets in the browser, save an offline **JSON backup**, then upload those sounds to the 32 LIBRARY positions **without reflashing firmware**.
+- A firmware update **may erase LIBRARY data**; this is accepted by the user, since offline JSON makes restoration possible. Never assume a firmware update safely preserves USER or project data without a separate complete device backup.
+- The browser sends compact 304-byte binary sound records over 7-bit-safe WebMIDI; the FM1 does **not** parse JSON.
+- All six live tracks play independent sound snapshots. A library load changes only its target track; it never stages a preset in a USER slot. Eight projects × four sections (A–D) remain snapshots, not references into the library.
 
-## Code implemented so far
+## Flash design and measured headroom
 
-The `ui.c` browsing and MIDI program index are prototyped as **fixed USER-first positions followed by 32 read-only factory selections**. These 32 selections are presently compiled, selected round-robin across all visible engines (provisional rather than a musically curated pack); they are **not yet writable or uploadable**. The PRESETS knob skips empty USER positions while Program Change retains the fixed position (PC to an empty slot does not load a sound). The existing SAVE > USER functions, their storage, and the sound engine have not been changed.
+- 32 library records × (192-byte USER sound record + 112-byte complete FM6 or drum companion) = **9,728 bytes raw payload**.
+- Four banks of eight records; two alternating CRC-protected 4,096-byte sectors per bank, header committed **last**. **32,768 bytes** flash assigned in the experiment to `0xEA000–0xF1FFF`.
+- The FM1 package labels `0xEA000–0xFBFFF` as **USR** (72 KiB). The eight candidate sectors are within it and do not overlap MASHINA's existing USER (`0xDC000–0xDFFFF`), 8-project section data, settings, FM6 voice bank or OTA staging. The package/loader's *actual* erase and retention behavior on physical FM1 devices remains unverified.
+- Normal firmware still **refuses** writes outside its existing flash regions. This experimental module uses its own bounded checks for the candidate 32 KiB **only when separately compiled for writing**. A blank/uncommitted bank can be initialized; if both copies contain unreadable nonblank headers it fails closed, rather than erasing unknown data.
+- On a successful library-enabled build **with writes locked**, image **509,144 / 584,336 bytes**, pool **308,432 bytes used / 11,040 spare**, main RAM **95,936 / 98,304**. This is **within** the firmware's 8 KiB pool safety headroom. These numbers were measured in CI run 45205479394.
 
-## Measured storage feasibility and stop condition
+## Compile-time safety switches
 
-`python3 tools/presets_library_capacity.py` is a read-only, source-verified layout check. Baseline:
+The firmware's `tools/build.py` now accepts two independent flags:
 
-- 32 × 192-byte existing-format sound records = **6,144 bytes**
-- 32 × 112-byte FM6/drum auxiliary records = **3,584 bytes**
-- **9,728 bytes minimum raw payload** for 32 arbitrary full records, before metadata and atomicity.
-- For A/B bank copying with 4 KiB erase sectors and 3,840-byte payloads, the current-style layout needs **4 sectors** for the sound records and **2 sectors** for companion FM6/drum data: **24,576 bytes / 24 KiB** additional flash.
-- Only **8 KiB** (`0xDA000–0xDBFFF`) is clearly unused in the current normal storage area. The **0xEA000–0xFBFFF** range (72 KiB, marked `USR` in `fm1pkg_make.py`) remains unverified as safe for nonvolatile firmware-controlled writes and not allowed by `FL_STORE_OK`. No writes to that region are authorized.
-- The 32 existing USER presets already live in RAM. Additional LIBRARY sound records can be streamed individually from flash, so this concept does **not** require another 32-entry RAM bank.
+- `FELUCCA_LIB32=0` (default): no library code or extra RAM in the firmware; existing USER-first browse prototype remains.
+- `FELUCCA_LIB32=1 FELUCCA_LIB32_WRITE=0`: supports reading library records and exposes the experimental WebMIDI protocol in **read-only** mode. The browser must refuse uploads.
+- `FELUCCA_LIB32=1 FELUCCA_LIB32_WRITE=1`: **experimental write implementation**, only compiled for explicit write-enabled testing. No write-enabled firmware is published or automatically installed.
 
-**Stop condition:** Do not wire up an actual WebMIDI upload/write handler or mark an installer device-ready without a tested and explicitly allocated non-overlapping persistent region, A/B commit protocol, full FM6/drum isolation, power-loss recovery, and old-firmware preservation checks. This is a storage feasibility prototype, not the promised end-to-end transfer.
+Both read-only and write-enabled builds are compiled separately in the dedicated branch CI. Both preserve the exact existing USER 32-slot physical layout. Nothing from this branch is merged to `main`.
 
-## Next implementation gates
+## WebMIDI protocol
 
-1. Determine whether any part of the `USR` region can be used legitimately, including stock loader, firmware update, VM and manufacturer-data behavior, on real device and emulator.
-2. If not, explore *lossless bounded compression and smaller records* but **prove** every allowable worst-case 32-sound set fits in 8 KiB (including redundant writes). If neither route passes, direct WebMIDI replacement of 32 arbitrary sounds is not safely implementable with the existing partitioning.
-3. Only then implement persistent `LIB_GET/LIB_PUT/LIB_LIST` versioned SysEx and web library JSON→binary transfer, plus boot-time validation, atomic commit, error handling and integration tests.
-4. Audit presets list, favorites, filter, SAVE navigation, and the fixed PC map with device/emulator tests. Stage a dedicated browser preview; never merge before physical testing.
+F0 7D 46 4C `cmd` ... F7, distinct from existing FM6 68–71 and other commands:
 
-The earlier `presets-editable` proposal remains a separate branch and is intentionally not merged here.
+| Command | Description |
+| --- | --- |
+| **89 CAP** | Return `[format_version=1, slots=32, write_enabled]`. Browser refuses unsupported firmware |
+| **90 LIST** | Query fixed slot occupancy in groups of up to 16 |
+| **91 GET** | Read one complete 304-byte record, in a 348-byte 7-bit-packed response, or empty |
+| **92 PUT** | Upload one full record atomically, with strict record/slot checks; write must be enabled |
+| **93 ERASE** | Clear one independent LIBRARY slot; does not affect USER |
+| **94 CAPTURE_USER** | Read a complete existing USER record **plus its tagged FM6/drum companion**; no flash writes. Missing or incomplete kit sidecars are rejected |
 
-## Follow-up measurements, 23 November 2026
+Web backup/restore code:
 
-- Experimental build from workflow 45194185147: **506,588 B** application image out of **584,336 B**, leaving **77,748 B**. RAM **95,952/98,304 B**; pool **305,316 B used / 14,144 B spare**. This confirms the fixed 32/32 browse scheme adds no meaningful RAM load.
-- Fixed a browse correctness issue: a sound not among the curated 32 factory sounds must be shown as **off-list**, not misidentified as factory slot 033. The 32 USER slot positions remain reserved regardless of how many are occupied.
-- `tools/presets_library_pack_experiment.py` measures real exported sound JSON using a lossless 127-signed-parameter encoding, plus synthetic random full FM6/drum sidecars; CI runs this in addition to the conservative 24 KiB A/B capacity gate. The real fixture compression ratio is **not** a guarantee of available flash capacity, and the experiment's binary format is **not yet a firmware serializer**.
-- Current editor library exports **FM6 patches**, but the general JSON patch/fixture does **not** by itself encode every independent DRUM-AC/DRUM-IND/DRUM-LAB kit control in a compatible companion payload. Any end-to-end LIB_PUT implementation must explicitly capture and restore **full drum kit sidecars**. Do not use an incomplete JSON-to-binary conversion and claim full kit isolation.
-- The app-image slack is **code/constant capacity, not spare persistent data storage**. The 8 KiB nonvolatile area would need all arbitrary 32 library sounds, metadata, and two safe A/B copies; the worst-case requirement is considerably greater. Native direct WebMIDI swapping therefore stays blocked without a safe storage redesign.
+- `web/presets-library-codec.mjs`: validates 127 sound parameters, complete binary records and FM6 operator data. **Refuses** a drum-kit JSON that lacks the full 12-pad sidecar.
+- `web/presets-library-sync.mjs`: capture 32 USER slots; read 32 library slots; export/import offline JSON; upload selected records and verify every upload with GET.
+- `web/presets-library-midi.mjs`: explicit WebMIDI connection, serialized requests and timeouts.
+- `web/presets-library-lab.html`: experimental import, slot grid, USER capture, device-library backup and upload. Upload is disabled unless CAP reports writable and the user has first backed up the current device library. The normal public editor site is unchanged.
 
-## Flash partition evidence and candidate (research only)
+**Important limitations:** Existing online user-preset JSON that lacks an independent drum-kit sidecar is **not** a complete drum preset. Use the new CAPTURE_USER operation (or a complete binary library JSON backup) to preserve all twelve pad sounds. Factory selection, favorites and LIST tag filtering over overwritten presets need further user-interface tests.
 
-Our own `tools/fm1pkg_make.py` builds a JLFS `USR` descriptor at `0xEA000..0xFBFFF` (72 KiB); `VM` ends at `0xE8FFF`, and `BTIF` lies at `0xE9000`. `FL_STORE_OK` does **not** permit writes to the `USR` region today. Do not alter that protection without establishing loader ownership and persistence rules.
+## Verification and pending gates
 
-JieLi's AC79 SDK documentation explains that VM, reserved/protected partitions and updates obey flash partition configuration, and that application-defined user data partitions may be created. The presence of a `USR` descriptor is **supporting evidence** that the address range is set apart, not proof that all its sectors are blank, application-owned, or upgrade-safe.
+Passing host tests:
+- Flash simulator: complete 304-byte independent records, slot isolation, CRC fallback, interrupted write, corrupt-copy handling and strict sector bounds.
+- WebMIDI simulator: CAP, LIST, GET, PUT, ERASE and malformed record rejection.
+- Browser fixtures: real melodic presets, FM6 full voice and full raw kit round-trips, USER capture, offline JSON backup and GET-verified restore.
+- Standard firmware/UI/live-drum regressions; library-enabled firmware with writes locked compiles and meets linker budgets.
 
-References:
-- https://doc.zh-jieli.com/SDKWiki/master/Jieli-Tech/fw-AC79_AIoT_SDK/1-overview/1.3-flashing-upgrade.html
-- https://doc.zh-jieli.com/KDocs/master/%E9%9F%B3%E9%A2%91%E6%8A%80%E6%9C%AF%E5%BA%94%E7%94%A8%E6%96%87%E6%A1%A3%E5%85%A5%E5%8F%A3%E6%B1%87%E6%80%BB/%E8%80%B3%E6%9C%BA%E8%B5%84%E6%96%88%E6%A1%A3%E6%9C%89%E5%85%B3VM%E3%80%81%E8%93%9D%E7%89%99%E9%85%8D%E7%BD%AE%E5%8C%BA%E5%92%8C4K%E9%A2%84%E7%95%99%E5%8C%BA.html
-
-A 32-slot, two-copy bank with the old 192-byte record and 112-byte sidecar fits within **24 KiB**, so a genuinely safe subset of the 72 KiB region could solve storage without shrinking the sound payload. This is conditional on real verification, not an allocation decision.
-
-### Lossless compression test
-
-CI run 45195603640 passed. 32 real factory sounds' 127 signed parameters + names encoded into an illustrative host-only record compress from **8,576 B to 1,377 B**. The same with zeroed 112-byte sidecars goes from **12,160 B to 1,423 B**. A deterministic full-data synthetic bank with independent sidecars goes from **12,160 B to 9,826 B**, which cannot fit either 3,840-byte per-copy payload. This is a strong reason **not** to use compression as an unbounded 8 KiB storage guarantee; real drum kit exports need dedicated sidecar support too.
-
-## Host-only 32 KiB persistent store prototype
-
-A new standalone module, `firmware/src/preset_library_store.c`, and simulator `tests/preset_library_storage_test.c` exercise a genuine lossless fixed-size **32-slot** data layout:
-
-- Each record is exactly **304 bytes**: 192-byte existing USER format plus 112-byte FM6/DRUM companion payload. The two parts are written together in a single CRC-checked transaction, avoiding torn kit data.
-- **8 slots × 304 = 2,432 B per bank**; four banks × two independently committed 4,096-byte sectors = **32,768 B** (eight sectors), tentatively mapped to `0xEA000–0xF1FFF` **in simulated NOR only**.
-- Read and write operate on one **2,432-byte** scratch buffer, not a 32-sound RAM mirror. Zero records represent empty slots. Slot identities never shift.
-- A/B copy-on-write commits the CRC-bearing header last. A failure during erase/write keeps the previous valid sector. Host tests cover 32 full records, individual replacement/clear, unrelated-slot isolation, CRC fallback, out-of-bounds addresses and interrupted updates.
-- This storage module is **not included in the real firmware image**, and the real flash write permissions have **not** been widened. No production `LIB_PUT` command or web uploader is enabled.
-
-This integrated design needs more sector space than the earlier split-format 24 KiB estimate, but it has simpler **atomic sound + sidecar** behavior and lower risk of desynchronizing complete kits. It fits well inside the nominal 72 KiB USR descriptor **if that descriptor can safely be used**. It does *not* fit the 8 KiB currently documented free outside that partition.
-
-Before physical testing, audit the exact FM1 bootloader/updater handling of USR, protect any existing contents, verify retention across the official installer/firmware update, provide a backup/recovery path, and expose only read-only diagnostics until this is proven.
-
-## Experimental WebMIDI transport and browser library preparation
-
-The host-only `firmware/src/preset_library_wire.c` defines reserved **experimental** command numbers: `68 LIST`, `69 GET`, `70 PUT`, `71 ERASE`. They are deliberately **not included in the production `editor.c` dispatcher**, so no connected FM1 can receive these operations. All operations were tested against simulated NOR with the 32KiB bank.
-
-- PUT uses `[slot, 348 seven-bit-safe encoded data bytes]` to carry one exact **304-byte** sound + companion record, with the existing `F0 7D 46 4C` SysEx header. GET returns the complete record using the same packing. The 348-byte packed payload fits within the existing editor's 600-byte reply buffer.
-- LIST provides fixed occupied states for 32 slots. ERASE clears one record without shifting any MIDI Program Change address.
-- Receiver rejects invalid slot numbers, truncated or non-7-bit payloads, and malformed record headers/names/parameter ranges. The flash-store module commits the whole record and companion data atomically.
-- Browser codec `web/presets-library-codec.mjs` converts **standard melodic** library JSON into a sound record; FM6 also requires all 128 7-bit operator bytes and encodes these losslessly into its 112-byte auxiliary region.
-- An ordinary JSON drum preset containing *only global sound parameters* **cannot** reconstruct twelve independent pads. The codec **refuses** to generate such an incomplete DRUM-X/DRUM-LAB/DRUM-AC/DRUM-IND record. An existing complete 304-byte binary record round-trips as JSON `recordBytes`, preserving its whole kit unchanged.
-- Standalone **`web/presets-library-lab.html`** displays 32 library positions (PC 32–63), imports validated JSON, and exports complete records. It has **no hardware connection, no WebMIDI sending, and no flash-writing controls**.
-
-The next step is verifying partition persistence and device-side flash ownership, after which the emulator could expose a feature-advertised, opt-in version of the new protocol and its sound loader. Until then, ordinary online editor and firmware packages remain unchanged.
-
-Tests: `tests/preset_library_storage_test.c`, `tests/preset_library_wire_test.c`, `tests/presets_library_codec_test.mjs`, and the existing branch host/firmware regressions.
+Still required: write-enabled compiler test, embedded SysEx dispatch/device-side loading tests, real-device verification of USR contents/erase behavior and flash update scenarios, emulated performance under continuous playback, final factory selection and localization of the web-library page. Once those are done, the user can explicitly decide when to flash an experimental installer. Not yet device-ready.
