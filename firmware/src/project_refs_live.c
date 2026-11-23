@@ -167,7 +167,7 @@ static int mpr_live_save(uint32_t section,const char *rename)
             ui_message(msg);return 2;
         }
         if(refs[k]!=MPR_EMPTY && mpr_source_modified(&trk[k])){
-            char msg[] = "T1: SAVE SOUND FIRST";
+            char msg[] = "T1: SAVE PRESET";
             msg[1] = (char)('1' + k);
             ui_message(msg);return 2;
         }
