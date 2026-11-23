@@ -44,3 +44,19 @@ The earlier `presets-editable` proposal remains a separate branch and is intenti
 - `tools/presets_library_pack_experiment.py` measures real exported sound JSON using a lossless 127-signed-parameter encoding, plus synthetic random full FM6/drum sidecars; CI runs this in addition to the conservative 24 KiB A/B capacity gate. The real fixture compression ratio is **not** a guarantee of available flash capacity, and the experiment's binary format is **not yet a firmware serializer**.
 - Current editor library exports **FM6 patches**, but the general JSON patch/fixture does **not** by itself encode every independent DRUM-AC/DRUM-IND/DRUM-LAB kit control in a compatible companion payload. Any end-to-end LIB_PUT implementation must explicitly capture and restore **full drum kit sidecars**. Do not use an incomplete JSON-to-binary conversion and claim full kit isolation.
 - The app-image slack is **code/constant capacity, not spare persistent data storage**. The 8 KiB nonvolatile area would need all arbitrary 32 library sounds, metadata, and two safe A/B copies; the worst-case requirement is considerably greater. Native direct WebMIDI swapping therefore stays blocked without a safe storage redesign.
+
+## Flash partition evidence and candidate (research only)
+
+Our own `tools/fm1pkg_make.py` builds a JLFS `USR` descriptor at `0xEA000..0xFBFFF` (72 KiB); `VM` ends at `0xE8FFF`, and `BTIF` lies at `0xE9000`. `FL_STORE_OK` does **not** permit writes to the `USR` region today. Do not alter that protection without establishing loader ownership and persistence rules.
+
+JieLi's AC79 SDK documentation explains that VM, reserved/protected partitions and updates obey flash partition configuration, and that application-defined user data partitions may be created. The presence of a `USR` descriptor is **supporting evidence** that the address range is set apart, not proof that all its sectors are blank, application-owned, or upgrade-safe.
+
+References:
+- https://doc.zh-jieli.com/SDKWiki/master/Jieli-Tech/fw-AC79_AIoT_SDK/1-overview/1.3-flashing-upgrade.html
+- https://doc.zh-jieli.com/KDocs/master/%E9%9F%B3%E9%A2%91%E6%8A%80%E6%9C%AF%E5%BA%94%E7%94%A8%E6%96%87%E6%A1%A3%E5%85%A5%E5%8F%A3%E6%B1%87%E6%80%BB/%E8%80%B3%E6%9C%BA%E8%B5%84%E6%96%88%E6%A1%A3%E6%9C%89%E5%85%B3VM%E3%80%81%E8%93%9D%E7%89%99%E9%85%8D%E7%BD%AE%E5%8C%BA%E5%92%8C4K%E9%A2%84%E7%95%99%E5%8C%BA.html
+
+A 32-slot, two-copy bank with the old 192-byte record and 112-byte sidecar fits within **24 KiB**, so a genuinely safe subset of the 72 KiB region could solve storage without shrinking the sound payload. This is conditional on real verification, not an allocation decision.
+
+### Lossless compression test
+
+CI run 45195603640 passed. 32 real factory sounds' 127 signed parameters + names encoded into an illustrative host-only record compress from **8,576 B to 1,377 B**. The same with zeroed 112-byte sidecars goes from **12,160 B to 1,423 B**. A deterministic full-data synthetic bank with independent sidecars goes from **12,160 B to 9,826 B**, which cannot fit either 3,840-byte per-copy payload. This is a strong reason **not** to use compression as an unbounded 8 KiB storage guarantee; real drum kit exports need dedicated sidecar support too.
