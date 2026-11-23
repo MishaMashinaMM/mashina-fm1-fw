@@ -114,6 +114,7 @@ let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 let inspectedProjects=null;
 let sourceCatalog=null,sourceSelection=Array(32).fill(null),sourceKitRecords=null;
+let catalogNeedsPrepare=false,preparedOrigin="No upload pack prepared";
 const engineLabels=new Map([[0,"ANALOG"],[10,"DRUM-X"],[5,"VOICE"],[3,"LOFI"],[12,"FM6"],[2,"PHASE"],[7,"WHEEL"],[11,"NOISE"],[15,"DRUM-LAB"],[16,"INDUSTRI"],[17,"BRASS"],[18,"ATMOS"],[19,"DRUM-AC"],[20,"DRUM-IND"]]);
 function catalogStatus(message){
   const v=sourceCatalog?validateFactorySelection(sourceCatalog,sourceSelection,sourceKitRecords):null;
@@ -125,6 +126,7 @@ function catalogStatus(message){
   $("defaults-master").disabled=!sourceCatalog;
   $("export-master").disabled=!sourceCatalog;
   $("prepare-master").disabled=!sourceCatalog||v.blocked>0||v.ready===0;
+  connectionStatus();
 }
 function renderCatalog(){
   const list=$("catalog-list");list.replaceChildren();
@@ -151,6 +153,7 @@ function renderCatalog(){
     const location=sourceSelection.indexOf(patch.factoryIndex-1);
     select.value=location>=0?String(location):"";
     select.addEventListener("change",()=>{
+      catalogNeedsPrepare=true;
       const old=sourceSelection.indexOf(patch.factoryIndex-1);
       if(old>=0)sourceSelection[old]=null;
       if(select.value!=="")sourceSelection[Number(select.value)]=patch.factoryIndex-1;
@@ -176,7 +179,11 @@ function renderCatalog(){
       select.append(group);
     }
     select.value=sourceSelection[i]===null?"":String(sourceSelection[i]);
-    select.addEventListener("change",()=>{sourceSelection[i]=select.value===""?null:Number(select.value);renderCatalog()});
+    select.addEventListener("change",()=>{
+      catalogNeedsPrepare=true;
+      sourceSelection[i]=select.value===""?null:Number(select.value);
+      renderCatalog();
+    });
     sound.append(select);row.append(sound);
     const ready=document.createElement("td");const item=view.entries[i];
     ready.textContent=!item?"EMPTY":item.ready?"Complete binary":"Needs drum kit";
@@ -188,6 +195,7 @@ function loadMaster(data,description){
   const catalog=importFactoryCatalog(data);
   sourceCatalog=catalog;
   sourceKitRecords=null;
+  catalogNeedsPrepare=true;
   sourceSelection=Array(32).fill(null);
   const engine=$("catalog-engine");engine.replaceChildren();
   const all=document.createElement("option");all.value="";all.textContent="All engines";engine.append(all);
@@ -202,6 +210,7 @@ async function loadKitSource(){
   if(!response.ok)throw Error("Derived 18-kit record file is not bundled (HTTP "+response.status+"); import the sidecars JSON manually instead");
   const kits=importFactoryDrumRecords(await response.json(),sourceCatalog);
   sourceKitRecords=kits;
+  catalogNeedsPrepare=true;
   renderCatalog();
   catalogStatus("All 18 factory drum kits now have complete binary sidecars; original 107 JSON is unchanged.");
 }
@@ -219,7 +228,7 @@ $("import-drum-kits").addEventListener("change",async event=>{
   try{
     if(!sourceCatalog)throw Error("Load the 107-preset master first");
     const kits=importFactoryDrumRecords(JSON.parse(await file.text()),sourceCatalog);
-    sourceKitRecords=kits;renderCatalog();
+    sourceKitRecords=kits;catalogNeedsPrepare=true;renderCatalog();
     catalogStatus("Loaded all 18 exact factory drum kits from "+file.name+".");
   }catch(error){$("status").textContent="Drum kit import refused: "+error.message+". Existing catalog and upload pack unchanged."}
 });
@@ -232,6 +241,7 @@ $("import-master").addEventListener("change",async event=>{
       const selected=importFactorySelection(data);
       loadMaster(selected.catalog,file.name);
       sourceSelection=selected.selection;sourceKitRecords=selected.drumRecords;
+      catalogNeedsPrepare=true;
       renderCatalog();
       catalogStatus("Restored exact 32-slot selection from "+file.name+".");
     }else throw Error("Expected the original 107-preset catalog or a factory-selection-32 JSON");
@@ -241,7 +251,8 @@ $("catalog-filter").addEventListener("input",renderCatalog);
 $("catalog-engine").addEventListener("change",renderCatalog);
 $("defaults-master").addEventListener("click",()=>{
   if(!sourceCatalog)return;
-  sourceSelection=defaultFactorySelection(sourceCatalog);renderCatalog();
+  sourceSelection=defaultFactorySelection(sourceCatalog);
+  catalogNeedsPrepare=true;renderCatalog();
   catalogStatus("All 32 firmware factory fallbacks selected. "+(sourceKitRecords?
                 "All drum kits are available.":"Load the compiled drum-kit sidecars to prepare the whole pack."));
 });
@@ -258,7 +269,10 @@ $("prepare-master").addEventListener("click",()=>{
     // ENTIRE new pack is independently validated and complete.
     const next=Array(32).fill(null);
     for(const item of entries)next[item.slot]=Uint8Array.from(item.recordBytes);
-    slots=next;render();
+    slots=next;
+    catalogNeedsPrepare=false;
+    preparedOrigin="Factory catalog selection";
+    render();connectionStatus();
     $("status").textContent=entries.length+" complete source sounds prepared for LIBRARY 033–064. FM1 flash untouched. Back up the device before any future upload.";
   }catch(error){$("status").textContent="Cannot prepare catalog for upload: "+error.message+". Existing prepared slots untouched.";}
 });
@@ -287,7 +301,7 @@ function connectionStatus(){
   $("connect").disabled=busy;
   $("capture-user").disabled=busy||!device;
   $("backup-device").disabled=busy||!device;
-  $("upload-device").disabled=busy||!device||!cap?.writable||!backedUp;
+  $("upload-device").disabled=busy||!device||!cap?.writable||!backedUp||catalogNeedsPrepare;
   $("probe-flash").disabled=busy||!device;
   $("backup-projects").disabled=busy||!device||!projectCap;
   $("view-projects").disabled=busy||!device||!projectCap;
@@ -343,11 +357,15 @@ $("import").addEventListener("change",async e=>{
       if(item.slot<0||item.slot>=32||seen.has(item.slot))throw new Error("Invalid or duplicate library slot "+item.slot);
       seen.add(item.slot);next[item.slot]=item.record;
     }
-    slots=next;render();$("status").textContent=`Imported ${imports.length} valid records from ${file.name}. Device flash is untouched.`;
+    slots=next;
+    catalogNeedsPrepare=false;
+    preparedOrigin="Imported binary preset records";
+    render();connectionStatus();
+    $("status").textContent=`Imported ${imports.length} valid records from ${file.name}. Device flash is untouched.`;
   }catch(err){$("status").textContent=`Import rejected: ${err.message}. Existing preview remains unchanged.`;}
   e.target.value="";
 });
-$("clear").addEventListener("click",()=>{slots.fill(null);render();$("status").textContent="Preview cleared; device unaffected."});
+$("clear").addEventListener("click",()=>{slots.fill(null);catalogNeedsPrepare=true;preparedOrigin="None";render();connectionStatus();$("status").textContent="Preview cleared; device unaffected."});
 $("export").addEventListener("click",()=>{
   const patches=prepared();
   downloadFile("mashina-library-32.json",libraryBackupFile(patches));
@@ -369,7 +387,9 @@ $("capture-user").addEventListener("click",()=>action(async()=>{
   const list=await captureUser(device.request,(i,n)=>$("status").textContent=`Capturing USER ${i}/${n}...`);
   slots=Array.from({length:32},()=>null);
   for(const item of list)slots[item.slot]=Uint8Array.from(item.recordBytes);
-  render();
+  catalogNeedsPrepare=false;
+  preparedOrigin="Captured USER slots";
+  render();connectionStatus();
   downloadFile("mashina-user-to-library-32.json",libraryBackupFile(list,"user-capture"));
   $("status").textContent=`Captured ${list.length} complete USER presets, including drum and FM6 sidecars. JSON backup saved; preview populated.`;
 }));
@@ -383,8 +403,9 @@ $("backup-device").addEventListener("click",()=>action(async()=>{
 $("upload-device").addEventListener("click",()=>action(async()=>{
   if(!device||!cap?.writable||!backedUp)throw new Error("Writable device and prior LIBRARY backup required.");
   const entries=prepared();
+  if(catalogNeedsPrepare)throw new Error("Factory selection has changed: click Prepare 32-slot upload pack first.");
   if(!entries.length)throw new Error("Import or capture some sounds first.");
-  if(!confirm(`Replace ${entries.length} LIBRARY sounds on FM1 slots 033–064? Existing USER slots are untouched. Keep your JSON backup offline before proceeding.`))return;
+  if(!confirm(`Upload ${entries.length} sound records from: ${preparedOrigin}? Only occupied destination slots are replaced; unselected slots remain unchanged. Existing USER slots are untouched. Keep your offline JSON backups before proceeding.`))return;
   const n=await uploadPrepared(device.request,cap,entries,(i,total)=>$("status").textContent=`Writing and verifying ${i}/${total} LIBRARY slots...`);
   $("status").textContent=`Verified ${n} complete LIBRARY presets on FM1. Keep your JSON backup for firmware updates.`;
 }));
