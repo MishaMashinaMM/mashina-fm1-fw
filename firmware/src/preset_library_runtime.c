@@ -74,6 +74,19 @@ static int lib_flash_prog(uint32_t addr, const void *src, uint32_t n)
 #endif
 }
 
+/* Check a reference without playing/changing a track: success for a
+ * complete uploaded sound or an all-zero factory fallback. Unlike playback,
+ * the result does not change song.sel or any project/preset data. */
+static int library_slot_ready(uint32_t slot)
+{
+    up_rec_t *record = (up_rec_t *)library_record;
+    if (slot >= LIB_SLOTS || lib_slot_read(slot, library_record)) return 1;
+    if (lib_record_valid(library_record) && up_valid(record)) return 0;
+    for (uint32_t i = 0; i < LIB_ENTRY; i++)
+        if (library_record[i]) return 1;
+    return 0;
+}
+
 /* Return 0 if loaded, 1 only for an EMPTY slot (factory fallback),
  * or 2 for flash failure / corrupted record. Never substitute a different
  * factory sound for a damaged nonempty preset: a project could then play
