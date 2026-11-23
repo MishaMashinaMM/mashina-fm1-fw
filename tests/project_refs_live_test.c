@@ -168,6 +168,13 @@ int main(void)
     bad+=check("project record is at most 1824 bytes",mpr_get32(proj_slot[1].raw)==MPR_MAGIC &&
                (MPR_HEADER+(unsigned)(proj_slot[1].raw[6]|proj_slot[1].raw[7]<<8))<=MPR_MAX_RECORD);
     memcpy(saved,proj_slot[1].raw,sizeof saved);
+    {
+        uint8_t oldSlot=nor[0x99000u]; /* retired first-project B sector */
+        live.dirty|=1u<<1u;
+        bad+=check("dirty project flush uses only new compact A/B bank",
+                   song_flush()==0 && nor[0x99000u]==oldSlot &&
+                   !live.dirty && mpr_slot_used(1));
+    }
     /* Persist across a simulated reboot/empty .noinit project cache. */
     memset(proj_slot,0,sizeof proj_slot);
     proj_fetch(1);
