@@ -77,6 +77,7 @@ tr:nth-child(2n){background:#161616}
   <button id="export-emu-projects" type="button" disabled>Export inspected projects JSON</button>
   <button id="export-emu-library" type="button" disabled>Export stored LIBRARY overrides JSON</button>
  </div>
+ <p id="emu-import-status" class="stats" role="status" aria-live="polite">Choose an emulator JSON to inspect. No data will be changed.</p>
  <p id="emu-summary" class="stats">No emulator snapshot loaded.</p>
  <h2>USER · 001–032</h2>
  <table aria-label="Snapshot USER presets"><thead><tr><th>USER</th><th>Name</th><th>Engine</th><th>State</th><th>Project usage</th></tr></thead><tbody id="emu-users"></tbody></table>
@@ -561,14 +562,19 @@ $("inspect-emu").addEventListener("change",async e=>{
   const file=e.target.files?.[0];
   e.target.value="";
   if(!file)return;
+  const status=$("emu-import-status");
+  status.textContent="Reading "+file.name+"...";
   try{
     const next=inspectEmulatorFlash(await file.text());
-    emuInspection=next;showEmulatorSnapshot(next,file.name);
+    showEmulatorSnapshot(next,file.name);
+    emuInspection=next;
     $("export-emu-projects").disabled=false;
     $("export-emu-library").disabled=!next.library.some(x=>x.status==="overridden");
-    $("status").textContent="Emulator snapshot validated and inspected. All preview panels are read-only. No WebMIDI or flash writes.";
+    status.textContent="Loaded "+file.name+" successfully. All data below comes from this JSON. The emulator and FM1 are untouched.";
+    status.style.color="#8bd698";
   }catch(error){
-    $("status").textContent="Emulator snapshot refused: "+error.message+". Previously inspected state is unchanged.";
+    status.textContent="Could not inspect "+file.name+": "+(error?.message||String(error))+". No existing data changed.";
+    status.style.color="#ffb477";
   }
 });
 $("export-emu-projects").addEventListener("click",()=>{
