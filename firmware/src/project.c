@@ -2587,6 +2587,35 @@ static void sound_put(project_t *p, uint32_t k)
 static uint8_t live_recall_muted, live_recall_mutes[NTRK];
 static int project_live_sounds(uint32_t slot)
 {
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    if(slot>=4u)return 2;
+    if(mpr_slot_used(slot)){
+        if(mpr_live_load(slot))return 2;
+        live_recall_muted=0;
+        ui_message("LIVE: SECTION LOADED");
+        return 0;
+    }
+    if(proj_slot[slot].raw[0] || proj_slot[slot].raw[1] ||
+       proj_slot[slot].raw[2] || proj_slot[slot].raw[3])return 2;
+    /* Empty section is a deliberate mute, not an excuse to play the last
+     * project's stale track sounds. Match the existing hard-stop behavior. */
+    fm1_irq_off();
+    for(uint32_t k=0;k<NTRK;k++){
+        track_t *t=&trk[k];
+        midi_silence_track(k);
+        for(uint32_t v=0;v<NVOICE;v++){
+            t->v[v].active=t->v[v].gate=t->v[v].stage=0;
+            t->v[v].env=t->v[v].env_out=0;
+        }
+        if(!live_recall_muted)live_recall_mutes[k]=(uint8_t)t->p[P_MUTE];
+        t->p[P_MUTE]=1;
+    }
+    fm1_irq_on();
+    live_recall_muted=1;
+    ui_message("LIVE: EMPTY / MUTE");
+    return 1;
+#endif
+
     project_t *p = &proj_scratch;
     uint32_t k;
     int empty;
@@ -3299,6 +3328,24 @@ static uint32_t lib_scan(uint32_t n, char *b)
 #if FELUCCA_FLASH
     if (!flash_ok || n >= NSONG)
         return 0;
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    for(k=0;k<4u;k++){
+        uint8_t *record=proj_wire_u.raw;
+        uint32_t len;
+        if(mprs_load(n*4u+k,record))continue;
+        if(mpr_get32(record)!=MPR_MAGIC || record[4]!=MPR_VERSION ||
+           record[5]!=k)continue;
+        len=(uint32_t)record[6]|((uint32_t)record[7]<<8);
+        if(len>MPR_MAX_SETTINGS || !mpr_name_valid(record+14) ||
+           mpr_get32(record+28)!=mpr_crc(record,len))continue;
+        m|=1u<<k;
+        if(!k){
+            memcpy(b,record+14,PROJ_NAME_LEN);
+            b[PROJ_NAME_LEN]=0;
+        }
+    }
+    return m;
+#endif
     for (k = 0; k < 4u; k++) {
         uint32_t obj = n ? OBJ_SONG1 + (n - 1u) * 4u + k : OBJ_PROJECT0 + k;
         st_hdr_t h;
