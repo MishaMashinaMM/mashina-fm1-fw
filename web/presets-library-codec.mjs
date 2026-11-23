@@ -4,7 +4,7 @@
  * A JSON file with full binary records round-trips without losing FM6/kit data.
  */
 export const LIBRARY_SLOTS=32, ENTRY_BYTES=304, PACKED_BYTES=348;
-export const LIB_CMD=Object.freeze({list:90,get:91,put:92,erase:93});
+export const LIB_CMD=Object.freeze({cap:89,list:90,get:91,put:92,erase:93});
 const KIT=new Set([10,15,19,20]);
 function required(ok,msg){if(!ok)throw new Error(msg);}
 function bytes(v,n,label){
@@ -22,6 +22,7 @@ function validateRecord(r){
   required(r[4]>=32&&r[4]<=126,"record: missing name");
   for(let i=4;i<16;i++)required(!r[i]||(r[i]>=32&&r[i]<=126),"record: invalid name");
   if(r[1]>=4)for(let i=0;i<r[3];i++)required(r[16+i]<=191,"record: invalid packed parameter");
+  if(KIT.has(r[2]))required(r[303]===0xD3,"complete drum kit companion missing");
   return r;
 }
 /* FM6 stores 128 seven-bit operator bytes as exactly 112 eight-bit bytes. */
