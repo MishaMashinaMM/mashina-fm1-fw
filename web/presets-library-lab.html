@@ -381,6 +381,10 @@ $("import").addEventListener("change",async e=>{
 });
 $("clear").addEventListener("click",()=>{slots.fill(null);catalogNeedsPrepare=true;preparedOrigin="None";render();connectionStatus();$("status").textContent="Preview cleared; device unaffected."});
 $("export").addEventListener("click",()=>{
+  if(catalogNeedsPrepare){
+    $("status").textContent="Factory selection changed. First export your self-contained 32-slot selection JSON, or click Prepare 32-slot upload pack before exporting binary sounds. The previous prepared pack has not been overwritten.";
+    return;
+  }
   const patches=prepared();
   downloadFile("mashina-library-32.json",libraryBackupFile(patches));
   $("status").textContent=`Exported ${patches.length} complete records to offline JSON.`;
