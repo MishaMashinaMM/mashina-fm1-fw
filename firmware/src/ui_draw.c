@@ -2792,6 +2792,10 @@ static void draw_mixer_table(void)
 #if FELUCCA_NO_SEQUENCER
 /* Like JIANT's cached parameter cards, refresh only the table rows whose
  * displayed contents changed. The page/track/bank switch still draws once. */
+static const char *const LIVE_AC_PAD_NAMES[12] = {
+    "KICK", "SNARE", "CRASH", "C-HAT", "O-HAT", "FLOOR",
+    "LOW TOM", "MID TOM", "HIGH TOM", "CLAP", "R-BELL", "R-SPL"
+};
 static uint32_t drum_live_row_signature(uint32_t perf, uint32_t lane)
 {
     uint32_t ti = song.sel;
@@ -2851,7 +2855,7 @@ static void draw_drum_live_row(uint32_t perf, uint32_t lane)
     if (drum || lab || ac || ind) {
         if (lab) {
             drumlab_pad_label(lane, drumlab_kit[ti][lane].kind, b);
-        } else if (ac) str_cpy(b, AC_PAD_NAMES[lane], sizeof b);
+        } else if (ac) str_cpy(b, LIVE_AC_PAD_NAMES[lane], sizeof b);
         else if (ind) str_cpy(b, IND_NAMES[lane], sizeof b);
         else str_cpy(b, drum_lane_abbr(t, lane), sizeof b);
         cv_text_in(6, CAP_IN(M, 20), 51, ink_w(face, b) < 52 ? face : &AF_M, b, pad_col, selected ? T_VALUE : (lane & 1u ? RGB(23,23,23) : RGB(36,36,36)));
