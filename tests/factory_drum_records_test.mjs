@@ -31,4 +31,14 @@ for(const row of raw.records){
   assert.ok(record.recordBytes.slice(192,303).some(v=>v!==0),
             "missing genuine synthesized pad data "+row.name);
 }
-console.log("PASS: 18 complete factory DRUM-X/LAB/AC/IND presets derived using firmware kit capture");
+// DRUM-X has nine distinct embedded factory kits, not merely nine sets
+// of EDIT values above an accidentally re-used first kit. This guards
+// against calling apply_preset_to instead of the complete apply_preset path.
+const drumx=raw.records.filter(p=>p.engine===10);
+assert.equal(drumx.length,9);
+const dxKitSignatures=drumx.map(p=>JSON.stringify([
+  ...p.recordBytes.slice(127,159),...p.recordBytes.slice(160,304)
+]));
+assert.equal(new Set(dxKitSignatures).size,9,
+             "nine distinct BUTTLER kits were not captured independently");
+console.log("PASS: 18 complete factory DRUM-X/LAB/AC/IND presets derived using firmware kit capture; 9 distinct BUTTLER kit sidecars");
