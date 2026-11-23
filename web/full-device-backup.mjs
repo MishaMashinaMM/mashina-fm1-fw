@@ -91,6 +91,29 @@ function archiveSections(archive) {
   }
   return sections;
 }
+/* IDs 2..5 are aliases for the currently selected project's A–D
+ * sections. IDs 40..71 are the global 8xA–D positions. Verify that both
+ * views agree; an inconsistent archive could otherwise overwrite one
+ * section twice with different data during the restore.
+ */
+function archiveProjectAliases(archive) {
+  const index=archive.objects.find(x=>x.id===10);
+  insist(index?.size>=8,"Full backup is missing its selected-project index");
+  const bytes=Array.from(dataBytes(index));
+  insist(bytes[0]===83&&bytes[1]===79&&bytes[2]===78&&bytes[3]===71 &&
+         bytes[4]===2&&bytes[5]<8,"Invalid selected-project index");
+  const project=bytes[5];
+  for(let section=0;section<4;section++) {
+    const alias=archive.objects.find(x=>x.id===2+section);
+    const global=archive.objects.find(x=>x.id===40+project*4+section);
+    insist(!!alias&&!!global,"Backup is missing a current project section alias");
+    insist(alias.size===global.size &&
+           byteEq(Array.from(dataBytes(alias)),Array.from(dataBytes(global))),
+           "Project "+(project+1)+" section "+("ABCD"[section])+
+           " differs between archive aliases");
+  }
+  return project;
+}
 function archiveCurrent(archive) {
   const object=archive.objects.find(x=>x.id===0);
   insist(object?.size===MAX_RECORD,"Current performance is not reference-based MPR1");
@@ -109,6 +132,7 @@ export function validateFullDevice(file) {
   const bundle=makePerformanceBundle(file);
   validateUserArchive(bundle.userPresets,archive);
   const sections=archiveSections(archive),current=archiveCurrent(archive);
+  const selectedProject=archiveProjectAliases(archive);
   insist(sections.every((r,i)=>JSON.stringify(r)===JSON.stringify(bundle.projects[i])),
          "Project JSON and device archive disagree: restoration refused");
   insist(JSON.stringify(current)===JSON.stringify(file.currentPerformance),
@@ -123,7 +147,8 @@ export function validateFullDevice(file) {
          "Backup is missing USER banks, FM6 companions or device settings");
   return {...bundle,format:"mashina-full-device",version:1,
           created:file.created??null,firmware:file.firmware??"",
-          archive:file.archive,currentPerformance:current};
+          archive:file.archive,currentPerformance:current,
+          selectedProject:selectedProject+1};
 }
 export async function captureFullDevice(request,firmware="",progress=()=>{}) {
   const libcap=await capability(request);
