@@ -36,4 +36,18 @@ console.log("RESTORE LAST second boot:",JSON.stringify({
 }));
 assert.equal(second.web_mpr_restore_flag(),1,"RESTORE LAST setting failed to persist");
 assert.equal(second.web_mpr_ref(0),37+1,"LAST project preset not restored on fresh boot");
-console.log("PASS: MPR1 RESTORE LAST persists through full WASM shutdown/restart");
+// Turning RESTORE LAST ON after boot is itself a new autosave request.
+// No encoder movement, project recall or sound edit is needed afterward.
+const enabledOnly=await boot();
+enabledOnly.web_mpr_restore_enable();
+for(let i=0;i<780;i++)enabledOnly.web_render(1024);
+assert.equal(enabledOnly.web_mpr_autosave_record(),1,
+  "enabling RESTORE LAST without another change never produced a snapshot");
+const enabledSnapshot=new Uint8Array(enabledOnly.memory.buffer,
+  enabledOnly.web_nor(),enabledOnly.web_nor_size()).slice();
+const afterEnabled=await boot(enabledSnapshot);
+assert.equal(afterEnabled.web_mpr_restore_flag(),1,
+  "RESTORE LAST preference lost after enabled-only reboot");
+assert.equal(afterEnabled.web_mpr_ref(0),33,
+  "startup preset references not restored from enabled-only autosave");
+console.log("PASS: MPR1 RESTORE LAST persists through reboot and enabling it alone schedules autosave");
