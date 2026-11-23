@@ -21,6 +21,63 @@ const records=list=>{
   }
   return arr;
 };
+/* Validate the independent 304-byte USER sound captures against the
+ * authoritative raw USER banks (IDs 6/7) and FM6/drum companion bank (ID9).
+ * Without this, an edited JSON could claim a different preset than the
+ * archive actually restores, leaving linked projects with incorrect sounds.
+ */
+const SIDE_ENGINE=new Set([10,12,15,19,20]);
+function byteEq(a,b) {
+  return a.length===b.length&&a.every((x,i)=>x===b[i]);
+}
+function soundTag(record) {
+  let h=2166136261;
+  for(let i=0;i<192;i++)
+    if(i<4||i>=16)h=Math.imul(h^record[i],16777619)>>>0;
+  return h;
+}
+function u32le(b,o) {
+  return (b[o]|b[o+1]<<8|b[o+2]<<16|b[o+3]<<24)>>>0;
+}
+function validateUserArchive(userPresets,archive) {
+  const banks=[6,7].map(id=>archive.objects.find(x=>x.id===id));
+  const fm=archive.objects.find(x=>x.id===9);
+  const fmp=fm?.size?Array.from(dataBytes(fm)):null;
+  if(fmp)insist(fmp.length===3728&&u32le(fmp,0)===0x36465055 &&
+    (fmp[4]|fmp[5]<<8)===1&&(fmp[6]|fmp[7]<<8)===32,
+    "Invalid FM6/drum companion bank");
+  for(let slot=0;slot<32;slot++) {
+    const record=userPresets[slot];
+    const obj=banks[Math.floor(slot/16)];
+    insist(!!obj,"Missing USER bank object");
+    if(!obj.size) {
+      insist(record===null,"USER "+(slot+1)+" is absent from archived banks");
+      continue;
+    }
+    insist(obj.size===3080,"Invalid USER bank length");
+    const raw=Array.from(dataBytes(obj));
+    insist(u32le(raw,0)===0x31425055 &&
+      (raw[4]|raw[5]<<8)===192&&(raw[6]|raw[7]<<8)===16,
+      "Invalid USER bank header");
+    const bytes=raw.slice(8+(slot%16)*192,8+(slot%16+1)*192);
+    if(record===null) {
+      insist(bytes[0]!==0xA5,"USER "+(slot+1)+" missing from separate sound capture");
+      continue;
+    }
+    insist(byteEq(record.slice(0,192),bytes),
+           "USER "+(slot+1)+" differs from the archived USER bank");
+    if(SIDE_ENGINE.has(record[2])) {
+      insist(fmp!==null,"Missing companion bank for USER "+(slot+1));
+      const used=u32le(fmp,8);
+      insist((used&(1<<slot))!==0,"Companion is absent for USER "+(slot+1));
+      const off=16+slot*116;
+      insist(u32le(fmp,off)===soundTag(record),
+             "USER "+(slot+1)+" FM6/drum companion tag mismatch");
+      insist(byteEq(fmp.slice(off+4,off+116),record.slice(192,304)),
+             "USER "+(slot+1)+" FM6/drum companion differs from archive");
+    }
+  }
+}
 function archiveSections(archive) {
   const sections=Array(32).fill(null);
   for(let slot=0;slot<32;slot++) {
@@ -50,6 +107,7 @@ export function validateFullDevice(file) {
          "Not a compatible MASHINA full-device backup");
   const archive=readBackup(file.archive);
   const bundle=makePerformanceBundle(file);
+  validateUserArchive(bundle.userPresets,archive);
   const sections=archiveSections(archive),current=archiveCurrent(archive);
   insist(sections.every((r,i)=>JSON.stringify(r)===JSON.stringify(bundle.projects[i])),
          "Project JSON and device archive disagree: restoration refused");
