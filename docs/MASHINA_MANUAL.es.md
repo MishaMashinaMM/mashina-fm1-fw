@@ -137,7 +137,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.12
+### Sonidos de fábrica en v0.13
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -396,4 +396,4 @@ Antes de cambiar o retroceder la versión, guardá una **copia completa de proye
 
 ---
 
-MASHINA v0.12 · M-VAVE FM1
+MASHINA v0.13 · M-VAVE FM1
