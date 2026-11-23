@@ -156,6 +156,7 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     uint32_t mod_render, kit_timbre;
     uint32_t freq_ratio;
     int32_t panq, panstep;
+    int32_t lp_coef, fast_coef, wire_coef;
 
     ac_voice_t *a;
     if (slot >= NVOICE || !n) return;
@@ -163,6 +164,14 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
     if (!a->active) return;
     kind = a->kind;
     freq_ratio = drum_pad_freq_ratio((uint32_t)(t - trk), kind);
+    lp_coef = 800 + ac_param_value(t, kind, 5) * 45;
+    fast_coef = 7800 + ac_param_value(t, kind, 5) * 115;
+    wire_coef = 1800 + ac_param_value(t, kind, 5) * 65;
+    if (freq_ratio != 4096u) {
+        lp_coef = clamp((int32_t)(((int64_t)lp_coef * freq_ratio) >> 12), 100, 30000);
+        fast_coef = clamp((int32_t)(((int64_t)fast_coef * freq_ratio) >> 12), 100, 30000);
+        wire_coef = clamp((int32_t)(((int64_t)wire_coef * freq_ratio) >> 12), 100, 30000);
+    }
     panq = (int32_t)dx_lpan0[kind] * 256;
     panstep = ((int32_t)dx_lpan[kind] - dx_lpan0[kind]) * 256 / (int32_t)n;
     /* All three instrument patches are independent; changing one pad never
@@ -278,12 +287,9 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
          * 1468311675 < INT32_MAX. A 32-bit product is EXACTLY equal to
          * the previous 64-bit calculation, but cheaper on the FM1. */
         /* Noise filters are bounded and share no state between drum voices. */
-        lp += (int32_t)(((int64_t)(white - lp) *
-                clamp((int32_t)(((int64_t)(800 + bright * 45) * freq_ratio) >> 12), 100, 30000)) >> 15);
-        fast += (int32_t)(((int64_t)(white - fast) *
-                clamp((int32_t)(((int64_t)(7800 + bright * 115) * freq_ratio) >> 12), 100, 30000)) >> 15);
-        wire += (int32_t)(((int64_t)(white - wire) *
-                clamp((int32_t)(((int64_t)(1800 + bright * 65) * freq_ratio) >> 12), 100, 30000)) >> 15);
+        lp += ((white - lp) * lp_coef) >> 15;
+        fast += ((white - fast) * fast_coef) >> 15;
+        wire += ((white - wire) * wire_coef) >> 15;
         if (kind == AC_KICK) {
             /* Two cascaded low-pass integrators produce a short, dull thump.
              * Unlike a resonant sine, each hit is genuinely aperiodic. The
@@ -358,6 +364,10 @@ static void ac_render(track_t *t, voice_t *v, int32_t *out,
              * only the independent resonating head so it is pitch, not thud. */
             int32_t k1 = 600 + (int32_t)height * 540 + 64 * 13;
             int32_t k2 = 150 + (int32_t)height * 130 + 64 * 3;
+            if (freq_ratio != 4096u) {
+                k1 = clamp((int32_t)(((int64_t)k1 * freq_ratio) >> 12), 80, 30000);
+                k2 = clamp((int32_t)(((int64_t)k2 * freq_ratio) >> 12), 50, 30000);
+            }
             low += (int32_t)(((int64_t)(white - low) * k1) >> 15);
             deep += (int32_t)(((int64_t)(low - deep) * k2) >> 15);
             int32_t thud = deep * (100 + body_mix) / 128 +
