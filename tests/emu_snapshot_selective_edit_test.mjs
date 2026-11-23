@@ -7,7 +7,8 @@ import {readFileSync} from "node:fs";
 import {storeSectors} from "../web/emu/worklet.js";
 import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
-import {editEmulatorLibrarySnapshot,editEmulatorUserSnapshot,factorySourceRecords,snapshotSourceRecords,userSourceRecords,crc32} from "../web/emulator-snapshot-editor.mjs";
+import {decodeProject} from "../web/projects-library-codec.mjs";
+import {editEmulatorLibrarySnapshot,editEmulatorUserSnapshot,editEmulatorProjectReferences,factorySourceRecords,snapshotSourceRecords,userSourceRecords,crc32} from "../web/emulator-snapshot-editor.mjs";
 const master=JSON.parse(readFileSync("web/factory-presets-from-code.json","utf8"));
 const factory=factorySourceRecords(master);
 assert.equal(factory.length,107);
@@ -172,3 +173,36 @@ assert.equal(combined.inspection.library[0].name,"THALES");
 assert.equal(combined.inspection.users[0].name,"PLATO");
 assert.deepEqual(combined.inspection.projects,inspectEmulatorFlash(initial).projects);
 console.log("PASS: selective USER copy, FM6/drum companion tags, A/B cycles, empty restore, and mixed USER+LIBRARY snapshot");
+
+
+const origSection=decodeProject(inspectEmulatorFlash(initial).projects.sections[0]);
+const refEdits=editEmulatorProjectReferences(initial,[
+  {project:1,section:"A",track:1,reference:32},
+  {project:1,section:"A",track:2,reference:33},
+  {project:1,section:"A",track:3,reference:255},
+]);
+const newSection=decodeProject(refEdits.inspection.projects.sections[0]);
+assert.deepEqual(newSection.refs.slice(0,3),[32,33,255]);
+assert.deepEqual(newSection.settingsBytes,origSection.settingsBytes);
+assert.equal(newSection.name,origSection.name);
+assert.deepEqual(refEdits.inspection.users,inspectEmulatorFlash(initial).users);
+assert.deepEqual(refEdits.inspection.library,inspectEmulatorFlash(initial).library);
+const changedAgain=editEmulatorProjectReferences(refEdits.snapshot,[
+  {project:1,section:"A",track:1,reference:34},
+]);
+assert.equal(decodeProject(changedAgain.inspection.projects.sections[0]).refs[0],34);
+assert.equal(decodeProject(changedAgain.inspection.projects.sections[0]).refs[1],33);
+const noRefChange=editEmulatorProjectReferences(changedAgain.snapshot,[
+  {project:1,section:"A",track:1,reference:origSection.refs[0]},
+  {project:1,section:"A",track:2,reference:origSection.refs[1]},
+  {project:1,section:"A",track:3,reference:origSection.refs[2]},
+]);
+assert.deepEqual(decodeProject(noRefChange.inspection.projects.sections[0]).refs,origSection.refs);
+assert.throws(()=>editEmulatorProjectReferences(initial,[{project:1,section:"B",track:1,reference:32}]),/empty Project/);
+assert.throws(()=>editEmulatorProjectReferences(initial,[{project:1,section:"A",track:1,reference:0}]),/empty/);
+assert.throws(()=>editEmulatorProjectReferences(initial,[{project:1,section:"A",track:1,reference:32},{project:1,section:"A",track:1,reference:33}]),/Duplicate/);
+const mixRefs=editEmulatorProjectReferences(combined.snapshot,[{project:1,section:"A",track:1,reference:0}]);
+assert.equal(decodeProject(mixRefs.inspection.projects.sections[0]).refs[0],0);
+assert.equal(mixRefs.inspection.users[0].name,"PLATO");
+assert.equal(mixRefs.inspection.library[0].name,"THALES");
+console.log("PASS: project refs preserve opaque settings and sound banks, reject missing USER/empty section, support combined USER+LIBRARY+project edits");
