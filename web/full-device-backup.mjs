@@ -121,9 +121,10 @@ function archiveCurrent(archive) {
 }
 export async function projectCapability(request) {
   const c=Uint8Array.from(await request(95,[]));
-  insist(c.length===3&&c[0]===1&&c[1]===32,
+  insist((c.length===3||c.length===4)&&c[0]===1&&c[1]===32,
          "FM1 does not support the 32-section reference-only MPR1 project protocol");
-  return {version:c[0],sections:c[1],writable:c[2]===1};
+  return {version:c[0],sections:c[1],writable:c[2]===1,
+          canInitialize:c[3]===1};
 }
 export function validateFullDevice(file) {
   insist(file?.format==="mashina-full-device" && file.version===1,
