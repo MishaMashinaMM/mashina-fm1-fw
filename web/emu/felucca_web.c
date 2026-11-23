@@ -426,6 +426,8 @@ EXPORT uint32_t web_mpr_drum_hash(void)
 }
 EXPORT uint32_t web_mpr_test_save(void)
 { return (uint32_t)mpr_live_save(0u,"BOOT TEST"); }
+EXPORT uint32_t web_mpr_test_load(void)
+{ return (uint32_t)mpr_live_load(0u); } /* emulator CI only, not browser UI */
 EXPORT uint32_t web_mpr_test_used(void)
 { return (uint32_t)mpr_slot_used(0u); }
 /* Browser-only RESTORE LAST regression helpers. Never used by the UI. */
