@@ -4,7 +4,7 @@
  * A JSON file with full binary records round-trips without losing FM6/kit data.
  */
 export const LIBRARY_SLOTS=32, ENTRY_BYTES=304, PACKED_BYTES=348;
-export const LIB_CMD=Object.freeze({cap:89,list:90,get:91,put:92,erase:93});
+export const LIB_CMD=Object.freeze({cap:89,list:90,get:91,put:92,erase:93,captureUser:94});
 const KIT=new Set([10,15,19,20]);
 function required(ok,msg){if(!ok)throw new Error(msg);}
 function bytes(v,n,label){
