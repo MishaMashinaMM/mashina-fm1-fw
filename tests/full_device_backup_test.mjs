@@ -1,9 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 import assert from "node:assert/strict";
-import {bkCrc} from "../web/fm1backup.js";
+import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
-import {encodeRecord,pack7} from "../web/presets-library-codec.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash} from "../web/full-device-backup.mjs";
+import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -95,4 +95,71 @@ await assert.rejects(restoreProjectsOnly(readOnly,
 assert.equal(changed,before);
 await assert.rejects(restoreFullDevice(async(cmd)=>cmd===89?[1,32,1]:cmd===95?[1,32,0]:[],base),
   /does not allow/);
+/* End-to-end mock WebMIDI service: exercise the exact chunked BACKUP and
+ * full LIBRARY protocols in the same order as a real FM1 restore, including
+ * read-after-write validation and empty-position clearing. */
+const mockObjects=new Map(objects.map(x=>[x.id,Uint8Array.from(Buffer.from(x.data,"base64"))]));
+const mockLib=new Map([[0,Uint8Array.from(preset)]]);
+let staged=null,sets=0,erasures=0,archiveGets=0;
+async function mock(cmd,args=[],opts={}){
+  if(cmd===89)return [1,32,1];
+  if(cmd===95)return [1,32,1,0];
+  if(cmd===94)return [args[0],1]; // 32 USER positions are empty in this fixture
+  if(cmd===91) {
+    const v=mockLib.get(args[0]);
+    return v?[args[0],0,...pack7(v)]:[args[0],3];
+  }
+  if(cmd===92){
+    mockLib.set(args[0],Uint8Array.from(unpack7(args.slice(1))));sets++;
+    return [args[0],0];
+  }
+  if(cmd===93){mockLib.delete(args[0]);erasures++;return [args[0],0];}
+  if(cmd===65){
+    return [1,0,43,...ids.flatMap(id=>{
+      const d=mockObjects.get(id);
+      return [id,...bkU32(d.length),...bkU32(bkCrc(d))];
+    })];
+  }
+  if(cmd===66){
+    const id=args[0],off=bkR32(args,1),size=args[6]|args[7]<<7;
+    const data=mockObjects.get(id);
+    archiveGets++;
+    assert.ok(data&&off+size<=data.length);
+    return [id,0,...bkU32(off),size&127,size>>7,...bkPack(data.slice(off,off+size))];
+  }
+  if(cmd===67){
+    const phase=args[0],id=args[1];
+    if(phase===0){
+      const size=bkR32(args,2),crc=bkR32(args,7);
+      staged={id,size,crc,bytes:new Uint8Array(size)};return [phase,id,0];
+    }
+    if(phase===1){
+      assert.equal(staged?.id,id);
+      const off=bkR32(args,2),size=Math.min(256,staged.size-off);
+      staged.bytes.set(bkUnpack(args.slice(7),size),off);
+      return [phase,id,0];
+    }
+    if(phase===2){
+      assert.equal(staged?.id,id);
+      assert.equal(bkCrc(staged.bytes),staged.crc);
+      mockObjects.set(id,staged.bytes);
+      staged=null;return [phase,id,0];
+    }
+    if(phase===3){staged=null;return [phase,id,0];}
+  }
+  throw new Error("mock received unknown command "+cmd);
+}
+const collected=await captureFullDevice(mock,"MPR1 MOCK");
+assert.equal(collected.format,"mashina-full-device");
+assert.equal(collected.libraryPresets[0]?.length,304);
+assert.equal(collected.projects[1]?.length,section.length);
+assert.ok(archiveGets>40);
+const back=await restoreFullDevice(mock,collected);
+assert.equal(back.restoredProjects,32);
+assert.equal(back.userSlots,32);
+assert.equal(back.librarySlots,32);
+assert.equal(erasures,31);
+assert.equal(sets,1);
+assert.deepEqual(Array.from(mockLib.get(0)),preset);
+assert.equal(staged,null);
 console.log("PASS: full-device MPR1 validation, strict archive equality, 32-section chunked project restore and write gates");
