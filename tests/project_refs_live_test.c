@@ -126,6 +126,13 @@ int main(void)
     bad+=check("assign USER 001 to track 1",!project_reference_load(0,0));
     bad+=check("assign built-in LIBRARY 033 to track 2",!project_reference_load(1,32));
     bad+=check("assign USER 001 to track 3",!project_reference_load(2,0));
+    /* MPR1 must not silently discard an edited sound simply because its
+     * track still carries the source USER slot. */
+    trk[0].p[P_ATK]=51;
+    bad+=check("project save refuses edited but unsaved USER sound",
+               project_save_as(1,"SET B")==2 && !project_used(1));
+    bad+=check("reloading USER 001 restores source-sound identity",
+               !project_reference_load(0,0));
     trk[0].p[P_LEVEL]=90;
     trk[1].p[P_PAN]=-12;
     midi_transpose[0]=12;
