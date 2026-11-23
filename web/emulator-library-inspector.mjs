@@ -6,6 +6,7 @@
 import {decodeEmulatorFlash} from "./emu/emulator-flash-backup.mjs";
 import {decodeProject,projectsBackup} from "./projects-library-codec.mjs";
 import {decodeRecord} from "./presets-library-codec.mjs";
+import {importFactoryCatalog,defaultFactorySelection} from "./factory-catalog-selection.mjs";
 const SECTOR=4096, EMPTY=255;
 const u16=(d,p)=>d[p]|d[p+1]<<8;
 const u32=(d,p)=>(d[p]|d[p+1]<<8|d[p+2]<<16|d[p+3]<<24)>>>0;
@@ -114,4 +115,28 @@ export function inspectEmulatorFlash(file){
   }
   return {format:"mashina-emulator-inspection",version:1,
     users,library,projects:projectsBackup(projects),sectorCount:Object.keys(sectors).length};
+}
+
+/* Resolve only *unwritten* LIBRARY slots against the protected, exact
+ * 107-source factory catalog. Keep status="factory": the name is compiled
+ * into the firmware, not part of the exported flash snapshot. A saved
+ * 304-byte override always wins over the compiled fallback. */
+export function resolveFactoryFallbacks(inspection,catalogInput){
+  const catalog=importFactoryCatalog(catalogInput);
+  const selection=defaultFactorySelection(catalog);
+  need(Array.isArray(inspection?.library)&&inspection.library.length===32,
+       "Expected 32 inspected LIBRARY positions");
+  need(selection.length===32&&selection.every(Number.isInteger),
+       "Protected catalog does not define all 32 factory defaults");
+  const library=inspection.library.map((entry,i)=>{
+    need(entry.slot===i+33&&["factory","overridden"].includes(entry.status),
+         "Unexpected LIBRARY position or state");
+    if(entry.status==="overridden")return {...entry};
+    const patch=catalog.presets[selection[i]];
+    need(patch?.initialLibrarySlot===entry.slot,
+         "Factory catalog slot mapping mismatch at "+entry.slot);
+    return {...entry,name:patch.name,engine:patch.engine,
+      engineName:patch.engineName,factoryIndex:patch.factoryIndex};
+  });
+  return {...inspection,library};
 }
