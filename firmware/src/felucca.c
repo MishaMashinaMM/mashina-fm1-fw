@@ -18,6 +18,12 @@
 #endif
 /* Experimental 32 USER + 32 library: opt-in build, no physical flash writes
  * unless independently enabled after the USR partition has been verified. */
+/* Optional diagnostic build. It retains the established FUN project format,
+ * reports the candidate flash banks via read-only WebMIDI and forbids ALL
+ * experimental library/project writes at compile time. */
+#ifndef FELUCCA_FLASH_DIAG
+#define FELUCCA_FLASH_DIAG 0
+#endif
 #ifndef FELUCCA_LIB32
 #define FELUCCA_LIB32 0
 #endif
@@ -50,6 +56,9 @@
 #endif
 #if FELUCCA_PROJECT_REFS_FORMAT && (!FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_FLASH)
 #error "MPR1 first-install formatting requires separate explicit write permissions"
+#endif
+#if FELUCCA_FLASH_DIAG && (!FELUCCA_FLASH || !FELUCCA_LIB32 || FELUCCA_LIB32_WRITE || FELUCCA_PROJECT_REFS || FELUCCA_PROJECT_REFS_WRITE || FELUCCA_PROJECT_REFS_FORMAT)
+#error "Read-only flash diagnostic requires LIB32 reads and prohibits all experimental project/preset writes"
 #endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
