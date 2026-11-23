@@ -74,17 +74,26 @@ static int lib_flash_prog(uint32_t addr, const void *src, uint32_t n)
 #endif
 }
 
-/* Return 0 if library slot actually loaded; return 1 for an empty/invalid
- * library slot, so the caller can load its built-in curated factory sound.
- * Only the chosen track changes; never writes into existing USER bank. */
+/* Return 0 if loaded, 1 only for an EMPTY slot (factory fallback),
+ * or 2 for flash failure / corrupted record. Never substitute a different
+ * factory sound for a damaged nonempty preset: a project could then play
+ * the wrong sound without warning. Only the chosen track changes. */
 static int library_sound_load(uint32_t slot)
 {
     up_rec_t *r = (up_rec_t *)library_record;
     track_t *t = TSEL;
     int16_t v[P_COUNT];
     uint32_t i;
-    if (slot >= LIB_SLOTS || lib_slot_read(slot, library_record) ||
-        !lib_record_valid(library_record) || !up_valid(r)) return 1;
+    int rc;
+    if (slot >= LIB_SLOTS) return 2;
+    rc = lib_slot_read(slot, library_record);
+    if (rc) return 2;
+    if (!lib_record_valid(library_record) || !up_valid(r)) {
+        /* A factory fallback is valid ONLY if the complete record is zero. */
+        for (i = 0; i < LIB_ENTRY; i++)
+            if (library_record[i]) return 2;
+        return 1;
+    }
     up_values(r, v);
     load_begin(t, LOAD_SOUND);
     panic_req |= (uint8_t)(1u << song.sel);
