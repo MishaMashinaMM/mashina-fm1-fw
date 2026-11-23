@@ -20,6 +20,11 @@ int main(void)
     uint32_t n,ret; int bad=0;
     memset(nor,0xFF,sizeof nor);
     mk_valid(r,2);
+    { uint8_t cap[LIB_WIRE_MAX];
+      uint32_t len=lib_wire_reply(LIB_WIRE_CAP,0,0,cap);
+      bad+=check("CAP advertises 32 slots and host read-only status",
+                 len==3u&&cap[0]==LIB_VERSION&&cap[1]==32u&&cap[2]==0u);
+    }
     args[0]=2;
     n=lib_pack7(r,LIB_ENTRY,args+1);
     bad+=check("packed SysEx length is exactly 348 bytes",n==LIB_WIRE_PAYLOAD);
