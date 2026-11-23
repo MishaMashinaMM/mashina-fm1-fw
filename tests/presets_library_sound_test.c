@@ -177,8 +177,10 @@ int main(void)
             }
         }
     }
-    /* Blank LIB32 positions play compiled factory presets. They still need
-     * the exact factory sound name in GLO's VOICE column, not an empty cache. */
+    /* Blank LIB32 positions play compiled factory presets. Test on an
+     * actually erased LIBRARY reservation: earlier corruption tests leave
+     * intentional damaged banks and must not contaminate fallback assertions. */
+    memset(lib_sim_nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
     {
         uint32_t preset=0, engine=library_factory_at(2u,&preset);
         char name[16];
