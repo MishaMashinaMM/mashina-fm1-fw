@@ -439,6 +439,10 @@ static void ed_handle(const uint8_t *f, uint32_t n)   /* f: the bytes between F0
         ed_b(0x51); ed_b(2); ed_b(LIB_SLOTS);
         ed_b(FELUCCA_LIB32_WRITE ? 1u : 0u); /* 'Q': LIB32 capability/read-only vs writable */
 #endif
+#if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+        ed_b(0x58); ed_b(2); ed_b(32u);
+        ed_b(FELUCCA_PROJECT_REFS_WRITE ? 1u : 0u); /* 'X': MPR1 project read/write capability */
+#endif
         ed_b(0x4A); ed_b(1); ed_b(1);   /* (JIANT 0.6.62) 'J': this is JIANT (the web installer writes over it, web/index_pkg.html) */
         ed_b(0x4F); ed_b(1); ed_b(LM_N);   /* (0.8.5) 'O': the DRUM-X octaves, a step's lane modes 0..6 after its ratchet */
         ed_b(0x59); ed_b(1); ed_b(LYR_LEN - 1u);   /* (JIANT 0.8.5) 'Y': LYRIC (cmd 39), a track's lyric, at most 63 bytes */
