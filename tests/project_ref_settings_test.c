@@ -98,6 +98,28 @@ int main(void)
             }));
         }
     }
+    /* Recomputed outer CRC does not make invalid project-specific control
+     * values safe to restore. The settings decoder must validate boundaries. */
+    {
+        int8_t savedPitch=src.pad_pitch[0][0];
+        src.pad_pitch[0][0]=49;
+        n=mpr_project_settings_encode(&src,buf,sizeof buf);
+        bad+=ck("refuse corrupted project-only per-pad pitch",
+                n && !mpr_project_settings_decode(&dst,buf,n));
+        src.pad_pitch[0][0]=savedPitch;
+        uint8_t max=src.zone[0][Z_NOTE_MAX];
+        src.zone[0][Z_NOTE_MAX]=250;
+        n=mpr_project_settings_encode(&src,buf,sizeof buf);
+        bad+=ck("refuse keyboard-zone MIDI note outside 0..127",
+                n && !mpr_project_settings_decode(&dst,buf,n));
+        src.zone[0][Z_NOTE_MAX]=max;
+        int8_t eq=src.eq_gain[1];
+        src.eq_gain[1]=40;
+        n=mpr_project_settings_encode(&src,buf,sizeof buf);
+        bad+=ck("refuse unsupported project EQ gain",
+                n && !mpr_project_settings_decode(&dst,buf,n));
+        src.eq_gain[1]=eq;
+    }
     /* Stress the upper bound: 32 active CC macros plus six full 63-byte
      * lyrics and six tracks of independent per-pad settings. */
     for(uint32_t k=0;k<NTRK;k++){
