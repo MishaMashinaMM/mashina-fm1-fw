@@ -7,7 +7,7 @@ import {readFileSync} from "node:fs";
 import {storeSectors} from "../web/emu/worklet.js";
 import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
-import {editEmulatorLibrarySnapshot,factorySourceRecords,snapshotSourceRecords,userSourceRecords,crc32} from "../web/emulator-snapshot-editor.mjs";
+import {editEmulatorLibrarySnapshot,editEmulatorUserSnapshot,factorySourceRecords,snapshotSourceRecords,userSourceRecords,crc32} from "../web/emulator-snapshot-editor.mjs";
 const master=JSON.parse(readFileSync("web/factory-presets-from-code.json","utf8"));
 const factory=factorySourceRecords(master);
 assert.equal(factory.length,107);
@@ -135,3 +135,40 @@ assert.equal(missing[0].available,true);
 assert.equal(missing[1].available,false);
 assert.equal(missing[2].available,false);
 console.log("PASS: USER source export preserves exact melodic/FM6/drum companions and blocks absent or stale tags");
+
+
+const changedUser=editEmulatorUserSnapshot(initial,[
+  {slot:1,recordBytes:copied[0].recordBytes},
+  {slot:2,recordBytes:copied[1].recordBytes},
+  {slot:3,recordBytes:copied[2].recordBytes},
+]);
+assert.equal(changedUser.inspection.users.filter(x=>x.status==="saved").length,3);
+assert.equal(changedUser.inspection.users[0].name,"THALES");
+assert.equal(changedUser.inspection.users[1].name,"PLATO");
+assert.equal(changedUser.inspection.users[2].name,"DRUM-ONE");
+let restoredUsers=userSourceRecords(changedUser.snapshot);
+assert(restoredUsers.every(x=>x.available),"FM6 and drum companions lost after USER destination import");
+assert.deepEqual(restoredUsers.map(x=>x.recordBytes),
+  copied.map(x=>x.recordBytes),"USER records/companion roundtrip not exact");
+const originalBeforeUser=decodeEmulatorFlash(initial),afterUser=decodeEmulatorFlash(changedUser.snapshot);
+for(const [off,bytes] of Object.entries(originalBeforeUser)){
+  if([0xdc000,0xdd000,0x9f000,0xfe000].includes(Number(off)))continue;
+  assert.deepEqual(afterUser[off],bytes,"USER edit changed unrelated sector "+off);
+}
+assert.deepEqual(changedUser.inspection.projects,inspectEmulatorFlash(initial).projects);
+assert.deepEqual(changedUser.inspection.library,inspectEmulatorFlash(initial).library);
+const updatedUser=editEmulatorUserSnapshot(changedUser.snapshot,[{slot:1,recordBytes:copied[2].recordBytes}]);
+assert.equal(userSourceRecords(updatedUser.snapshot)[0].engine,10);
+assert.equal(userSourceRecords(updatedUser.snapshot)[1].engine,12);
+const clearedUser=editEmulatorUserSnapshot(updatedUser.snapshot,[{slot:1,recordBytes:null}]);
+assert.equal(clearedUser.inspection.users[0].status,"empty");
+assert.equal(userSourceRecords(clearedUser.snapshot).length,2);
+assert.equal(userSourceRecords(clearedUser.snapshot)[0].name,"PLATO");
+assert.throws(()=>editEmulatorUserSnapshot(initial,[{slot:1,recordBytes:copied[2].recordBytes.slice(0,192)}]),/304/);
+assert.throws(()=>editEmulatorUserSnapshot(initial,[{slot:0,recordBytes:copied[0].recordBytes}]),/Invalid/);
+assert.throws(()=>editEmulatorUserSnapshot(initial,[{slot:1,recordBytes:null},{slot:1,recordBytes:null}]),/repeated/);
+const combined=editEmulatorUserSnapshot(first.snapshot,[{slot:1,recordBytes:copied[1].recordBytes}]);
+assert.equal(combined.inspection.library[0].name,"THALES");
+assert.equal(combined.inspection.users[0].name,"PLATO");
+assert.deepEqual(combined.inspection.projects,inspectEmulatorFlash(initial).projects);
+console.log("PASS: selective USER copy, FM6/drum companion tags, A/B cycles, empty restore, and mixed USER+LIBRARY snapshot");
