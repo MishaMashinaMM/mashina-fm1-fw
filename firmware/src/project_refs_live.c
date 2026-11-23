@@ -68,6 +68,24 @@ static int mpr_commit(uint32_t section)
     proj_wire_gen++;
     return 0;
 }
+/* A non-destructive, byte-exact view of the current *unsaved* performance:
+ * the existing backup command's ID 0. It never commits to a project slot. */
+static int mpr_capture_unsaved(uint32_t section)
+{
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN]={0};
+    if(section>=4u || transport_busy())return 0;
+    for(uint32_t k=0;k<NTRK;k++){
+        uint32_t u=trk[k].user;
+        refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        if(refs[k]<UP_SLOTS && !up_used(refs[k]))return 0;
+        if(refs[k]>=UP_SLOTS && refs[k]!=MPR_EMPTY &&
+           library_slot_ready(refs[k]-UP_SLOTS))return 0;
+    }
+    for(uint32_t k=0;k<PROJ_NAME_LEN && proj_name[k];k++)
+        name[k]=(uint8_t)proj_name[k];
+    project_capture(&proj_scratch);
+    return mpr_pack_live(&proj_scratch,section,refs,name);
+}
 static int mpr_live_save(uint32_t section,const char *rename)
 {
     uint8_t refs[NTRK],name[PROJ_NAME_LEN]={0};
@@ -215,6 +233,22 @@ static int mpr_live_load(uint32_t section)
     proj_cur=(uint8_t)section;
     live.cur=(int8_t)section;
     ui_message("LOADED");
+    return 0;
+}
+/* Restore backup ID 0 into the current live performance, without changing
+ * any of the eight projects' 32 stored sections. Must be done AFTER presets. */
+static int mpr_restore_unsaved(const uint8_t raw[MPR_MAX_RECORD])
+{
+    uint8_t refs[NTRK],name[PROJ_NAME_LEN];
+    uint32_t section=raw?raw[5]:4u;
+    if(section>=4u || !mpr_open_blob(raw,section,refs,name,&proj_scratch))
+        return 1;
+    if(project_references_load_all(refs))return 1;
+    mpr_apply_project_settings(&proj_scratch,refs);
+    memcpy(proj_name,name,PROJ_NAME_LEN);
+    proj_name[PROJ_NAME_LEN]=0;
+    proj_cur=PROJ_NO_SLOT; /* restored live sound, not a stored section */
+    ui.force=1;
     return 0;
 }
 static int mpr_live_recall_sound(uint32_t section,uint32_t track)
