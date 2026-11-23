@@ -11,7 +11,7 @@
  * if even the compact representation is full, SAVE must refuse it.
  */
 #include <stdint.h>
-#include <string.h>
+/* Embedded AC79 build uses firmware/src/libc.c; host tests provide libc. */
 #define MPR_SETTINGS_VERSION 1u
 
 static int mpr_is_project_param(uint32_t i)
