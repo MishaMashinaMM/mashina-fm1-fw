@@ -13,7 +13,6 @@
  * Host supplies lib_flash_read / lib_flash_erase / lib_flash_prog.
  */
 #include <stdint.h>
-#include <string.h>
 
 enum { LIB_SLOTS = 32, LIB_PER_BANK = 8, LIB_BANKS = 4, LIB_ENTRY = 304,
        LIB_SECTOR = 4096, LIB_PAYLOAD_OFF = 256, LIB_BANK_BYTES = LIB_PER_BANK * LIB_ENTRY };
