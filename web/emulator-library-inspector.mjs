@@ -103,7 +103,10 @@ export function inspectEmulatorFlash(file){
       u16(payload,4)===192&&u16(payload,6)===16,"USER bank "+bank+": invalid bank header");
     for(let i=0;i<16;i++){
       const slot=bank*16+i,raw=payload?payload.slice(8+i*192,8+(i+1)*192):new Uint8Array(192);
-      if(raw[0]!==0xa5){users.push({slot:slot+1,status:"empty",name:"",engine:null});continue;}
+      if(raw[0]!==0xa5){
+        need(zero(raw),"USER "+(slot+1)+": nonempty invalid record; refusing to discard unrecognized data");
+        users.push({slot:slot+1,status:"empty",name:"",engine:null});continue;
+      }
       const version=raw[1],count=raw[3];
       need(version>=1&&version<=5&&raw[2]<21&&count>=8&&count<=(version>=4?144:72),
         "USER "+(slot+1)+": invalid preset header");
