@@ -141,6 +141,8 @@ jobs:
           cp web/presets-library-lab.html build/presets-library-preview/index.html
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-preview/
           cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-preview/
+      - name: Check standalone Web Library JS syntax and bundled imports
+        run: python3 tools/check_library_preview.py build/presets-library-preview
       - uses: actions/upload-artifact@v4
         with:
           name: mashina-presets-library-32-preview
