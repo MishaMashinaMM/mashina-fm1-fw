@@ -43,6 +43,13 @@ const library=await readLibrary(request);
 assert.deepEqual(library.map(x=>x.recordBytes),prepared.map(x=>x.recordBytes));
 assert.equal(library.length,2);
 await assert.rejects(uploadPrepared(request,{writable:false},prepared),/read-only/);
+// A bad entry late in a batch must cause ZERO hardware writes.
+putCount=0;
+await assert.rejects(uploadPrepared(request,cap,[prepared[0],prepared[0]]),/Duplicate\/invalid destination slot/);
+assert.equal(putCount,0);
+const truncatedKit={...prepared[1],recordBytes:prepared[1].recordBytes.slice(0,303),slot:3};
+await assert.rejects(uploadPrepared(request,cap,[prepared[0],truncatedKit]),/requires 304 bytes/);
+assert.equal(putCount,0);
 badPut=true;
 await assert.rejects(uploadPrepared(request,cap,prepared),/rejected/);
 console.log("PASS: capture all complete USER sound+drum-kit records, JSON backup, verified library restore and failure gates");
