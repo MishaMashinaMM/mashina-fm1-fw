@@ -44,20 +44,27 @@ export async function captureUser(request,progress=()=>{}){
 }
 export async function uploadPrepared(request,cap,entries,progress=()=>{}){
   invariant(cap?.writable===true,"Connected firmware is read-only: library upload disabled");
+  /* Validate the ENTIRE batch before the first hardware write. A duplicate
+   * destination or a truncated kit must never leave a partially changed bank. */
   const seen=new Set();
+  const prepared=[];
   for(const item of entries){
-    const slot=item.slot,rec=encodeRecord(item);
+    const slot=item.slot;
     invariant(Number.isInteger(slot)&&slot>=0&&slot<LIBRARY_SLOTS&&!seen.has(slot),"Duplicate/invalid destination slot");
     seen.add(slot);
+    prepared.push({slot,rec:encodeRecord(item)});
+  }
+  let completed=0;
+  for(const {slot,rec} of prepared){
     const put=response(await request(LIB_CMD.put,[slot,...pack7(rec)]),slot,"LIB_PUT");
     invariant(put.rc===0,`LIB_PUT slot ${slot+33}: rejected (rc ${put.rc})`);
     const got=response(await request(LIB_CMD.get,[slot]),slot,"LIB_GET verify");
     invariant(got.rc===0&&got.data.length===PACKED_BYTES,`LIB_GET verification unavailable at slot ${slot+33}`);
     const check=unpack7(got.data,ENTRY_BYTES);
     invariant(check.every((b,i)=>b===rec[i]),`LIB_GET verification mismatch at slot ${slot+33}`);
-    progress(seen.size,entries.length);
+    progress(++completed,prepared.length);
   }
-  return seen.size;
+  return completed;
 }
 export function libraryBackupFile(patches,kind="library"){
   return {format:"mashina-preset-library-32",version:1,kind,
