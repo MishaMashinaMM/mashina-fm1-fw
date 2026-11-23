@@ -63,9 +63,9 @@ export function validateFullDevice(file) {
          archive.objects.some(x=>x.id===1) &&
          archive.objects.some(x=>x.id===10),
          "Backup is missing USER banks, FM6 companions or device settings");
-  return {format:file.format,version:file.version,
+  return {...bundle,format:"mashina-full-device",version:1,
           created:file.created??null,firmware:file.firmware??"",
-          ...bundle,archive:file.archive,currentPerformance:current};
+          archive:file.archive,currentPerformance:current};
 }
 export async function captureFullDevice(request,firmware="",progress=()=>{}) {
   const libcap=await capability(request);
