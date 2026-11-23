@@ -7,6 +7,10 @@ on:
     paths:
       - 'firmware/src/eng_drum.c'
       - 'firmware/src/ui_dx.c'
+      - 'firmware/src/ui_input.c'
+      - 'firmware/src/ui_draw.c'
+      - 'firmware/src/ui.c'
+      - 'tests/drum_map_reset_ui_test.c'
       - 'tests/drumx_bell_edit_test.c'
       - 'tests/run_live_drum_tests.sh'
       - '.github/workflows/drumx-bell.yml'
