@@ -69,6 +69,23 @@ tr:nth-child(2n){background:#161616}
  <p class="catalog-note">Selections can include all four drum engines. The separate, firmware-derived 18-kit record file completes their 304-byte sound payloads without changing the 107-preset master JSON. A selection exported after drum kits are loaded includes those records for a self-contained backup.</p>
  <table aria-label="Factory sound selection for 32 LIBRARY slots"><thead><tr><th>LIBRARY</th><th>Assigned factory sound</th><th>Upload readiness</th></tr></thead><tbody id="catalog-assignments"></tbody></table>
 </section>
+<section class="catalog-shell" aria-label="Inspect offline emulator backup" id="emu-inspection">
+ <h2>EMULATOR SNAPSHOT · OFFLINE INSPECTION</h2>
+ <p>Open a JSON exported by the MASHINA emulator. Inspect the exact saved USER 001–032, LIBRARY 033–064, and 8 projects with sections A–D. This is read-only and does not replace any prepared Web Library presets or browser saves.</p>
+ <div class="toolbar">
+  <label class="file">Inspect emulator snapshot (.json) <input id="inspect-emu" type="file" accept=".json,application/json"/></label>
+  <button id="export-emu-projects" type="button" disabled>Export inspected projects JSON</button>
+  <button id="export-emu-library" type="button" disabled>Export stored LIBRARY overrides JSON</button>
+ </div>
+ <p id="emu-summary" class="stats">No emulator snapshot loaded.</p>
+ <h2>USER · 001–032</h2>
+ <table aria-label="Snapshot USER presets"><thead><tr><th>USER</th><th>Name</th><th>Engine</th><th>State</th><th>Project usage</th></tr></thead><tbody id="emu-users"></tbody></table>
+ <h2 style="margin-top:24px">LIBRARY · 033–064</h2>
+ <table aria-label="Snapshot LIBRARY presets"><thead><tr><th>LIBRARY</th><th>Name</th><th>Engine</th><th>State</th><th>Project usage</th></tr></thead><tbody id="emu-library"></tbody></table>
+ <h2 style="margin-top:24px">PROJECTS · 8 × A–D</h2>
+ <table aria-label="Snapshot project sections"><thead><tr><th>Project</th><th>Section</th><th>Name</th><th>Tracks T1–T6</th></tr></thead><tbody id="emu-projects"></tbody></table>
+ <p class="catalog-note">USER names are read from saved 192-byte sound records. Full USER FM6/drum companions are not converted into standalone upload records here. Empty LIBRARY overrides display “Factory fallback” rather than an invented factory name. The original snapshot remains the lossless recovery file.</p>
+</section>
 <div class="toolbar">
  <label class="file">Import prepared 304-byte records JSON <input id="import" type="file" accept=".json,application/json"/></label>
  <button id="export" type="button">Export prepared 32-slot pack</button>
@@ -112,6 +129,7 @@ import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} fro
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash} from "./full-device-backup.mjs";
 import {restoreProjectsBackup,projectsBackup} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
+import {inspectEmulatorFlash} from "./emulator-library-inspector.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
@@ -492,6 +510,77 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
      "Read-only inspection completed. Physical bootloader/update ownership still requires verification.")+
     "\nSaved mashina-flash-diagnostic.json — share that file for analysis.";
 }));
+let emuInspection=null;
+function inspectSnapshotTable(id,entries,view,group) {
+  const body=$(id);body.replaceChildren();
+  for(const item of entries){
+    const used=view.usage[group==="USER"?item.slot-1:item.slot-1];
+    const row=document.createElement("tr");
+    const cells=[
+      String(item.slot).padStart(3,"0"),
+      item.name||(item.status==="empty"?"EMPTY":"—"),
+      item.engine===null?"—":engineLabels.get(item.engine)||String(item.engine),
+      item.status==="factory"?"Factory fallback":item.status,
+      used.length?used.map(x=>"P"+x.project+":"+x.section+"/T"+x.track).join(", "):"—"
+    ];
+    cells.forEach((value,i)=>{
+      const td=document.createElement("td");
+      td.textContent=value;
+      if(i===0)td.className="num";
+      if(i===1)td.className="name";
+      if(i===4)td.className="refs";
+      row.append(td);
+    });
+    body.append(row);
+  }
+}
+function showEmulatorSnapshot(snapshot,filename){
+  const view=inspectProjectReferences(snapshot.projects);
+  inspectSnapshotTable("emu-users",snapshot.users,view,"USER");
+  inspectSnapshotTable("emu-library",snapshot.library,view,"LIBRARY");
+  const projectBody=$("emu-projects");projectBody.replaceChildren();
+  for(const section of view.sections){
+    const row=document.createElement("tr");
+    const cells=[
+      String(section.project),section.section,section.name||"—",
+      section.empty?"EMPTY":section.tracks.map(t=>"T"+t.track+": "+t.label).join(" · ")
+    ];
+    cells.forEach((value,i)=>{
+      const td=document.createElement("td");td.textContent=value;
+      if(i===3)td.className="refs";row.append(td);
+    });
+    projectBody.append(row);
+  }
+  const nuser=snapshot.users.filter(x=>x.status==="saved").length;
+  const nlib=snapshot.library.filter(x=>x.status==="overridden").length;
+  const np=view.sections.filter(x=>!x.empty).length;
+  $("emu-summary").textContent=filename+" · "+nuser+"/32 USER saved · "+nlib+"/32 LIBRARY overrides ("+
+    (32-nlib)+" factory fallbacks) · "+np+"/32 project sections · "+snapshot.sectorCount+" flash sectors";
+}
+$("inspect-emu").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];
+  e.target.value="";
+  if(!file)return;
+  try{
+    const next=inspectEmulatorFlash(await file.text());
+    emuInspection=next;showEmulatorSnapshot(next,file.name);
+    $("export-emu-projects").disabled=false;
+    $("export-emu-library").disabled=!next.library.some(x=>x.status==="overridden");
+    $("status").textContent="Emulator snapshot validated and inspected. All preview panels are read-only. No WebMIDI or flash writes.";
+  }catch(error){
+    $("status").textContent="Emulator snapshot refused: "+error.message+". Previously inspected state is unchanged.";
+  }
+});
+$("export-emu-projects").addEventListener("click",()=>{
+  if(!emuInspection)return;
+  downloadFile("mashina-emulator-projects-8x4.json",emuInspection.projects);
+});
+$("export-emu-library").addEventListener("click",()=>{
+  if(!emuInspection)return;
+  const patches=emuInspection.library.filter(p=>p.status==="overridden")
+    .map(p=>({slot:p.slot-33,recordBytes:p.recordBytes}));
+  downloadFile("mashina-emulator-library-overrides.json",{patches});
+});
 $("preview-projects").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
   try{
