@@ -44,6 +44,34 @@ an `initialLibrarySlot` for the 32 curated factory fallbacks.
 - A source-audit check at `tests/factory_presets_catalog_test.mjs`
   guards naming, engine ordering, parameter lengths, FM6 voices and
   the default 32-slot library map.
+- **Protected master:** the original `factory-presets-from-code.json`
+  remains byte-for-byte unchanged by the Web Library. A separate SHA-locked
+  regression in `tests/factory_catalog_selection_test.mjs` rejects silent
+  changes to the original 107 hand-curated sounds. Never overwrite that
+  JSON when exporting or importing a 32-slot selection.
+- The experimental Web Library can **load the original 107-preset JSON**
+  directly or fetch its packaged copy, filter by engine/name, assign any
+  factory preset to any LIBRARY 033–064 slot, and export a standalone
+  `mashina-factory-selection-32.json` with the **entire original catalog and
+  the 32 positions**, without writing to FM1.
+- Full synthesized **DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND factory kits**
+  are generated **separately** by `tests/factory_drum_export.c` using
+  actual firmware preset-loading and drum-sidecar capture in the host
+  simulator. The build generates `factory-drum-records.json` containing
+  18 complete 304-byte sound records, which is packaged alongside the Web
+  Library preview. The master catalog is not modified by this process.
+  Validation matches every kit by engine, factory index and name.
+- Once the separate kit records are loaded, **all 107 factory sounds can
+  be assigned**, and all 32 chosen sounds can become complete uploadable
+  records (including FM6 voices and synthesized drum kits). Exporting
+  the 32-slot selection now also embeds the 18 kit records, making the
+  selection independently reloadable without the companion file.
+- **No destructive surprise:** choosing a catalog preset never writes to
+  FM1, and changing a selection disables uploading any previously prepared
+  pack until the newly selected set is validated and prepared. USB upload
+  requires a separate compatible write-enabled firmware build, a prior
+  device backup and explicit confirmation. No write-enabled physical
+  installer is approved yet.
 
 ## Clean-break project references — development in progress
 
