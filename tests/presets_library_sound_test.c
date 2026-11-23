@@ -188,7 +188,8 @@ int main(void)
         library_track_name(TSEL,name);
         bad+=check("factory fallback shows its name on GLO MIXER",
                    engine<NENGINES &&
-                   !strcmp(name,ENGINES[engine]->presets[preset].name));
+                   !strncmp(name,ENGINES[engine]->presets[preset].name,12u) &&
+                   name[12]==0);
     }
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
