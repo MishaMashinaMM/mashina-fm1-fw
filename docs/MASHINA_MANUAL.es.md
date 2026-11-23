@@ -263,7 +263,7 @@ En una pista de batería pulsá SEQ. ALGORITHM elige la pista, SELECT el pad y O
 | K1 | Nota MIDI del pad, **0–127** |
 | K2 | Panorama del pad |
 | K3 | Transposición del pad, **−24 a +24 semitonos** |
-| K4 | Sin uso |
+| K4 | DLY: retraso del pad, 0–50 ms |
 
 **DEFAULT / CUSTOM — los cuatro motores de batería.** En **DEFAULT**, DRUM-X, DRUM-LAB, DRUM-AC y DRUM-IND repiten los mismos 12 pads en todas las octavas: C en MIDI 36, 48, 60 y 72 dispara el mismo sonido sin transponerlo. 
 
