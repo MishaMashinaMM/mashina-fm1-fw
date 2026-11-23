@@ -45,7 +45,7 @@ int main(void)
             uint32_t checksum=2166136261u;
             for(uint32_t byte=0;byte<sizeof record;byte++)
                 checksum=(checksum^record[byte])*16777619u;
-            printf("],\\"fnv32\\":%u}",checksum);
+            printf("],\"fnv32\":%u}",checksum);
         }
     }
     puts("]}");
