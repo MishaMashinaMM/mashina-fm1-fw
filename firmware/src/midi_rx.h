@@ -9,7 +9,7 @@ static int8_t midi_transpose[NTRK];
 /* Per-project per-track fine tuning in cents, signed -50..+50.
  * Applies to pitched engines during rendering; no change to Note On owners. */
 static int8_t midi_fine[NTRK];
-/* Additive drum timing: global offset per track in milliseconds (0..50). */
+/* Universal onset timing: offset per track for every engine (0..50 ms). */
 static uint8_t drum_track_delay[NTRK];
 /* Per-track key/velocity zones (incoming MIDI BEFORE track transpose).
  * All endpoints inclusive. Velocity 0 means Note Off, never a Note On. */
