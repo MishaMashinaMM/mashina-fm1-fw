@@ -31,6 +31,11 @@ jobs:
           mkdir -p build/host
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/project_refs_test tests/project_refs_test.c
           build/host/project_refs_test
+      - name: Verify atomic two-section project banks (host-only)
+        run: |
+          mkdir -p build/host
+          cc -std=gnu11 -O2 -Wall -Wextra -o build/host/project_refs_store_test tests/project_refs_store_test.c
+          build/host/project_refs_store_test
       - name: Test JSON, binary record and WebMIDI codec
         run: |
           node tests/presets_library_codec_test.mjs
