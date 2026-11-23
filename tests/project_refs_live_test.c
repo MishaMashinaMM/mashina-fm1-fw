@@ -365,10 +365,14 @@ int main(void)
      * four-track project can be saved without manually reassigning presets. */
     song.sel=0;
     trk_live=4;
+    /* Model the real boot nesting: defaults load under a shared outer load;
+     * LIBRARY assignments must happen only after that load has finished. */
+    load_depth++;
     power_on_parts();
+    load_depth--;
     power_on_reference_presets();
     {
-        int valid=1;
+        int valid=1, unmodified=1;
         for(uint32_t k=0;k<4u;k++){
             uint32_t factoryPreset=0,engine=library_factory_at(k,&factoryPreset);
             char name[16];
@@ -376,9 +380,14 @@ int main(void)
             if(trk[k].user!=UP_SLOTS+k+1u || engine>=NENGINES ||
                strncmp(name,ENGINES[engine]->presets[factoryPreset].name,12u))
                 valid=0;
+            if (mpr_source_modified(&trk[k])) unmodified=0;
         }
         bad+=check("boot assigns factory LIBRARY 033..036 to tracks 1..4",valid);
         bad+=check("boot leaves selected track at T1",song.sel==0u);
+        bad+=check("boot references are fingerprint-clean on all four tracks",unmodified);
+        bad+=check("T2 remains fingerprint-clean after motion rebase",({
+            motion_rebase(&trk[1]); !mpr_source_modified(&trk[1]);
+        }));
         bad+=check("fresh four-track project SAVE requires no manual preset assignments",
                    project_save_as(0,"BOOT FOUR")==0 && project_used(0));
     }
