@@ -19,7 +19,11 @@ _Static_assert(MPRS_BANK_BYTES<=MPRS_SECTOR-MPRS_HEADER_OFF,"two sections must f
 _Static_assert(MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR==0xC0000u,"unexpected project flash reservation");
 
 typedef struct {uint32_t magic,bank,seq,length,crc;} mprs_head_t;
+#if defined(MASHINA_MPRS_IN_POOL)
+static uint8_t mprs_buf[MPRS_BANK_BYTES] __attribute__((section(".pool")));
+#else
 static uint8_t mprs_buf[MPRS_BANK_BYTES];
+#endif
 static int mprs_read(uint32_t off,void *dst,uint32_t len);
 static int mprs_erase(uint32_t off);
 static int mprs_prog(uint32_t off,const void *src,uint32_t len);
