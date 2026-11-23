@@ -438,3 +438,36 @@ WASM emulator is not currently a valid test. That operation must await a
 separate simulated WebMIDI interface or the later authorized physical-device
 phase. Even a successful emulator pass does not prove flash bootloader ownership
 on real FM1 hardware.
+
+### Physical-emulator feedback: mixer name and project-save feedback (23 November 2026)
+
+The first user-tested MPR1/LIB32 WASM build boots, renders the orange/gray UI
+and plays all six tracks. Two user-visible issues were traced and patched:
+
+1. A newly selected built-in LIBRARY sound could play while GLO > MIXER
+   displayed a blank VOICE name. Its fallback path assigned the LIBRARY slot
+   number but forgot to populate the per-track name cache used by GLO.
+   Uploaded records and compiled-factory fallbacks now share the same bounded
+   name-cache setter. The simulated-NOR sound integration test asserts the
+   expected factory name, including 12-character truncation.
+2. Saving a section could appear to do nothing because an active track
+   without a USER/LIBRARY preset reference is rejected (by design: a
+   reference-only project cannot capture an unassigned raw sound), or because
+   the sound had unsaved edits. The error now identifies the offending track
+   (for example, **T2: ASSIGN PRESET** or **T1: SAVE SOUND FIRST**). The
+   project NAME editor stays open after a rejected save rather than returning
+   to a still-EMPTY section without explanation. Host regressions cover both
+   rejection reasons and editor retention.
+
+**Retest after a fresh WASM build:** select a built-in factory LIBRARY preset
+and verify its name on GLO > MIXER. For the simplest project test, assign a
+saved USER/LIBRARY preset to Track 1 and mute any remaining active tracks
+that have no assigned preset reference (or assign a valid preset to each).
+Navigate to Project 1 Section B, select SAVE, then confirm the NAME editor
+with **OCT+**. Section B should become occupied. Modify and overwrite USER 001,
+then recall B: its referenced sound must update, but project mixer/MIDI/tuning
+settings must remain independent. Test an emulator reload after the save.
+
+These fixes have been committed to `presets-library`; no new CI or emulator
+runtime result has yet been confirmed for the patched build, and no physical
+FM1 was flashed.
