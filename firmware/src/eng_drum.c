@@ -481,7 +481,8 @@ static int32_t dx_img_k(const track_t *t)
 static __attribute__((noinline)) void drum_side_begin(const track_t *t, uint32_t n)
 {
     uint32_t ti = (uint32_t)(t - trk) % NTRK;
-    uint32_t lab = t->eng_req == ENGI_DRUMLAB;
+    uint32_t lab = t->eng_req == ENGI_DRUMLAB ||
+                   t->eng_req == ENGI_DRUMAC || t->eng_req == ENGI_DRUMIND;
     int32_t img = lab ? 0 : clamp(t->p[P_DXIMG], 0, 127), k = img ? dx_img_k(t) : 0;
     uint32_t l, i, on = 0;
     dx_core_t *dc = &DXC;                                /* (0.7.9: this core's, read once) */
