@@ -322,6 +322,8 @@ jobs:
              web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs \
              web/factory-catalog-selection.mjs "$TRIAL/first-install/"
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs "$TRIAL/first-install/emu/"
+          cp -a build/presets-library-preview "$TRIAL/web-library"
+          python3 tools/check_library_preview.py "$TRIAL/web-library"
           cp docs/first-fm1-32x32-install-runbook.md "$TRIAL/README.md"
           cp build/felucca-0.13-cleantrial.fwsc "$TRIAL/"
           (cd "$TRIAL" && sha256sum felucca-0.13-cleantrial.fwsc > SHA256SUMS)
