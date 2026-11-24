@@ -294,11 +294,12 @@ jobs:
       # Ordinary pushes, other branches and all other build variants still
       # create NO destructive .fwsc artifact whatsoever.
       - name: Build explicitly authorized ONE-FM1 clean-start firmware
-        if: github.event_name == 'workflow_dispatch' && inputs.confirm_one_fm1 == 'ERASE ONE FM1' && github.ref == 'refs/heads/presets-library'
+        if: github.ref == 'refs/heads/presets-library' && ((github.event_name == 'workflow_dispatch' && inputs.confirm_one_fm1 == 'ERASE ONE FM1') || (github.event_name == 'push' && github.event.head_commit.message == 'AUTHORIZE ONE FM1 CLEAN TRIAL'))
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
           MASHINA_ONE_FM1_CLEAN_TRIAL: ERASE-ONE-FM1-32X32
+          MASHINA_TRIAL_PUSH_AUTH: ${{ github.event.head_commit.message }}
           FELUCCA_LIB32: "1"
           FELUCCA_LIB32_WRITE: "1"
           FELUCCA_PROJECT_REFS: "1"
@@ -328,7 +329,7 @@ jobs:
           test -s "$TRIAL/webapp/installer/index.html"
           test -s "$TRIAL/first-install/index.html"
       - name: Upload explicitly authorized ONE-FM1 clean-start trial (NOT A PUBLIC RELEASE)
-        if: github.event_name == 'workflow_dispatch' && inputs.confirm_one_fm1 == 'ERASE ONE FM1' && github.ref == 'refs/heads/presets-library'
+        if: github.ref == 'refs/heads/presets-library' && ((github.event_name == 'workflow_dispatch' && inputs.confirm_one_fm1 == 'ERASE ONE FM1') || (github.event_name == 'push' && github.event.head_commit.message == 'AUTHORIZE ONE FM1 CLEAN TRIAL'))
         uses: actions/upload-artifact@v4
         with:
           name: mashina-ONE-FM1-clean-start-32x32-DESTRUCTIVE-TRIAL
