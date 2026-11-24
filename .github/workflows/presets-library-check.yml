@@ -296,7 +296,7 @@ jobs:
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/one-device-trial-review/web/emu/
           printf 'Branch: presets-library\\nCommit: %s\\nStatus: NON-FLASHABLE REVIEW ONLY\\nRequires separately approved physical test: YES\\n' "$GITHUB_SHA" > build/one-device-trial-review/PROVENANCE.txt
           # Fail closed if this ever accidentally contains firmware or an installer.
-          if find build/one-device-trial-review -type f \\( -name '*.fwsc' -o -name '*.bin' -o -name '*.ufw' -o -name 'installer*' \\) | grep -q .; then
+          if find build/one-device-trial-review -type f \( -name '*.fwsc' -o -name '*.bin' -o -name '*.ufw' -o -name 'installer*' \) | grep -q .; then
             echo 'Refusing review bundle containing flashable files'
             exit 1
           fi
