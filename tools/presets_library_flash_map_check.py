@@ -69,7 +69,13 @@ def check():
     assert "ota_rd16(r + 6) == 0x5441u" in src(loader), "record signature guard changed"
     assert "ota_crc16(r + 2, 78, 0)" in src(loader), "record CRC guard changed"
     assert "s - 0x1000u >= 0xEA000u" in src(loader) and "s - 0x1000u < 0xF2000u" in src(loader), (
-        "MASHINA update loader no longer excludes LIBRARY flash sectors from cleanup")
+        "MASHINA update loader no longer excludes unknown USR flash from cleanup")
+    assert "s - 0x1000u >= 0xE5000u" in src(loader) and "s - 0x1000u < 0xE8000u" in src(loader), (
+        "MASHINA loader must preserve active autosave and FM6 voice-bank sectors")
+    # The genuine stock OTA update record is at 0xE8F00, immediately ABOVE
+    # these three protected sectors; don't protect it by accident.
+    assert "s - 0x1000u < 0xE8000u" in src(loader)
+    print("PASS: MASHINA update-record cleanup excludes 53-sector user state, autosave and FM6 voice bank")
     # A successful build is NOT proof opt-in code was actually compiled:
     # every feature flag must be forwarded through the native AC79 builder.
     build = src("tools/build.py")
