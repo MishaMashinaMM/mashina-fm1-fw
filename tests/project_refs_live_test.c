@@ -527,19 +527,20 @@ int main(void)
            st_save(OBJ_AUTOSAVE,data,sizeof data))seeded=0;
         bad+=check("prepare CRC-validated retired FUN/USER/settings NOR reset fixture",
                    seeded && clean_layout_preflight()==0);
+        uint32_t markerSequence=0u;
         if(trial<3u){
             const uint32_t nth[3]={0u,10u,24u};
             const uint32_t baseErases=erases;
             fail_erase_at=baseErases+nth[trial];
             bad+=check("interrupted erase stops before recording clean marker",
                        clean_layout_initialize()==2 &&
-                       mprs_latest(0u,NULL)<0 &&
+                       mprs_latest(0u,&markerSequence)<0 &&
                        fail_erase_at==0xFFFFFFFFu);
             bad+=check("erased plus old CRC-valid sectors permit safe resume",
                        clean_layout_preflight()==0);
             bad+=check("restarted erasure reaches final verified MPR1 marker",
                        clean_layout_initialize()==0 &&
-                       mprs_latest(0u,NULL)>=0);
+                       mprs_latest(0u,&markerSequence)>=0);
         }else{
             fail_prog_at=MPRS_BASE; /* final committed MPR1 header */
             bad+=check("interrupted final marker program fails without succeeding",
