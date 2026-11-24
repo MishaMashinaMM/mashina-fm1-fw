@@ -15,6 +15,8 @@ jobs:
           python-version: '3.13'
       - name: Guard source-level flash partition geometry and installer boundaries
         run: python3 tools/presets_library_flash_map_check.py
+      - name: Confirm read-only flash audit cannot enable hardware writes
+        run: node tests/flash_readiness_audit_test.mjs
       - name: Verify existing storage and report 32-slot capacity
         run: |
           python3 tools/presets_library_capacity.py
@@ -200,6 +202,7 @@ jobs:
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs "$OUT/web-library/"
           cp build/host/factory-drum-records.json "$OUT/web-library/"
           cp web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs "$OUT/web-library/"
+          cp web/flash-readiness.mjs "$OUT/web-library/"
           mkdir -p "$OUT/web-library/emu"
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs "$OUT/web-library/emu/"
           python3 tools/check_library_preview.py "$OUT/web-library"
@@ -221,6 +224,7 @@ jobs:
       - name: Copy emulator inspection dependencies to standalone library
         run: |
           cp web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs build/presets-library-preview/
+          cp web/flash-readiness.mjs build/presets-library-preview/
           mkdir -p build/presets-library-preview/emu
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/presets-library-preview/emu/
       - name: Check standalone Web Library JS syntax and bundled imports
