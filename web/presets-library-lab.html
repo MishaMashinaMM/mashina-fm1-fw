@@ -140,6 +140,7 @@ tr:nth-child(2n){background:#161616}
  <button id="backup-legacy" type="button" disabled>Back up original FM1 projects, USER & settings (read-only)</button>
  <label class="file">Verify saved original backup <input id="verify-legacy-backup" type="file" accept=".json,application/json"/></label>
  <label class="file">Extract original USER sounds from saved backup (offline, read-only) <input id="extract-legacy-user" type="file" accept=".json,application/json"/></label>
+ <label class="file">Create fresh MPR1 emulator snapshot from original backup (offline) <input id="prepare-legacy-emulator" type="file" accept=".json,application/json"/></label>
  <button id="backup-projects" type="button" disabled>Backup 8 projects (A–D)</button>
  <button id="view-projects" type="button" disabled>Inspect FM1 project references</button>
  <label class="file">Preview projects JSON <input id="preview-projects" type="file" accept=".json,application/json"/></label>
@@ -176,7 +177,7 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
   from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {captureBackup,readBackup} from "./fm1backup.js";
-import {extractLegacyUserPresets} from "./legacy-user-extract.mjs";
+import {extractLegacyUserPresets,freshMpr1EmulatorFromLegacy} from "./legacy-user-extract.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
@@ -576,6 +577,21 @@ $("backup-legacy").addEventListener("click",()=>action(async()=>{
  * archive. The result is a portable list of exact 304-byte binary records,
  * preserving FM6/drum companions. Never uploads, clears or rewrites an FM1.
  * Old FUN project snapshots are NOT converted to new MPR1 references. */
+/* A clean emulator state can be generated from the original 43-object JSON
+ * without connecting the FM1. This cannot run on real NOR: the file has
+ * the emulator-only format and no writes of any kind occur here. */
+$("prepare-legacy-emulator").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  await action(async()=>{
+    const snapshot=freshMpr1EmulatorFromLegacy(JSON.parse(await file.text()));
+    downloadFile("mashina-fresh-mpr1-emulator-with-original-user.json",snapshot);
+    $("status").textContent="Prepared a clean MPR1 emulator snapshot with "+
+      "all validated original USER sounds, 32 factory LIBRARY positions and "+
+      "eight empty A–D projects. This JSON is for the experimental browser "+
+      "emulator ONLY, not a physical FM1 flash/backup or migrated old project. "+
+      "No device connection or writes occurred.";
+  });
+});
 $("extract-legacy-user").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
   await action(async()=>{
