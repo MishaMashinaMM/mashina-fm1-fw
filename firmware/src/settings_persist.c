@@ -88,9 +88,7 @@ static int settings_import(persist_t *p, int n)
         p->favorites.factory[15][17] = 0;
     if (p->favorites.factory[15][27] > 7u)         /* SCREEN OFF (1.1.5, ui.c SCR_CODE): unknown = 0 (NEVER since 1.1.5.1) */
         p->favorites.factory[15][27] = 0;
-    if (p->favorites.factory[15][18] >= 10u)       /* PRESETS' LIST type (JIANT 0.9.12, ui.c list_type; core.h PT_N): unknown
-                                                     * = none */
-        p->favorites.factory[15][18] = 0;
+    p->favorites.factory[15][18] = 0;              /* retired Jiant LIST categories; reserved byte, no longer used */
     p->favorites.factory[15][30] |= 34u; /* Live: ANIMATION OFF (2), LARGE ON (32). */
     p->magic = PERSIST_MAGIC;
     p->palette = palette_to_stored(UI_JIANT_INDEX);
