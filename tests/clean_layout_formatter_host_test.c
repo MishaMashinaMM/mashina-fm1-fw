@@ -26,7 +26,7 @@ enum { MPRS_SECTOR=4096, MPRS_BANKS=16, LIB_SECTOR=4096, LIB_BANKS=4,
 typedef struct {uint32_t marker,object,copy;} st_hdr_t;
 static uint8_t nor[0x100000];
 static uint32_t erases, programs, wdt;
-static int fail_erase_after=-1;
+static int fail_erase_after=-1, tear_final_marker=0;
 static int flash_ok=1;
 static uint8_t proj_cur;
 static union {uint8_t raw[MPR_MAX_RECORD];} proj_wire_u;
@@ -95,6 +95,11 @@ static int mprs_save(uint32_t slot,const uint8_t *raw) {
     /* The harness models the one-time MPR1 header commitment. */
     if(nor[off]!=0xFFu)return 2;
     uint32_t marker=0x3153504Du;
+    if(tear_final_marker){
+        memcpy(nor+off,&marker,2u);
+        programs++;
+        return 2; /* partial irreversible physical header program */
+    }
     memcpy(nor+off,&marker,sizeof marker);
     programs++;
     return 0;
@@ -110,7 +115,7 @@ static void old_sector(uint32_t obj,uint32_t copy){
 }
 static void reset_source(void) {
     memset(nor,0xFF,sizeof nor);
-    erases=programs=wdt=0;fail_erase_after=-1;flash_ok=1;
+    erases=programs=wdt=0;fail_erase_after=-1;tear_final_marker=0;flash_ok=1;
     for(uint32_t b=0;b<20u;b++)
         for(uint32_t c=0;c<2u;c++)old_sector(OBJ_SONG1+b,c);
     for(uint32_t b=0;b<2u;b++)
@@ -147,6 +152,14 @@ int main(void){
     const uint32_t after=erases;
     errors+=ck("torn erase fails closed on retry without new writes",
                clean_layout_initialize()==1 && erases==after && programs==0);
+    reset_source();
+    tear_final_marker=1;
+    errors+=ck("interrupted final MPR1 marker write returns error",
+               clean_layout_initialize()==2 && programs==1);
+    const uint32_t final_erases=erases;
+    tear_final_marker=0;
+    errors+=ck("partial final marker blocks automatic repeat of destructive format",
+               clean_layout_initialize()==1 && erases==final_erases && programs==1);
     reset_source();
     errors+=ck("valid source can format and commit final one-shot marker",
                clean_layout_initialize()==0 && programs==1 && wdt>0);
