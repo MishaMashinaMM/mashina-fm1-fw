@@ -152,6 +152,27 @@ int main(void){
     const uint32_t after=erases;
     errors+=ck("torn erase fails closed on retry without new writes",
                clean_layout_initialize()==1 && erases==after && programs==0);
+    /* Every active old sector is a distinct interruption boundary. A torn
+     * erase at ANY point must stop, and a restarted attempt must refuse
+     * rather than silently repeat erasures or commit the MPR1 marker. */
+    int all_interruptions_safe=1;
+    for(int fail_at=0;fail_at<52;fail_at++){
+        reset_source();
+        fail_erase_after=fail_at;
+        if(clean_layout_initialize()!=2 ||
+           erases!=(uint32_t)(fail_at+1) || programs!=0){
+            all_interruptions_safe=0;
+            break;
+        }
+        const uint32_t partial_erases=erases;
+        if(clean_layout_preflight()!=1 ||
+           clean_layout_initialize()!=1 ||
+           erases!=partial_erases || programs!=0){
+            all_interruptions_safe=0;
+            break;
+        }
+    }
+    errors+=ck("all 52 active-sector torn-erase boundaries fail closed",all_interruptions_safe);
     reset_source();
     tear_final_marker=1;
     errors+=ck("interrupted final MPR1 marker write returns error",
