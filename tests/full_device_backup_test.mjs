@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
+import {captureUser} from "../web/presets-library-sync.mjs";
 import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
