@@ -5,6 +5,16 @@
 #include "flash_diagnostic.c"
 #endif
 
+/* Only the explicitly NON-DISTRIBUTABLE clean-layout build can arm the
+ * destructive first install. These variables cannot exist in normal or
+ * diagnostic firmware. A PREPARE command never writes. A COMMIT requires
+ * a fresh one-time 7-bit nonce and a literal action phrase, and runs the
+ * complete 53-sector preflight AGAIN immediately before any erase. */
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+static uint32_t clean_arm_ms;
+static uint8_t clean_arm_nonce, clean_armed;
+#endif
+
 static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 {
     uint8_t response[LIB_WIRE_MAX];
@@ -123,6 +133,42 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 #else
         ed_b(127u);ed_b(1u);return 1;
 #endif
+    }
+    if (cmd == 101u) { /* CLEAN32_PREPARE: read-only, no erases */
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+        if(n || !flash_ok || transport_busy()){
+            clean_armed=0u;
+            ed_b(2u);
+        } else {
+            uint32_t rc=(uint32_t)clean_layout_preflight();
+            clean_armed=(uint8_t)(rc==0u);
+            clean_arm_ms=fm1_ms;
+            clean_arm_nonce=(uint8_t)((fm1_ms ^ (fm1_ms>>7) ^ 0x5Au)&0x7Fu);
+            ed_b(rc); /* 0: source layout valid; 1: foreign/new; 2: busy */
+            ed_b(clean_armed?clean_arm_nonce:0u);
+        }
+#else
+        ed_b(2u); /* no formatter in ordinary firmware */
+#endif
+        return 1;
+    }
+    if (cmd == 102u) { /* CLEAN32_COMMIT: destructive, build-only */
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+        static const uint8_t phrase[9]={'M','A','S','H','I','N','A','3','2'};
+        int authorized=clean_armed && n==10u &&
+                       memcmp(args,phrase,sizeof phrase)==0 &&
+                       args[9]==clean_arm_nonce &&
+                       (uint32_t)(fm1_ms-clean_arm_ms)<=15000u;
+        clean_armed=0u; /* consume the ticket even on a rejected attempt */
+        if(!authorized)ed_b(1u);
+        else if(ed_flash_stop())ed_b(2u);
+        else ed_b((uint32_t)clean_layout_initialize());
+        /* Success means reboot is REQUIRED. Never auto-reset or hide a
+         * failed/partial format behind a second attempt. */
+#else
+        ed_b(2u);
+#endif
+        return 1;
     }
     if (cmd == 96u) { /* MPR1_INIT, NOT enabled in ordinary builds */
 /* The combined-layout prototype has NO on-device erase command. Until
