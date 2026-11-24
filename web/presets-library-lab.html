@@ -147,7 +147,7 @@ tr:nth-child(2n){background:#161616}
 </div>
 <details id="flash-compare-panel" style="margin:12px 0 18px">
  <summary>Compare two physical flash diagnostics offline (read-only)</summary>
- <p>Use two separately downloaded <code>mashina-flash-diagnostic.json</code> reports from the same FM1 to compare all 40 candidate sector CRC32 fingerprints. Comparison does not write anything and never grants physical flash permission. Both reports must contain complete fingerprints.</p>
+ <p>Use two separately downloaded <code>mashina-flash-diagnostic.json</code> reports from the same FM1 to compare all 46 current candidate-sector CRC32 fingerprints (or two compatible historical 40-sector maps). Comparison does not write anything and never grants physical flash permission. The two reports must use the same exact address map and contain complete fingerprints.</p>
  <div class="toolbar">
   <label class="file">Before diagnostic JSON <input id="flash-compare-before" type="file" accept=".json,application/json"/></label>
   <label class="file">After diagnostic JSON <input id="flash-compare-after" type="file" accept=".json,application/json"/></label>
@@ -554,7 +554,7 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     fingerprints=await captureFlashFingerprints(device.request,
       (i,n)=>$("status").textContent="READ ONLY: fingerprinting candidate flash sectors "+i+"/"+n);
     checksumNote=fingerprints.complete?
-      "All 40 candidate sectors were CRC32-fingerprinted without writing flash.":
+      "All 46 candidate sectors were CRC32-fingerprinted without writing flash.":
       "Some sectors were unreadable; NO writes are permitted.";
   }catch(error){
     checksumNote="Optional CRC32 fingerprint unavailable: "+error.message+
@@ -590,7 +590,7 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     audit.messages.join("\n")+"\n"+
     checksumNote+"\n"+
     (patternReview?patternReview.messages.join("\n")+"\n":"")+
-    "Saved mashina-flash-diagnostic.json with independent readiness audit and optional 40-sector CRC report. No flash writes performed by the probe.";
+    "Saved mashina-flash-diagnostic.json with independent readiness audit and optional 46-sector CRC report. No flash writes performed by the probe.";
 }));
 let flashBefore=null,flashAfter=null;
 function flashCompareStatus(message){$("flash-compare-status").textContent=message;}
@@ -621,7 +621,7 @@ $("flash-compare-run").addEventListener("click",()=>{
     const labels=result.changed.map(x=>"0x"+x.address.toString(16).toUpperCase()+
       " ("+x.before+" → "+x.after+")");
     flashCompareStatus(result.same?
-      "All 40 candidate sector CRC32 fingerprints match. This does NOT establish that vendor firmware update/recovery owns or preserves the flash safely; physical writes remain BLOCKED.":
+      "All compared sector CRC32 fingerprints match. This does NOT establish that vendor firmware update/recovery owns or preserves the flash safely; physical writes remain BLOCKED.":
       "WARNING: "+labels.length+" sectors changed: "+labels.join(", ")+
       ". Stop experimental flash work and investigate. Physical writes remain BLOCKED.");
     downloadFile("mashina-flash-fingerprint-comparison.json",{
