@@ -111,6 +111,11 @@ jobs:
           python3 tools/presets_library_flash_map_check.py
           python3 tools/presets_library_capacity.py
           python3 tools/presets_library_pack_experiment.py
+      - name: Test 53-sector clean install prototype in simulated NOR only
+        run: |
+          mkdir -p build/host
+          cc -std=gnu11 -O2 -Wall -Wextra -o build/host/clean_layout_formatter_host_test tests/clean_layout_formatter_host_test.c
+          build/host/clean_layout_formatter_host_test
       - name: Compile and execute pure host NOR and WebMIDI tests
         run: |
           mkdir -p build/host
