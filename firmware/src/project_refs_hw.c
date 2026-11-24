@@ -26,6 +26,9 @@ static int mprs_erase(uint32_t off)
     return st_erase(off);
 #elif FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
     uint32_t took,f;int rc;
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if(!clean_layout_normal_writes)return -10;
+#endif
     if(!flash_ok || !mprs_allowed(off,MPRS_SECTOR) ||
        (off&(MPRS_SECTOR-1u)) || transport_busy())return -1;
     f=irq_save();
@@ -44,6 +47,9 @@ static int mprs_prog(uint32_t off,const void *src,uint32_t len)
     return st_prog(off,src,len);
 #elif FELUCCA_FLASH && FELUCCA_PROJECT_REFS_WRITE
     uint32_t took,f;int rc;
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if(!clean_layout_normal_writes)return -10;
+#endif
     if(!flash_ok || !src || !mprs_allowed(off,len) ||
        len>256u || (off&255u)+len>256u || transport_busy())return -1;
     f=irq_save();
