@@ -90,8 +90,8 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
     }
     if (cmd == 99u) { /* READ-ONLY sector CRC fingerprints; diagnostic image only */
 #if FELUCCA_FLASH_DIAG
-        if(n!=2u || args[0]>=40u || args[1]==0u || args[1]>8u ||
-           (uint32_t)args[0]+args[1]>40u){
+        if(n!=2u || args[0]>=46u || args[1]==0u || args[1]>8u ||
+           (uint32_t)args[0]+args[1]>46u){
             ed_b(127u);ed_b(1u);return 1;
         }
         ed_b(1u);ed_b(args[0]);ed_b(args[1]);
