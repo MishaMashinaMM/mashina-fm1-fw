@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import {BACKUP_IDS,bkCrc,bkR32,bkUnpack} from "../web/fm1backup.js";
 import {encodeRecord,pack7} from "../web/presets-library-codec.mjs";
-import {restoreOriginalUserBanks} from "../web/legacy-user-bank-restore.mjs";
+import {restoreOriginalUserBanks,verifyOriginalUserBanksAfterReboot} from "../web/legacy-user-bank-restore.mjs";
 
 const originalBytes=engine=>encodeRecord({
   name:engine===12?"FM6 ORIGINAL":"ANAL ORIG",engine,
@@ -138,5 +138,35 @@ for(const [probe,reply] of [
     /differs from original complete 304-byte sound/);
   assert.deepEqual([...mock.done.keys()],[6,7,9],
     "failed verification must not trigger an automatic rewrite");
+}
+/* A separate reconnect/readback flow MUST use no backup PUT commands. */
+{
+  const mock=makeMock();
+  for(const id of [6,7,9])mock.done.set(id,raw.get(id));
+  const check=await verifyOriginalUserBanksAfterReboot(mock.request,source);
+  assert.deepEqual(check,{verifiedSounds:2,readOnly:true,afterReboot:true});
+  assert.equal(mock.sent.length,0,"post-reboot check must be read only");
+}
+{
+  const mock=makeMock();
+  for(const id of [6,7,9])mock.done.set(id,raw.get(id));
+  const request=async(cmd,args)=>{
+    if(cmd===94 && args[0]===17){
+      const corrupted=Uint8Array.from(fm6);corrupted[212]^=1;
+      return [17,0,...pack7(corrupted)];
+    }
+    return mock.request(cmd,args);
+  };
+  await assert.rejects(()=>verifyOriginalUserBanksAfterReboot(request,source),
+    /Cold-boot USER 18 differs/);
+  assert.equal(mock.sent.length,0,"bad cold-boot data cannot trigger repair writes");
+}
+{
+  const mock=makeMock();
+  const mismatched=structuredClone(source);
+  mismatched.objects.find(o=>o.id===6).crc^=1;
+  await assert.rejects(()=>verifyOriginalUserBanksAfterReboot(mock.request,mismatched),
+    /checksum/);
+  assert.equal(mock.sent.length,0,"invalid original archive cannot trigger writes");
 }
 console.log("PASS: authorized 43-object archive restores ONLY USER banks 6/7/9 and verifies FM6/drum-compatible capture; errors stop without retries");
