@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {spawn,spawnSync} from "node:child_process";
+import http from "node:http";
 import {chromium} from "playwright-core";
 import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
 import {editEmulatorUserSnapshot,crc32} from "../web/emulator-snapshot-editor.mjs";
@@ -22,9 +23,21 @@ const server=spawn("python3",["-m","http.server","8765","--bind","127.0.0.1","--
 let browser;
 try{
   let live=false;
+  /* Node 22's built-in undici fetch can assert in Parser.finish when a
+   * just-starting http.server closes/renews a keep-alive response. Use an
+   * ordinary draining HTTP request for the readiness probe instead. */
   for(let i=0;i<80;i++){
-    try {const r=await fetch("http://127.0.0.1:8765/");if(r.ok){live=true;break;}}
-    catch {}
+    try {
+      live=await new Promise(resolve=>{
+        const req=http.get("http://127.0.0.1:8765/",{agent:false},res=>{
+          res.resume();res.on("end",()=>resolve(res.statusCode===200));
+          res.on("error",()=>resolve(false));
+        });
+        req.setTimeout(1500,()=>req.destroy());
+        req.on("error",()=>resolve(false));
+      });
+      if(live)break;
+    }catch {}
     await new Promise(r=>setTimeout(r,100));
   }
   assert(live,"Web Library HTTP server did not start");
@@ -36,6 +49,8 @@ try{
   await page.goto("http://127.0.0.1:8765/",{waitUntil:"networkidle"});
   await page.waitForFunction(()=>document.querySelectorAll("#emu-source-select option").length===107);
   assert.deepEqual(errors,[],"Web Library startup JavaScript errors");
+  assert.equal(await page.locator("#backup-legacy").isDisabled(),true);
+  assert.equal(await page.locator("#probe-flash").isDisabled(),true);
   const target=JSON.stringify(encodeEmulatorFlash({}));
   await page.locator("#inspect-emu").setInputFiles({
     name:"target.json",mimeType:"application/json",buffer:Buffer.from(target)});
