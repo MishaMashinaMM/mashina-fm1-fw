@@ -36,6 +36,18 @@ export async function restoreOriginalUserBanks(request,original,opts={}){
     (projects.length===3||projects.length===4)&&projects[0]===1&&
     projects[1]===32&&projects[2]===1,
     "Device does not advertise an approved write-capable 32+32 MPR1 build");
+  /* Require proof of a COMMITTED clean-layout marker, not just advertised
+   * write capabilities. Old firmware with 32 empty USER slots must NEVER
+   * qualify. This stage is intended only immediately after the one-device
+   * formatter and cold restart, before any project or LIBRARY edits. */
+  const probe=Uint8Array.from(await request(97,[],{timeout:30000,retries:0}));
+  const libraries=Uint8Array.from(await request(98,[],{timeout:30000,retries:0}));
+  requireOk(probe.length===17&&probe[0]===16&&probe[1]===1 &&
+    probe.subarray(2).every(v=>v===0),
+    "Target is not a freshly initialized MPR1 device with 31 empty project banks");
+  requireOk(libraries.length===5&&libraries[0]===4 &&
+    libraries.subarray(1).every(v=>v===0),
+    "Target has nonempty or unknown LIBRARY sectors: refusing original USER restoration");
   /* A fresh clean-start restore must never silently replace user-created
    * sounds already on the target FM1. Partial failures require an explicit,
    * separately reviewed recovery route, not automatic repeat. */
