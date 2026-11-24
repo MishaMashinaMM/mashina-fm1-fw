@@ -514,6 +514,37 @@ int main(void)
                    erases==beforeErases && writes==beforeWrites);
         nor[LIB_BASE+4095u]=0xFFu;
     }
+    /* Full first-boot behavior after a committed clean marker: USER is
+     * empty, compiled LIBRARY 033..064 is available, and a newly created
+     * project saves compact REFERENCES, not embedded sound data. */
+    {
+        uint32_t v0=0u;
+        bad+=check("post-reset persistent marker remains valid",
+                   mprs_latest(0u,&v0)>=0);
+        song.sel=0u;trk_live=4u;
+        load_depth++;
+        power_on_parts();
+        load_depth--;
+        power_on_reference_presets();
+        int factoryReady=1;
+        for(uint32_t k=0;k<4u;k++)
+            if(trk[k].user!=UP_SLOTS+k+1u)factoryReady=0;
+        bad+=check("post-reset boot loads four distinct factory LIBRARY references",
+                   factoryReady);
+        bad+=check("first project save after clean initialization succeeds",
+                   project_save_as(0,"FIRST NEW")==0 &&
+                   project_used(0));
+        bad+=check("first saved reference project survives simulated RAM reload",({
+            memset(proj_slot,0,sizeof proj_slot);
+            proj_fetch(0u);
+            project_used(0u);
+        }));
+        bad+=check("post-install USER slots stay empty after project SAVE",({
+            int empty=1;
+            for(uint32_t k=0;k<UP_SLOTS;k++)if(up_used(k))empty=0;
+            empty;
+        }));
+    }
     /* 53-sector reset power interruption test. A failure while erasing any
      * retired sector must leave a restartable mix of valid old and erased
      * sectors. Failure at the LAST commit must fail closed, never silently
