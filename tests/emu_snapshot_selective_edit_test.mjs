@@ -54,6 +54,25 @@ assert.equal(erased.inspection.library[1].name,"PLATO");
 const copies=decodeEmulatorFlash(erased.snapshot);
 assert(copies[0xc0000]&&copies[0xc1000],"A/B copies not present after multiple saves");
 console.log("PASS: selective exported NOR JSON edits 3 sounds, preserves MPR1/USER/settings, chooses A/B and clears one fallback");
+// Archived 2026 experimental JSON used LIB1 at EA000. It must remain
+// inspectable and its full bank must migrate offline into C0000 when edited.
+const archivedSectors=decodeEmulatorFlash(first.snapshot);
+for(let bank=0;bank<4;bank++)for(let copy=0;copy<2;copy++){
+  const src=0xc0000+(bank*2+copy)*4096,old=0xea000+(bank*2+copy)*4096;
+  if(archivedSectors[src]){archivedSectors[old]=archivedSectors[src];delete archivedSectors[src];}
+}
+const archived=encodeEmulatorFlash(archivedSectors);
+assert.equal(inspectEmulatorFlash(archived).library[0].name,"THALES");
+assert.equal(inspectEmulatorFlash(archived).library[1].name,"PLATO");
+const reclaimed=editEmulatorLibrarySnapshot(archived,[{slot:35,recordBytes:thales.recordBytes}]);
+assert.equal(reclaimed.inspection.library[0].name,"THALES");
+assert.equal(reclaimed.inspection.library[1].name,"PLATO");
+assert.equal(reclaimed.inspection.library[2].name,"THALES");
+assert(decodeEmulatorFlash(reclaimed.snapshot)[0xc0000]||decodeEmulatorFlash(reclaimed.snapshot)[0xc1000],
+  "offline edit must create the reclaimed C0000 LIB1 bank");
+assert.equal(inspectEmulatorFlash(archived).library[2].status,"factory",
+  "historical source must never be changed by the conversion");
+console.log("PASS: pre-relocation exported NOR JSON keeps all sounds and migrates edited banks offline");
 const list=snapshotSourceRecords(first.snapshot);
 assert.equal(list.length,3);
 assert.equal(list[0].recordBytes.length,304);
