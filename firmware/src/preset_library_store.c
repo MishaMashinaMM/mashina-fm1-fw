@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Experimental 32-slot library storage, host-only until the USR partition
- * has been proved app-owned and safe over all OTA/install paths.
+ * Experimental 32-slot library storage, writes locked until reclaimed FUN
+ * project sectors and the clean-install/updater path are physically validated.
  *
  * Four banks of eight combined records. Each bank has two 4KiB copy-on-write
- * sectors; 32KiB total at 0xC0000..0xC7FFF (retired FUN project sectors). No heap and no full-bank RAM mirror.
+ * sectors; 32 KiB total at 0xC0000..0xC7FFF (retired FUN project sectors).
+ * No heap and no full-bank RAM mirror.
  * Each record is the current 192-byte USER sound plus a 112-byte FM6/drum
  * companion. The caller owns validation/conversion and sound installation.
  *
