@@ -68,20 +68,22 @@ int main(void){
     bad+=ck("foreign data in alternate sector is flagged",ed_diag_project_bank(0)==3);
     bad+=ck("all 16 bank positions lie within proposed reservation",
             st_sector(OBJ_SONG1+15,1)==0xBF000u);
-    /* 40 candidate sectors (32 MPR1 + 8 LIB32) are fingerprinted
-     * in bounded 256-byte reads, without any write or raw MIDI data. */
+    /* 46 candidate sectors: 32 MPR1, 8 LIB, 4 USER, 2 companions,
+     * in bounded 256-byte reads, without a write or raw MIDI sound data. */
     {
-        uint32_t crc=0u,locations[4]={0xA0000u,0xBF000u,0xC0000u,0xC7000u};
-        uint32_t indexes[4]={0u,31u,32u,39u};
+        uint32_t crc=0u;
+        const uint32_t locations[8]={0xA0000u,0xBF000u,0xC0000u,0xC7000u,
+                                     0xDC000u,0xDF000u,0x9F000u,0xFE000u};
+        const uint32_t indexes[8]={0u,31u,32u,39u,40u,43u,44u,45u};
         int exact=1;
-        for(uint32_t i=0;i<4u;i++){
+        for(uint32_t i=0;i<8u;i++){
             uint32_t expected=st_crc32(nor+locations[i],4096u);
             if(ed_diag_sector_crc(indexes[i],&crc)!=0u || crc!=expected)
                 exact=0;
         }
-        bad+=ck("exact CRC32 for first/last MPR1 and LIBRARY sectors",exact);
+        bad+=ck("exact CRC32 for MPR1, LIBRARY, USER and companion sectors",exact);
         bad+=ck("out-of-range fingerprints always refused",
-                ed_diag_sector_crc(40u,&crc)==4u &&
+                ed_diag_sector_crc(46u,&crc)==4u &&
                 ed_diag_sector_crc(255u,&crc)==4u &&
                 ed_diag_sector_crc(0u,NULL)==4u);
         bad+=ck("CRC probes do not write any flash",writes==0);
