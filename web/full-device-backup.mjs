@@ -357,6 +357,46 @@ export async function captureFlashFingerprints(request,progress=()=>{}){
     mode:"READ_ONLY_DIAGNOSTIC",sectorBytes:4096,sectors,
     complete:sectors.every(x=>x.readable)};
 }
+/* Diagnostic firmware command 100 performs EXACT read-only format-preflight
+ * validation of all 53 whitelisted sectors. Unlike the CRC32 summary, the
+ * firmware checks the expected storage object type/copy, committed header,
+ * payload and extension CRCs (or native MPR1 format) for each physical
+ * sector. A matching CRC alone must NEVER stand in for this validation.
+ *
+ * 0 erased, 1 new format, 2 verified retired source-owned record,
+ * 3 invalid/foreign, 4 unavailable. This diagnostic is not a write grant.
+ */
+export async function captureCleanLayoutPreflight(request,progress=()=>{}){
+  const statusNames=["erased","new format","validated retired record",
+                     "foreign/corrupt","unreadable"];
+  const sectors=[];
+  for(let start=0;start<53;start+=8){
+    const count=Math.min(8,53-start);
+    const reply=Uint8Array.from(await request(100,[start,count]));
+    insist(reply.length===3+count&&reply[0]===1&&
+      reply[1]===start&&reply[2]===count,
+      "FM1 does not support compatible read-only clean-install preflight");
+    for(let i=0;i<count;i++){
+      const code=reply[3+i];
+      insist(code<=4,"Invalid clean-install preflight status");
+      const index=start+i;
+      sectors.push({index,address:fingerprintAddress(index),code,
+                    status:statusNames[code]});
+    }
+    progress(sectors.length,53);
+  }
+  const counts=statusNames.map((name,code)=>({
+    name,count:sectors.filter(s=>s.code===code).length
+  }));
+  const allowedContent=sectors.every(s=>s.code===0||s.code===2);
+  return {format:"mashina-clean-layout-preflight",version:1,
+    mode:"READ_ONLY",sectorCount:sectors.length,complete:true,
+    allowedContent,physicalWritesAllowed:false,
+    counts,sectors,
+    note:allowedContent
+      ? "Sector content is compatible with the proposed clean layout; physical flash ownership, backup and recovery remain unproven. Writes are BLOCKED."
+      : "At least one sector contains unrecognized, new-format or unreadable data. Clean initialization MUST refuse. Writes are BLOCKED."};
+}
 /* Compare only equal, complete sector maps. Does not authorize flash writes. */
 export function compareFlashFingerprints(before,after){
   const validate=x=>x?.format==="mashina-flash-sector-fingerprints"&&
