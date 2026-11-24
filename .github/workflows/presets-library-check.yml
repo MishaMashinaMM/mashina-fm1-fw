@@ -287,7 +287,11 @@ jobs:
       - name: Stage non-flashable one-device trial review dossier
         run: |
           mkdir -p build/one-device-trial-review
-          cp docs/one-device-clean-install-trial.md docs/clean-slate-first-install.md docs/diagnostic-flash-readonly.md build/one-device-trial-review/
+          cp docs/one-device-clean-install-trial.md docs/clean-slate-first-install.md docs/diagnostic-flash-readonly.md \
+             docs/fm1-physical-recovery-preflight.md build/one-device-trial-review/
+          mkdir -p build/one-device-trial-review/tools
+          cp tools/verify_fm1_recovery_dumps.py build/one-device-trial-review/tools/
+          cp tests/verify_fm1_recovery_dumps_test.py build/one-device-trial-review/
           cp tests/clean_install_release_gate_test.mjs build/one-device-trial-review/
           mkdir -p build/one-device-trial-review/web
           cp web/clean-install-trial.html web/presets-library-midi.mjs web/fm1backup.js \
