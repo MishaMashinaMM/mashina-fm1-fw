@@ -31,7 +31,9 @@
   CRC-verified legacy `FELU` project records, or CRC-verified `MPS1`
   reference records. Mixed, unreadable or unknown content is flagged.
   The separate LIBRARY probe checks blank or committed LIBRARY banks and, in diagnostic mode, also recognizes CRC-validated retired FUN sectors in the reclaimed candidate area. Unknown/mixed data still blocks any format or write.
-- This build is a **new candidate-region diagnostic**; the user's earlier November 24 JSON captured the older `0xEA000..0xF1FFF` proposal and cannot substitute for inspecting `0xC0000..0xC7FFF`. Both JSON layouts remain interpretable offline.
+- This build now captures **46 read-only 4 KiB CRC32 fingerprints**: 32 MPR1 (0xA0000–0xBFFFF), 8 LIBRARY (0xC0000–0xC7FFF), 4 USER (0xDC000–0xDFFFF), and 2 companion sectors (0x9F000 / 0xFE000). Earlier JSONs with 40 fingerprints remain available for comparison against the **same historical address map** only. CRC32 alone does not identify whether a sector contains valid old data, and never authorizes erasure.
+
+This build is a **new candidate-region diagnostic**; the user's earlier November 24 JSON captured the older `0xEA000..0xF1FFF` proposal and cannot substitute for inspecting `0xC0000..0xC7FFF`. Both JSON layouts remain interpretable offline.
 - Diagnostic-only WebMIDI command **99** reads CRC32 fingerprints of the 32
   candidate MPR1 sectors and eight LIBRARY sectors (40 × 4096 bytes, split
   into five read-only requests). Each sector is read in 256-byte pages with
