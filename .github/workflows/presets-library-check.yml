@@ -288,7 +288,7 @@ jobs:
         run: |
           mkdir -p build/one-device-trial-review
           cp docs/one-device-clean-install-trial.md docs/clean-slate-first-install.md docs/diagnostic-flash-readonly.md \
-             docs/fm1-physical-recovery-preflight.md build/one-device-trial-review/
+             docs/fm1-physical-recovery-preflight.md docs/first-fm1-32x32-install-runbook.md build/one-device-trial-review/
           mkdir -p build/one-device-trial-review/tools
           cp tools/verify_fm1_recovery_dumps.py build/one-device-trial-review/tools/
           cp tests/verify_fm1_recovery_dumps_test.py build/one-device-trial-review/
