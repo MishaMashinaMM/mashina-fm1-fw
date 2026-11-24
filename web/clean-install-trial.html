@@ -19,9 +19,9 @@ strong{color:#ffb03a}
 </style></head><body>
 <h1>MASHINA<br><span>FM1 PERFORMANCE FW</span></h1>
 <p>One-device 32+32 first-install trial — <strong>UNRELEASED / ENGINEERING ONLY</strong></p>
-<p class="warning"><strong>Destructive operation.</strong> The final action erases the device's old USER presets, project sections and settings. It is not a sound-library upload or firmware updater. Do not connect both FM1 units, use this on ordinary firmware, or attempt a reset without a verified rollback archive and established recovery procedure. No public flashable clean-install firmware is available.</p>
-<section class="panel"><h2>1. Verify offline legacy archive</h2>
-<p>Import the untouched original <code>felucca-backup</code> JSON. Its 43 retained objects must pass all individual CRC32 checks. The file is validated locally, never uploaded or modified.</p>
+<p class="warning"><strong>Destructive operation.</strong> The final action erases the device's old USER presets, project sections and settings. It is not a sound-library upload or firmware updater. Use only ONE FM1. This is a deliberate clean start: existing USER sounds, projects and settings will be erased and will NOT be migrated. Keep a recovery method available; a saved archive is OPTIONAL if you do not wish to retain any existing data. No public flashable clean-install firmware is available.</p>
+<section class="panel"><h2>1. Optional original-sound archive (not required for a clean install)</h2>
+<p>Skip this entirely if you want 32 empty USER slots. Import a full original <code>felucca-backup</code> JSON ONLY if you later want to restore its USER sounds. A clean installation has no backup-file requirement.</p>
 <label>Original device backup <input id="archive" type="file" accept=".json,application/json"></label>
 <div id="archive-state" class="subtle">No verified archive selected.</div>
 </section>
@@ -32,14 +32,14 @@ strong{color:#ffb03a}
 </section>
 <section class="panel"><h2>3. Deliberate physical reset</h2>
 <label><input type="checkbox" id="one-unit"> I am using one FM1 only, and the other FM1 remains unchanged.</label>
-<label><input type="checkbox" id="rollback"> I have independently retained a verified archive and the working firmware/recovery files.</label>
+<label><input type="checkbox" id="rollback"> I understand that all existing presets, projects and settings on this ONE FM1 will be erased, and I can reinstall known-working firmware if needed.</label>
 <label>Type <strong>ERASE THIS FM1</strong> to enable the read-only preflight.<br>
 <input id="phrase" type="text" autocomplete="off" spellcheck="false" placeholder="ERASE THIS FM1"></label>
 <button id="preflight" type="button" disabled>Prepare: inspect all 53 sectors (no writes)</button>
 <button id="commit" type="button" disabled>Destructive first install — erase one FM1</button>
 <p class="subtle">PREPARE issues WebMIDI command 101, a read-only scan. It returns a short-lived one-time nonce only if all expected sectors are valid. COMMIT issues command 102 only after a second explicit confirmation, using the nonce within 15 seconds. The firmware repeats its entire sector preflight before writing. An interrupted erase or marker commit must be handled as a recovery case — NEVER automatically retry it.</p>
 </section>
-<section class="panel"><h2>4. Optional: restore original USER presets after reboot</h2>
+<section class="panel"><h2>4. Optional: restore original USER presets after reboot (skip for fresh start)</h2>
 <p><strong>Only after the fresh FM1 has been power-cycled.</strong> The original 43-object backup can restore its USER 001–032 banks and FM6/drum sidecars without importing old FUN projects or old settings. All target USER slots must be empty; the browser verifies every complete sound after writing. This is a separate, explicit physical write and is not atomic across three banks.</p>
 <label><input id="fresh-boot" type="checkbox"> The newly formatted FM1 was power-cycled, and I verified all 32 USER slots are empty.</label>
 <label>Type <strong>RESTORE USER ONLY</strong> to enable a separate preset-only restore.<br>
@@ -61,7 +61,7 @@ const $=id=>document.getElementById(id);
 let midi=null, validArchive=false, verifiedOriginal=null, authorizedFirmware=false, restoreCapable=false,nonce=null,preparedAt=0,busy=false,resetDone=false,restoreDone=false,verifiedAfterReboot=false;
 const status=s=>{$("status").textContent=s;};
 function invalidate(){nonce=null;preparedAt=0;$("commit").disabled=true;}
-function canPrepare(){return !busy&&!resetDone&&validArchive&&authorizedFirmware&&$("one-unit").checked&&
+function canPrepare(){return !busy&&!resetDone&&authorizedFirmware&&$("one-unit").checked&&
   $("rollback").checked&&$("phrase").value==="ERASE THIS FM1";}
 function refresh(){
  $("connect").disabled=busy;
@@ -86,7 +86,7 @@ $("archive").addEventListener("change",async e=>{
   if(backup.objects.length!==43)throw Error("Expected exactly 43 legacy objects");
   validArchive=true;verifiedOriginal=data;
   $("archive-state").textContent="Verified 43 legacy objects and individual CRC32 checksums: "+file.name;
-  status("Backup parsed locally. Check that it belongs to this device and keep a second offline copy.");
+  status("Optional original backup verified locally. It is NOT required for clean installation.");
  }catch(error){$("archive-state").textContent="Backup refused: "+error.message;status("No write authorized.");}
  refresh();
 });
@@ -159,7 +159,7 @@ $("verify-reboot").addEventListener("click",async()=>{
 });
 $("commit").addEventListener("click",async()=>{
  if(!canPrepare()||nonce===null||Date.now()-preparedAt>12000){invalidate();status("Authorization expired. Repeat read-only preflight.");return;}
- const accepted=confirm("DESTRUCTIVE FIRST INSTALL\n\nThis will erase USER presets, projects and settings on ONE connected FM1. Your saved JSON file is NOT on the device. Do you explicitly authorize this irreversible reset now?");
+ const accepted=confirm("DESTRUCTIVE FIRST INSTALL\n\nThis will ERASE ALL old USER presets, projects and settings on ONE connected FM1 and start with 32 empty USER slots, 32 factory LIBRARY fallbacks, and eight empty projects. This is the fresh start you selected. Continue?");
  if(!accepted){invalidate();status("Cancelled; no destructive command sent.");return;}
  const ticket=nonce;invalidate();busy=true;refresh();
  try{
