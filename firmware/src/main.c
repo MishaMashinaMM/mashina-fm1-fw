@@ -146,6 +146,11 @@ static void felucca_init(void)
     fm6_init();                               /* every track's FM6 patch: the init voice */
     power_on_parts();                         /* legacy defaults for normal firmware */
     load_depth--;
+#if FELUCCA_LIB32
+    /* Scan metadata once at boot, while audio is still stopped. An uploaded
+     * LIBRARY sound must show its real name/engine after a cold boot. */
+    library_metadata_boot();
+#endif
 #if FELUCCA_LIB32 && FELUCCA_PROJECT_REFS
     /* After outer initialization: each LIBRARY sound must run its own
      * load_end()/motion_rebase before MPR1 records its source fingerprint. */
