@@ -311,14 +311,19 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
 
 /* Optional diagnostic-image-only command 99. Every batch returns:
  * [version=1,start,count, (status,crc32-as-5-seven-bit-bytes)*count].
- * 32 MPR1 sectors and 8 LIBRARY sectors are fingerprinted without transmitting
+ * 32 MPR1, 8 LIBRARY, 4 USER and 2 FM6/drum companion sectors are fingerprinted without transmitting
  * raw preset data or authorizing writes. CRC32 detects ordinary unintended
  * changes, NOT deliberate tampering or ownership/recovery compatibility.
  */
+const FINGERPRINT_46_EXTRA = Object.freeze([0xdc000,0xdd000,0xde000,0xdf000,0x9f000,0xfe000]);
+const fingerprintAddress=(index,version=2)=>
+  index<32 ? 0xa0000+index*4096 :
+  index<40 ? 0xc0000+(index-32)*4096 :
+  version===2 ? FINGERPRINT_46_EXTRA[index-40] : undefined;
 export async function captureFlashFingerprints(request,progress=()=>{}){
   const sectors=[];
-  for(let start=0;start<40;start+=8){
-    const count=Math.min(8,40-start);
+  for(let start=0;start<46;start+=8){
+    const count=Math.min(8,46-start);
     const reply=Uint8Array.from(await request(99,[start,count]));
     insist(reply.length===3+6*count&&reply[0]===1&&
       reply[1]===start&&reply[2]===count,
@@ -337,26 +342,28 @@ export async function captureFlashFingerprints(request,progress=()=>{}){
       insist(status!==4||crc===0,
         "Unreadable sector must never claim a validated CRC");
       const index=start+j;
-      const address=index<32?0xa0000+index*4096:
-        0xc0000+(index-32)*4096;
+      const address=fingerprintAddress(index);
       sectors.push({index,address,
         readable:status===0,
         crc32:status===0?crc.toString(16).toUpperCase().padStart(8,"0"):null});
     }
-    progress(sectors.length,40);
+    progress(sectors.length,46);
   }
-  return {format:"mashina-flash-sector-fingerprints",version:1,
+  return {format:"mashina-flash-sector-fingerprints",version:2,
     mode:"READ_ONLY_DIAGNOSTIC",sectorBytes:4096,sectors,
     complete:sectors.every(x=>x.readable)};
 }
 /* Compare only equal, complete sector maps. Does not authorize flash writes. */
 export function compareFlashFingerprints(before,after){
   const validate=x=>x?.format==="mashina-flash-sector-fingerprints"&&
-    x.version===1&&x.sectorBytes===4096&&
-    Array.isArray(x.sectors)&&x.sectors.length===40&&x.complete===true&&
+    (x.version===1||x.version===2)&&x.sectorBytes===4096&&
+    Array.isArray(x.sectors)&&x.sectors.length===(x.version===1?40:46)&&
+    x.complete===true&&
     x.sectors.every((s,i)=>s.index===i&&s.readable===true&&
       /^[0-9A-F]{8}$/.test(s.crc32));
-  insist(validate(before)&&validate(after),
+  const compatible=(x,y)=>x.version===y.version &&
+    x.sectors.every((s,i)=>s.address===y.sectors[i].address);
+  insist(validate(before)&&validate(after)&&compatible(before,after),
     "Complete, compatible fingerprints from both diagnostic sessions are required");
   const changes=before.sectors.filter((s,i)=>
     s.crc32!==after.sectors[i].crc32)
