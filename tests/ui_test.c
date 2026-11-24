@@ -13740,6 +13740,9 @@ static int test_section_colors(void)
 int main(void)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
+#ifdef UI_TEST_PRESET_BANK_ONLY
+    return test_preset_types() + test_favorites() ? 1 : 0;
+#endif
 #ifdef UI_TEST_STYLE_ONLY
     return test_style() + test_menu_tabs() ? 1 : 0;
 #endif
