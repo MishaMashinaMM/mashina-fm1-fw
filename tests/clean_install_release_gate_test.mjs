@@ -16,10 +16,13 @@ const config=read("firmware/src/felucca.c");
 const workflow=read(".github/workflows/presets-library-check.yml");
 const flashGate=read("tools/presets_library_flash_map_check.py");
 const trialPage=read("web/clean-install-trial.html");
-const inline=trialPage.match(/<script type="module">([\\s\\S]*?)<\\/script>/);
-assert(inline,"Trial page must have one explicit ES module script");
+const scriptStart='<script type="module">';
+const scriptEnd='</script>';
+const begin=trialPage.indexOf(scriptStart),finish=trialPage.indexOf(scriptEnd,begin+scriptStart.length);
+assert(begin>=0&&finish>begin,"Trial page must have an ES module script");
+const inline=trialPage.slice(begin+scriptStart.length,finish);
 const syntax=spawnSync(process.execPath,["--input-type=module","--check"],
-  {input:inline[1],encoding:"utf8"});
+  {input:inline,encoding:"utf8"});
 assert.equal(syntax.status,0,"Trial browser script syntax invalid: "+syntax.stderr);
 
 for(const id of ["archive","connect","one-unit","rollback","phrase","preflight","commit"])
