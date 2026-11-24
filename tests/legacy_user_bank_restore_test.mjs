@@ -8,7 +8,7 @@ import {encodeRecord,pack7} from "../web/presets-library-codec.mjs";
 import {restoreOriginalUserBanks} from "../web/legacy-user-bank-restore.mjs";
 
 const originalBytes=engine=>encodeRecord({
-  name:engine===12?"FM6 ORIGINAL":"ANAL ORIGINAL",engine,
+  name:engine===12?"FM6 ORIGINAL":"ANAL ORIG",engine,
   params:Array.from({length:127},(_,i)=>(i*3)%100),
   ...(engine===12?{fm6:Array.from({length:128},(_,i)=>(i*11)&127)}:{})
 });
