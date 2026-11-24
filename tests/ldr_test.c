@@ -19,6 +19,7 @@ static size_t logical_len;
 static uint8_t rx[1024];
 static uint32_t rx_len, rx_full, now_ms, requests, erases, bad_range, record_cleared, f0_asked;
 static uint32_t flip_addr = 0xFFFFFFFFu, flip_seen, flip_on;   /* serve addr's flip_on-th reply with a byte changed */
+static uint32_t fail_prog_once_at=0xFFFFFFFFu;  /* simulate a power-cut app page program */
 
 static uint32_t pack7(const uint8_t *in, uint32_t n, uint8_t *out)
 {
@@ -93,6 +94,10 @@ static int ldr_erase(uint32_t off)
 }
 static int ldr_prog(uint32_t off, const void *p, uint32_t n)
 {
+    if(off==fail_prog_once_at){
+        fail_prog_once_at=0xFFFFFFFFu;
+        return -10;  /* sector already erased, previous pages programmed */
+    }
     const uint8_t *s = p;
     uint32_t i;
     if (off < 0x4000u || off + n > 0x93000u || ((off & 0xFFu) + n) > 256u) bad_range++;
@@ -247,6 +252,26 @@ int main(int argc, char **argv)
     bad += check("no write outside the allowed windows", bad_range == 0);
     bad += check("[0x93000, 1 MiB) byte-identical but the record sectors", !memcmp(nor + 0x93000, store, sizeof store));
     bad += app_area(argc > 3 ? (uint32_t)strtoul(argv[3], NULL, 0) : 0u);
+    /* Test recovery of MASHINA's OWN update loader from a power cut during
+     * programming one application sector. This does not simulate a stock SPL
+     * boot or the vendor recovery tool, but exercises the exact update loop
+     * with real package bytes and confirms ALL persistent data is untouched. */
+    memcpy(nor+0x4000u,old+ofo+0x4000u,0x93000u-0x4000u);
+    nor[0x30000u]=(uint8_t)(logical[nfo+0x30000u]^0x01u);
+    record_cleared=0;
+    fail_prog_once_at=0x30400u; /* abort after first 1 KiB of a changed app sector */
+    rc=ldr_session();
+    bad+=check("interrupted MASHINA app programming does not complete update",
+               rc==-10 && fail_prog_once_at==0xFFFFFFFFu &&
+               record_cleared==0);
+    bad+=check("power cut leaves ALL user-data NOR sectors unchanged",
+               !memcmp(nor+0x93000u,store,sizeof store));
+    rc=ldr_session(); /* SPL would resume the still-present update record */
+    bad+=check("MASHINA loader can resume and verify entire new application",
+               rc==0 && !memcmp(nor+0x4000u,logical+nfo+0x4000u,
+                                 0x93000u-0x4000u));
+    bad+=check("recovery preserves ALL user-data NOR sectors byte-for-byte",
+               !memcmp(nor+0x93000u,store,sizeof store));
     /* same package again: nothing to erase */
     erases = 0; requests = 0;
     rc = ldr_session();
