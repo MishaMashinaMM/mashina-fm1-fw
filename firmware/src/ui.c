@@ -1681,6 +1681,9 @@ static void select_engine(uint32_t e)
 #define LIB_FACTORY_SLOTS 32u
 #if FELUCCA_LIB32
 static int library_sound_load(uint32_t slot); /* implemented after USER storage in felucca.c */
+#if FELUCCA_FLASH_DIAG
+static uint8_t library_diag_preview_legacy; /* diagnostic-only preview marker, never persisted */
+#endif
 static int library_slot_ready(uint32_t slot); /* 0 playable/factory; 1 corrupt/unreadable */
 #endif
 static uint32_t library_factory_at(uint32_t n, uint32_t *k)
