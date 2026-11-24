@@ -79,6 +79,12 @@ static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
  * finishes including its helper modules. Declare the host stub first. */
 static void fm1_wdt_feed(void){}
 #include "../firmware/src/project.c"
+/* Include EXACTLY the same read-only classifier shipped by the diagnostic.
+ * The clean-install preflight must agree with it on host-simulated real
+ * storage, independent from whole-sector CRC fingerprint collisions. */
+#define FELUCCA_FLASH_DIAG 1
+#include "../firmware/src/flash_diagnostic.c"
+#undef FELUCCA_FLASH_DIAG
 
 /* Existing WebMIDI backup commands: chunked read/write of all 8xA-D MPR1
  * sections and independent USER/settings objects. */
@@ -527,6 +533,14 @@ int main(void)
            st_save(OBJ_AUTOSAVE,data,sizeof data))seeded=0;
         bad+=check("prepare CRC-validated retired FUN/USER/settings NOR reset fixture",
                    seeded && clean_layout_preflight()==0);
+        bad+=check("53 diagnostic classifications agree with safe clean preflight",({
+            int agree=1;
+            for(uint32_t i=0;i<53u;i++){
+                uint32_t v=ed_diag_layout_sector(i);
+                if(v!=0u && v!=2u)agree=0;
+            }
+            agree;
+        }));
         uint32_t markerSequence=0u;
         if(trial<3u){
             const uint32_t nth[3]={0u,10u,24u};
@@ -551,6 +565,10 @@ int main(void)
                        clean_layout_initialize()==1 &&
                        erases==eraseCount);
         }
+        bad+=check("diagnostic rejects new-format or torn marker after reset",({
+            uint32_t state=ed_diag_layout_sector(0u);
+            state==1u || state==3u;
+        }));
     }
     bad+=check("brownout simulations touched no out-of-bound flash",outside==0u);
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
