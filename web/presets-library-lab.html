@@ -175,6 +175,7 @@ import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,compareFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
+import {analyzeFlashFingerprints} from "./flash-fingerprint-analysis.mjs";
 import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
 import {inspectEmulatorFlash,resolveFactoryFallbacks} from "./emulator-library-inspector.mjs";
@@ -559,6 +560,16 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     checksumNote="Optional CRC32 fingerprint unavailable: "+error.message+
       ". The physical flash readiness decision remains BLOCKED.";
   }
+  let patternReview=null;
+  if(fingerprints?.complete) {
+    try {
+      patternReview=analyzeFlashFingerprints({
+        format:"mashina-flash-diagnostic",version:2,fingerprints
+      });
+    } catch(error) {
+      checksumNote+=" Offline pattern analysis unavailable: "+error.message;
+    }
+  }
   downloadFile("mashina-flash-diagnostic.json",{
     format:"mashina-flash-diagnostic",version:2,
     created:new Date().toISOString(),
@@ -567,6 +578,7 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     canInitializeProjects:health.canInitializeProjects,
     libraryAllBlank:health.libraryAllBlank,
     audit,fingerprints,
+    fingerprintAnalysis:patternReview,
     fingerprintNote:checksumNote
   });
   $("status").textContent=
@@ -577,6 +589,7 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
       `slots ${x.slotStart}–${x.slotEnd}: ${x.status}`).join(" · ")+"\n"+
     audit.messages.join("\n")+"\n"+
     checksumNote+"\n"+
+    (patternReview?patternReview.messages.join("\n")+"\n":"")+
     "Saved mashina-flash-diagnostic.json with independent readiness audit and optional 40-sector CRC report. No flash writes performed by the probe.";
 }));
 let flashBefore=null,flashAfter=null;
