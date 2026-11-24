@@ -28,6 +28,14 @@ It inspects **all 53 sector copies (212 KiB total)** before the first destructiv
 
 The read-only diagnostic has been extended to fingerprint all **53 active-state candidate sectors**, including the six USER/companion and seven settings/index/autosave/voice sectors. Before enabling the clean-install format path on real hardware, acquire a fresh physical 53-sector report, confirm the source-owned partition map and independently validate updater/recovery behavior. A CRC32 capture by itself cannot authorize writing. In particular, **do not automatically erase** the old `0xEA000..0xF1FFF` USR candidate, the FM6 voice-bank staging region, or any unverified bootloader/OTA scratch area.
 
+## Latest actual FM1 preflight and owner backup (24 November 2026)
+
+An FM1 flashed with the read-only diagnostic build `e646110ab1ed` successfully auditioned all 64 sound slots and retained its original project data. Its on-device read-only JSON inspection reports **53/53 examined sectors**: 52 exact validated old source-owned records, 1 erased FM6 voice sector at `0xE7000`, 0 unknown/corrupt and 0 unreadable. All 16 proposed MPR1 project banks and all 4 proposed LIBRARY banks contain old CRC-validated FUN records. The 14 repeated CRCs `127B0F88` are compatible with zero-length committed FELU records and **are not flash aliasing evidence**.
+
+The owner also successfully used the browser's read-only legacy archive function: it reported **43 objects** checked by individual CRC32, then the owner imported the saved file and received a byte-for-byte match against the same connection's captured data. The actual legacy archive remains with the owner, not in this repository; without that file or a physical restore test, do **not** claim a device recovery has been demonstrated. The diagnostic JSON's conservative `audit.physicalRestoreProven=false` is therefore correct; its `cleanLayoutPreflight.allowedContent=true` authorizes no writes.
+
+**Outstanding hardware gate:** The MASHINA owned OTA loader's application-only write range and source-level user-data exclusions now include the three autosave/voice sectors. Host tests simulate real package upgrades and forged vendor-update signatures. Nevertheless, stock SPL/vendor recovery behavior and recovering a *failed* physical first-install format have **not** been validated. A staged physical installation must still require separate user authorization and a verified, retained original archive.
+
 ## First-install ordering, after independent hardware approval
 
 1. Reclaim eight old FUN project sectors at **0xC0000–0xC7FFF** for LIB1, rather than using the unknown **0xEA000–0xF1FFF USR** area. Verify that the exact physical sectors contain retired FUN records or are erased and that the loader and other stores cannot write them unexpectedly. The proposed physical reallocation is **not yet tested**.
