@@ -5,10 +5,13 @@
 // between quanta the page's input goes in and, about 30 times a second (4 when the page is hidden), the screen,
 // the lights and any changed flash go out. After X0X's web/emu/worklet.js (charlesvestal/fm1-x0x, GPL-3.0).
 
-// The flash the page keeps: legacy projects and USER presets (0x97000..0xDFFFF),
-// autosave (0xE5000..0xE6FFF), experimental LIBRARY A/B banks
-// (0xEA000..0xF1FFF), and global settings (0xFC000..0xFFFFF).
-// MPR1 project banks are already inside the legacy project interval.
+// The flash the page keeps: former FUN project and USER sectors (0x97000..
+// 0xDFFFF), including reclaimed LIBRARY A/B at 0xC0000..0xC7FFF;
+// autosave (0xE5000..0xE6FFF); global settings (0xFC000..0xFFFFF).
+// The OLD experimental LIBRARY sectors 0xEA000..0xF1FFF are retained here
+// solely so historical offline emulator JSON can still be imported. The
+// relocated firmware NEVER treats those old USR addresses as LIBRARY storage.
+// MPR1 project banks are inside the former FUN project interval.
 // Only non-erased 4 KiB sectors are retained; OTA/bootloader sectors remain
 // intentionally excluded. This does NOT enable experimental firmware flags.
 export const STORE_AREAS = [[0x97000, 0xE0000], [0xE5000, 0xE7000],
