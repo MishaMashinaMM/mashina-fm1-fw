@@ -476,7 +476,7 @@ int main(void)
                 if(nor[base+off]!=0xFFu){allBlank=0;break;}
         }
         bad+=check("all active sectors erased except deliberately committed empty MPR1 marker",
-                   allBlank && writes==beforeWrites);
+                   allBlank && writes>beforeWrites);
         bad+=check("unreferenced legacy P1 and extra songs are never erased",
                    nor[0x97000u]==savedProject1 &&
                    nor[0xC8000u]==savedUnusedLegacy);
