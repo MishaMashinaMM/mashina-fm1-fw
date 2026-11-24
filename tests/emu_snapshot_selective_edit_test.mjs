@@ -9,7 +9,7 @@ import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
 import {decodeProject} from "../web/projects-library-codec.mjs";
 import {BACKUP_IDS,bkCrc} from "../web/fm1backup.js";
-import {extractLegacyUserPresets} from "../web/legacy-user-extract.mjs";
+import {extractLegacyUserPresets,freshMpr1EmulatorFromLegacy} from "../web/legacy-user-extract.mjs";
 import {editEmulatorLibrarySnapshot,editEmulatorUserSnapshot,editEmulatorProjectReferences,factorySourceRecords,snapshotSourceRecords,userSourceRecords,crc32} from "../web/emulator-snapshot-editor.mjs";
 const master=JSON.parse(readFileSync("web/factory-presets-from-code.json","utf8"));
 const factory=factorySourceRecords(master);
@@ -292,10 +292,8 @@ console.log("PASS: real WASM fresh boot reads selective USER/LIBRARY changes and
   const portable=extractLegacyUserPresets(originalBackup);
   assert.deepEqual(portable.patches.map(p=>p.slot),oldSlots,
     "legacy archive extraction changed the nine original USER positions");
-  const pristine=encodeEmulatorFlash({}); // NO old projects or LIBRARY writes
-  const fresh=editEmulatorUserSnapshot(pristine,portable.patches.map(p=>({
-    slot:p.slot+1,recordBytes:p.recordBytes
-  })));
+  const firstInstall=freshMpr1EmulatorFromLegacy(originalBackup);
+  const fresh={snapshot:firstInstall,inspection:inspectEmulatorFlash(firstInstall)};
   assert.equal(fresh.inspection.users.filter(x=>x.status==="saved").length,9);
   assert.equal(fresh.inspection.library.filter(x=>x.status==="overridden").length,0);
   assert.equal(fresh.inspection.projects.sections.filter(Boolean).length,0,
