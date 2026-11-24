@@ -451,7 +451,17 @@ int main(void)
         bad+=check("clean format accepts CRC-verified legacy and blank active stores",
                    clean_layout_initialize()==0);
         int allBlank=1;
-        for(uint32_t address=MPRS_BASE;
+        /* The first project bank holds a committed, logically EMPTY MPR1
+         * record. Its valid magic prevents any second destructive reset. */
+        uint32_t markerSeq=0;
+        bad+=check("one-shot MPR1 empty project marker committed last",({
+            int valid=mprs_latest(0u,&markerSeq)>=0 &&
+                      !mprs_load(0u,saved);
+            for(uint32_t i=0;i<MPR_MAX_RECORD;i++)
+                if(saved[i]!=0u)valid=0;
+            valid;
+        }));
+        for(uint32_t address=MPRS_BASE+2u*MPRS_SECTOR;
             address<LIB_BASE+LIB_BANKS*2u*LIB_SECTOR;address++)
             if(nor[address]!=0xFFu){allBlank=0;break;}
         for(uint32_t address=0xDC000u;address<0xE0000u;address++)
@@ -465,7 +475,7 @@ int main(void)
             for(uint32_t off=0;off<4096u;off++)
                 if(nor[base+off]!=0xFFu){allBlank=0;break;}
         }
-        bad+=check("all 53 sectors: project/LIBRARY/USER/companion/settings/index/autosave/voice erased",
+        bad+=check("all active sectors erased except deliberately committed empty MPR1 marker",
                    allBlank && writes==beforeWrites);
         bad+=check("unreferenced legacy P1 and extra songs are never erased",
                    nor[0x97000u]==savedProject1 &&
@@ -483,13 +493,15 @@ int main(void)
         bad+=check("song index returns to default project after reset",({
             song_index_load();song_cur==0u;
         }));
-        beforeErases=erases;
-        bad+=check("combined clean format can resume when already erased",
-                   clean_layout_initialize()==0 && erases==beforeErases);
+        beforeErases=erases;beforeWrites=writes;
+        bad+=check("one-shot marker refuses any second clean install",
+                   clean_layout_initialize()==1 &&
+                   erases==beforeErases && writes==beforeWrites);
         nor[LIB_BASE+4095u]=0x22u;
-        beforeErases=erases;
-        bad+=check("unknown bytes never auto-erase on a repeated first install",
-                   clean_layout_initialize()==1 && erases==beforeErases);
+        beforeErases=erases;beforeWrites=writes;
+        bad+=check("foreign bytes cannot bypass persistent one-shot marker",
+                   clean_layout_initialize()==1 &&
+                   erases==beforeErases && writes==beforeWrites);
         nor[LIB_BASE+4095u]=0xFFu;
     }
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
