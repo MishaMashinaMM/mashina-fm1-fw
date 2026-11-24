@@ -60,7 +60,16 @@
 #if FELUCCA_PROJECT_REFS_FORMAT && (!FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_FLASH)
 #error "MPR1 first-install formatting requires separate explicit write permissions"
 #endif
-#if FELUCCA_FLASH_DIAG && (!FELUCCA_FLASH || !FELUCCA_LIB32 || FELUCCA_LIB32_WRITE || FELUCCA_PROJECT_REFS || FELUCCA_PROJECT_REFS_WRITE || FELUCCA_PROJECT_REFS_FORMAT)
+/* Separate, deliberately unpublished first-install operation. Merely enabling
+ * experimental project/preset writes never authorizes erasing old FUN data.
+ * This switch only compiles the code; no ordinary image exposes a trigger. */
+#ifndef FELUCCA_CLEAN_INSTALL_LAYOUT
+#define FELUCCA_CLEAN_INSTALL_LAYOUT 0
+#endif
+#if FELUCCA_CLEAN_INSTALL_LAYOUT && (!FELUCCA_PROJECT_REFS_FORMAT || !FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_LIB32_WRITE || !FELUCCA_PROJECT_REFS || !FELUCCA_FLASH)
+#error "Combined clean-install preflight requires all independent experimental storage gates"
+#endif
+#if FELUCCA_FLASH_DIAG && (!FELUCCA_FLASH || !FELUCCA_LIB32 || FELUCCA_LIB32_WRITE || FELUCCA_PROJECT_REFS || FELUCCA_PROJECT_REFS_WRITE || FELUCCA_PROJECT_REFS_FORMAT || FELUCCA_CLEAN_INSTALL_LAYOUT)
 #error "Read-only flash diagnostic requires LIB32 reads and prohibits all experimental project/preset writes"
 #endif
 #ifndef FELUCCA_CDC
