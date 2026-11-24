@@ -32,8 +32,20 @@ assert.match(config,/#define FELUCCA_PROJECT_REFS_FORMAT 0/);
 assert.match(api,/if \(cmd == 96u\)/);
 assert.match(api,/#if FELUCCA_PROJECT_REFS && FELUCCA_PROJECT_REFS_FORMAT && !FELUCCA_CLEAN_INSTALL_LAYOUT/);
 assert.match(api,/ed_b\(2u\); \/\* always reject destructive initialization \*\//);
-assert(!/clean_layout_initialize\s*\(/.test(api),
-       "combined formatter must not be accidentally callable over existing WebMIDI command");
+/* The staged 101/102 two-phase protocol compiles ONLY into a build
+ * that tools/build.py refuses to package. Ordinary and diagnostic images
+ * respond 2 to both commands without calling the formatter. */
+assert.match(api,/if \(cmd == 101u\)/);
+assert.match(api,/if \(cmd == 102u\)/);
+const commitBlock=api.slice(api.indexOf("if (cmd == 102u)"),api.indexOf("if (cmd == 96u)"));
+assert.match(commitBlock,/#if FELUCCA_CLEAN_INSTALL_LAYOUT/);
+assert.match(commitBlock,/clean_armed && n==10u/);
+assert.match(commitBlock,/args\[9\]==clean_arm_nonce/);
+assert.match(commitBlock,/\(uint32_t\)\(fm1_ms-clean_arm_ms\)<=15000u/);
+assert.match(commitBlock,/clean_armed=0u;/);
+assert.match(commitBlock,/clean_layout_initialize\(\)/);
+assert.match(commitBlock,/#else\s*ed_b\(2u\);\s*#endif/);
+
 assert.match(init,/static int clean_layout_preflight\(void\)/);
 assert.match(init,/uint32_t status=clean_layout_preflight\(\);/);
 assert.match(init,/if\(status\)return \(int\)status;/);
