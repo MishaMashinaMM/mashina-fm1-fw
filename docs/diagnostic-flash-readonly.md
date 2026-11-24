@@ -11,13 +11,16 @@
 - `FELUCCA_FLASH_DIAG=1`, `FELUCCA_LIB32=1`,
   `FELUCCA_LIB32_WRITE=0`, `FELUCCA_PROJECT_REFS=0`,
   `FELUCCA_PROJECT_REFS_WRITE=0`, `FELUCCA_PROJECT_REFS_FORMAT=0`.
-- **Only the diagnostic operations are read-only.** USB commands 97/98 inspect
-  flash without erase/program operations. Experimental LIB32 writes and MPR1
-  project writes/formatting are compile-disabled. **Existing v0.13 USER,
-  legacy project, settings and automatic autosave paths are not globally
-  write-protected by these flags.** Even avoiding the SAVE button does not
-  prove the firmware will perform no writes. Do not treat this temporary
-  image as a write-protected recovery environment.
+- **All ordinary persistent-data flash writes are blocked in the diagnostic
+  application at the lowest HAL range gate.** USB commands 97/98/99 are
+  read-only. Experimental LIB32 and MPR1 writes/formatting are separately
+  compile-disabled. The legacy USER, project, global-settings and automatic
+  autosave paths may still *request* saves, but their erase/program attempts
+  are rejected by the HAL. **OTA loader staging remains writable**, so the
+  previously working firmware can be reinstalled. This is not a universal
+  write-protected recovery environment: installing/reflashing the diagnostic
+  still rewrites application/loader sectors, and stock SPL/bootloader/recovery
+  behavior is not governed by the running application's data-flash gate.
 - **Installing any firmware still flashes the application/loader.** This
   diagnostic does not prove that the installation/bootloader will preserve
   every data sector, and it cannot make a failed install harmless.
@@ -74,9 +77,10 @@ preview in a second tab at `http://localhost:8000/web-library/`.
 2. Choose **Inspect flash (read-only)**.
 3. Copy the status text or take a screenshot and share it here.
 4. Do not click any restore/upload action or save using the FM1's own controls.
-   The diagnostic firmware advertises experimental LIBRARY and MPR1 write
-   capability as **disabled**, but existing firmware save paths remain capable
-   of writing flash.
+   Experimental LIBRARY/MPR1 writes are disabled, and the diagnostic app's
+   flash HAL refuses persistent-data writes from legacy SAVE/autosave too.
+   Avoid unnecessary SAVE operations because they can fail visibly; keep
+   the diagnostic session restricted to read-only inspection.
 5. After inspection, return to your known working v0.13 image if appropriate.
 
 Status codes: **blank**, **committed**, **retired project**, **unknown** or
