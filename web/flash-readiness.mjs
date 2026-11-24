@@ -21,7 +21,7 @@ export function auditFlashProbe(probe){
   }));
   const libraryBanks=probe.library.map((status,i)=>({
     bank:i,slotStart:33+i*8,slotEnd:40+i*8,
-    address:"0x"+(0xea000+i*8192).toString(16).toUpperCase(),
+    address:"0x"+(0xc0000+i*8192).toString(16).toUpperCase(),
     status:STATUSES[status],code:status
   }));
   const all=[...projectBanks,...libraryBanks];
