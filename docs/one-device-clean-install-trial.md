@@ -22,6 +22,12 @@
 7. **One-device trial:** after separate explicit permission, never target both devices. Keep external power/USB stable. Check all sound and project settings, one independent USER edit, one LIBRARY replacement, controlled cold restart, backup/export and restore, then subsequent MASHINA update persistence.
 8. **Stop conditions:** any unknown/unreadable/foreign 53-sector classification, source address mismatch, bootloader/recovery uncertainty not consciously accepted for this trial, missing backup, failed build/headroom/OTA test, or unexpected post-install state blocks release.
 
+## First-install transition write interlock
+
+A newly installed experimental MPR1 firmware initially sees the old FUN/USER storage. On this special clean-install build, all normal USER/settings/autosave, MPR1 and LIBRARY erase/program operations are now **locked at boot** until an entire CRC-valid `MPS1` first project bank is observed. The deliberate, synchronously confirmed command 102 temporarily unlocks the 53-sector formatter; it locks normal saves again even on success or failure. The owner must power-cycle, at which time the firmware checks the new committed bank before re-enabling normal writes. A mid-format interruption leaves ordinary writes locked; automatic retry remains forbidden. The build gate remains non-flashable.
+
+The intended physical procedure and the Windows 10 **ordinary USB / M-Flasher read-only double backup** (with XIAO reserved for recovery only) are in [first FM1 32+32 installation runbook](first-fm1-32x32-install-runbook.md).
+
 ## Physical recovery evidence, newly documented
 
 The supported FM-1 Transporter recovery route using an actual **Seeed XIAO RP2040** and an externally wired USB-C data breakout was identified. See [the read-only physical recovery preflight](fm1-physical-recovery-preflight.md) for identification of the precise RP2040 board, safe D+/D−/ground wiring and VBUS isolation, and the independent dump requirements. The owner's USB-C **five-core** cable must be electrically identified before using it; colors are not reliable proof. The nRF52840 Sense variants are not interchangeable with the documented RP2040 Transporter image.
