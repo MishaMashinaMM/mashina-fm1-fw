@@ -1,5 +1,12 @@
 # Presets Library — experimental 32 USER + 32 LIBRARY
 
+## SAVE > PRESETS browser (24 November 2026)
+
+The old Jiant sound-type LIST on K4 has been removed. K4 now selects BANK: ALL (001-064), USER (001-032), or LIB (033-064). K1 and the PRESETS encoder navigate actual physical positions. K2 remains ENG; K3 remains FAV.
+
+The highlighted slot is independent of the loaded sound. An unavailable LIBRARY entry shows LIBRARY UNAVAILABLE but leaves the cursor at that position; it cannot wrap prematurely or load an unrelated sound. Host regressions cover 046 to 047 and the full 033-064 range (wrapping at 064 to 033). Empty USER addresses keep their numbers but are skipped when auditioning. Bank view is temporary and does not write flash.
+
+
 **2026-11-24 relocation prototype:** Active LIB1 is now allocated to *retired FUN project sectors* `0xC0000..0xC7FFF`, not the old `0xEA000..0xF1FFF` USR proposal. No LIB1 physical writes are approved. Prior exported emulator JSON with LIB1 at the old USR offsets remains accepted by the offline inspector and can be copied bank-by-bank into the new layout without changing the original JSON. The first physical diagnostic captured the *old* USR range; the new candidate sectors still need read-only device inspection. Earlier history below includes pre-relocation measurements and experiments.
 
 
@@ -264,7 +271,7 @@ Web backup/restore code:
 - `web/presets-library-midi.mjs`: explicit WebMIDI connection, serialized requests and timeouts.
 - `web/presets-library-lab.html`: experimental import, slot grid, USER capture, device-library backup and upload. Upload is disabled unless CAP reports writable and the user has first backed up the current device library. The normal public editor site is unchanged.
 
-**Important limitations:** Existing online user-preset JSON that lacks an independent drum-kit sidecar is **not** a complete drum preset. Use the new CAPTURE_USER operation (or a complete binary library JSON backup) to preserve all twelve pad sounds. Factory selection, favorites and LIST tag filtering over overwritten presets need further user-interface tests.
+**Important limitations:** Existing online user-preset JSON that lacks an independent drum-kit sidecar is **not** a complete drum preset. Use the new CAPTURE_USER operation (or a complete binary library JSON backup) to preserve all twelve pad sounds. Factory selection and favorites over overwritten presets still need hardware testing. The old LIST tag filtering has been removed.
 
 ## Verification and pending gates
 
