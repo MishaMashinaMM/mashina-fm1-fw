@@ -529,6 +529,22 @@ int main(void)
         uint32_t v0=0u;
         bad+=check("post-reset persistent marker remains valid",
                    mprs_latest(0u,&v0)>=0);
+        bad+=check("all 32 new project sections start logically unassigned",({
+            int empty=1;
+            uint8_t record[MPR_MAX_RECORD];
+            for(uint32_t slot=0u;slot<32u;slot++){
+                memset(record,0xCC,sizeof record);
+                if(mprs_load(slot,record)==0 &&
+                   mpr_get32(record)==MPR_MAGIC)empty=0;
+            }
+            empty;
+        }));
+        bad+=check("all 32 factory LIBRARY fallback records are ready",({
+            int valid=1;
+            for(uint32_t slot=0u;slot<LIB_SLOTS;slot++)
+                if(library_slot_ready(slot)!=0)valid=0;
+            valid;
+        }));
         song.sel=0u;trk_live=4u;
         load_depth++;
         power_on_parts();
