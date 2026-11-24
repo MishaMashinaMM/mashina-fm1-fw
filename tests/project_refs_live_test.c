@@ -508,6 +508,50 @@ int main(void)
                    erases==beforeErases && writes==beforeWrites);
         nor[LIB_BASE+4095u]=0xFFu;
     }
+    /* 53-sector reset power interruption test. A failure while erasing any
+     * retired sector must leave a restartable mix of valid old and erased
+     * sectors. Failure at the LAST commit must fail closed, never silently
+     * retry and overwrite an ambiguous partial MPR1 header. */
+    for(uint32_t trial=0;trial<4u;trial++){
+        memset(nor,0xFF,sizeof nor);
+        fail_erase_at=fail_prog_at=0xFFFFFFFFu;
+        const uint8_t data[12]={0x4D,0x41,0x53,0x48,0x49,0x4E,0x41,3,2,1};
+        int seeded=1;
+        for(uint32_t bank=0;bank<20u;bank++)
+            if(st_save(OBJ_SONG1+bank,data,sizeof data))seeded=0;
+        for(uint32_t obj=0;obj<2u;obj++)
+            if(st_save(OBJ_UPRESET0+obj,data,sizeof data))seeded=0;
+        if(st_save(OBJ_UPFM6,data,sizeof data) ||
+           st_save(OBJ_SETTINGS,data,sizeof data) ||
+           st_save(OBJ_SONGIDX,data,sizeof data) ||
+           st_save(OBJ_AUTOSAVE,data,sizeof data))seeded=0;
+        bad+=check("prepare CRC-validated retired FUN/USER/settings NOR reset fixture",
+                   seeded && clean_layout_preflight()==0);
+        if(trial<3u){
+            const uint32_t nth[3]={0u,10u,24u};
+            const uint32_t baseErases=erases;
+            fail_erase_at=baseErases+nth[trial];
+            bad+=check("interrupted erase stops before recording clean marker",
+                       clean_layout_initialize()==2 &&
+                       mprs_latest(0u,NULL)<0 &&
+                       fail_erase_at==0xFFFFFFFFu);
+            bad+=check("erased plus old CRC-valid sectors permit safe resume",
+                       clean_layout_preflight()==0);
+            bad+=check("restarted erasure reaches final verified MPR1 marker",
+                       clean_layout_initialize()==0 &&
+                       mprs_latest(0u,NULL)>=0);
+        }else{
+            fail_prog_at=MPRS_BASE; /* final committed MPR1 header */
+            bad+=check("interrupted final marker program fails without succeeding",
+                       clean_layout_initialize()==2 &&
+                       fail_prog_at==0xFFFFFFFFu);
+            uint32_t eraseCount=erases;
+            bad+=check("partial committed MPR1 marker never retries automatically",
+                       clean_layout_initialize()==1 &&
+                       erases==eraseCount);
+        }
+    }
+    bad+=check("brownout simulations touched no out-of-bound flash",outside==0u);
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
     return !!bad;
 }
