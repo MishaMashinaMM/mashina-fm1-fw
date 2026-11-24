@@ -28,6 +28,12 @@
   CRC-verified legacy `FELU` project records, or CRC-verified `MPS1`
   reference records. Mixed, unreadable or unknown content is flagged.
   The separate LIBRARY probe checks blank or committed LIBRARY banks.
+- Diagnostic-only WebMIDI command **99** reads CRC32 fingerprints of the 32
+  candidate MPR1 sectors and eight LIBRARY sectors (40 × 4096 bytes, split
+  into five read-only requests). Each sector is read in 256-byte pages with
+  watchdog feeding; the browser receives **checksums only**, never private
+  preset or project data. Busy or unreadable flash is reported as unavailable.
+  This command is not present in ordinary firmware builds.
 - A successful probe **does not** prove what every stock recovery tool,
   SPL/bootloader or future firmware installer will do. It is one physical
   memory-ownership check, not approval to enable destructive writes.
@@ -94,6 +100,24 @@ tell us about *current contents*, not who is authorized to erase/program
 them or how every firmware installer will handle those addresses.
 The diagnostic artifact does not automatically enable an installer,
 factory reset or write capability.
+
+## Compare sector contents across two diagnostic sessions
+
+A version-2 diagnostic JSON optionally includes `fingerprints` with 40
+address-indexed CRC32 results. The Web Library now contains
+**Compare two physical flash diagnostics offline (read-only)**. Import the
+*before* and *after* diagnostic JSON files there. The browser validates that
+each file contains all 40 readable sectors, then compares them and downloads
+`mashina-flash-fingerprint-comparison.json` listing exactly which physical
+4 KiB sectors changed. The source files are never modified, no FM1 connection
+is needed for the comparison, and physical writes remain blocked even when
+all 40 CRCs match.
+
+CRC32 is useful for detecting unintentional changes but is not cryptographic
+integrity or proof that firmware recovery will preserve these sectors.
+A failed/unavailable checksum leaves the comparison incomplete and blocked.
+Do not intentionally perform an experimental erase/update merely to produce
+a second diagnostic file.
 
 **No installer or device write was executed by ChatGPT.** The artifact is
 prepared for user-controlled installation and inspection only.
