@@ -16,7 +16,7 @@ static int lib_flash_read(uint32_t off, void *p, uint32_t n)
 }
 static int lib_flash_erase(uint32_t off)
 {
-    if (off < 0xEA000u || off + 4096u > 0xF2000u || off % 4096u) { wrong_region++; return -1; }
+    if (off < 0xC0000u || off + 4096u > 0xC8000u || off % 4096u) { wrong_region++; return -1; }
     if (fail_after == 0) return -1;
     if (fail_after > 0) fail_after--;
     memset(nor+off,0xFF,4096);
@@ -26,7 +26,7 @@ static int lib_flash_erase(uint32_t off)
 static int lib_flash_prog(uint32_t off,const void *p,uint32_t n)
 {
     const uint8_t *b=p;
-    if (off < 0xEA000u || off + n > 0xF2000u || (off & 255u) + n > 256u) {
+    if (off < 0xC0000u || off + n > 0xC8000u || (off & 255u) + n > 256u) {
         wrong_region++; return -1;
     }
     if (fail_after == 0) return -1;
