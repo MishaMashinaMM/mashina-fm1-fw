@@ -23,6 +23,7 @@ jobs:
           node tests/flash_readiness_audit_test.mjs
           node tests/flash_fingerprint_test.mjs
           node tests/flash_fingerprint_analysis_test.mjs
+          node tests/flash_clean_layout_preflight_test.mjs
       - name: Verify existing storage and report 32-slot capacity
         run: |
           python3 tools/presets_library_capacity.py
