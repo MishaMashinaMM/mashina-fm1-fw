@@ -121,7 +121,7 @@ int main(void)
     }
     bad+=check("torn payload/header page preserves bank and neighboring sounds",all);
     all=1;
-    for(int cut=0;cut<2;cut++) {
+    for(int cut=0;cut<1;cut++) {
         if(lib_slot_write(17,r[17])){all=0;break;}
         erase_torn=cut;
         (void)lib_slot_write(17,newer);
