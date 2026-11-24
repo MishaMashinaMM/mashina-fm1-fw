@@ -1,5 +1,8 @@
 # Presets Library — experimental 32 USER + 32 LIBRARY
 
+**2026-11-24 relocation prototype:** Active LIB1 is now allocated to *retired FUN project sectors* `0xC0000..0xC7FFF`, not the old `0xEA000..0xF1FFF` USR proposal. No LIB1 physical writes are approved. Prior exported emulator JSON with LIB1 at the old USR offsets remains accepted by the offline inspector and can be copied bank-by-bank into the new layout without changing the original JSON. The first physical diagnostic captured the *old* USR range; the new candidate sectors still need read-only device inspection. Earlier history below includes pre-relocation measurements and experiments.
+
+
 **Branch:** `presets-library`, branched from `main`. Not merged, not released, not yet tested on a physical FM1. Do **not** flash this experimental build until its full read/write and recovery tests are approved.
 
 ## Agreed workflow
@@ -14,8 +17,8 @@
 ## Flash design and measured headroom
 
 - 32 library records × (192-byte USER sound record + 112-byte complete FM6 or drum companion) = **9,728 bytes raw payload**.
-- Four banks of eight records; two alternating CRC-protected 4,096-byte sectors per bank, header committed **last**. **32,768 bytes** flash assigned in the experiment to `0xEA000–0xF1FFF`.
-- The FM1 package labels `0xEA000–0xFBFFF` as **USR** (72 KiB). The eight candidate sectors are within it and do not overlap MASHINA's existing USER (`0xDC000–0xDFFFF`), 8-project section data, settings, FM6 voice bank or OTA staging. The package/loader's *actual* erase and retention behavior on physical FM1 devices remains unverified.
+- Four banks of eight records; two alternating CRC-protected 4,096-byte sectors per bank, header committed **last**. **32,768 bytes** flash assigned in the relocation prototype to `0xC0000–0xC7FFF`.
+- These eight sectors were the legacy project's FUN sections at old bank indices 16–19, within MASHINA's existing data range. The new MPR1 project store ends at `0xBFFFF`; the LIB1 region ends at `0xC7FFF`, before the existing USER banks (`0xDC000–0xDFFFF`). The old `USR` candidate remains excluded and unowned. Hardware validation of the replacement region is still required.
 - Normal firmware still **refuses** writes outside its existing flash regions. This experimental module uses its own bounded checks for the candidate 32 KiB **only when separately compiled for writing**. A bank may initialize only when **both complete 4 KiB sectors are erased (all bytes `0xFF`)**. Blank headers alone are insufficient: foreign payload bytes, damaged records or interrupted first writes cause a fail-closed storage error rather than automatic erasure. Manual recovery is required in those cases.
 - On a successful library-enabled build **with writes locked**, image **509,144 / 584,336 bytes**, pool **308,432 bytes used / 11,040 spare**, main RAM **95,936 / 98,304**. This is **within** the firmware's 8 KiB pool safety headroom. These numbers were measured in CI run 45205479394.
 
@@ -201,7 +204,7 @@ The existing 32/32 preset loader remains experimental, and main is unchanged.
 ## Source-level flash ownership audit (23 November 2026)
 
 A new CI check (`tools/presets_library_flash_map_check.py`) asserts that the proposed
-`0xEA000..0xF1FFF` LIBRARY region does not overlap known MASHINA firmware app,
+`0xC0000..0xC7FFF` reclaimed LIBRARY region is separate from active MPR1 and USER and does not overlap known MASHINA firmware app,
 USER/project store, autosave, FM6 voice bank, OTA staging or global settings.
 It checks constants in the actual firmware and loader sources, rather than
 depending only on a hand-maintained diagram.
@@ -209,7 +212,7 @@ depending only on a hand-maintained diagram.
 The MASHINA-owned updater (`firmware/loader/ldr_core.c`) writes app sectors
 `0x4000..0x92FFF` and skips the existing USER/project store in its update-record
 sweep. Its record-cleanup logic now **explicitly skips all
-`0xEA000..0xF1FFF` LIBRARY sectors**, even if the contents resemble a
+`0xC0000..0xC7FFF` LIBRARY sectors**, even if the contents resemble a
 valid update record. The source-level flash-map CI verifies this exclusion,
 and the loader host test plants a forged update-record signature in LIBRARY
 flash to confirm it survives upgrades. This protects the MASHINA update
@@ -275,7 +278,7 @@ The library-enabled firmware **with hardware flash writes explicitly compiled ON
 
 The CI workflow bundles **`mashina-presets-library-32-preview`**, containing an `index.html` and required local ES modules; no installer/firmware is attached as a public release. Serve the directory from `localhost` (for instance `python -m http.server 8000`) in Chrome/Edge to inspect the 32/32 layout. A physical FM1 is usable only with an explicitly enabled experimental LIB32 build; regular v0.13 does not support the new SysEx operations.
 
-Still required: true device-side SysEx integration tests, real-device verification of the `USR` region and update/restore behavior, emulator playback testing under continuous load, final curated factory selection, and web-library localization. Once complete, the user can explicitly authorize an experimental device installer. **Not yet device-ready.**
+Still required: true device-side SysEx integration tests, physical read-only verification of reclaimed FUN storage and update/restore behavior, emulator playback testing under continuous load, final curated factory selection, and web-library localization. Once complete, the user can explicitly authorize an experimental device installer. **Not yet device-ready.**
 
 ## Browser restore hardening (23 November 2026)
 
@@ -386,7 +389,7 @@ it as a CI pass.
 ### Experimental emulator flash preservation (23 November 2026)
 
 The browser AudioWorklet now includes the experimental LIBRARY bank region
-`0xEA000..0xF1FFF` among the flash sectors it persists across a page
+`0xC0000..0xC7FFF` among the flash sectors it persists across a page
 reload. The existing `0x97000..0xDFFFF` range already covers the new MPR1
 project sectors `0xA0000..0xBFFFF`. OTA, unknown and reserved sectors stay
 excluded. An erased LIBRARY sector is not serialized, and restoration
