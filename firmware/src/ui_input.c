@@ -1288,14 +1288,18 @@ static void edit_param(uint32_t slot, int32_t steps)
             preset_step(steps);
         } else if (slot == 1u) {
             select_engine(eng_step(TSEL->eng_req, steps));
+            browse_cursor_valid = 0u;
         } else if (slot == 2u) {
             preset_mark(steps > 0);
-        } else if (slot == 3u) {                         /* (0.9.12) LIST: ALL FAV, then the types (BASS LEAD .. FX) */
-            uint32_t v = (uint32_t)clamp((int32_t)list_get() + (steps > 0 ? 1 : -1), 0, PT_N);
-            if (v != list_get()) {
-                list_put(v);
+        } else if (slot == 3u) {                         /* BANK: ALL, USER, LIB */
+            uint32_t next = (uint32_t)clamp((int32_t)browse_bank + (steps > 0 ? 1 : -1),
+                                            0, BROWSE_BANKS - 1);
+            if (next != browse_bank) {
+                browse_bank = (uint8_t)next;
+                /* Keep a valid physical selection if it belongs to the new bank.
+                 * Otherwise start at that bank's first playable slot. */
+                browse_cursor_valid = 0u;
                 ui.force = 1;
-                settings_save();
             }
         }
         return;
