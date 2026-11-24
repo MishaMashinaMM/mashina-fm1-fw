@@ -46,15 +46,19 @@ strong{color:#ffb03a}
 <input id="restore-phrase" type="text" autocomplete="off" spellcheck="false" placeholder="RESTORE USER ONLY"></label>
 <button id="restore-users" type="button" disabled>Restore original USER presets only (6/7/9)</button>
 <p class="subtle">A restore failure must be investigated before any retry. Do not load old project/settings data into MPR1.</p>
+<h2>5. Verify persisted sounds after a SECOND power cycle (read-only)</h2>
+<p>The initial USER restore readback may come from the device's RAM. After successful restoration, power-cycle the FM1 again, reconnect, and verify all 304 bytes of each original sound directly from the newly booted device. This stage sends NO writes.</p>
+<label><input type="checkbox" id="post-restore-reboot"> I powered the FM1 off and back on AFTER the USER restoration, then reconnected it.</label>
+<button id="verify-reboot" type="button" disabled>Verify original USER sounds after reboot (read-only)</button>
 </section>
 <h2>Transfer status</h2><div role="status" aria-live="polite" id="status">No writes have been requested.</div>
 <p class="subtle">Source review page. This page does not contain a flashable firmware package. Do not publish it as a normal installer.</p>
 <script type="module">
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {readBackup} from "./fm1backup.js";
-import {restoreOriginalUserBanks} from "./legacy-user-bank-restore.mjs";
+import {restoreOriginalUserBanks,verifyOriginalUserBanksAfterReboot} from "./legacy-user-bank-restore.mjs";
 const $=id=>document.getElementById(id);
-let midi=null, validArchive=false, verifiedOriginal=null, authorizedFirmware=false, restoreCapable=false,nonce=null,preparedAt=0,busy=false,resetDone=false;
+let midi=null, validArchive=false, verifiedOriginal=null, authorizedFirmware=false, restoreCapable=false,nonce=null,preparedAt=0,busy=false,resetDone=false,restoreDone=false,verifiedAfterReboot=false;
 const status=s=>{$("status").textContent=s;};
 function invalidate(){nonce=null;preparedAt=0;$("commit").disabled=true;}
 function canPrepare(){return !busy&&!resetDone&&validArchive&&authorizedFirmware&&$("one-unit").checked&&
@@ -63,8 +67,9 @@ function refresh(){
  $("connect").disabled=busy;
  $("disconnect").disabled=busy||!midi;
  $("preflight").disabled=!canPrepare();
- $("restore-users").disabled=busy||!validArchive||!restoreCapable||!midi||!$("fresh-boot").checked||
+ $("restore-users").disabled=busy||restoreDone||!validArchive||!restoreCapable||!midi||!$("fresh-boot").checked||
    !$("one-unit").checked||!$("rollback").checked||$("restore-phrase").value!=="RESTORE USER ONLY";
+ $("verify-reboot").disabled=busy||!validArchive||!restoreCapable||!midi||!$("post-restore-reboot").checked||verifiedAfterReboot;
  if(!canPrepare())invalidate();
 }
 async function request(cmd,args){
@@ -72,7 +77,7 @@ async function request(cmd,args){
  return Uint8Array.from(await midi.request(cmd,args,{timeout:cmd===102?120000:60000,retries:0}));
 }
 $("archive").addEventListener("change",async e=>{
- validArchive=false;verifiedOriginal=null;invalidate();
+ validArchive=false;verifiedOriginal=null;verifiedAfterReboot=false;invalidate();
  const file=e.target.files?.[0];
  try{
   if(!file)throw Error("Select your original legacy JSON");
@@ -108,7 +113,7 @@ $("disconnect").addEventListener("click",()=>{
  $("device-state").textContent="Disconnected.";status("Disconnected. No further writes possible.");refresh();
 });
 for(const id of ["one-unit","rollback","phrase"])$(id).addEventListener("input",()=>{invalidate();refresh();});
-for(const id of ["fresh-boot","restore-phrase"])$(id).addEventListener("input",refresh);
+for(const id of ["fresh-boot","restore-phrase","post-restore-reboot"])$(id).addEventListener("input",refresh);
 $("preflight").addEventListener("click",async()=>{
  if(!canPrepare())return;
  busy=true;invalidate();refresh();
@@ -131,9 +136,26 @@ $("restore-users").addEventListener("click",async()=>{
  try{
   const result=await restoreOriginalUserBanks((cmd,args,options)=>midi.request(cmd,args,options),
     verifiedOriginal,{authorized:true,progress:(i,n)=>status("USER-only restore: committed bank "+i+"/"+n+"; readback still required.")});
-  status("RESTORE VERIFIED: "+result.verifiedSounds+" complete original USER sounds; only objects 6/7/9 were written. Old FUN projects and settings were NOT imported. Check independent sounds on the FM1 after a cold restart.");
+  restoreDone=true;
+  $("post-restore-reboot").checked=false;
+  status("INITIAL RESTORE READBACK PASSED for "+result.verifiedSounds+" USER sounds. Now POWER CYCLE and RECONNECT this FM1, check the post-restore reboot box, then run the separate READ-ONLY persistence verification. This is not yet a validated persistent restore.");
  }catch(error){status("STOP USER RESTORE: "+error.message+" The target might be partially restored. Do not retry automatically or restore old projects/settings.");}
  finally{busy=false;refresh();}
+});
+$("verify-reboot").addEventListener("click",async()=>{
+ if(busy||!midi||!validArchive||!verifiedOriginal||!restoreCapable||
+    !$("post-restore-reboot").checked||verifiedAfterReboot)return;
+ busy=true;refresh();
+ try{
+  const result=await verifyOriginalUserBanksAfterReboot(
+    (cmd,args,options)=>midi.request(cmd,args,options),verifiedOriginal);
+  verifiedAfterReboot=true;
+  status("POST-REBOOT READ-ONLY VERIFICATION PASSED: "+result.verifiedSounds+
+    " original USER sounds with all 304 bytes including FM6/drum companions match the untouched archive. No device writes were performed. Independently audition the sounds before considering the trial complete.");
+ }catch(error){
+  status("POST-REBOOT VERIFICATION FAILED: "+error.message+
+    ". No writes were sent by this verification. Preserve the archive and investigate; do NOT automatically retry restoration.");
+ }finally{busy=false;refresh();}
 });
 $("commit").addEventListener("click",async()=>{
  if(!canPrepare()||nonce===null||Date.now()-preparedAt>12000){invalidate();status("Authorization expired. Repeat read-only preflight.");return;}
