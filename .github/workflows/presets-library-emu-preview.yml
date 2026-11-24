@@ -1,7 +1,7 @@
 name: Presets library MPR1 browser emulator (no device firmware)
 on:
   push:
-    branches: [presets-library]
+    branches: [presets-library, presets-library-reclaim]
     paths:
       - '.github/workflows/presets-library-emu-preview.yml'
       - 'web/emu/**'
