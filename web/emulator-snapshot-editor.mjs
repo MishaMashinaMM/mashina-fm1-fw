@@ -35,6 +35,21 @@ function bankState(sectors,bank){
      (!current||newer(current.seq,choice.seq)))current=choice;
   check(current||candidates.every(x=>isErased(x.bytes)),
     "LIBRARY bank "+bank+" contains nonempty flash without valid commit");
+  // Preserve all 8 sounds from a pre-relocation emulator snapshot, which
+  // stored LIB1 in old USR sectors. The target C0000 bank must be erased:
+  // never overwrite an occupied current-layout/retired project sector.
+  if(!current){
+    const previous=0xea000+bank*2*SECTOR;
+    const oldCopies=[0,1].map(copy=>{
+      const bytes=sector(sectors,previous+copy*SECTOR);
+      const valid=u32(bytes,0)===0x3142494c&&u32(bytes,4)===1&&
+        u32(bytes,8)===bank&&u32(bytes,16)===BANK_BYTES&&
+        u32(bytes,20)===crc32(bytes.slice(PAYLOAD,PAYLOAD+BANK_BYTES));
+      return {copy,bytes,valid,seq:u32(bytes,12)};
+    });
+    for(const item of oldCopies)if(item.valid&&
+       (!current||newer(current.seq,item.seq)))current=item;
+  }
   return {base,current,bank};
 }
 export function factorySourceRecords(catalog,kits=null){
