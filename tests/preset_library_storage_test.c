@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 static uint8_t nor[0x100000];
-static int fail_after = -1, wrong_region;
+static int fail_after = -1, tear_after = -1, wrong_region;
 static uint32_t writes;
 static int lib_flash_read(uint32_t off, void *p, uint32_t n)
 {
@@ -31,6 +31,12 @@ static int lib_flash_prog(uint32_t off,const void *p,uint32_t n)
     }
     if (fail_after == 0) return -1;
     if (fail_after > 0) fail_after--;
+    /* Simulate real NOR power loss during a page or commit-header program. */
+    if (tear_after == 0) {
+        for (uint32_t i=0;i<n/2u;i++) nor[off+i]&=b[i];
+        tear_after = -1; writes++; return -1;
+    }
+    if (tear_after > 0) tear_after--;
     for (uint32_t i=0;i<n;i++) nor[off+i]&=b[i];
     writes++;
     return 0;
@@ -88,6 +94,28 @@ int main(void)
         (void)rc;
     }
     bad+=check("interrupted erase/program preserves a whole old or new record",all);
+    /* A write can stop in the MIDDLE of a page, not only at operation
+     * boundaries. Exercise all ten 256-byte payload pages and commit header.
+     * The other seven records in the same bank must remain unchanged. */
+    all=1;
+    for(int cut=0;cut<12;cut++) {
+        if(lib_slot_write(17,r[17])){all=0;break;}
+        tear_after=cut;
+        (void)lib_slot_write(17,newer);
+        tear_after=-1;
+        if(lib_slot_read(17,got) ||
+           (memcmp(got,r[17],LIB_ENTRY) && memcmp(got,newer,LIB_ENTRY))){
+            all=0;break;
+        }
+        for(uint32_t slot=16;slot<24;slot++)if(slot!=17) {
+            if(lib_slot_read(slot,got) || memcmp(got,r[slot],LIB_ENTRY)){
+                all=0;break;
+            }
+        }
+        if(!all)break;
+    }
+    bad+=check("torn payload/header page preserves bank and neighboring sounds",all);
+
     /* Corrupt latest copy: CRC rejects it and falls back to older commit. */
     bad+=check("oldest valid copy survives a damaged newest copy",({
         uint32_t seq; int current=lib_latest(2,&seq),ok=0;
