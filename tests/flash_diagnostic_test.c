@@ -25,6 +25,19 @@ static int st_prog(uint32_t off,const void *src,uint32_t n)
     return 0;
 }
 #include "../firmware/src/storage.c"
+/* Host-only emulation of the normal FM6 bank validator. Firmware supplies
+ * the real fvb_valid() from fm6_vbank.c before including editor_library.c. */
+static int fvb_valid(uint32_t base,uint32_t slot,st_hdr_t *h)
+{
+    uint32_t magic=0;
+    if(st_read(base,h,sizeof *h)||h->magic!=ST_MAGIC||h->type!=OBJ_FM6VB||
+       h->slot!=slot||h->len!=3616u||
+       h->hcrc!=st_crc32(h,sizeof *h-4u))return -1;
+    if(st_read(base+224u,st_buf,h->len) ||
+       st_crc32(st_buf,h->len)!=h->crc)return -1;
+    memcpy(&magic,st_buf,sizeof magic);
+    return magic==0x56364D46u?0:-1;
+}
 static void fm1_wdt_feed(void){watchdogs++;}
 #include "../firmware/src/flash_diagnostic.c"
 
@@ -108,6 +121,77 @@ int main(void){
     bad+=ck("read-only probe recognizes retired FUN in LIBRARY candidate",
             ed_diag_project_bank(16)==2);
     bad+=ck("retired LIBRARY candidate inspection never writes",writes==0);
+    /* A zero-length committed FELU record has a constant full 4 KiB CRC
+     * regardless of the type, slot and sequence in the header. It is not a
+     * flash alias. Exact status classification still checks type/slot and
+     * validates the header CRC, payload CRC and optional extension. */
+    {
+        const uint8_t nothing=0u;
+        memset(nor+0xA0000u,255,0x8000u);
+        bad+=ck("prepare different empty CRC-committed project sectors",({
+            int ok=!st_save(OBJ_SONG1,&nothing,0u) &&
+                   !st_save(OBJ_SONG1+1u,&nothing,0u);
+            ok;
+        }));
+        uint32_t h0=0,h1=0;
+        bad+=ck("different empty FUN records share canonical 127B0F88 CRC",({
+            ed_diag_sector_crc(0u,&h0);
+            ed_diag_sector_crc(2u,&h1);
+            h0==0x127B0F88u && h1==h0 &&
+            memcmp(nor+0xA0000u,nor+0xA2000u,32u)!=0;
+        }));
+        bad+=ck("different matching-CRC FUN records both pass exact validators",
+                ed_diag_layout_sector(0u)==2u &&
+                ed_diag_layout_sector(2u)==2u);
+        nor[0xA2000u+6u]^=1u; // committed slot field damaged
+        bad+=ck("same whole-sector CRC is NOT accepted after header damage",
+                ed_diag_layout_sector(2u)==3u);
+        nor[0xA2000u+6u]^=1u;
+    }
+    {
+        /* Every additional section is blank unless a CRC-validated record
+         * of the exact expected storage type occupies its exact sector. */
+        const uint32_t list[13]={
+            0xDC000u,0xDD000u,0xDE000u,0xDF000u,
+            0x9F000u,0xFE000u,0xFC000u,0xFD000u,
+            0xD8000u,0xD9000u,0xE5000u,0xE6000u,0xE7000u
+        };
+        int blank=1;
+        for(uint32_t i=0;i<13u;i++){
+            memset(nor+list[i],255,4096u);
+            if(ed_diag_sector_address(40u+i)!=list[i] ||
+               ed_diag_layout_sector(40u+i)!=0u)blank=0;
+        }
+        bad+=ck("53-index exact address whitelist and blank sector readback",blank);
+        bad+=ck("prepare CRC-valid USER, companion, settings and song index",({
+            int ok=!st_save(OBJ_UPRESET0,data,sizeof data) &&
+                   !st_save(OBJ_UPFM6,data,sizeof data) &&
+                   !st_save(OBJ_SETTINGS,data,sizeof data) &&
+                   !st_save(OBJ_SONGIDX,data,sizeof data) &&
+                   !st_save(OBJ_AUTOSAVE,data,sizeof data);
+            ok;
+        }));
+        bad+=ck("all five independent active-state objects classify as expected",({
+            int good=1;
+            for(uint32_t i=0;i<5u;i++){
+                const uint32_t index[5]={40u,44u,46u,48u,50u};
+                if(ed_diag_layout_sector(index[i])!=2u)good=0;
+            }
+            good;
+        }));
+        nor[0xFC000u+256u]^=0x4u;
+        bad+=ck("settings payload corruption classified unknown",
+                ed_diag_layout_sector(46u)==3u);
+        nor[0xFC000u+256u]^=0x4u;
+        nor[0xFE000u+4000u]=0x27u;
+        bad+=ck("unknown companion data blocks clean-format classification",
+                ed_diag_layout_sector(45u)==3u);
+        nor[0xFE000u+4000u]=0xffu;
+        bad+=ck("no sector outside approved 53 inspected",
+                ed_diag_layout_sector(53u)==4u&&
+                ed_diag_sector_address(53u)==0u);
+    }
+    bad+=ck("all exact preflight classifications remain read-only",writes==0);
     bad+=ck("all flash probes remain entirely read-only",writes==0);
     printf("FLASH DIAG: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
