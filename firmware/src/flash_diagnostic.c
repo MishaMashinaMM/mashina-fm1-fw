@@ -42,6 +42,9 @@ static uint32_t ed_diag_project_sector(uint32_t bank,uint32_t copy)
 /* Read-only, bounded CRC32 fingerprint of one 4KiB flash sector.
  * Indices 0..31: all 16 MPR1 A/B pairs at 0xA0000..0xBFFFF.
  * Indices 32..39: all four proposed LIB32 A/B pairs at 0xC0000..0xC7FFF.
+ * Indices 40..43: USER 001..032 banks at 0xDC000..0xDFFFF.
+ * Indices 44..45: FM6/drum companion copies at 0x9F000 / 0xFE000.
+ * Address map intentionally excludes unknown USR and bootloader areas.
  * A fingerprint can compare two device states but NEVER establishes flash
  * ownership or recovery-tool preservation. No raw sound data transmitted.
  * Return 0 on success and 4 on unreadable or disallowed sector.
@@ -50,9 +53,11 @@ static uint32_t ed_diag_sector_crc(uint32_t index,uint32_t *checksum)
 {
     uint8_t page[256];
     uint32_t base,crc=0xFFFFFFFFu;
-    if(!checksum || index>=40u)return 4u;
+    if(!checksum || index>=46u)return 4u;
     base=index<32u?0xA0000u+index*4096u:
-                    0xC0000u+(index-32u)*4096u;
+         index<40u?0xC0000u+(index-32u)*4096u:
+         index<44u?0xDC000u+(index-40u)*4096u:
+         index==44u?0x9F000u:0xFE000u;
     for(uint32_t off=0;off<4096u;off+=sizeof page){
         if(st_read(base+off,page,sizeof page))return 4u;
         crc=st_crc32_add(crc,page,sizeof page);
