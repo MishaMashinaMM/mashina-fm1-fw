@@ -25,11 +25,13 @@ const syntax=spawnSync(process.execPath,["--input-type=module","--check"],
   {input:inline,encoding:"utf8"});
 assert.equal(syntax.status,0,"Trial browser script syntax invalid: "+syntax.stderr);
 
-for(const id of ["archive","connect","one-unit","rollback","phrase","preflight","commit"])
+for(const id of ["archive","connect","one-unit","rollback","phrase","preflight","commit","fresh-boot","restore-phrase","restore-users"])
   assert(trialPage.includes('id="'+id+'"'),"Missing trial safety control "+id);
-assert.match(trialPage,/readBackup\(JSON\.parse\(await file\.text\(\)\)\)/);
+assert.match(trialPage,/const data=JSON\.parse\(await file\.text\(\)\)/);
+assert.match(trialPage,/const backup=readBackup\(data\)/);
 assert.match(trialPage,/backup\.objects\.length!==43/);
-assert.match(trialPage,/authorizedFirmware=lib\.length===3/);
+assert.match(trialPage,/restoreCapable=lib\.length===3/);
+assert.match(trialPage,/authorizedFirmware=restoreCapable/);
 assert.match(trialPage,/project\.length===4/);
 assert.match(trialPage,/\$\("phrase"\)\.value==="ERASE THIS FM1"/);
 assert.match(trialPage,/await request\(101,\[\]\)/);
