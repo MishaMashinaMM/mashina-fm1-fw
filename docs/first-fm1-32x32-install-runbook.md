@@ -53,3 +53,7 @@ Do not try to reset the device again or overwrite unrecognized flash sectors. Sa
 ## Current gate
 
 The non-flashable default release gate is retained. An exact manual one-unit release path is staged but should be used only after the full CI completes successfully and the owner intentionally confirms the destructive test. Simulated host tests cannot prove the first physical erase/recovery works. If installation or first initialization fails, **stop** and use the XIAO only if ordinary USB recovery is unavailable.
+
+## One-device trial artifact authorization
+
+The owner explicitly requested a completely clean first installation on one sacrificial FM1, with no migration or preservation of old USER presets, projects or settings. The exact commit message on this documentation update authorizes **GitHub Actions to build and publish one experimental firmware trial artifact only if every full automated check passes**. It does **not** initiate flashing, reset, or any physical device operation. The second FM1 remains unchanged. This artifact is not a public release and must not be installed on both units.
