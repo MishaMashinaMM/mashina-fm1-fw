@@ -172,7 +172,7 @@ static int ldr_session(void)
         uint8_t r[80];
         if (s - 0x1000u >= LDR_DATA_LO && s - 0x1000u < LDR_DATA_HI)
             continue;                                    /* Felucca's store: user data that may look like one */
-        /* MASHINA 32-slot LIBRARY lives in 0xEA000..0xF1FFF and must
+        /* The historical USR 0xEA000..0xF1FFF remains unowned and must
          * survive firmware upgrades. Never interpret any of its bytes as
          * a vendor update record or erase its sectors during cleanup. */
         if (s - 0x1000u >= 0xEA000u && s - 0x1000u < 0xF2000u)
