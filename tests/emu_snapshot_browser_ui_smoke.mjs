@@ -111,7 +111,7 @@ try{
   const fingerprints={format:"mashina-flash-sector-fingerprints",version:1,
     mode:"READ_ONLY_DIAGNOSTIC",sectorBytes:4096,complete:true,
     sectors:Array.from({length:40},(_,i)=>({
-      index:i,address:i<32?0xa0000+i*4096:0xea000+(i-32)*4096,
+      index:i,address:i<32?0xa0000+i*4096:0xc0000+(i-32)*4096,
       readable:true,crc32:(i+1000).toString(16).toUpperCase().padStart(8,"0")
     }))};
   const beforeReport={format:"mashina-flash-diagnostic",version:2,

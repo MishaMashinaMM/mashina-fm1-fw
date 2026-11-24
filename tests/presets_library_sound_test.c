@@ -11,13 +11,13 @@ static uint8_t lib_sim_nor[0x100000];
 static uint32_t lib_sim_outside;
 static int lib_host_read(uint32_t off, void *out, uint32_t n)
 {
-    if (off < 0xEA000u || off + n > 0xF2000u) return 1;
+    if (off < 0xC0000u || off + n > 0xC8000u) return 1;
     memcpy(out,lib_sim_nor+off,n);
     return 0;
 }
 static int lib_host_erase(uint32_t off)
 {
-    if (off < 0xEA000u || off + 4096u > 0xF2000u || (off & 4095u)) {
+    if (off < 0xC0000u || off + 4096u > 0xC8000u || (off & 4095u)) {
         lib_sim_outside++;return 1;
     }
     memset(lib_sim_nor+off,0xFF,4096);
@@ -26,7 +26,7 @@ static int lib_host_erase(uint32_t off)
 static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 {
     const uint8_t *src=p;
-    if (off < 0xEA000u || off + n > 0xF2000u || (off&255u)+n>256u) {
+    if (off < 0xC0000u || off + n > 0xC8000u || (off&255u)+n>256u) {
         lib_sim_outside++;return 1;
     }
     for(uint32_t i=0;i<n;i++)lib_sim_nor[off+i]&=src[i];

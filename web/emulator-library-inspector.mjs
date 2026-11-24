@@ -82,8 +82,17 @@ export function inspectEmulatorFlash(file){
   }
   // LIB1 bank: four pairs, eight complete 304-byte override sounds each.
   for(let bank=0;bank<4;bank++){
-    const base=0xea000+bank*8192;
-    const payload=pick(sectors,[base,base+4096],
+    const base=0xc0000+bank*8192;
+    const oldBase=0xea000+bank*8192;
+    // An exported experimental NOR snapshot may still use the OLD USR
+    // LIB1 geometry. Read it as a source; never write to these old addresses.
+    // Prefer a valid current-layout bank if both exist.
+    const hasNew=[0,1].some(copy=>
+      !!parseLib(sectorAt(sectors,base+copy*4096),copy,bank));
+    const hasOld=[0,1].some(copy=>
+      !!parseLib(sectorAt(sectors,oldBase+copy*4096),copy,bank));
+    const selected=hasNew||!hasOld?base:oldBase;
+    const payload=pick(sectors,[selected,selected+4096],
       (d,c)=>parseLib(d,c,bank),"LIBRARY bank "+bank);
     for(let i=0;i<8;i++){
       const slot=bank*8+i,raw=payload?payload.slice(i*304,(i+1)*304):new Uint8Array(304);

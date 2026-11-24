@@ -17,7 +17,7 @@
 #define FELUCCA_OTA_DRYRUN 0     /* 1 = stage, ask "success", then undo: no record, no reset */
 #endif
 /* Experimental 32 USER + 32 library: opt-in build, no physical flash writes
- * unless independently enabled after the USR partition has been verified. */
+ * only after reclaiming retired project sectors has been verified. */
 /* Optional diagnostic build. It retains the established FUN project format,
  * reports the candidate flash banks via read-only WebMIDI and forbids ALL
  * experimental library/project writes at compile time. */
@@ -45,6 +45,9 @@
 #endif
 #if FELUCCA_PROJECT_REFS && (!FELUCCA_LIB32 || !FELUCCA_FLASH)
 #error "Project references require both the 64-preset library and flash support"
+#endif
+#if FELUCCA_LIB32_WRITE && !FELUCCA_PROJECT_REFS
+#error "Reclaimed LIBRARY sectors overlap legacy FUN projects; enabling LIB1 writes requires MPR1 project routing"
 #endif
 #if FELUCCA_PROJECT_REFS_WRITE && (!FELUCCA_PROJECT_REFS || !FELUCCA_LIB32_WRITE)
 #error "Project reference writes require explicit project and library write gates"

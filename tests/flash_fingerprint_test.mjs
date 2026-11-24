@@ -25,8 +25,8 @@ assert.equal(a.complete,true);
 assert.equal(a.mode,"READ_ONLY_DIAGNOSTIC");
 assert.equal(a.sectors[0].address,0xA0000);
 assert.equal(a.sectors[31].address,0xBF000);
-assert.equal(a.sectors[32].address,0xEA000);
-assert.equal(a.sectors[39].address,0xF1000);
+assert.equal(a.sectors[32].address,0xC0000);
+assert.equal(a.sectors[39].address,0xC7000);
 assert.deepEqual(a.sectors.map(x=>parseInt(x.crc32,16)),values);
 const same=compareFlashFingerprints(a,structuredClone(a));
 assert.equal(same.same,true);
@@ -34,7 +34,7 @@ const modified=structuredClone(a);
 modified.sectors[32].crc32="ABCDEF12";
 const diff=compareFlashFingerprints(a,modified);
 assert.equal(diff.same,false);
-assert.deepEqual(diff.changed.map(x=>x.address),[0xEA000]);
+assert.deepEqual(diff.changed.map(x=>x.address),[0xC0000]);
 assert.throws(()=>compareFlashFingerprints(a,{...a,complete:false}),/Complete/);
 const badStatus=async(_cmd,[start,count])=>[
   1,start,count,...Array.from({length:count},()=>[4,0,0,0,0,0]).flat()

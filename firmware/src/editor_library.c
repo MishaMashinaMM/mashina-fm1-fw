@@ -72,7 +72,18 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
             uint32_t seq=0u;
             if(!flash_ok)ed_b(4u);
             else if(lib_latest(bank,&seq)>=0)ed_b(1u);
-            else ed_b(lib_uncommitted(bank)?0u:3u);
+            else if(lib_uncommitted(bank))ed_b(0u);
+#if FELUCCA_FLASH_DIAG
+            else {
+                /* These new LIB1 candidates are retired FUN song sectors
+                 * 16..19. Recognize their complete CRC-validated records
+                 * without treating damaged/foreign bytes as safe to erase. */
+                uint32_t legacy=ed_diag_project_bank(16u+bank);
+                ed_b(legacy==2u?2u:legacy==4u?4u:3u);
+            }
+#else
+            else ed_b(3u);
+#endif
             fm1_wdt_feed(); /* read-only probe must not starve watchdog */
         }
         return 1;

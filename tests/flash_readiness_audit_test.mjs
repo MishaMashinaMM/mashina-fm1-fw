@@ -14,6 +14,7 @@ assert.equal(a.count.blank,20);
 assert.equal(a.projectBanks[0].address,"0xA0000");
 assert.equal(a.projectBanks[15].project,8);
 assert.equal(a.projectBanks[15].sections,"C/D");
+assert.equal(a.libraryBanks[0].address,"0xC0000");
 assert.equal(a.libraryBanks[3].slotStart,57);
 assert.equal(a.libraryBanks[3].slotEnd,64);
 const retired=auditFlashProbe({...blank,projects:[2,...Array(15).fill(0)]});

@@ -71,7 +71,7 @@ int main(void){
     /* 40 candidate sectors (32 MPR1 + 8 LIB32) are fingerprinted
      * in bounded 256-byte reads, without any write or raw MIDI data. */
     {
-        uint32_t crc=0u,locations[4]={0xA0000u,0xBF000u,0xEA000u,0xF1000u};
+        uint32_t crc=0u,locations[4]={0xA0000u,0xBF000u,0xC0000u,0xC7000u};
         uint32_t indexes[4]={0u,31u,32u,39u};
         int exact=1;
         for(uint32_t i=0;i<4u;i++){
@@ -86,6 +86,18 @@ int main(void){
                 ed_diag_sector_crc(0u,NULL)==4u);
         bad+=ck("CRC probes do not write any flash",writes==0);
     }
+    /* Reclaimed LIB1 banks are four retired legacy FUN section pairs. */
+    bad+=ck("new LIBRARY candidate starts in retired project storage",
+            st_sector(OBJ_SONG1+16,0)==0xC0000u &&
+            st_sector(OBJ_SONG1+19,1)==0xC7000u);
+    bad+=ck("reclaimed blank FUN sector is recognized",
+            ed_diag_project_bank(16)==0);
+    bad+=ck("host prepares authentic legacy FUN content in C0000",
+            st_save(OBJ_SONG1+16,data,sizeof data)==0);
+    writes=0;
+    bad+=ck("read-only probe recognizes retired FUN in LIBRARY candidate",
+            ed_diag_project_bank(16)==2);
+    bad+=ck("retired LIBRARY candidate inspection never writes",writes==0);
     bad+=ck("all flash probes remain entirely read-only",writes==0);
     printf("FLASH DIAG: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;

@@ -58,7 +58,7 @@ const lib=new Uint8Array(4096).fill(255);
 const body=new Uint8Array(2432);body.set(sound,0);
 w32(lib,0,0x3142494c);w32(lib,4,1);w32(lib,8,0);w32(lib,12,8);
 w32(lib,16,2432);w32(lib,20,crc(body));lib.set(body,256);
-place(0xea000,lib);
+place(0xc0000,lib);
 const user=new Uint8Array(4096).fill(255);
 const bank=new Uint8Array(3080);w32(bank,0,0x31425055);w16(bank,4,192);w16(bank,6,16);
 bank.set(sound.slice(0,192),8);
@@ -85,7 +85,7 @@ console.log("PASS: custom overrides win and altered 107-source catalogs are reje
 assert.equal(parsed.library[1].status,"factory");
 console.log("PASS: committed USER and LIBRARY NOR records decoded with proper names and fallback slots");
 const corruptLib=lib.slice();corruptLib[260]^=1;
-const broken={...sectors,[0xea000]:corruptLib};
+const broken={...sectors,[0xc0000]:corruptLib};
 assert.throws(()=>inspectEmulatorFlash(encodeEmulatorFlash(broken)),/LIBRARY bank 0/);
 const brokenUser={...sectors,[0xdc000]:new Uint8Array(4096)};
 assert.throws(()=>inspectEmulatorFlash(encodeEmulatorFlash(brokenUser)),/USER bank 0/);

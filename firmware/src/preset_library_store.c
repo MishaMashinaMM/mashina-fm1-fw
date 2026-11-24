@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: GPL-3.0-only
- * Experimental 32-slot library storage, host-only until the USR partition
- * has been proved app-owned and safe over all OTA/install paths.
+ * Experimental 32-slot library storage, writes locked until reclaimed FUN
+ * project sectors and the clean-install/updater path are physically validated.
  *
  * Four banks of eight combined records. Each bank has two 4KiB copy-on-write
- * sectors; 32KiB total at 0xEA000..0xF1FFF. No heap and no full-bank RAM mirror.
+ * sectors; 32 KiB total at 0xC0000..0xC7FFF (retired FUN project sectors).
+ * No heap and no full-bank RAM mirror.
  * Each record is the current 192-byte USER sound plus a 112-byte FM6/drum
  * companion. The caller owns validation/conversion and sound installation.
  *
@@ -16,12 +17,12 @@
 
 enum { LIB_SLOTS = 32, LIB_PER_BANK = 8, LIB_BANKS = 4, LIB_ENTRY = 304,
        LIB_SECTOR = 4096, LIB_PAYLOAD_OFF = 256, LIB_BANK_BYTES = LIB_PER_BANK * LIB_ENTRY };
-#define LIB_BASE 0xEA000u
+#define LIB_BASE 0xC0000u
 #define LIB_MAGIC 0x3142494Cu /* "LIB1" */
 #define LIB_VERSION 1u
 
 _Static_assert(LIB_BANK_BYTES <= LIB_SECTOR - LIB_PAYLOAD_OFF, "library bank exceeds one sector");
-_Static_assert(LIB_BASE + LIB_BANKS * 2u * LIB_SECTOR <= 0xFC000u, "library exceeds USR partition");
+_Static_assert(LIB_BASE + LIB_BANKS * 2u * LIB_SECTOR == 0xC8000u, "library must use retired FUN sectors only");
 
 typedef struct {
     uint32_t magic, version, bank, sequence, length, crc;

@@ -25,12 +25,13 @@
   diagnostic does not prove that the installation/bootloader will preserve
   every data sector, and it cannot make a failed install harmless.
 - When you explicitly invoke the probe, it inspects the 16 proposed MPR1 banks in
-  `0xA0000..0xBFFFF` and four LIBRARY banks in `0xEA000..0xF1FFF`.
+  `0xA0000..0xBFFFF` and four reclaimed LIBRARY candidate banks in `0xC0000..0xC7FFF`.
   It does not initialize or erase those regions.
 - The 16-bank probe checks both sectors per bank for erased data, fully
   CRC-verified legacy `FELU` project records, or CRC-verified `MPS1`
   reference records. Mixed, unreadable or unknown content is flagged.
-  The separate LIBRARY probe checks blank or committed LIBRARY banks.
+  The separate LIBRARY probe checks blank or committed LIBRARY banks and, in diagnostic mode, also recognizes CRC-validated retired FUN sectors in the reclaimed candidate area. Unknown/mixed data still blocks any format or write.
+- This build is a **new candidate-region diagnostic**; the user's earlier November 24 JSON captured the older `0xEA000..0xF1FFF` proposal and cannot substitute for inspecting `0xC0000..0xC7FFF`. Both JSON layouts remain interpretable offline.
 - Diagnostic-only WebMIDI command **99** reads CRC32 fingerprints of the 32
   candidate MPR1 sectors and eight LIBRARY sectors (40 × 4096 bytes, split
   into five read-only requests). Each sector is read in 256-byte pages with

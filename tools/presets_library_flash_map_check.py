@@ -28,7 +28,7 @@ def check():
     # review the reservation rather than accepting an arbitrary new address.
     assert "LIB_BANKS = 4" in source and "LIB_SECTOR = 4096" in source
     library = (start, start + 4 * 2 * sector)
-    assert library == (0xEA000, 0xF2000), f"unexpected library region: {library}"
+    assert library == (0xC0000, 0xC8000), f"unexpected library region: {library}"
     ref_store = "firmware/src/project_refs_store.c"
     projects = (macro(ref_store, "MPRS_BASE"), macro(ref_store, "MPRS_BASE") + 16 * 2 * sector)
     assert projects == (0xA0000, 0xC0000), f"unexpected new project region: {projects}"
@@ -47,20 +47,25 @@ def check():
     assert "s - 0x1000u >= LDR_DATA_LO" in src(loader), "loader user data exclusion changed"
     assert "s - 0x1000u < LDR_DATA_HI" in src(loader), "loader user data exclusion changed"
     for name, region in regions.items():
-        assert separated(library, region), f"LIBRARY overlaps {name}: {region}"
-        print(f"PASS: LIBRARY {library[0]:#x}..{library[1]-1:#x} avoids {name} {region[0]:#x}..{region[1]-1:#x}")
         if name == "existing USER/project store":
-            assert region[0] <= projects[0] and projects[1] <= region[1], "new projects outside original data region"
-            print("CAUTION: compact projects REPLACE sectors of old project storage; fresh initialization required")
+            assert region[0] <= projects[0] and projects[1] <= region[1], "new projects outside application data"
+            assert region[0] <= library[0] and library[1] <= region[1], "LIBRARY outside application-owned data"
+            print("PASS: MPR1 and LIB32 inside Felucca existing data range; clean-slate initialization required")
         else:
+            assert separated(library, region), f"LIBRARY overlaps {name}: {region}"
             assert separated(projects, region), f"MPR1 projects overlap {name}: {region}"
+            print(f"PASS: LIBRARY avoids {name} {region[0]:#x}..{region[1]-1:#x}")
+    legacy = src("firmware/src/storage.c")
+    assert "0xA0000u + (obj - OBJ_SONG1) * 2u * ST_SECTOR" in legacy
+    assert library == (0xA0000 + 16 * 8192, 0xA0000 + 20 * 8192)
+    assert library[1] <= 0xD8000, "LIBRARY must not overlap legacy song index"
     assert projects[1] <= 0xDC000, "MPR1 projects must stay below USER preset storage"
     assert projects[0] >= 0xA0000, "MPR1 projects must not overlap legacy first 4 sections"
     # The loader's update-record sweep can scan this range. It erases only
     # sectors whose trailing 80 bytes validate as stock update records.
     # Thus we cannot claim collision-free operation merely from range checks.
     rec = (macro(loader, "LDR_REC_LO"), macro(loader, "LDR_REC_HI"))
-    assert not separated(library, rec)
+    assert not separated((0xEA000, 0xF2000), rec)
     assert "ota_rd16(r + 6) == 0x5441u" in src(loader), "record signature guard changed"
     assert "ota_crc16(r + 2, 78, 0)" in src(loader), "record CRC guard changed"
     assert "s - 0x1000u >= 0xEA000u" in src(loader) and "s - 0x1000u < 0xF2000u" in src(loader), (
@@ -93,8 +98,8 @@ def check():
                  "FELUCCA_PROJECT_REFS_FORMAT"):
         assert "#define " + flag + " 0" in fw, f"unsafe default for {flag}"
     print("PASS: feature flags reach native compiler; hardware writes remain gated OFF by default")
-    print("PASS: MASHINA loader explicitly skips LIBRARY flash sectors while clearing update records")
+    print("PASS: MASHINA loader protects reclaimed LIBRARY within existing application data and excludes old USR")
     print("CAUTION: stock bootloader/vendor update tools are still unverified on physical hardware")
-    print("PASS: source-level LIB32 + compact MPR1 geometry and known app partitions")
+    print("PASS: LIB32 reclaimed from retired FUN projects, separate from active MPR1 and USER")
 if __name__ == "__main__":
     check()
