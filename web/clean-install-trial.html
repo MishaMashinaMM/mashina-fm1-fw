@@ -58,7 +58,7 @@ function refresh(){
 }
 async function request(cmd,args){
  if(!midi)throw Error("FM1 is not connected");
- return Uint8Array.from(await midi.request(cmd,args,{timeout:12000,retries:0}));
+ return Uint8Array.from(await midi.request(cmd,args,{timeout:cmd===102?120000:60000,retries:0}));
 }
 $("archive").addEventListener("change",async e=>{
  validArchive=false;invalidate();
