@@ -162,7 +162,15 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         clean_armed=0u; /* consume the ticket even on a rejected attempt */
         if(!authorized)ed_b(1u);
         else if(ed_flash_stop())ed_b(2u);
-        else ed_b((uint32_t)clean_layout_initialize());
+        else {
+            /* Synchronous one-device format is the ONLY temporary unlock.
+             * Even on success, normal writes remain locked until a reboot
+             * proves that the MPS1 marker was durably committed. */
+            clean_layout_normal_writes=1u;
+            const uint32_t result=(uint32_t)clean_layout_initialize();
+            clean_layout_normal_writes=0u;
+            ed_b(result);
+        }
         /* Success means reboot is REQUIRED. Never auto-reset or hide a
          * failed/partial format behind a second attempt. */
 #else
