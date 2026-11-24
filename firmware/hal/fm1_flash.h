@@ -61,10 +61,20 @@ static inline void *fl_far(void *p) { void *volatile q = p; return q; }
 #else
 #define FL_LIB32_OK(off,n) 0
 #endif
-/* Where the RAM driver may erase / program. The app build allows only its own
- * data regions; the update loader (firmware/loader) defines its own window. */
+/* Diagnostic firmware is a READ-ONLY recovery observer for ALL persistent
+ * USER, project, library, companion and settings sectors — not merely for
+ * the new LIB32/MPR1 stores. Existing save/autosave routines may call the
+ * flash driver, but these requests MUST fail at the lowest HAL range gate.
+ * Keep only OTA loader staging available so a known-good stable firmware
+ * can still be reinstalled normally. The update loader has its own range
+ * override and is not governed by this app-only diagnostic policy.
+ */
 #ifndef FL_RANGE_OK
+#if defined(FELUCCA_FLASH_DIAG) && FELUCCA_FLASH_DIAG
+#define FL_RANGE_OK(off, n) FL_IN(off, n, FL_OTA_LO, FL_OTA_HI)
+#else
 #define FL_RANGE_OK(off, n) (FL_STORE_OK(off, n) || FL_IN(off, n, FL_OTA_LO, FL_OTA_HI) || FL_LIB32_OK(off,n))
+#endif
 #endif
 
 typedef struct { uint32_t sfc_con, spi_con; } fl_saved_t;
