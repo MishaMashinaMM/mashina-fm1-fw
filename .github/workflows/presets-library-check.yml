@@ -155,7 +155,9 @@ jobs:
           FELUCCA_LIB32_WRITE: "1"
           FELUCCA_PROJECT_REFS: "1"
           FELUCCA_PROJECT_REFS_WRITE: "1"
-        run: python3 tools/build.py --release 0.13
+        run: |
+          python3 tools/build.py --release 0.13
+          cp build/felucca-0.13.fwsc build/host/write-capable-source-for-ota-test.fwsc
 
       - name: Compile optional first-install MPR1 formatter (build only, NEVER deploy)
         env:
@@ -183,12 +185,14 @@ jobs:
         run: |
           python3 tools/build.py --release 0.13
           python3 tools/check_app_flash_headroom.py
+          test ! -e build/felucca-0.13.fwsc
+          test ! -e build/release-0.13
           # This output is deliberately NOT packaged or uploaded. The only
           # device firmware artifact in this workflow is the later diag build.
       - name: Simulate upgrade of actual firmware packages and verify ALL data-flash sectors
         run: |
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/ldr_test tests/ldr_test.c
-          build/host/ldr_test build/host/stable-source-for-ota-test.fwsc build/felucca-0.13.fwsc
+          build/host/ldr_test build/host/stable-source-for-ota-test.fwsc build/host/write-capable-source-for-ota-test.fwsc
       - name: Build persistent-data-WRITE-BLOCKED flash PROBE firmware (OTA staging still writable)
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
