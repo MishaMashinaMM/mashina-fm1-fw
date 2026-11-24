@@ -1,25 +1,25 @@
 # MASHINA FM1 — Physical storage acceptance gate (experimental)
 
-**Branch:** `presets-library` only. **No experimental physical writes are authorized by this document.** The source-level layout and host/emulator tests are evidence of implementation correctness, not proof that a stock FM1's bootloader and update/recovery tools respect the proposed reservations.
+**Branch:** `presets-library-reclaim` prototype based on `presets-library`. **No experimental physical writes are authorized by this document.** The source-level layout and host/emulator tests are evidence of implementation correctness, not proof that a stock FM1's bootloader and update/recovery tools respect the proposed reservations.
 
 ## Clean-slate requirement and first physical observations
 
 The final experimental firmware is a fresh start: **do not migrate old FUN projects, USER presets or settings**. Eight projects × A–D start empty, USER 001–032 start empty, and LIBRARY 033–064 start with 32 selected compiled factory fallback sounds. The original 107-preset catalog and older user/emulator backup files stay safely offline. See [clean-slate first-install plan](clean-slate-first-install.md).
 
-The November 24, 2026 physical read-only diagnostic reported 16 legacy FUN project banks and **four unknown LIBRARY banks**. All 40 sectors were CRC32-fingerprinted. The eight library CRCs repeat after 16 KiB and none equals the CRC32 of an erased 4 KiB NOR sector. This does not prove an address alias or identify the storage owner. Unknown LIBRARY data is an absolute stop for physical writes **even though old app data may be discarded**.
+The November 24, 2026 physical read-only diagnostic inspected the **older USR layout**, reporting 16 legacy FUN project banks and **four unknown old LIBRARY candidates at 0xEA000..0xF1FFF**. All 40 sectors were CRC32-fingerprinted. The eight library CRCs repeat after 16 KiB and none equals the CRC32 of an erased 4 KiB NOR sector. This does not prove an address alias or identify the storage owner. Those unknown USR sectors are now avoided completely. The **new 0xC0000..0xC7FFF candidate has not yet been physically inspected**, so physical writes remain blocked.
 
 ## What is verified without a physical FM1
 
 - `MPR1` project records occupy 16 paired A/B flash banks, `0xA0000..0xBFFFF` (128 KiB), with 8 projects and four A–D sections. Each saved project references presets rather than duplicating sound parameters.
-- `LIB1` contains 32 full 304-byte preset records in four A/B banks, `0xEA000..0xF1FFF` (32 KiB), and compiled factory fallbacks. USER bank and separate FM6/drum companions retain independent storage.
+- `LIB1` contains 32 full 304-byte preset records in four A/B banks, `0xC0000..0xC7FFF` (32 KiB), and compiled factory fallbacks. USER bank and separate FM6/drum companions retain independent storage.
 - Host NOR tests exercise CRC validation, sector bounds, interrupted saves, damaged bank handling, full six-track project loading, and complete sound/kit records.
-- The branch's MASHINA OTA loader explicitly excludes the proposed MPR1 and LIB1 ranges from its update-record cleanup. A simulated real-package upgrade now checks **all eight LIBRARY sectors**, including forged stock updater signatures, as well as the remainder of the data-flash window.
+- The branch's MASHINA OTA loader excludes the existing application data range that now holds MPR1 and LIB1, and separately avoids the old unknown USR region in its update-record cleanup. A simulated real-package upgrade now checks **all eight LIBRARY sectors**, including forged stock updater signatures, as well as the remainder of the data-flash window.
 - The experimental Web Library's exported emulator NOR JSON was physically-independent-browser tested and loaded/played by the user in the MPR1/LIB32 browser emulator. Shared preset changes were reflected in projects without losing project-specific settings.
 - A diagnostic-only, **read-only** protocol can classify 16 project and four library banks and fingerprint every one of the **40 underlying 4 KiB sectors** by CRC32 (5 WebMIDI requests × 8 sectors). An offline browser comparison reports any differences between two captures. It transmits checksums, not raw preset bytes.
 
 ## What is **not** established
 
-1. The specific physical FM1's entire `0xEA000..0xF1FFF` USR region is safely owned by MASHINA. The packager's `USR` descriptor alone is *not* proof that every stock firmware, rescue procedure or bootloader will preserve it.
+1. The specific physical FM1's **reclaimed legacy FUN sectors `0xC0000..0xC7FFF`** are wholly usable for LIB1 under the clean-slate layout. The older diagnostic did not inspect these eight sectors; the source map and host tests are not substitutes for physical evidence.
 2. A stock installer, factory reset, vendor recovery and all future flash paths preserve both MPR1/LIB1 regions.
 3. The future **new-format** device has a fully validated native-to-native backup, restore and update path. The original firmware's data is intentionally disposable at first install; old FUN-to-MPR1 migration is not required.
 4. The FM1 can complete the first write/erase to proposed experimental sectors without unexpected side effects. No real-hardware erase/program test has been conducted.
