@@ -35,8 +35,8 @@
 
 This build is a **new candidate-region diagnostic**; the user's earlier November 24 JSON captured the older `0xEA000..0xF1FFF` proposal and cannot substitute for inspecting `0xC0000..0xC7FFF`. Both JSON layouts remain interpretable offline.
 - Diagnostic-only WebMIDI command **99** reads CRC32 fingerprints of the 32
-  candidate MPR1 sectors and eight LIBRARY sectors (40 × 4096 bytes, split
-  into five read-only requests). Each sector is read in 256-byte pages with
+  candidate MPR1 sectors, eight LIBRARY sectors, four USER sectors and two
+  companion sectors (46 × 4096 bytes, split into six read-only requests). Each sector is read in 256-byte pages with
   watchdog feeding; the browser receives **checksums only**, never private
   preset or project data. Busy or unreadable flash is reported as unavailable.
   This command is not present in ordinary firmware builds.
@@ -91,7 +91,7 @@ Status codes: **blank**, **committed**, **retired project**, **unknown** or
 A bank of retired project sections must only be cleared after a complete
 verified offline backup and an explicit future formatting decision.
 
-The browser also embeds an offline `fingerprintAnalysis` summary when all 40 CRC32s are readable. It flags a repeated 16-KiB CRC sequence and checks for the erased-sector CRC32 (`F154670A`); these signals **cannot** establish ownership or address aliasing and do not authorize writes. See [clean-slate first-install plan](clean-slate-first-install.md).
+The browser also embeds an offline `fingerprintAnalysis` summary when every captured CRC32 is readable. It flags a repeated 16-KiB CRC sequence and checks for the erased-sector CRC32 (`F154670A`); these signals **cannot** establish ownership or address aliasing and do not authorize writes. See [clean-slate first-install plan](clean-slate-first-install.md).
 
 The resulting `mashina-flash-diagnostic.json` (format version 2) now embeds
 an independent, **read-only readiness audit** with the exact candidate bank
@@ -112,15 +112,16 @@ factory reset or write capability.
 
 ## Compare sector contents across two diagnostic sessions
 
-A version-2 diagnostic JSON optionally includes `fingerprints` with 40
-address-indexed CRC32 results. The Web Library now contains
+A version-2 diagnostic JSON now optionally includes `fingerprints` with 46
+address-indexed CRC32 results (fingerprint-map version 2). Historical reports
+with 40 results (fingerprint-map version 1) remain supported offline. The Web Library now contains
 **Compare two physical flash diagnostics offline (read-only)**. Import the
 *before* and *after* diagnostic JSON files there. The browser validates that
-each file contains all 40 readable sectors, then compares them and downloads
+each file contains a complete readable set of matching address-mapped sectors, then compares them and downloads
 `mashina-flash-fingerprint-comparison.json` listing exactly which physical
 4 KiB sectors changed. The source files are never modified, no FM1 connection
 is needed for the comparison, and physical writes remain blocked even when
-all 40 CRCs match.
+all compared CRCs match.
 
 CRC32 is useful for detecting unintentional changes but is not cryptographic
 integrity or proof that firmware recovery will preserve these sectors.
