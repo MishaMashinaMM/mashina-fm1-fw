@@ -5,7 +5,10 @@
 import assert from "node:assert/strict";
 import {BACKUP_IDS,bkCrc} from "../web/fm1backup.js";
 import {encodeRecord,parseImportedLibrary} from "../web/presets-library-codec.mjs";
-import {extractLegacyUserPresets} from "../web/legacy-user-extract.mjs";
+import {extractLegacyUserPresets,freshMpr1EmulatorFromLegacy} from "../web/legacy-user-extract.mjs";
+import {decodeEmulatorFlash,encodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
+import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
+import {userSourceRecords} from "../web/emulator-snapshot-editor.mjs";
 
 const bytes=(v)=>Buffer.from(v);
 const record=(name,engine)=>Uint8Array.from(encodeRecord({
@@ -58,6 +61,18 @@ assert.deepEqual(result.patches[1].recordBytes,Array.from(drum));
 assert.deepEqual(result.patches[2].recordBytes,Array.from(sound18));
 assert.equal(result.originalFirmware,original.firmware);
 assert.equal(parseImportedLibrary(result).length,3);
+const fresh=freshMpr1EmulatorFromLegacy(original);
+const layout=inspectEmulatorFlash(fresh);
+assert.equal(layout.users.filter(x=>x.status==="saved").length,3);
+assert.equal(layout.library.filter(x=>x.status==="factory").length,32);
+assert.equal(layout.projects.sections.filter(Boolean).length,0);
+assert.deepEqual(userSourceRecords(fresh).map(x=>x.recordBytes),
+  [Array.from(sound1),Array.from(drum),Array.from(sound18)]);
+assert.deepEqual(Object.keys(decodeEmulatorFlash(fresh)).map(Number).sort(),
+  [0x9f000,0xdc000],"new NOR snapshot must include ONLY USER bank and companion sectors");
+assert.deepEqual(encodeEmulatorFlash(decodeEmulatorFlash(fresh)),fresh);
+assert.deepEqual(freshMpr1EmulatorFromLegacy(original),fresh,
+  "clean emulator creation should be deterministic and entirely read-only");
 const changed=structuredClone(original);
 changed.objects.find(o=>o.id===6).crc=(changed.objects.find(o=>o.id===6).crc^0x01)>>>0;
 assert.throws(()=>extractLegacyUserPresets(changed),/checksum/);
@@ -82,4 +97,5 @@ allEmpty.objects[6]=obj(6,new Uint8Array(0));
 allEmpty.objects[7]=obj(7,new Uint8Array(0));
 allEmpty.objects[9]=obj(9,new Uint8Array(0));
 assert.equal(extractLegacyUserPresets(allEmpty).patches.length,0);
+assert.equal(freshMpr1EmulatorFromLegacy(allEmpty).sectors.length,0);
 console.log("PASS: legacy 43-object archive exports original USER 304-byte records, FM6 sidecar, rejects corrupt data; no device writes");
