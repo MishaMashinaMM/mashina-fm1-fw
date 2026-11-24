@@ -85,7 +85,8 @@ def check():
         assert '"' + flag + '"' in build, f"tools/build.py no longer forwards {flag}"
     # Source-checked safety gate: building clean-layout reset code must NOT
     # produce a flashable .fwsc or release folder in the normal build script.
-    assert 'non_distributable = os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1"' in build
+    assert 'os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1"' in build
+    assert 'os.environ.get("FELUCCA_PROJECT_REFS_FORMAT") == "1"' in build
     assert "if non_distributable:" in build and \
            build.index("if non_distributable:") < build.index("pkg = fm1pkg_make.ufw(")
     assert "return 0" in build[build.index("SAFE BUILD-ONLY:"):build.index("pkg = fm1pkg_make.ufw(")]
