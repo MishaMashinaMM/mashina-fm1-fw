@@ -3,9 +3,8 @@
  * The hardware CRC classifier is tested separately in flash_diagnostic_test.
  */
 #define FELUCCA_FLASH_DIAG 1
-#define main library_sound_integration_main
+#define LIBRARY_TEST_NO_MAIN 1
 #include "presets_library_sound_test.c"
-#undef main
 
 /* The hardware version checks complete FUN sector header and payload CRCs.
  * Return 2 only for the one simulated confirmed legacy bank. */
