@@ -8,6 +8,8 @@ import {storeSectors,restoreSectors} from "../web/emu/worklet.js";
 import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash-backup.mjs";
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
 import {decodeProject} from "../web/projects-library-codec.mjs";
+import {BACKUP_IDS,bkCrc} from "../web/fm1backup.js";
+import {extractLegacyUserPresets} from "../web/legacy-user-extract.mjs";
 import {editEmulatorLibrarySnapshot,editEmulatorUserSnapshot,editEmulatorProjectReferences,factorySourceRecords,snapshotSourceRecords,userSourceRecords,crc32} from "../web/emulator-snapshot-editor.mjs";
 const master=JSON.parse(readFileSync("web/factory-presets-from-code.json","utf8"));
 const factory=factorySourceRecords(master);
@@ -241,6 +243,85 @@ assert.equal(edited.web_mpr_ref(0),1,"project T1 USER 001 reference not restored
 assert.equal(edited.web_mpr_ref(1),34,"project T2 reference changed unexpectedly");
 console.log("PASS: real WASM fresh boot reads selective USER/LIBRARY changes and remapped MPR1 track references");
 
+
+/* COMPLETE LEGACY -> FRESH MPR1 EMULATOR -> REBOOT smoke check.
+ * Nine distinct, complete 304-byte synthetic drum kits in precisely the
+ * occupied positions in the owner's source archive (1–3,5–7,9–11).
+ * Crucially the owner's actual custom sounds are NEVER published here.
+ * Never migrate old project records or reuse any physical FM1 data.
+ */
+{
+  const oldSlots=[0,1,2,4,5,6,8,9,10];
+  const engines=[19,19,19,15,15,15,10,10,10];
+  const oldSounds=oldSlots.map((slot,i)=>{
+    const sound=Uint8Array.from(thales.recordBytes);
+    sound[2]=engines[i];sound.fill(0,4,16);
+    sound.set(Buffer.from("TEST-"+String(i+1).padStart(2,"0")),4);
+    sound[16+100]=64+i; // distinct editable drum parameter
+    sound.fill(0,192);
+    for(let x=192;x<303;x++)sound[x]=(i*31+x*19)&255;
+    sound[303]=0xd3; // complete drum companion marker
+    return {slot,recordBytes:Array.from(sound)};
+  });
+  const oldBanks=[new Uint8Array(3080),new Uint8Array(3080)];
+  for(const bank of oldBanks){
+    writeU32(bank,0,0x31425055);writeU16(bank,4,192);writeU16(bank,6,16);
+  }
+  const oldComp=new Uint8Array(3728);
+  writeU32(oldComp,0,0x36465055);writeU16(oldComp,4,1);writeU16(oldComp,6,32);
+  let used=0;
+  for(const {slot,recordBytes} of oldSounds){
+    const rec=Uint8Array.from(recordBytes),bank=Math.floor(slot/16);
+    oldBanks[bank].set(rec.slice(0,192),8+(slot%16)*192);
+    writeU32(oldComp,16+slot*116,tag(rec.slice(0,192)));
+    oldComp.set(rec.slice(192),16+slot*116+4);
+    used|=1<<slot;
+  }
+  writeU32(oldComp,8,used);
+  const archived=new Map([[0,Uint8Array.of(1,2,3,4)],
+                          [1,Uint8Array.of(9,8,7,6)],
+                          [6,oldBanks[0]],[7,oldBanks[1]],[9,oldComp]]);
+  const originalBackup={
+    format:"felucca-backup",version:1,firmware:"synthetic v0.13",
+    objects:BACKUP_IDS.map(id=>{
+      const bytes=archived.get(id)??new Uint8Array(0);
+      return {id,size:bytes.length,crc:bytes.length?bkCrc(bytes):0,
+        data:Buffer.from(bytes).toString("base64")};
+    })
+  };
+  const portable=extractLegacyUserPresets(originalBackup);
+  assert.deepEqual(portable.patches.map(p=>p.slot),oldSlots,
+    "legacy archive extraction changed the nine original USER positions");
+  const pristine=encodeEmulatorFlash({}); // NO old projects or LIBRARY writes
+  const fresh=editEmulatorUserSnapshot(pristine,portable.patches.map(p=>({
+    slot:p.slot+1,recordBytes:p.recordBytes
+  })));
+  assert.equal(fresh.inspection.users.filter(x=>x.status==="saved").length,9);
+  assert.equal(fresh.inspection.library.filter(x=>x.status==="overridden").length,0);
+  assert.equal(fresh.inspection.projects.sections.filter(Boolean).length,0,
+    "old embedded FUN projects must NEVER be silently migrated");
+  const exported=JSON.stringify(fresh.snapshot);
+  const reimported=JSON.parse(exported);
+  const soundReadback=userSourceRecords(reimported);
+  assert.equal(soundReadback.length,9);
+  for(let i=0;i<9;i++)
+    assert.deepEqual(soundReadback[i].recordBytes,oldSounds[i].recordBytes,
+      "USER "+(oldSlots[i]+1)+" lost original drum params or companion bytes");
+  const {instance}=await WebAssembly.instantiate(wasm,{});
+  const fw=instance.exports;fw._initialize();fw.web_nor_erase();
+  restoreSectors(new Uint8Array(fw.memory.buffer,fw.web_nor(),fw.web_nor_size()),
+    decodeEmulatorFlash(reimported));
+  fw.web_boot();
+  const cold=encodeEmulatorFlash(storeSectors(
+    new Uint8Array(fw.memory.buffer,fw.web_nor(),fw.web_nor_size())));
+  const afterBoot=userSourceRecords(cold);
+  assert.equal(afterBoot.length,9);
+  for(let i=0;i<9;i++)
+    assert.deepEqual(afterBoot[i].recordBytes,oldSounds[i].recordBytes,
+      "physical-format synthetic USER "+(oldSlots[i]+1)+" changed during firmware boot");
+  assert.equal(inspectEmulatorFlash(cold).projects.sections.filter(Boolean).length,0);
+  console.log("PASS: 43-object legacy backup -> nine distinct drum kits -> clean 32+32 MPR1 emulator flash -> boot -> export/import; exact records, 32 factory fallbacks and no old projects");
+}
 
 const legacyFm6=new Uint8Array(3472);
 writeU32(legacyFm6,0,0x42364d46);
