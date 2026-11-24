@@ -3,6 +3,10 @@
  * Repeating CRCs are evidence of matching checksums, not proof of a flash alias.
  */
 export const ERASED_4K_CRC32 = "F154670A"; // CRC32 of 4096 bytes of 0xFF
+/* Zero-length, CRC-committed FELU storage record in an otherwise erased
+ * 4 KiB sector. Header CRC makes the full-sector CRC invariant to the
+ * object ID, slot and sequence. Never infer ownership from CRC alone. */
+export const EMPTY_FELU_RECORD_CRC32 = "127B0F88";
 const hex = x => "0x" + x.toString(16).toUpperCase();
 export function analyzeFlashFingerprints(diag) {
   if (diag?.format !== "mashina-flash-diagnostic" || diag.version !== 2)
@@ -36,6 +40,8 @@ export function analyzeFlashFingerprints(diag) {
   const repeatedHalves = library.slice(0,4).every((value,i)=>value===library[i+4]);
   const erased = library.map((crc,i)=>crc===ERASED_4K_CRC32 ? hex(libraryBase+i*4096) : null).filter(Boolean);
   const duplicateGroups = [];
+  const emptyFeluPattern = sectors.filter(s => s.crc32.toUpperCase()===EMPTY_FELU_RECORD_CRC32)
+    .map(s => hex(s.address));
   const groups = new Map();
   library.forEach((crc,i)=> {
     if (!groups.has(crc)) groups.set(crc,[]);
@@ -48,6 +54,7 @@ export function analyzeFlashFingerprints(diag) {
     mode:"OFFLINE_READ_ONLY",decision:"PHYSICAL_WRITES_BLOCKED",
     librarySectorCount:8,libraryBaseAddress:hex(libraryBase),libraryRepeated16KiBPattern:repeatedHalves,
     libraryErasedSectorAddresses:erased,libraryDuplicateChecksums:duplicateGroups,
+    emptyFeluPatternSectorAddresses:emptyFeluPattern,
     userCompanionSectorCount:userAndCompanion.length,
     userCompanionErasedSectorAddresses:userAndCompanion.filter(s=>s.crc32.toUpperCase()===ERASED_4K_CRC32).map(s=>hex(s.address)),
     auxiliarySectorCount:auxiliary.length,
@@ -59,6 +66,9 @@ export function analyzeFlashFingerprints(diag) {
       erased.length
         ? erased.length+" LIBRARY sectors have the erased 4 KiB CRC32; this is not proof of ownership or even byte-for-byte erasure."
         : "No LIBRARY sector has the erased 4 KiB CRC32 (F154670A).",
+      emptyFeluPattern.length
+        ? emptyFeluPattern.length+" sectors match CRC32 127B0F88, the exact full-sector CRC of a valid zero-length FELU record. This CRC is independent of the record type, slot and sequence because the commit header contains its own CRC. Repetition alone therefore does NOT indicate flash aliasing. Validate each header and bytes before any erasure."
+        : "No sectors have the known zero-length committed FELU record CRC32.",
       count>=46
         ? "Four USER and two companion sectors were also fingerprinted. CRC32 is evidence for later comparison, not proof of valid USER data, safe erasure or recovery."
         : "This historic 40-sector diagnostic did not inspect USER/companion sectors.",
