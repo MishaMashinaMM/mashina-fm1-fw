@@ -122,7 +122,21 @@ export async function captureBackup(request, firmware, onProgress = () => {}, op
       bytes.set(bkUnpack(a.slice(9), size), off);
       done += size; onProgress(done, total);
     }
-    if (bkCrc(bytes) !== o.crc) throw new Error("The device changed during backup. Try again while stopped.");
+    const actualCrc=bkCrc(bytes);
+    if (actualCrc !== o.crc) {
+      const label=o.id===0?"current performance":o.id===1?"device settings":
+        o.id>=2&&o.id<=5?"current-project section "+("ABCD"[o.id-2]):
+        o.id>=40&&o.id<72?"project "+(Math.floor((o.id-40)/4)+1)+
+          " section "+("ABCD"[(o.id-40)%4]):
+        o.id===10?"project selection index":
+        o.id>=6&&o.id<=7?"USER preset bank "+(o.id-5):
+        o.id===9?"USER companion bank":"object "+o.id;
+      const hex=n=>n.toString(16).padStart(8,"0");
+      throw new Error("Backup checksum mismatch at object "+o.id+
+        " ("+label+", "+o.size+" bytes): expected CRC32 "+hex(o.crc)+
+        ", received "+hex(actualCrc)+
+        ". No writes were attempted. Preserve existing projects and report this exact message.");
+    }
     objects.push({ ...o, data: bkBase64(bytes) });
   }
   const file = { format: "felucca-backup", version: 1, firmware, created: new Date().toISOString(), objects };
