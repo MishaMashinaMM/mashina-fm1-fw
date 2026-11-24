@@ -30,6 +30,8 @@ static void panel_setup(void){}
 
 static uint8_t nor[0x100000],flash_ok=1;
 static uint32_t erases,writes,outside;
+/* Simulate a single brownout/failing NOR erase during clean installation. */
+static uint32_t fail_erase_at=0xFFFFFFFFu,fail_prog_at=0xFFFFFFFFu;
 static int st_read(uint32_t off,void *dst,uint32_t n)
 {
     if(off>0x100000u || n>0x100000u-off)return -1;
@@ -38,11 +40,13 @@ static int st_read(uint32_t off,void *dst,uint32_t n)
 static int st_erase(uint32_t off)
 {
     if(off>=0x100000u || (off&4095u)){outside++;return -1;}
+    if(erases==fail_erase_at){fail_erase_at=0xFFFFFFFFu;return -1;}
     memset(nor+off,0xFF,4096);erases++;return 0;
 }
 static int st_prog(uint32_t off,const void *src,uint32_t n)
 {
     if(off>=0x100000u || n>0x100000u-off){outside++;return -1;}
+    if(off==fail_prog_at){fail_prog_at=0xFFFFFFFFu;return -1;}
     const uint8_t *s=src;
     for(uint32_t i=0;i<n;i++)nor[off+i]&=s[i];
     writes++;return 0;
