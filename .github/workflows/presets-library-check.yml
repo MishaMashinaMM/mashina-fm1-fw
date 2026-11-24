@@ -62,6 +62,7 @@ jobs:
           node tests/projects_library_codec_test.mjs
           node tests/performance_backup_test.mjs
           node tests/full_device_backup_test.mjs
+          node tests/legacy_user_extract_test.mjs
           node tests/emu_library_flash_persistence_test.mjs
           node tests/glo_boot_page_test.mjs
       - name: Check existing web backup regressions
@@ -236,7 +237,7 @@ jobs:
           mkdir -p "$OUT/web-library"
           cp web/presets-library-lab.html "$OUT/web-library/index.html"
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs "$OUT/web-library/"
-          cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs "$OUT/web-library/"
+          cp web/fm1backup.js web/legacy-user-extract.mjs web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs "$OUT/web-library/"
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs "$OUT/web-library/"
           cp build/host/factory-drum-records.json "$OUT/web-library/"
           cp web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs "$OUT/web-library/"
@@ -257,8 +258,8 @@ jobs:
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-preview/
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs build/presets-library-preview/
           cp build/host/factory-drum-records.json build/presets-library-preview/
-          cp web/full-device-backup.mjs web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/fm1backup.js build/presets-library-preview/
-          cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-preview/
+          cp web/legacy-user-extract.mjs web/full-device-backup.mjs web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/fm1backup.js build/presets-library-preview/
+          cp web/fm1backup.js web/legacy-user-extract.mjs web/projects-library-codec.mjs web/projects-library-view.mjs web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-preview/
       - name: Copy emulator inspection dependencies to standalone library
         run: |
           cp web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs build/presets-library-preview/
