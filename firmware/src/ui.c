@@ -1729,6 +1729,10 @@ static int library_slot_apply(uint32_t slot)
      * library_track_name() reads this track-local name cache. */
     library_track_name_set(TSEL, ENGINES[e]->presets[k].name);
     TSEL->user = (uint8_t)(UP_SLOTS + slot + 1u);
+#if FELUCCA_FLASH_DIAG
+    if (library_diag_preview_legacy)
+        ui_message("FACTORY PREVIEW");
+#endif
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
     mpr_capture_source(TSEL);
 #endif
