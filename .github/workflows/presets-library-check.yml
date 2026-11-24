@@ -68,6 +68,7 @@ jobs:
           node tests/performance_backup_test.mjs
           node tests/full_device_backup_test.mjs
           node tests/legacy_user_extract_test.mjs
+          node tests/legacy_user_bank_restore_test.mjs
           node tests/emu_library_flash_persistence_test.mjs
           node tests/glo_boot_page_test.mjs
       - name: Check existing web backup regressions
