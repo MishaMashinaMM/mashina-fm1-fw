@@ -217,17 +217,17 @@ static void fl_plain_window_init(void) {}
  * No HAL/SPI flash driver or USB editor is present in the browser build. */
 static int lib_host_read(uint32_t off, void *p, uint32_t n)
 {
-    if(off<0xEA000u || off>=0xF2000u || n>0xF2000u-off)return -1;
+    if(off<0xC0000u || off>=0xC8000u || n>0xC8000u-off)return -1;
     return st_read(off,p,n);
 }
 static int lib_host_erase(uint32_t off)
 {
-    if(off<0xEA000u || off>=0xF2000u || (off&4095u))return -1;
+    if(off<0xC0000u || off>=0xC8000u || (off&4095u))return -1;
     return st_erase(off);
 }
 static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 {
-    if(off<0xEA000u || off>=0xF2000u || n>0xF2000u-off ||
+    if(off<0xC0000u || off>=0xC8000u || n>0xC8000u-off ||
        n>256u || ((off&255u)+n)>256u)return -1;
     return st_prog(off,p,n);
 }
