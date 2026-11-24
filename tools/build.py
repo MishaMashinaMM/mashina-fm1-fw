@@ -461,6 +461,22 @@ def main():
     # reviewed release path, not a one-line environment-variable bypass.
     non_distributable = (os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1" or
                          os.environ.get("FELUCCA_PROJECT_REFS_FORMAT") == "1")
+    # A deliberately separate, human-triggered one-device experiment.
+    # This NEVER activates in normal/push builds, on main, or with only
+    # FELUCCA_CLEAN_INSTALL_LAYOUT=1. GitHub's explicitly typed workflow
+    # confirmation is required; the first physical install is destructive.
+    trial_authorized = (
+        non_distributable
+        and a.release == "0.13-clean-trial"
+        and os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+        and os.environ.get("GITHUB_REF") == "refs/heads/presets-library"
+        and os.environ.get("MASHINA_ONE_FM1_CLEAN_TRIAL") == "ERASE-ONE-FM1-32X32"
+        and all(os.environ.get(k) == "1" for k in (
+            "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
+            "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
+            "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT"))
+        and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"
+    )
     if non_distributable:
         (OUT / name).unlink(missing_ok=True)
         if a.release:
@@ -481,11 +497,15 @@ def main():
         print("  FAIL ", e)
     if errors:
         raise SystemExit("build: checks failed")
-    if non_distributable:
+    if non_distributable and not trial_authorized:
         print("SAFE BUILD-ONLY: one-time project/clean-layout formatter enabled.")
         print("NO .fwsc / installer / release artifact created for a destructive formatter.")
         print(f"app      {OUT / 'felucca.bin'}  {len(img)} B (NOT FOR DEVICE INSTALL)")
         return 0
+    if trial_authorized:
+        print("ONE DEVICE CLEAN-START TRIAL: explicit manually dispatched branch-only authorization.")
+        print("DESTRUCTIVE DATA FORMAT is possible via separate confirmed WebMIDI commands 101/102.")
+        print("Never install on both FM1 devices; user data will be erased during the later formatter.")
     pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY), ota, PRODUCT)
     (OUT / name).write_bytes(pkg)
     print(f"app      {OUT / 'felucca.bin'}  {len(img)} B")
