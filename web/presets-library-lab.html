@@ -155,7 +155,7 @@ tr:nth-child(2n){background:#161616}
  </div>
  <p id="flash-compare-status" class="stats" role="status">Choose two complete diagnostics to compare. Both original files are kept intact.</p>
 </details>
-<p class="foot">Project and full-device restores require write-enabled experimental firmware and a fresh offline full-device backup of the target FM1. Restores are not atomic across every bank: retain the JSON file for recovery if USB disconnects.</p>
+<p class="foot"><strong>Physical write lock:</strong> USER/LIBRARY uploads and all project/full-device restore actions are disabled in this prototype until a separately approved physical-device testing build exists. Offline JSON composition, device backup and read-only flash diagnostics remain available. Future restores require explicit authorization, a compatible write-enabled firmware, and a fresh verified backup; multi-bank restores are not atomic.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
 <table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Used in projects</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
@@ -182,6 +182,10 @@ import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulato
 import {inspectProjectReferences as inspectUsage} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
+/* This prototype is for offline composition, read-only backup and diagnostics.
+ * Physical USER/LIBRARY/project writes are NOT approved. This client-side lock
+ * is defense-in-depth; firmware write gates remain authoritative. */
+const PHYSICAL_WRITES_APPROVED=false;
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 // Authorization requires re-importing the exact JSON saved to disk, not just
 // clicking a download link. Evidence is invalidated on connection or writes.
@@ -393,13 +397,13 @@ function connectionStatus(){
   $("connect").disabled=busy;
   $("capture-user").disabled=busy||!device;
   $("backup-device").disabled=busy||!device;
-  $("upload-device").disabled=busy||!device||!cap?.writable||!backedUp||catalogNeedsPrepare;
+  $("upload-device").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!cap?.writable||!backedUp||catalogNeedsPrepare;
   $("probe-flash").disabled=busy||!device;
   $("backup-projects").disabled=busy||!device||!projectCap;
   $("view-projects").disabled=busy||!device||!projectCap;
   $("backup-full").disabled=busy||!device||!projectCap;
-  $("restore-projects").disabled=busy||!device||!projectCap?.writable||!wholeBackup;
-  $("restore-full").disabled=busy||!device||!projectCap?.writable||!cap?.writable||!wholeBackup;
+  $("restore-projects").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!projectCap?.writable||!wholeBackup;
+  $("restore-full").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!projectCap?.writable||!cap?.writable||!wholeBackup;
 }
 async function action(fn){
   if(busy)return;busy=true;connectionStatus();
@@ -527,6 +531,7 @@ $("verify-full-backup").addEventListener("change",async e=>{
   });
 });
 $("upload-device").addEventListener("click",()=>action(async()=>{
+  if(!PHYSICAL_WRITES_APPROVED)throw new Error("Physical flash writes are locked in this experimental Web Library.");
   if(!device||!cap?.writable||!backedUp)throw new Error("Writable device and prior LIBRARY backup required.");
   const entries=prepared();
   if(catalogNeedsPrepare)throw new Error("Factory selection has changed: click Prepare 32-slot upload pack first.");
@@ -978,6 +983,7 @@ $("backup-full").addEventListener("click",()=>action(async()=>{
 $("restore-projects").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
   await action(async()=>{
+    if(!PHYSICAL_WRITES_APPROVED)throw new Error("Physical project writes remain locked pending hardware safety approval");
     if(!device||!projectCap?.writable||!wholeBackup)
       throw new Error("Make a complete offline FM1 backup and connect write-enabled MPR1 firmware first");
     const parsed=JSON.parse(await file.text());
@@ -994,6 +1000,7 @@ $("restore-projects").addEventListener("change",async e=>{
 $("restore-full").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
   await action(async()=>{
+    if(!PHYSICAL_WRITES_APPROVED)throw new Error("Physical full-device restore remains locked pending hardware safety approval");
     if(!device||!cap?.writable||!projectCap?.writable||!wholeBackup)
       throw new Error("Make a complete offline backup of the target FM1 and connect write-enabled firmware first");
     const parsed=validateFullDevice(JSON.parse(await file.text()));
