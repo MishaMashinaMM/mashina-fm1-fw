@@ -1,7 +1,34 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 import assert from "node:assert/strict";
-import {analyzeFlashFingerprints,ERASED_4K_CRC32} from "../web/flash-fingerprint-analysis.mjs";
+import {analyzeFlashFingerprints,ERASED_4K_CRC32,EMPTY_FELU_RECORD_CRC32} from "../web/flash-fingerprint-analysis.mjs";
+import {crc32} from "../web/emulator-snapshot-editor.mjs";
 assert.equal(ERASED_4K_CRC32,"F154670A");
+assert.equal(EMPTY_FELU_RECORD_CRC32,"127B0F88");
+/* A real empty FELU record has two nested commit CRCs: one for its
+ * zero-byte body and one for the record header. Those CRCs cancel out
+ * object-ID / slot / sequence differences in a CRC of the whole sector.
+ * The 127B0F88 repetition therefore does NOT establish a hardware alias.
+ * This constructs multiple DIFFERENT byte sequences and checks their CRC. */
+const emptyLegacySector=(type,copy,seq)=>{
+  const bytes=new Uint8Array(4096).fill(0xff);
+  const v=new DataView(bytes.buffer);
+  v.setUint32(0,0x554c4546,true); // FELU
+  v.setUint16(4,type,true);
+  v.setUint16(6,copy,true);
+  v.setUint32(8,seq,true);
+  v.setUint32(12,0,true); // empty body
+  v.setUint32(16,0,true); // CRC32 of zero-byte body
+  v.setUint32(20,0xffffffff,true);
+  v.setUint32(24,0xffffffff,true);
+  v.setUint32(28,crc32(bytes.subarray(0,28)),true);
+  return bytes;
+};
+const syntheticEmpty=[emptyLegacySector(12,0,1),emptyLegacySector(31,1,998),
+                      emptyLegacySector(35,0,27)];
+assert.notDeepEqual(syntheticEmpty[0].slice(0,32),syntheticEmpty[1].slice(0,32));
+for(const bytes of syntheticEmpty)
+  assert.equal(crc32(bytes).toString(16).toUpperCase().padStart(8,"0"),EMPTY_FELU_RECORD_CRC32);
+
 const sectors=Array.from({length:40},(_,i)=>({
   index:i,address:i<32?0xA0000+i*4096:0xEA000+(i-32)*4096,
   readable:true,crc32:i<32?"ABCD0000":("0000000"+((i-32)%4+1)).slice(-8)
@@ -61,4 +88,8 @@ assert.equal(report53.decision,"PHYSICAL_WRITES_BLOCKED");
 const wrongAux=structuredClone(allState);
 wrongAux.fingerprints.sectors[52].address=0xEA000;
 assert.throws(()=>analyzeFlashFingerprints(wrongAux),/Invalid or unreadable/);
+allState.fingerprints.sectors[38].crc32=EMPTY_FELU_RECORD_CRC32;
+const emptyReport=analyzeFlashFingerprints(allState);
+assert(emptyReport.emptyFeluPatternSectorAddresses.includes("0xC6000"));
+assert(emptyReport.messages.some(x=>x.includes("does NOT indicate flash aliasing")));
 console.log("PASS: physical flash repeated CRC analysis is read-only, exact-address validated, never grants write permission");
