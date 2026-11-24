@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MASHINA — One-slot LIBRARY 064 physical trial</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,sans-serif;background:#0c0c0c;color:#f1f1f1}
+body{max-width:840px;margin:32px auto;padding:0 18px 60px}
+h1{color:#ff9900;letter-spacing:.1em}h2{font-size:18px;margin-top:28px}
+p{line-height:1.55;color:#bbb}button,input,select{padding:10px;background:#202020;color:white;border:1px solid #777;border-radius:5px}
+button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+section{margin:20px 0;border:1px solid #454545;padding:16px;border-radius:8px}
+label{display:block;margin:12px 0}.danger{border-color:#ff9900}#status{white-space:pre-wrap;border-left:3px solid #ff9900;padding:12px;background:#181818}
+small{color:#aaa}code{color:#ffbc61}
+</style>
+</head>
+<body>
+<h1>MASHINA</h1>
+<h2>LIBRARY 064 · SINGLE-SLOT PHYSICAL WRITE TRIAL</h2>
+<p>This is a separate, explicitly limited physical test. Only <strong>LIBRARY 064</strong> can be written. The general Web Library's bulk uploads and all project restores remain disabled. Never use the first-install erase page again. Do not reflash firmware.</p>
+<section>
+<h2>1. Connect and inspect (read-only)</h2>
+<p>Use the already initialized v0.13-cleantrial test FM1. Allow it to remain idle before scanning, especially if RESTORE LAST is enabled.</p>
+<button id="connect">Connect experimental FM1</button>
+<button id="scan" disabled>Inspect USER, LIBRARY and all 32 project sections</button>
+<p id="scan-details">Not inspected.</p>
+</section>
+<section>
+<h2>2. Save and verify current LIBRARY backup</h2>
+<p>Capture the 32 LIBRARY overrides, including an empty collection if everything is still factory fallback. Re-import the exact file just downloaded. If the target 064 is referenced by any project, the write is forbidden.</p>
+<button id="backup" disabled>Download current LIBRARY backup JSON</button>
+<label>Verify saved LIBRARY JSON: <input id="verify" type="file" accept=".json,application/json" disabled></label>
+<p id="backup-status">No verified backup.</p>
+</section>
+<section class="danger">
+<h2>3. Write exactly one sound to LIBRARY 064</h2>
+<p>Choose one of your captured USER sounds as source. This does not modify USER 001–032. Changing LIBRARY 064 would affect projects that refer to 064, so the page refuses the write unless there are zero references.</p>
+<label>USER source: <select id="source" disabled><option value="">Inspect device first</option></select></label>
+<label><input id="ack" type="checkbox" disabled> I authorize replacement of LIBRARY 064 on this one FM1 only.</label>
+<label>Type <code>WRITE LIBRARY 064</code>: <input id="phrase" autocomplete="off" disabled></label>
+<button id="write" disabled>WRITE and verify LIBRARY 064 only</button>
+<p>After a verified write, power-cycle the FM1, reconnect here and inspect again. Do not repeat the write to test persistence.</p>
+</section>
+<div id="status" role="status">No device connected. No writes sent.</div>
+<script type="module">
+import {connectLibraryMidi} from "./presets-library-midi.mjs";
+import {capability,captureUser,readLibrary,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
+import {parseImportedLibrary,decodeRecord} from "./presets-library-codec.mjs";
+import {captureProjectsOnly} from "./full-device-backup.mjs";
+import {inspectProjectReferences} from "./projects-library-view.mjs";
+const el=id=>document.getElementById(id);
+const TARGET=31;
+let dev=null,cap=null,user=[],library=[],refs=null,backupText=null,verified=false,busy=false,writeComplete=false;
+function say(s){el("status").textContent=s;}
+function setUi(){
+ el("connect").disabled=busy;
+ el("scan").disabled=busy||!dev;
+ el("backup").disabled=busy||!dev||!refs;
+ el("verify").disabled=busy||!backupText;
+ el("source").disabled=busy||!refs||refs.usage[63].length!==0||!user.length||writeComplete;
+ el("ack").disabled=busy||!verified||writeComplete;
+ el("phrase").disabled=busy||!verified||writeComplete;
+ el("write").disabled=busy||!verified||!dev||!cap?.writable||
+   !refs||refs.usage[63].length!==0||!el("source").value||
+   !el("ack").checked||el("phrase").value!=="WRITE LIBRARY 064"||writeComplete;
+}
+async function run(fn){
+ if(busy)return;
+ busy=true;setUi();
+ try{await fn();}catch(e){say("STOP — "+e.message+" No retry was attempted.");}
+ finally{busy=false;setUi();}
+}
+function invalidate(){verified=false;backupText=null;refs=null;user=[];library=[];writeComplete=false;
+ el("source").replaceChildren(new Option("Inspect device first",""));
+ el("ack").checked=false;el("phrase").value="";
+ el("backup-status").textContent="No verified backup.";
+}
+async function inspect(){
+ const uc=await captureUser(dev.request);
+ const libs=await readLibrary(dev.request);
+ const projects=inspectProjectReferences(await captureProjectsOnly(dev.request,dev.name));
+ if(projects.usage.length!==64)throw Error("Project reference scan incomplete");
+ user=uc;library=libs;refs=projects;verified=false;backupText=null;
+ const used=projects.usage[63];
+ el("source").replaceChildren(new Option("Choose captured USER sound",""));
+ for(const s of uc){
+   const o=new Option("USER "+String(s.slot+1).padStart(3,"0")+" — "+s.name,s.slot);
+   el("source").add(o);
+ }
+ el("scan-details").textContent=uc.length+" USER sounds captured; "+libs.length+
+   " LIBRARY overrides; 32 sections inspected. LIBRARY 064 references: "+
+   (used.length?used.map(x=>"P"+x.project+":"+x.section+"/T"+x.track).join(", "):"none — target eligible");
+ el("backup-status").textContent="A new target backup is required before writing.";
+ say(used.length?
+   "READ ONLY: LIBRARY 064 is referenced by a project. The trial write is BLOCKED. No writes sent.":
+   "READ ONLY: all required records and references inspected. Back up the LIBRARY before the write.");
+}
+el("connect").onclick=()=>run(async()=>{
+ dev?.close();dev=null;cap=null;invalidate();
+ const d=await connectLibraryMidi();
+ try{const c=await capability(d.request);if(!c.writable)throw Error("Firmware does not authorize LIBRARY writes");
+   dev=d;cap=c;
+ }catch(e){d.close();throw e;}
+ say("Connected: "+dev.name+"; LIB32 write capability detected. No writes sent.");
+});
+el("scan").onclick=()=>run(async()=>{invalidate();await inspect();});
+el("backup").onclick=()=>run(async()=>{
+ if(!refs||refs.usage[63].length)throw Error("Target must be unused by all projects");
+ const current=await readLibrary(dev.request);
+ if(JSON.stringify(current)!==JSON.stringify(library))throw Error("LIBRARY changed since inspection. Inspect again.");
+ const data=libraryBackupFile(current);
+ backupText=JSON.stringify(data);
+ verified=false;
+ const a=document.createElement("a");
+ const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+ a.href=url;a.download="mashina-LIBRARY-before-single-slot-trial.json";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),500);
+ el("backup-status").textContent="Downloaded backup. Re-import that exact JSON to verify.";
+ say("Read-only backup download started. No device writes sent.");
+});
+el("verify").onchange=e=>run(async()=>{
+ const f=e.target.files?.[0];e.target.value="";
+ if(!f||!backupText)throw Error("Save a fresh backup first");
+ const parsed=JSON.parse(await f.text());
+ parseImportedLibrary(parsed);
+ if(JSON.stringify(parsed)!==backupText)throw Error("The selected backup differs from the exact current-device snapshot");
+ verified=true;el("backup-status").textContent="Offline LIBRARY backup verified.";
+ say("Backup verified. One-slot write remains gated by explicit confirmation.");
+});
+for(const id of ["source","ack","phrase"])el(id).addEventListener("input",setUi);
+el("write").onclick=()=>run(async()=>{
+ if(!verified||!refs||refs.usage[63].length||!cap?.writable||
+   el("phrase").value!=="WRITE LIBRARY 064"||!el("ack").checked)
+   throw Error("Authorization/preflight no longer valid");
+ const slot=Number(el("source").value);
+ const item=user.find(x=>x.slot===slot);
+ if(!item)throw Error("No captured source selected");
+ const freshUser=await captureUser(dev.request);
+ const freshItem=freshUser.find(x=>x.slot===slot);
+ if(!freshItem||JSON.stringify(freshItem.recordBytes)!==JSON.stringify(item.recordBytes))
+   throw Error("Source USER sound changed since capture — re-inspect");
+ const freshLib=await readLibrary(dev.request);
+ if(JSON.stringify(freshLib)!==JSON.stringify(library))
+   throw Error("LIBRARY changed since backup — re-inspect and re-backup");
+ const freshRefs=inspectProjectReferences(await captureProjectsOnly(dev.request,dev.name));
+ if(freshRefs.usage[63].length)throw Error("LIBRARY 064 now has project references — write refused");
+ if(!confirm("Write "+item.name+" from USER "+String(slot+1).padStart(3,"0")+
+              " into LIBRARY 064 on this FM1 only? The USER sound stays intact."))return;
+ // Invalidate write authorization before the first possible flash command.
+ verified=false;backupText=null;el("ack").checked=false;el("phrase").value="";
+ // Exactly one record and exactly one destination, enforced again here.
+ const entry={slot:TARGET,recordBytes:item.recordBytes};
+ await uploadPrepared(dev.request,cap,[entry]);
+ const after=await readLibrary(dev.request);
+ const target=after.find(x=>x.slot===TARGET);
+ if(!target||JSON.stringify(target.recordBytes)!==JSON.stringify(decodeRecord(Uint8Array.from(item.recordBytes)).recordBytes))
+   throw Error("Post-write read-back did not match, do not retry");
+ writeComplete=true;
+ say("SUCCESS: LIBRARY 064 read-back matches USER "+String(slot+1).padStart(3,"0")+
+     " byte-for-byte. No other LIBRARY slots were written. Power-cycle FM1, reconnect, inspect to verify persistence.");
+});
+setUi();
+</script>
+</body></html>
