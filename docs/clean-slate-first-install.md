@@ -58,6 +58,14 @@ Source: `mashina-flash-diagnostic.json` captured 2026-11-24 08:19:12Z on one FM1
 - **Interpretation:** the **old USR** candidate sectors are occupied or otherwise inconsistent with an erased bank; repeated CRCs cannot distinguish repeated content, address aliasing or a read-path error. Do not wipe these sectors.
 - **New candidate `0xC0000–0xC7FFF`:** present in source-level legacy FUN project allocations and not inspected by the old physical CRC diagnostic. A fresh read-only test is still needed before authorizing any writes.
 
+## Vendor update caveat: preserve MASHINA-owned persistent data
+
+JieLi's [official AC79 firmware-update documentation](https://doc.zh-jieli.com/AC79/zh-cn/master/module_example/system/update.html) states that reserved/VM areas may be **erased or preserved according to the update configuration** (e.g. `VM_OPT=0` erases the VM area in their documented generic flow, while `VM_OPT=1` preserves it). This is general SDK behavior, **not proof of what any particular FM1 stock installer will do**. The externally analyzed FM1 V15 package places code below the VM area ([independent FM1 stock-firmware research](https://github.com/ip2k/lunar-modulator/blob/main/docs/02-stock-firmware.md)).
+
+The **MASHINA-owned OTA loader** has a narrower source-verified application rewrite range `[0x4000,0x93000)`; its update-record cleanup explicitly skips the project/LIBRARY/USER region, the autosave and FM6 voice bank and the unknown historical USR zone. Real-package host tests check byte-exact persistence across normal and interrupted MASHINA OTA updates. Two physical read-only FM1 captures made before/after an actual diagnostic reflash match **53/53 sector CRCs**, providing device-specific evidence for that particular update path, not for arbitrary vendor flashers.
+
+**After a clean install, upgrade through the validated MASHINA update route.** Do not assume that the manufacturer's M-UPGRADE tool, a stock-firmware package, USB recovery flashing or a different programmer preserves MASHINA's stored projects and presets. Keep offline backups; do not treat vendor restoration as a substitute for verifying the correct new-storage backup/restore path.
+
 ## Current physical gate
 
 `PHYSICAL_WRITES_BLOCKED`. No web UI unlock, installation, automatic format, project save, or experimental physical LIBRARY write is authorized. Keep the compiled factory fallbacks in firmware; do not depend on physical LIBRARY data being initialized until storage ownership is established.
