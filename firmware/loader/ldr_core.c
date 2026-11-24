@@ -172,6 +172,14 @@ static int ldr_session(void)
         uint8_t r[80];
         if (s - 0x1000u >= LDR_DATA_LO && s - 0x1000u < LDR_DATA_HI)
             continue;                                    /* Felucca's store: user data that may look like one */
+        /* The two RESTORE LAST autosave sectors (0xE5000..0xE6FFF)
+         * and the FM6 voice-bank sector (0xE7000..0xE7FFF) are
+         * persistent application state too. A forged or coincidental
+         * vendor update-record signature in their last 256 bytes MUST
+         * never cause the update loader to erase those sectors. Do not
+         * include the genuine stock OTA update-record sector 0xE8000. */
+        if (s - 0x1000u >= 0xE5000u && s - 0x1000u < 0xE8000u)
+            continue;
         /* The historical USR 0xEA000..0xF1FFF remains unowned and must
          * survive firmware upgrades. Never interpret any of its bytes as
          * a vendor update record or erase its sectors during cleanup. */
