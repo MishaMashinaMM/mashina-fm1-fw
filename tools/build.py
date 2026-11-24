@@ -240,7 +240,7 @@ def build_app():
                  "FELUCCA_CDC_DEFAULT", "FELUCCA_SEQ_PROBE", "FELUCCA_NO_SEQUENCER",
                  "FELUCCA_FLASH_DIAG", "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
-                 "FELUCCA_PROJECT_REFS_FORMAT"):
+                 "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/felucca.c
         if v in ("0", "1"):
             flags.append(f"-D{flag}={v}")
