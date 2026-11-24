@@ -8,6 +8,12 @@
  * Included AFTER upreset.c so it can use the same validated sound decoding,
  * FM6 patch handling and independent DRUM kit loader.
  */
+#if FELUCCA_FLASH_DIAG
+/* Implemented later by the read-only diagnostic, with complete FUN CRC
+ * validation. Previewing a legacy bank never implies permission to erase. */
+static uint32_t ed_diag_project_bank(uint32_t bank);
+static uint8_t library_diag_preview_legacy;
+#endif
 #include "preset_library_store.c"
 #include "preset_library_wire.c"
 
@@ -107,7 +113,24 @@ static int library_sound_load(uint32_t slot)
     int rc;
     if (slot >= LIB_SLOTS) return 2;
     rc = lib_slot_read(slot, library_record);
-    if (rc) return 2;
+    if (rc) {
+#if FELUCCA_FLASH_DIAG
+        /* The old firmware's FUN project data remains in the proposed LIB1
+         * sectors. In this read-only diagnostic ONLY, a fully CRC-validated
+         * retired FUN bank may audition the compiled factory fallback.
+         * Unknown, corrupt and unreadable flash still fail closed.
+         * No physical flash write, erasure or initialization occurs. */
+        library_diag_preview_legacy = 0u;
+        if (ed_diag_project_bank(16u + slot / LIB_PER_BANK) == 2u) {
+            library_diag_preview_legacy = 1u;
+            return 1;
+        }
+#endif
+        return 2;
+    }
+#if FELUCCA_FLASH_DIAG
+    library_diag_preview_legacy = 0u;
+#endif
     if (!lib_record_valid(library_record) || !up_valid(r)) {
         /* A factory fallback is valid ONLY if the complete record is zero. */
         for (i = 0; i < LIB_ENTRY; i++)
