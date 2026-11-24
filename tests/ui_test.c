@@ -2259,8 +2259,7 @@ static int test_screen(void)
 static int test_preset_types(void)
 {
     int bad = 0, ok = 1;
-    uint32_t r, e, k, total, t, n[PT_N] = {0}, sum = 0;
-    track_t before;
+    uint32_t r, e, k, total, t, n[PT_N] = {0};
     for (r = 0; r < NENG_SHOWN; r++) {
         const engine_t *en = ENGINES[e = eng_vis(r)];
         for (k = 0; k < en->npresets; k++) {
@@ -2274,51 +2273,40 @@ static int test_preset_types(void)
     ok &= PR_MONO(&ENG_ANALOG.presets[0]) == 1u && PR_TAG(&ENG_ANALOG.presets[0]) == PT_LEAD &&   /* SAW LEAD, MONO */
           PR_MONO(&ENG_ANALOG.presets[1]) == 0u && PR_TAG(&ENG_ANALOG.presets[1]) == PT_PAD;    /* SOFT PAD, POLY */
     bad += check("0.9.12 every factory preset has a sound type (DRUM's kits DRUM), MONO still bit 0", ok);
+    /* Jiant's engine-tag LIST filter was retired. K4 now selects physical
+     * banks, while the existing type tags remain for internal generators. */
     ui_power_on();
     my_steps(TSEL);
     go_page(GR_BROWSE);
-    ok = list_get() == 0u;
-    turn(EN_K4, 1); ok &= list_get() == 1u && favorites.filter && !list_type;
-    for (t = PT_BASS; t < PT_N; t++) {
-        uint32_t i, all, cnt;
-        turn(EN_K4, 1);
-        ok &= list_get() == t + 1u && list_type == t && !favorites.filter && str_eq(N_LIST[list_get()], N_LIST[t + 1u]);
-        preset_pos(&total);
-        ok &= total == n[t];
-        preset_all_pos(&all);
-        for (i = cnt = 0; i < total; i++) {             /* the list: that type's, in the PRESETS list's order */
-            uint32_t kk, ee = preset_at(i, &kk);
-            ok &= ee < NENGINES && PR_TAG(&ENGINES[ee]->presets[kk]) == t;
-            cnt++;
-        }
-        sum += cnt;
+    browse_bank = BROWSE_ALL;
+    browse_cursor_valid = 0u;
+    ok = browse_length() == 64u && str_eq(N_BROWSE_BANK[browse_bank], "ALL");
+    turn(EN_K4, 1);
+    ok &= browse_bank == BROWSE_USER && browse_length() == 32u;
+    turn(EN_K4, 1);
+    ok &= browse_bank == BROWSE_LIBRARY && browse_length() == 32u;
+    ok &= str_eq(N_BROWSE_BANK[browse_bank], "LIB");
+    /* Slot 46 -> 47 must continue, not jump to 33. Failed loads cannot
+     * undo the position even in diagnostic storage that is unreadable. */
+    browse_cursor = 45u;
+    browse_cursor_valid = 1u;
+    turn(EN_K1, 1);
+    {
+        uint32_t pos = preset_pos(&total);
+        ok &= browse_cursor == 46u && pos == 14u &&
+              preset_number(pos) == 47u && total == 32u;
     }
-    turn(EN_K4, 1); ok &= list_get() == PT_N;            /* (the end: FX stays) */
-    bad += check("0.9.12 PRESETS LIST: ALL FAV BASS LEAD PAD KEYS PLUCK BELL VOX DRUM FX, each type every engine's presets of it", ok && sum == n[PT_BASS] + n[PT_LEAD] + n[PT_PAD] + n[PT_KEYS] + n[PT_PLUCK] + n[PT_BELL] + n[PT_VOX] + n[PT_DRUM] + n[PT_FX]);
-    while (list_get() != PT_BASS + 1u) turn(EN_K4, -1);
-    before = *TSEL;
-    {   /* KNOB 1 / the PRESETS knob through the basses: every sound loaded a bass, several engines, the steps kept */
-        uint32_t i, eng = 0;
-        ok = 1;
-        for (i = 0; i < n[PT_BASS] + 2u; i++) {
-            turn(i & 1u ? EN_PRESET : EN_K1, 1);
-            ok &= user_of(TSEL) >= UP_SLOTS &&
-                  PR_TAG(&ENGINES[TSEL->eng_req]->presets[TSEL->preset % ENGINES[TSEL->eng_req]->npresets]) == PT_BASS;
-            eng |= 1u << TSEL->eng_req;
-        }
-        ok &= !memcmp(TSEL->step, before.step, sizeof before.step) && __builtin_popcount(eng) >= 4;
-        bad += check("0.9.12 LIST BASS: KNOB 1 and PRESETS load only bass sounds, across the engines, the steps kept", ok);
+    /* Complete LIBRARY 033..064 must remain reachable in both directions. */
+    for (uint32_t slot = 32u; slot < 64u; slot++) {
+        browse_cursor = (uint8_t)slot;
+        browse_cursor_valid = 1u;
+        turn(EN_K1, 1);
+        ok &= browse_cursor == (slot + 1u < 64u ? slot + 1u : 32u);
     }
-    {   /* the settings keep it; an unknown type reads as none */
-        persist_t p;
-        settings_export(&p);
-        list_put(0);
-        ok = settings_import(&p, (int)sizeof p) && list_get() == PT_BASS + 1u;
-        p.favorites.factory[15][18] = PT_N;
-        ok &= settings_import(&p, (int)sizeof p) && list_get() == 0u;
-        bad += check("0.9.12 the LIST type kept with the settings; an unknown one: ALL", ok);
-    }
-    list_put(0);
+    turn(EN_K4, -1);
+    turn(EN_K4, -1);
+    ok &= browse_bank == BROWSE_ALL && browse_length() == 64u;
+    bad += check("SAVE PRESETS: K4 ALL/USER/LIB and fixed 33..64 navigation never truncates at 46", ok);
     {   /* the generator: no PT_BASS sound off the bass, whatever the genre and seed */
         uint32_t g, sd, q;
         ok = 1;
@@ -2341,45 +2329,39 @@ static int test_preset_types(void)
 static int test_favorites(void)
 {
     int bad = 0;
-    uint32_t total, pos;
+    uint32_t total;
     track_t before;
     ui_power_on();
     my_steps(TSEL);
     TSEL->p[P_AMODE] = 2;
     go_page(GR_BROWSE);
+    browse_bank = BROWSE_ALL;
+    browse_cursor_valid = 0u;
     before = *TSEL;
     turn(EN_K3, 1);
+    bad += check("FAV marks current sound without loading or altering its steps",
+                 preset_favorite() && !memcmp(TSEL, &before, sizeof before));
     turn(EN_K4, 1);
-    pos = preset_pos(&total);
-    bad += check("FAV and LIST mark/filter the current sound without loading or touching its steps",
-                 preset_favorite() && favorites.filter && total == 1 && pos == 0 &&
+    preset_pos(&total);
+    bad += check("BANK USER does not toggle favorites or alter the loaded sound",
+                 browse_bank == BROWSE_USER && total == UP_SLOTS &&
+                 preset_favorite() && !memcmp(TSEL, &before, sizeof before));
+    turn(EN_K4, 1);
+    preset_pos(&total);
+    bad += check("BANK LIB exposes 32 library positions and preserves sound",
+                 browse_bank == BROWSE_LIBRARY && total == LIB_FACTORY_SLOTS &&
                  !memcmp(TSEL, &before, sizeof before));
-    bad += check("one favorite occupies one display row, without repeated copies",
-                 preset_visible(pos, total, 0) == 0 && preset_visible(pos, total, 1) == total);
+    turn(EN_K4, -1);
+    turn(EN_K4, -1);
     select_engine(ENGI_DRUM);
     before = *TSEL;
     turn(EN_K3, 1);
-    bad += check("a DRUM sound can be a favorite on any track", preset_favorite() &&
-                 favorite_has(ENGI_DRUM, 0) && !memcmp(TSEL, &before, sizeof before));
-    turn(EN_PRESET, 1);
-    bad += check("filtered browsing crosses DRUM and synth sounds while retaining the track's pattern and ARP",
-                 TSEL->eng_req == 0 && preset_favorite() && !memcmp(TSEL->step, before.step, sizeof before.step) &&
-                 TSEL->p[P_AMODE] == 2);
-    turn(EN_K3, -1);
-    pos = preset_pos(&total);
-    bad += check("unmarking the current sound leaves it loaded even when outside the filtered list",
-                 !preset_favorite() && total == 1 && pos == total && TSEL->eng_req == 0);
-    turn(EN_PRESET, -1);
-    bad += check("browsing from a nonfavorite selects the last favorite", TSEL->eng_req == ENGI_DRUM);
-    turn(EN_K3, -1);
-    before = *TSEL;
-    turn(EN_PRESET, 1);
-    bad += check("empty favorites explains LIST ALL and retains the current sound and steps",
-                 msg_is("NO FAVORITES") && !memcmp(TSEL, &before, sizeof before));
-    turn(EN_K4, -1);
-    preset_pos(&total);
-    bad += check("LIST ALL restores the full browser without an implicit load", !favorites.filter && total > 1 &&
+    bad += check("DRUM sound remains independently markable as favorite",
+                 preset_favorite() && favorite_has(ENGI_DRUM, 0) &&
                  !memcmp(TSEL, &before, sizeof before));
+    turn(EN_K3, -1);
+    bad += check("unmarking DRUM sound retains loaded track unchanged",
+                 !preset_favorite() && !memcmp(TSEL, &before, sizeof before));
     up_store(31, "Favorite");
     up_load(31);
     turn(EN_K3, 1);
@@ -2390,7 +2372,7 @@ static int test_favorites(void)
     bad += check("successful erasure removes the user slot star and source label",
                  !favorite_has(NENGINES, 31) && !up_used(31) && !TSEL->user);
     up_store(31, "New sound");
-    bad += check("reusing the erased slot does not restore its old star", !favorite_has(NENGINES, 31));
+    bad += check("reusing erased user slot does not restore its old star", !favorite_has(NENGINES, 31));
     return bad;
 }
 
