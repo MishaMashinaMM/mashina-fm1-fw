@@ -6,7 +6,7 @@
 #include <string.h>
 #include "../firmware/src/project_refs.c"
 static uint8_t nor[0x100000];
-static int fail_after=-1,tear_after=-1,outside=0,writes=0;
+static int fail_after=-1,tear_after=-1,erase_torn=-1,outside=0,writes=0;
 static int mprs_read(uint32_t off,void *dst,uint32_t n)
 {
     if(off<0xA0000u || n>0xC0000u-off || off>=0xC0000u)return -1;
@@ -17,6 +17,11 @@ static int mprs_erase(uint32_t off)
     if(off<0xA0000u||off+4096u>0xC0000u||(off&4095u)){outside++;return -1;}
     if(fail_after==0)return -1;
     if(fail_after>0)fail_after--;
+    if(erase_torn==0){
+        memset(nor+off,0xFF,2048u);
+        erase_torn=-1;writes++;return -1;
+    }
+    if(erase_torn>0)erase_torn--;
     memset(nor+off,0xFF,4096u);writes++;return 0;
 }
 static int mprs_prog(uint32_t off,const void *src,uint32_t n)
@@ -97,6 +102,21 @@ int main(void)
         }
     }
     bad+=ck("torn page/header writes retain complete section and its sibling",all);
+    /* A sector erase itself may lose power partway through. Both cases
+     * must preserve the opposite committed copy with both sections. */
+    all=1;
+    for(int cut=0;cut<2;cut++){
+        if(mprs_save(1,records[1])){all=0;break;}
+        erase_torn=cut;
+        (void)mprs_save(1,value);
+        erase_torn=-1;
+        if(mprs_load(1,got)||memcmp(got,records[1],sizeof got)||
+           mprs_load(0,got)||memcmp(got,records[0],sizeof got)){
+            all=0;break;
+        }
+    }
+    bad+=ck("partially erased destination never damages committed project pair",all);
+
 
     {
         uint32_t a=mprs_base(15,0),b=mprs_base(15,1);
