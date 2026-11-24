@@ -13,28 +13,33 @@ export function analyzeFlashFingerprints(diag) {
       fp.complete !== true || !Array.isArray(fp.sectors) || fp.sectors.length !== 40)
     throw Error("Diagnostic has no complete 40-sector CRC32 capture");
   const sectors = fp.sectors;
+  // Both physical diagnostic generations remain valid offline: earlier probes
+  // inspected provisional USR (EA000), newer probes inspect reclaimed FUN (C0000).
+  const libraryBase = sectors[32]?.address === 0xC0000 ? 0xC0000 :
+                      sectors[32]?.address === 0xEA000 ? 0xEA000 : null;
+  if (libraryBase === null) throw Error("Unknown LIBRARY fingerprint address map");
   for (let i = 0; i < 40; i++) {
     const s = sectors[i];
-    const expected = i < 32 ? 0xA0000 + i * 4096 : 0xEA000 + (i - 32) * 4096;
+    const expected = i < 32 ? 0xA0000 + i * 4096 : libraryBase + (i - 32) * 4096;
     if (s?.index !== i || s.address !== expected || s.readable !== true ||
         !/^[0-9A-Fa-f]{8}$/.test(s.crc32))
       throw Error("Invalid or unreadable fingerprint at index " + i);
   }
   const library = sectors.slice(32).map(s => s.crc32.toUpperCase());
   const repeatedHalves = library.slice(0,4).every((value,i)=>value===library[i+4]);
-  const erased = library.map((crc,i)=>crc===ERASED_4K_CRC32 ? hex(0xEA000+i*4096) : null).filter(Boolean);
+  const erased = library.map((crc,i)=>crc===ERASED_4K_CRC32 ? hex(libraryBase+i*4096) : null).filter(Boolean);
   const duplicateGroups = [];
   const groups = new Map();
   library.forEach((crc,i)=> {
     if (!groups.has(crc)) groups.set(crc,[]);
-    groups.get(crc).push(hex(0xEA000+i*4096));
+    groups.get(crc).push(hex(libraryBase+i*4096));
   });
   for (const [crc,addresses] of groups)
     if (addresses.length>1) duplicateGroups.push({crc32:crc,addresses});
   return {
     format:"mashina-flash-fingerprint-analysis",version:1,
     mode:"OFFLINE_READ_ONLY",decision:"PHYSICAL_WRITES_BLOCKED",
-    librarySectorCount:8,libraryRepeated16KiBPattern:repeatedHalves,
+    librarySectorCount:8,libraryBaseAddress:hex(libraryBase),libraryRepeated16KiBPattern:repeatedHalves,
     libraryErasedSectorAddresses:erased,libraryDuplicateChecksums:duplicateGroups,
     messages:[
       repeatedHalves
