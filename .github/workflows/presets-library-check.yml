@@ -35,6 +35,11 @@ jobs:
           build/host/preset_library_storage_test
           cc -O2 -Wall -Wextra -o build/host/preset_library_wire_test tests/preset_library_wire_test.c
           build/host/preset_library_wire_test
+      - name: Test 53-sector clean install prototype in simulated NOR only
+        run: |
+          mkdir -p build/host
+          cc -std=gnu11 -O2 -Wall -Wextra -o build/host/clean_layout_formatter_host_test tests/clean_layout_formatter_host_test.c
+          build/host/clean_layout_formatter_host_test
       - name: Verify non-destructive candidate flash diagnostic (host NOR only)
         run: |
           mkdir -p build/host
