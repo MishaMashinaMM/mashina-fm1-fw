@@ -286,7 +286,14 @@ jobs:
           cp docs/one-device-clean-install-trial.md docs/clean-slate-first-install.md docs/diagnostic-flash-readonly.md build/one-device-trial-review/
           cp tests/clean_install_release_gate_test.mjs build/one-device-trial-review/
           mkdir -p build/one-device-trial-review/web
-          cp web/clean-install-trial.html web/presets-library-midi.mjs web/fm1backup.js build/one-device-trial-review/web/
+          cp web/clean-install-trial.html web/presets-library-midi.mjs web/fm1backup.js \
+             web/legacy-user-bank-restore.mjs web/legacy-user-extract.mjs \
+             web/presets-library-codec.mjs web/presets-library-sync.mjs \
+             web/projects-library-codec.mjs web/emulator-library-inspector.mjs \
+             web/emulator-snapshot-editor.mjs web/factory-catalog-selection.mjs \
+             build/one-device-trial-review/web/
+          mkdir -p build/one-device-trial-review/web/emu
+          cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/one-device-trial-review/web/emu/
           printf 'Branch: presets-library\\nCommit: %s\\nStatus: NON-FLASHABLE REVIEW ONLY\\nRequires separately approved physical test: YES\\n' "$GITHUB_SHA" > build/one-device-trial-review/PROVENANCE.txt
           # Fail closed if this ever accidentally contains firmware or an installer.
           if find build/one-device-trial-review -type f \\( -name '*.fwsc' -o -name '*.bin' -o -name '*.ufw' -o -name 'installer*' \\) | grep -q .; then
