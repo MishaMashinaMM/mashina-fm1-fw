@@ -454,6 +454,16 @@ def main():
         if hashlib.sha256(fm1pkg_make.sdk_file(rel)).hexdigest() != sha:
             print(f"warning: SDK {rel} differs from AC79NN_SDK_V1.2.1; the package will not match the reference")
     OUT.mkdir(parents=True, exist_ok=True)
+    # This experimental variant contains code to ERASE 53 user-data sectors.
+    # Never create a USB-flashable package or release directory for it, even
+    # if a caller supplies --release. This gate applies to local builds too.
+    # Future physical first-install authorization requires a separately
+    # reviewed release path, not a one-line environment-variable bypass.
+    non_distributable = os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1"
+    if non_distributable:
+        (OUT / name).unlink(missing_ok=True)
+        if a.release:
+            shutil.rmtree(OUT / f"release-{a.release}", ignore_errors=True)
     with ThreadPoolExecutor(2) as ex:
         gen, ldr = ex.submit(generate), ex.submit(build_loader)
         gen.result()
@@ -470,6 +480,11 @@ def main():
         print("  FAIL ", e)
     if errors:
         raise SystemExit("build: checks failed")
+    if non_distributable:
+        print("SAFE BUILD-ONLY: FELUCCA_CLEAN_INSTALL_LAYOUT=1.")
+        print("NO .fwsc / installer / release artifact created for the destructive prototype.")
+        print(f"app      {OUT / 'felucca.bin'}  {len(img)} B (NOT FOR DEVICE INSTALL)")
+        return 0
     pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY), ota, PRODUCT)
     (OUT / name).write_bytes(pkg)
     print(f"app      {OUT / 'felucca.bin'}  {len(img)} B")
