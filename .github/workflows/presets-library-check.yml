@@ -1,7 +1,7 @@
 name: Presets library experimental checks
 on:
   push:
-    branches: [presets-library]
+    branches: [presets-library, presets-library-reclaim]
   workflow_dispatch:
 permissions:
   contents: read
