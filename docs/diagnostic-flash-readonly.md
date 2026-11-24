@@ -88,6 +88,8 @@ Status codes: **blank**, **committed**, **retired project**, **unknown** or
 A bank of retired project sections must only be cleared after a complete
 verified offline backup and an explicit future formatting decision.
 
+The browser also embeds an offline `fingerprintAnalysis` summary when all 40 CRC32s are readable. It flags a repeated 16-KiB CRC sequence and checks for the erased-sector CRC32 (`F154670A`); these signals **cannot** establish ownership or address aliasing and do not authorize writes. See [clean-slate first-install plan](clean-slate-first-install.md).
+
 The resulting `mashina-flash-diagnostic.json` (format version 2) now embeds
 an independent, **read-only readiness audit** with the exact candidate bank
 addresses, project-section/slot mapping, occupied/blank/corrupt counts,
