@@ -4,6 +4,13 @@
  * audio keeps up, erases and writes only inside the storage areas, the audio buffer silenced
  * first. The host tests (storage_test.c) provide their own st_* on a simulated NOR. */
 static uint8_t flash_ok;                 /* JEDEC id matched at boot (persist_boot) */
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+/* The first boot of a clean-install image can still see OLD FUN/USER sectors.
+ * NO ordinary persistent save may write until a committed MPS1 marker is
+ * checked at boot. Only the synchronous confirmed FORMAT command temporarily
+ * enables writes, and then immediately locks them again until a cold boot. */
+static uint8_t clean_layout_normal_writes;
+#endif
 static int st_read(uint32_t off, void *dst, uint32_t n)   /* 256-byte IRQ-off windows: audio keeps up */
 {
     uint8_t *d = dst;
@@ -33,6 +40,9 @@ static int st_erase(uint32_t off)
 #else
     uint32_t took, f;
     int rc;
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if (!clean_layout_normal_writes) return -10; /* pre-format cold boot lock */
+#endif
     if (!FL_STORE_OK(off, 0x1000u))
         return -8;
     f = irq_save();
@@ -48,6 +58,9 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)
     (void)off; (void)src; (void)n;
     return -9; /* writes blocked even if a normal UI SAVE path is invoked */
 #else
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if (!clean_layout_normal_writes) return -10; /* no pre-format USER/settings writes */
+#endif
     if (!FL_STORE_OK(off, n))                   /* only inside the storage areas */
         return -8;
     return fl_write(off, src, n);
