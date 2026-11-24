@@ -49,6 +49,7 @@ jobs:
           node tests/projects_library_codec_test.mjs
           node tests/performance_backup_test.mjs
           node tests/full_device_backup_test.mjs
+          node tests/legacy_user_extract_test.mjs
           node tests/flash_readiness_audit_test.mjs
           node tests/flash_fingerprint_test.mjs
           node tests/emu_library_flash_persistence_test.mjs
@@ -85,7 +86,7 @@ jobs:
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-smoke/
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs build/presets-library-smoke/
           cp build/host/factory-drum-records.json build/presets-library-smoke/
-          cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs build/presets-library-smoke/
+          cp web/fm1backup.js web/legacy-user-extract.mjs web/projects-library-codec.mjs web/projects-library-view.mjs build/presets-library-smoke/
           cp web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-smoke/
           cp web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs build/presets-library-smoke/
           cp web/flash-readiness.mjs web/flash-fingerprint-analysis.mjs build/presets-library-smoke/
