@@ -73,19 +73,17 @@ static uint32_t user_of(const track_t *t)    /* user preset slot its sound came 
 }
 static uint32_t up_gen;                      /* bumped on every user bank change (redraws) */
 #include "favorites.c"
-/* (JIANT 0.9.12) PRESETS' LIST (KNOB 4): 0 ALL, 1 FAV (favorites.filter, saved as before), 2.. a sound type (core.h PT_*:
- * every engine's presets of that type, after Skiff by illuminus5), the type in a byte no engine uses (engine 15's
- * favourite byte 18: 0 in older settings, ALL / FAV as they were) */
-#define list_type (favorites.factory[15][18])
-_Static_assert(PT_N == 10, "settings_persist.c checks the LIST type against 10");
-static const char *const N_LIST[PT_N + 1] = {"ALL", "FAV", "BASS", "LEAD", "PAD", "KEYS", "PLUCK", "BELL", "VOX", "DRUM",
-                                              "FX"};
-static uint32_t list_get(void) { return list_type && list_type < PT_N ? list_type + 1u : favorites.filter ? 1u : 0u; }
-static void list_put(uint32_t v)
-{
-    favorites.filter = v == 1u;
-    list_type = (uint8_t)(v >= 2u && v <= PT_N ? v - 1u : 0u);
-}
+/* SAVE > PRESETS: fixed 64-slot directory.
+ * K4 only selects a bank; the retired Jiant engine-tag LIST filter is gone.
+ * Browsing is independent of the active sound, so an unreadable LIBRARY
+ * bank cannot prevent reaching the rest of the 32 LIBRARY positions.
+ * These are UI-only values: no EEPROM/NOR writes when changing the view. */
+enum { BROWSE_ALL, BROWSE_USER, BROWSE_LIBRARY, BROWSE_BANKS };
+static const char *const N_BROWSE_BANK[BROWSE_BANKS] = {"ALL", "USER", "LIB"};
+static uint8_t browse_bank;
+static uint8_t browse_cursor_valid;
+static uint8_t browse_cursor; /* absolute position 0..63, never a sound record */
+
 /* MENU's two-valued settings (ui_menu.c MENU_FLAGS), a bit each in a byte no engine uses:
  * saved with the settings; 0 in older ones = every setting's default (append-only: a new setting takes a new bit,
  * its default is 0) */
@@ -1835,36 +1833,30 @@ static uint32_t preset_all_at(uint32_t n, uint32_t *k)
     return library_factory_at(n - UP_SLOTS, k);
 }
 
-/* list index i's sound (engine e, its preset or user slot k) is in the LIST */
-static int preset_in(uint32_t e, uint32_t k)
+/* K4 selects ALL 001..064, USER 001..032 or LIBRARY 033..064.
+ * Keep the printed number absolute, independent of this display subset. */
+static uint32_t browse_start(void) { return browse_bank == BROWSE_LIBRARY ? UP_SLOTS : 0u; }
+static uint32_t browse_length(void)
 {
-    uint32_t v = list_get();
-    return v == 1u ? favorite_has(e, k) : e < NENGINES && PR_TAG(&ENGINES[e]->presets[k]) == v - 1u;
+    return browse_bank == BROWSE_ALL ? UP_SLOTS + LIB_FACTORY_SLOTS :
+           browse_bank == BROWSE_USER ? UP_SLOTS : LIB_FACTORY_SLOTS;
 }
 static uint32_t preset_pos(uint32_t *total)
 {
-    uint32_t all, current = preset_all_pos(&all), n = 0, pos = 0xFFFFFFFFu;
-    if (!list_get()) { *total = all; return current; }
-    for (uint32_t i = 0; i < all; i++) {
-        uint32_t k, e = preset_all_at(i, &k);
-        if (!preset_in(e, k)) continue;
-        if (i == current) pos = n;
-        n++;
-    }
-    *total = n;
-    return pos == 0xFFFFFFFFu ? n : pos; /* current sound need not be a favorite */
+    uint32_t base = browse_start(), current;
+    *total = browse_length();
+    if (browse_cursor_valid) current = browse_cursor;
+    else preset_all_pos(&current); /* current becomes absolute slot, not count */
+    if (current < base || current >= base + *total) return *total;
+    return current - base;
 }
 static uint32_t preset_at(uint32_t n, uint32_t *k)
 {
-    uint32_t all;
-    if (!list_get()) return preset_all_at(n, k);
-    preset_all_pos(&all);
-    for (uint32_t i = 0; i < all; i++) {
-        uint32_t e = preset_all_at(i, k);
-        if (preset_in(e, *k) && !n--) return e;
-    }
-    *k = UP_SLOTS;
-    return NENGINES;
+    return preset_all_at(browse_start() + n, k);
+}
+static uint32_t preset_number(uint32_t position)
+{
+    return browse_start() + position + 1u;
 }
 static int preset_favorite(void)
 {
@@ -1903,22 +1895,24 @@ static void preset_hinted(void)                     /* after a sound load: SEQ >
     ui.force = 1;
 }
 
-static void preset_go(uint32_t n)                    /* load list index n into the selected track (the sound only) */
+static void preset_go(uint32_t n)                    /* load absolute 0-based slot into selected track */
 {
-    uint32_t k, e = preset_at(n, &k);
+    uint32_t k, e = preset_all_at(n, &k);
     if (e == NENGINES) {
-        if (k >= UP_SLOTS || !up_used(k)) return; /* fixed empty address: never load a different sound */
+        if (k >= UP_SLOTS || !up_used(k)) return;
         up_load(k);
     } else {
 #if FELUCCA_LIB32
-        uint32_t slot = library_factory_rank(e, k);
-        if (slot < LIB_FACTORY_SLOTS) {
-            (void)library_slot_apply(slot);
+        if (n >= UP_SLOTS) {
+            if (library_slot_apply(n - UP_SLOTS)) {
+                ui_message("LIBRARY UNAVAILABLE");
+                ui.force = 1;
+                return; /* keep the browsing cursor, not the previous sound */
+            }
         } else
 #endif
         {
-            if (e != TSEL->eng_req)
-                select_engine(e);
+            if (e != TSEL->eng_req) select_engine(e);
             apply_preset(k);
         }
     }
@@ -2007,33 +2001,36 @@ static void eng_list_step(int32_t direction)         /* the next / previous soun
 static void preset_step(int32_t direction)
 {
     uint32_t total, cur = preset_pos(&total), count;
-    if (!total) { ui_message("NO FAVORITES"); return; }
-    /* The fixed user addresses are present in the directory even if empty.
-     * Do not make an empty slot interrupt a live browsing gesture. */
+    if (!total) return;
+    /* Browse by physical position, not by the most recently loaded sound.
+     * Failed or unreadable LIBRARY entries remain selectable. Empty USER
+     * slots are skipped for auditioning but stay numbered in the directory. */
     for (count = 0; count < total; count++) {
-        uint32_t k, e;
+        uint32_t k, e, absolute;
         cur = cur >= total ? (direction > 0 ? 0 : total - 1u) :
                              (cur + (direction > 0 ? 1u : total - 1u)) % total;
-        e = preset_at(cur, &k);
+        absolute = browse_start() + cur;
+        e = preset_all_at(absolute, &k);
         if (e != NENGINES || up_used(k)) {
-            preset_go(cur);
+            browse_cursor = (uint8_t)absolute;
+            browse_cursor_valid = 1u;
+            preset_go(absolute);
+            ui.force = 1;
             return;
         }
     }
 }
 
+/* The previous Jiant LIST filter's favorites/type window no longer applies.
+ * All 64 physical positions remain visible in a continuous directory. */
 /* Seven display rows. Favorites use a bounded window, not a repeating carousel.
  * Return total for an empty row; a non-favorite current sound shows the start. */
 static uint32_t preset_visible(uint32_t cur, uint32_t total, uint32_t row)
 {
     uint32_t first, last;
     if (!total || row >= 7u) return total;
-    if (!list_get())
-        return (cur + total * 4u + row - 3u) % total;
-    first = cur < total && cur > 3u ? cur - 3u : 0u;
-    last = total > 7u ? total - 7u : 0u;
-    if (first > last) first = last;
-    return first + row < total ? first + row : total;
+    (void)first; (void)last;
+    return (cur + total * 4u + row - 3u) % total;
 }
 
 /* (JIANT 0.4) the MACRO layer latched: LFO held opens it, let go it stays (M1..M4 on KNOB 1..4, SELECT the dice, its
