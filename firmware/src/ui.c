@@ -1846,7 +1846,7 @@ static uint32_t preset_pos(uint32_t *total)
     uint32_t base = browse_start(), current;
     *total = browse_length();
     if (browse_cursor_valid) current = browse_cursor;
-    else preset_all_pos(&current); /* current becomes absolute slot, not count */
+    else { uint32_t ignored; current = preset_all_pos(&ignored); }
     if (current < base || current >= base + *total) return *total;
     return current - base;
 }
