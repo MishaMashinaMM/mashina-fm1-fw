@@ -388,7 +388,7 @@ int main(void)
         bad+=check("fresh four-track project SAVE requires no manual preset assignments",
                    project_save_as(0,"BOOT FOUR")==0 && project_used(0));
     }
-    /* PROPOSED CLEAN INSTALL: preflight ALL 46 project/LIBRARY/USER sectors
+    /* PROPOSED CLEAN INSTALL: preflight ALL 53 active-state sectors
      * before erasing any of them. Never touch an actual device here. */
     {
         uint32_t beforeWrites=writes,beforeErases=erases;
@@ -404,6 +404,17 @@ int main(void)
                    !st_save(OBJ_SONG1+16u,oldData,sizeof oldData));
         bad+=check("simulated final LIBRARY bank can hold CRC-valid FUN",
                    !st_save(OBJ_SONG1+19u,oldData,sizeof oldData));
+        /* Exercise old settings, song selection, RESTORE LAST and FM6
+         * voice bank in their exact source-owned sectors. */
+        memset(nor+0xFC000u,0xFF,8192u);
+        memset(nor+0xD8000u,0xFF,8192u);
+        memset(nor+0xE5000u,0xFF,12288u);
+        bad+=check("prepare validated old settings record",
+                   !st_save(OBJ_SETTINGS,oldData,sizeof oldData));
+        bad+=check("prepare validated old song index record",
+                   !st_save(OBJ_SONGIDX,oldData,sizeof oldData));
+        bad+=check("prepare validated old RESTORE LAST record",
+                   !st_save(OBJ_AUTOSAVE,oldData,sizeof oldData));
         /* The very last proposed 4 KiB sector is deliberately poisoned:
          * complete preflight MUST reject before erasing the first sector. */
         const uint32_t poisoned=LIB_BASE+LIB_BANKS*2u*LIB_SECTOR-1u;
@@ -415,7 +426,7 @@ int main(void)
                    nor[st_sector(OBJ_SONG1+2u,0)]!=0xFFu);
         nor[poisoned]=0xFFu;
         /* A late foreign byte in USER companion must block project+LIBRARY
-         * erasures too. ALL 46 sectors are preflighted before the first erase. */
+         * erasures too. ALL 53 sectors are preflighted before the first erase. */
         const uint32_t userPoison=0xFE000u+4095u;
         const uint8_t oldUserPoison=nor[userPoison];
         nor[userPoison]=0x21u;
@@ -424,12 +435,20 @@ int main(void)
                    clean_layout_initialize()==1 && writes==beforeWrites &&
                    erases==beforeErases);
         nor[userPoison]=oldUserPoison;
+        /* A foreign byte in the very last auxiliary sector (FM6 voices)
+         * must refuse to erase any earlier project/USER/settings sector. */
+        const uint32_t auxPoison=0xE7FFFu;
+        const uint8_t savedAux=nor[auxPoison];
+        nor[auxPoison]=0x37u;
+        beforeWrites=writes;beforeErases=erases;
+        bad+=check("late FM6 voice-bank corruption refuses all 53-sector erases",
+                   clean_layout_initialize()==1 &&
+                   writes==beforeWrites && erases==beforeErases);
+        nor[auxPoison]=savedAux;
         beforeWrites=writes;
-        const uint8_t savedSettings=nor[0xFC000u];
-        const uint8_t savedAutosave=nor[0xE5000u];
         const uint8_t savedProject1=nor[0x97000u];
-        const uint8_t savedSongIndex=nor[0xD8000u];
-        bad+=check("clean format accepts verified FUN + USER/companion or blank",
+        const uint8_t savedUnusedLegacy=nor[0xC8000u];
+        bad+=check("clean format accepts CRC-verified legacy and blank active stores",
                    clean_layout_initialize()==0);
         int allBlank=1;
         for(uint32_t address=MPRS_BASE;
@@ -441,13 +460,16 @@ int main(void)
             if(nor[address]!=0xFFu){allBlank=0;break;}
         for(uint32_t address=0xFE000u;address<0xFF000u;address++)
             if(nor[address]!=0xFFu){allBlank=0;break;}
-        bad+=check("complete 46-sector project/LIBRARY/USER/companion map erased",
+        for(uint32_t index=0;index<7u;index++){
+            const uint32_t base=clean_aux_address(index);
+            for(uint32_t off=0;off<4096u;off++)
+                if(nor[base+off]!=0xFFu){allBlank=0;break;}
+        }
+        bad+=check("all 53 sectors: project/LIBRARY/USER/companion/settings/index/autosave/voice erased",
                    allBlank && writes==beforeWrites);
-        bad+=check("no settings, autosave, song index or old P1 sector erased",
-                   nor[0xFC000u]==savedSettings &&
-                   nor[0xE5000u]==savedAutosave &&
+        bad+=check("unreferenced legacy P1 and extra songs are never erased",
                    nor[0x97000u]==savedProject1 &&
-                   nor[0xD8000u]==savedSongIndex);
+                   nor[0xC8000u]==savedUnusedLegacy);
         /* Clean-start USER state comes from flash, not stale RAM copies. */
         up_boot();
         bad+=check("freshly loaded USER 001..032 are all logically empty",({
@@ -455,6 +477,11 @@ int main(void)
             for(uint32_t slot=0;slot<UP_SLOTS;slot++)
                 if(up_used(slot))empty=0;
             empty;
+        }));
+        bad+=check("old RESTORE LAST cannot revive a performance after fresh reset",
+                   autosave_boot(1)==0);
+        bad+=check("song index returns to default project after reset",({
+            song_index_load();song_cur==0u;
         }));
         beforeErases=erases;
         bad+=check("combined clean format can resume when already erased",
