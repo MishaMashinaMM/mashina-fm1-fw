@@ -69,7 +69,7 @@ assert.equal(layout.projects.sections.filter(Boolean).length,0);
 assert.deepEqual(userSourceRecords(fresh).map(x=>x.recordBytes),
   [Array.from(sound1),Array.from(drum),Array.from(sound18)]);
 assert.deepEqual(Object.keys(decodeEmulatorFlash(fresh)).map(Number).sort(),
-  [0x9f000,0xdc000],"new NOR snapshot must include ONLY USER bank and companion sectors");
+  [0x9f000,0xdc000,0xde000],"new NOR snapshot must include ONLY the two used USER banks and companion sectors");
 assert.deepEqual(encodeEmulatorFlash(decodeEmulatorFlash(fresh)),fresh);
 assert.deepEqual(freshMpr1EmulatorFromLegacy(original),fresh,
   "clean emulator creation should be deterministic and entirely read-only");
