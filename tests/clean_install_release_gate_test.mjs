@@ -16,6 +16,11 @@ const config=read("firmware/src/felucca.c");
 const workflow=read(".github/workflows/presets-library-check.yml");
 const flashGate=read("tools/presets_library_flash_map_check.py");
 const trialPage=read("web/clean-install-trial.html");
+const storeHw=read("firmware/src/storage_hw.c");
+const projectHw=read("firmware/src/project_refs_hw.c");
+const libraryHw=read("firmware/src/preset_library_runtime.c");
+const projectBoot=read("firmware/src/project.c");
+
 const scriptStart='<script type="module">';
 const scriptEnd='</script>';
 const begin=trialPage.indexOf(scriptStart),finish=trialPage.indexOf(scriptEnd,begin+scriptStart.length);
@@ -83,4 +88,19 @@ assert(eraseBody.indexOf("mprs_init_clean_break()") < eraseBody.indexOf("lib_fla
 assert(eraseBody.indexOf("lib_flash_erase(") < eraseBody.indexOf("st_erase("));
 assert(eraseBody.indexOf("st_erase(") < eraseBody.indexOf("mprs_save(0u,proj_wire_u.raw)"));
 assert.match(init,/if\(mprs_save\(0u,proj_wire_u\.raw\)\)return 2;/);
+/* The FIRST FLASH may boot while original FUN/USER sectors are still present.
+ * Legacy settings/autosave and experimental banks MUST remain write-locked
+ * until a CRC-committed MPS1 marker is verified on a later cold boot. */
+assert.match(storeHw,/static uint8_t clean_layout_normal_writes;/);
+assert.equal((storeHw.match(/if \(!clean_layout_normal_writes\) return -10;/g)||[]).length,2,
+             "both legacy persistent erase and program must refuse pre-format writes");
+assert.equal((projectHw.match(/if\(!clean_layout_normal_writes\)return -10;/g)||[]).length,2,
+             "MPR1 erases AND programs must be locked on first legacy boot");
+assert.equal((libraryHw.match(/if \(!clean_layout_normal_writes\) return -10;/g)||[]).length,2,
+             "LIBRARY erases AND programs must be locked on first legacy boot");
+assert.match(projectBoot,/clean_layout_normal_writes=\(uint8_t\)\(mprs_valid\(0u,0u,&marker\)/);
+assert.match(projectBoot,/mprs_valid\(0u,1u,&marker\)/);
+const synchronousClean=api.slice(api.indexOf("if (cmd == 102u)"),api.indexOf("if (cmd == 96u)"));
+assert.match(synchronousClean,/clean_layout_normal_writes=1u;\s*const uint32_t result=\(uint32_t\)clean_layout_initialize\(\);\s*clean_layout_normal_writes=0u;/,
+             "only synchronous verified clean commit may temporarily unlock state writes");
 console.log("PASS: first-install formatter stays compile-only, guarded, non-downloadable and non-callable over USB");
