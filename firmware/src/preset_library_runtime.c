@@ -34,6 +34,50 @@ static void library_track_name_set(const track_t *t, const char *name)
     if (i < NTRK) str_cpy(library_track_names[i], name ? name : "", 13);
 }
 
+/* The PRESETS browser must show the actual stored sound, not the
+ * compiled factory fallback. Do NOT access NOR during a screen redraw:
+ * keep the 32 short titles/engine IDs in a tiny pool cache.
+ * kind: 0=empty/factory fallback, 1=valid uploaded override, 2=unreadable.
+ */
+static uint8_t library_meta_kind[LIB_SLOTS] __attribute__((section(".pool")));
+static uint8_t library_meta_engine[LIB_SLOTS] __attribute__((section(".pool")));
+static char library_meta_name[LIB_SLOTS][13] __attribute__((section(".pool")));
+static void library_metadata_refresh(uint32_t slot)
+{
+    up_rec_t *record = (up_rec_t *)library_record;
+    uint32_t i;
+    if (slot >= LIB_SLOTS) return;
+    library_meta_kind[slot] = 2u;  /* fail closed */
+    library_meta_name[slot][0] = 0;
+    library_meta_engine[slot] = 0u;
+    if (lib_slot_read(slot,library_record)) return;
+    if (lib_record_valid(library_record) && up_valid(record)) {
+        memcpy(library_meta_name[slot],record->name,12u);
+        library_meta_name[slot][12] = 0;
+        library_meta_engine[slot] = record->engine;
+        library_meta_kind[slot] = 1u;
+        return;
+    }
+    /* Only a completely blank slot represents the compiled fallback. */
+    for (i=0;i<LIB_ENTRY;i++)
+        if (library_record[i]) return;
+    library_meta_kind[slot] = 0u;
+}
+static void library_metadata_boot(void)
+{
+    for (uint32_t i=0;i<LIB_SLOTS;i++)
+        library_metadata_refresh(i);
+}
+static uint32_t library_metadata(uint32_t slot, char *name, uint32_t *engine)
+{
+    if (slot >= LIB_SLOTS) return 2u;
+    if (library_meta_kind[slot] == 1u) {
+        str_cpy(name,library_meta_name[slot],13);
+        *engine = library_meta_engine[slot];
+    }
+    return library_meta_kind[slot];
+}
+
 static int lib_flash_read(uint32_t addr, void *p, uint32_t n)
 {
 #if defined(MASHINA_LIB_HOST_FLASH)
