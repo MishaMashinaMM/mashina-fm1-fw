@@ -203,6 +203,11 @@ int main(int argc, char **argv)
             memcpy(nor + base + 0xF00u, r, sizeof r);
         }
         memcpy(library_before, nor + 0xC0000u, sizeof library_before);
+        /* The updater's own cleanup scans both autosave and FM6 voice
+         * sectors. Forge valid-looking vendor update records there too:
+         * neither can be cleared as a side effect of a normal upgrade. */
+        for(uint32_t sector=0xE5000u;sector<0xE8000u;sector+=0x1000u)
+            memcpy(nor + sector + 0xF00u, r, sizeof r);
         for (i = 0; i < 0x1000u; i++) nor[0xA0000 + i] = (uint8_t)(i * 7u);
         memcpy(nor + 0xA0F00, r, sizeof r);
         memcpy(user, nor + 0xA0000, sizeof user);
@@ -236,6 +241,9 @@ int main(int argc, char **argv)
     bad += check("user data in Felucca's store that looks like a record is kept", !memcmp(nor + 0xA0000, user, sizeof user));
     bad += check("all eight LIBRARY sectors preserved byte-exactly, even with forged OTA markers",
                  !memcmp(nor + 0xC0000u, library_before, sizeof library_before));
+    bad += check("all three autosave/voice sectors preserve forged update-record signatures",
+                 nor[0xE5F06u]==0x41u && nor[0xE6F06u]==0x41u &&
+                 nor[0xE7F06u]==0x41u);
     bad += check("no write outside the allowed windows", bad_range == 0);
     bad += check("[0x93000, 1 MiB) byte-identical but the record sectors", !memcmp(nor + 0x93000, store, sizeof store));
     bad += app_area(argc > 3 ? (uint32_t)strtoul(argv[3], NULL, 0) : 0u);
