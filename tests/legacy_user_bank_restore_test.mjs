@@ -32,6 +32,8 @@ function makeMock(){
   const request=async(cmd,args)=>{
     if(cmd===89)return [1,32,1];
     if(cmd===95)return [1,32,1,1];
+    if(cmd===97)return [16,1,...Array(15).fill(0)];
+    if(cmd===98)return [4,0,0,0,0];
     if(cmd===94){
       const slot=args[0],rec=done.size===3?recs.get(slot):null;
       return rec?[slot,0,...pack7(rec)]:[slot,1];
@@ -93,5 +95,48 @@ function makeMock(){
   await assert.rejects(()=>restoreOriginalUserBanks(request,source,{authorized:true}),
     /Backup PUT refused stage 0 for USER object 6/);
   assert(writes.every(a=>a[1]===6),"failure must not touch another object");
+}
+/* Hardware may advertise new write capabilities while still containing
+ * retired FUN data or a partially formatted sector: NEVER PUT to it. */
+for(const [probe,reply] of [
+  [97,[16,2,...Array(15).fill(0)]],  // legacy project sectors
+  [97,[16,1,0,0,3,...Array(12).fill(0)]], // corrupt next bank
+  [98,[4,0,0,1,0]],                  // occupied LIBRARY slot
+  [98,[4,0,0,3,0]]                   // unknown/partly erased LIBRARY
+]){
+  const mock=makeMock();
+  const request=(cmd,args)=>cmd===probe?reply:mock.request(cmd,args);
+  await assert.rejects(()=>restoreOriginalUserBanks(request,source,{authorized:true}),
+    /freshly initialized|nonempty or unknown LIBRARY/);
+  assert.equal(mock.sent.length,0,"unsafe layout must send ZERO write commands");
+}
+/* A write-stage failure in the second bank must never start the third. */
+{
+  const mock=makeMock();
+  const request=async(cmd,args)=>{
+    if(cmd===67 && args[0]===1 && args[1]===7)
+      return [1,7,4];
+    return mock.request(cmd,args);
+  };
+  await assert.rejects(()=>restoreOriginalUserBanks(request,source,{authorized:true}),
+    /Original USER restore stopped on object 7/);
+  assert(!mock.sent.some(([,id])=>id===9),
+    "failure in USER bank 7 must not touch companion bank 9");
+}
+/* A successful PUT is not enough: complete record readback must match
+ * the untouched original, including FM6/drum companion bytes. */
+{
+  const mock=makeMock();
+  const request=async(cmd,args)=>{
+    if(cmd===94 && mock.done.size===3 && args[0]===17){
+      const changed=Uint8Array.from(fm6);changed[245]^=1;
+      return [17,0,...pack7(changed)];
+    }
+    return mock.request(cmd,args);
+  };
+  await assert.rejects(()=>restoreOriginalUserBanks(request,source,{authorized:true}),
+    /differs from original complete 304-byte sound/);
+  assert.deepEqual([...mock.done.keys()],[6,7,9],
+    "failed verification must not trigger an automatic rewrite");
 }
 console.log("PASS: authorized 43-object archive restores ONLY USER banks 6/7/9 and verifies FM6/drum-compatible capture; errors stop without retries");
