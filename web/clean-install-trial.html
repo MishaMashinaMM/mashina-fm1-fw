@@ -39,21 +39,32 @@ strong{color:#ffb03a}
 <button id="commit" type="button" disabled>Destructive first install — erase one FM1</button>
 <p class="subtle">PREPARE issues WebMIDI command 101, a read-only scan. It returns a short-lived one-time nonce only if all expected sectors are valid. COMMIT issues command 102 only after a second explicit confirmation, using the nonce within 15 seconds. The firmware repeats its entire sector preflight before writing. An interrupted erase or marker commit must be handled as a recovery case — NEVER automatically retry it.</p>
 </section>
+<section class="panel"><h2>4. Optional: restore original USER presets after reboot</h2>
+<p><strong>Only after the fresh FM1 has been power-cycled.</strong> The original 43-object backup can restore its USER 001–032 banks and FM6/drum sidecars without importing old FUN projects or old settings. All target USER slots must be empty; the browser verifies every complete sound after writing. This is a separate, explicit physical write and is not atomic across three banks.</p>
+<label><input id="fresh-boot" type="checkbox"> The newly formatted FM1 was power-cycled, and I verified all 32 USER slots are empty.</label>
+<label>Type <strong>RESTORE USER ONLY</strong> to enable a separate preset-only restore.<br>
+<input id="restore-phrase" type="text" autocomplete="off" spellcheck="false" placeholder="RESTORE USER ONLY"></label>
+<button id="restore-users" type="button" disabled>Restore original USER presets only (6/7/9)</button>
+<p class="subtle">A restore failure must be investigated before any retry. Do not load old project/settings data into MPR1.</p>
+</section>
 <h2>Transfer status</h2><div role="status" aria-live="polite" id="status">No writes have been requested.</div>
 <p class="subtle">Source review page. This page does not contain a flashable firmware package. Do not publish it as a normal installer.</p>
 <script type="module">
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {readBackup} from "./fm1backup.js";
+import {restoreOriginalUserBanks} from "./legacy-user-bank-restore.mjs";
 const $=id=>document.getElementById(id);
-let midi=null, validArchive=false, authorizedFirmware=false,nonce=null,preparedAt=0,busy=false,resetDone=false;
+let midi=null, validArchive=false, verifiedOriginal=null, authorizedFirmware=false, restoreCapable=false,nonce=null,preparedAt=0,busy=false,resetDone=false;
 const status=s=>{$("status").textContent=s;};
 function invalidate(){nonce=null;preparedAt=0;$("commit").disabled=true;}
 function canPrepare(){return !busy&&!resetDone&&validArchive&&authorizedFirmware&&$("one-unit").checked&&
   $("rollback").checked&&$("phrase").value==="ERASE THIS FM1";}
 function refresh(){
- $("connect").disabled=busy||resetDone;
+ $("connect").disabled=busy;
  $("disconnect").disabled=busy||!midi;
  $("preflight").disabled=!canPrepare();
+ $("restore-users").disabled=busy||!validArchive||!restoreCapable||!midi||!$("fresh-boot").checked||
+   !$("one-unit").checked||!$("rollback").checked||$("restore-phrase").value!=="RESTORE USER ONLY";
  if(!canPrepare())invalidate();
 }
 async function request(cmd,args){
@@ -61,13 +72,14 @@ async function request(cmd,args){
  return Uint8Array.from(await midi.request(cmd,args,{timeout:cmd===102?120000:60000,retries:0}));
 }
 $("archive").addEventListener("change",async e=>{
- validArchive=false;invalidate();
+ validArchive=false;verifiedOriginal=null;invalidate();
  const file=e.target.files?.[0];
  try{
   if(!file)throw Error("Select your original legacy JSON");
-  const backup=readBackup(JSON.parse(await file.text()));
+  const data=JSON.parse(await file.text());
+  const backup=readBackup(data);
   if(backup.objects.length!==43)throw Error("Expected exactly 43 legacy objects");
-  validArchive=true;
+  validArchive=true;verifiedOriginal=data;
   $("archive-state").textContent="Verified 43 legacy objects and individual CRC32 checksums: "+file.name;
   status("Backup parsed locally. Check that it belongs to this device and keep a second offline copy.");
  }catch(error){$("archive-state").textContent="Backup refused: "+error.message;status("No write authorized.");}
@@ -76,13 +88,14 @@ $("archive").addEventListener("change",async e=>{
 $("connect").addEventListener("click",async()=>{
  if(busy)return;busy=true;refresh();
  try{
-  midi?.close();midi=null;authorizedFirmware=false;invalidate();
+  midi?.close();midi=null;authorizedFirmware=false;restoreCapable=false;invalidate();
   const candidate=await connectLibraryMidi();
   midi=candidate;
   const lib=await request(89,[]);
   const project=await request(95,[]);
-  authorizedFirmware=lib.length===3&&lib[0]===1&&lib[1]===32&&lib[2]===1&&
-    project.length===4&&project[0]===1&&project[1]===32&&project[2]===1&&project[3]===1;
+  restoreCapable=lib.length===3&&lib[0]===1&&lib[1]===32&&lib[2]===1&&
+    (project.length===3||project.length===4)&&project[0]===1&&project[1]===32&&project[2]===1;
+  authorizedFirmware=restoreCapable&&project.length===4&&project[3]===1;
   $("device-state").textContent="Connected: "+candidate.name+"; "+(authorizedFirmware?
     "experimental write-enabled capabilities detected (a further read-only format preflight is required)":
     "no authorized formatter capability — reset disabled");
@@ -95,6 +108,7 @@ $("disconnect").addEventListener("click",()=>{
  $("device-state").textContent="Disconnected.";status("Disconnected. No further writes possible.");refresh();
 });
 for(const id of ["one-unit","rollback","phrase"])$(id).addEventListener("input",()=>{invalidate();refresh();});
+for(const id of ["fresh-boot","restore-phrase"])$(id).addEventListener("input",refresh);
 $("preflight").addEventListener("click",async()=>{
  if(!canPrepare())return;
  busy=true;invalidate();refresh();
@@ -107,6 +121,19 @@ $("preflight").addEventListener("click",async()=>{
   $("commit").disabled=false;
  }catch(error){status("Preflight BLOCKED: "+error.message+". Do not attempt COMMIT.");}
  finally{busy=false;refresh();if(nonce!==null&&canPrepare())$("commit").disabled=false;}
+});
+$("restore-users").addEventListener("click",async()=>{
+ if(busy||!midi||!restoreCapable||!validArchive||!verifiedOriginal||
+    !$("fresh-boot").checked||!$("one-unit").checked||!$("rollback").checked||
+    $("restore-phrase").value!=="RESTORE USER ONLY")return;
+ if(!confirm("RESTORE ORIGINAL USER SOUNDS ONLY\\n\\nThis writes USER banks 6/7 plus FM6/drum companions 9. It does not restore old project sections or device settings. Continue on the freshly formatted FM1?"))return;
+ busy=true;refresh();
+ try{
+  const result=await restoreOriginalUserBanks((cmd,args,options)=>midi.request(cmd,args,options),
+    verifiedOriginal,{authorized:true,progress:(i,n)=>status("USER-only restore: committed bank "+i+"/"+n+"; readback still required.")});
+  status("RESTORE VERIFIED: "+result.verifiedSounds+" complete original USER sounds; only objects 6/7/9 were written. Old FUN projects and settings were NOT imported. Check independent sounds on the FM1 after a cold restart.");
+ }catch(error){status("STOP USER RESTORE: "+error.message+" The target might be partially restored. Do not retry automatically or restore old projects/settings.");}
+ finally{busy=false;refresh();}
 });
 $("commit").addEventListener("click",async()=>{
  if(!canPrepare()||nonce===null||Date.now()-preparedAt>12000){invalidate();status("Authorization expired. Repeat read-only preflight.");return;}
