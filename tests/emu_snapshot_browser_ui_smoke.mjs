@@ -84,6 +84,23 @@ try{
   assert.deepEqual(extracted.patches[0].recordBytes,Array.from(legacySound));
   assert.equal(await page.locator("#probe-flash").isDisabled(),true);
   assert.deepEqual(errors,[],"Browser errors after offline USER archive conversion");
+  const [freshDownload]=await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#prepare-legacy-emulator").setInputFiles({
+      name:"original-backup.json",mimeType:"application/json",
+      buffer:Buffer.from(JSON.stringify(legacyArchive))
+    })
+  ]);
+  assert.equal(freshDownload.suggestedFilename(),
+    "mashina-fresh-mpr1-emulator-with-original-user.json");
+  const newNor=JSON.parse(fs.readFileSync(await freshDownload.path(),"utf8"));
+  const checked=inspectEmulatorFlash(newNor);
+  assert.equal(checked.users[0].name,"ORIGINAL");
+  assert.equal(checked.users.filter(x=>x.status==="saved").length,1);
+  assert.equal(checked.library.filter(x=>x.status==="factory").length,32);
+  assert.equal(checked.projects.sections.filter(Boolean).length,0);
+  assert.equal(await page.locator("#probe-flash").isDisabled(),true);
+  assert.deepEqual(errors,[],"Browser errors after fresh offline MPR1 snapshot");
 
   const target=JSON.stringify(encodeEmulatorFlash({}));
   await page.locator("#inspect-emu").setInputFiles({
