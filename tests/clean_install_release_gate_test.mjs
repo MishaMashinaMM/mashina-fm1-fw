@@ -57,7 +57,7 @@ for(const flag of ["FELUCCA_CLEAN_INSTALL_LAYOUT","FELUCCA_PROJECT_REFS_FORMAT"]
   assert.match(build,new RegExp('os\\.environ\\.get\\("'+flag+'"\\) == "1"'));
 }
 assert(build.includes('if non_distributable and not trial_authorized:'));
-assert(build.includes('and a.release == "0.13-clean-trial"'));
+assert(build.includes('and a.release == "0.13-cleantrial"'));
 assert(build.includes('os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"'));
 assert(build.includes('os.environ.get("GITHUB_REF") == "refs/heads/presets-library"'));
 assert(build.includes('os.environ.get("MASHINA_ONE_FM1_CLEAN_TRIAL") == "ERASE-ONE-FM1-32X32"'));
