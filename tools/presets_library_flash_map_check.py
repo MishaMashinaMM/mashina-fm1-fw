@@ -83,6 +83,13 @@ def check():
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
                  "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT"):
         assert '"' + flag + '"' in build, f"tools/build.py no longer forwards {flag}"
+    # Source-checked safety gate: building clean-layout reset code must NOT
+    # produce a flashable .fwsc or release folder in the normal build script.
+    assert 'non_distributable = os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1"' in build
+    assert "if non_distributable:" in build and \
+           build.index("if non_distributable:") < build.index("pkg = fm1pkg_make.ufw(")
+    assert "return 0" in build[build.index("SAFE BUILD-ONLY:"):build.index("pkg = fm1pkg_make.ufw(")]
+    print("PASS: opt-in clean-layout formatter can compile but cannot produce a physical installer")
     hal = src(flash)
     assert "#if defined(FELUCCA_LIB32_WRITE) && FELUCCA_LIB32_WRITE" in hal
     assert "FL_LIB32_OK(off,n)" in hal and "|| FL_LIB32_OK(off,n)" in hal, (
