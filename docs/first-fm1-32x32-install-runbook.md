@@ -15,13 +15,13 @@ The command-101/102 implementation is still **source-only**. The build release g
 ## A. Pre-flash evidence — no experimental writes
 
 - Choose one unit and keep the second unplugged.
-- Verify and retain the original complete **43-object** `felucca-backup` archive (not just the portable nine-sound preset pack), plus a known-working stable MASHINA firmware image. Keep independent copies.
+- **No preservation of the old USER presets/projects/settings is required** for this deliberate fresh start. An existing JSON preset pack can be imported later into whichever slots you choose. Keep access to a known-working MASHINA firmware image for emergency reinstallation.
 - Download the official [M-Flasher for Windows 10](https://jvitkauskas.github.io/m-apps/flasher/) and read its [download-mode instructions](https://github.com/jvitkauskas/m-flasher/blob/main/docs/usage.md). Connect the first FM1 directly with a normal USB data cable.
-- Use **DOWNLOAD MODE** only if M-Flasher correctly recognizes the FM1; then **Back up the whole flash** twice as distinct 1 MiB read sessions. Save the two `.bin` files **and their metadata** privately. Decline any offered bootloader installation or firmware update. Do NOT press restore/install/write.
-- From the non-flashable GitHub Actions review bundle, run `py tools/verify_fm1_recovery_dumps.py FIRST.bin SECOND.bin`. The two full images must be byte-for-byte identical and must not be blank. Store the SHA-256 evidence.
-- Use M-Flasher's **Restart** (or the FM1 power switch) and verify the original firmware boots and plays. If the above cannot be completed, stop. Keep the XIAO disconnected.
+- **Optional recovery insurance, not an installation prerequisite:** use **DOWNLOAD MODE** if M-Flasher recognizes the FM1, then **Back up the whole flash** twice as distinct 1 MiB read sessions. If you choose to skip this, accept that restoring the exact pre-install flash state may not be possible, even though firmware reinstallation remains available. Decline any offered bootloader installation.
+- Only if making the optional full-flash backups, run `py tools/verify_fm1_recovery_dumps.py FIRST.bin SECOND.bin` and retain their matching checksums.
+- If you used M-Flasher, use **Restart** (or the FM1 power switch) and verify that the original firmware still boots and plays. Keep the XIAO disconnected.
 
-**Backup caution:** two matching reads are necessary but not sufficient evidence of write-side rollback. In particular, merely reinstalling working firmware cannot recreate the 53 erased data sectors; original complete flash recovery or verified musical archive restoration would be needed.
+**Recovery limitation:** reinstalling working firmware cannot recreate erased user data; this is acceptable for a deliberate fresh install only if you really do not need that original data. Two matching optional full-flash backups strengthen rollback options but do not guarantee recovery.
 
 ## B. Controlled first application install — NOT YET AUTHORIZED
 
@@ -33,15 +33,15 @@ After installing, confirm device boot, USB/WebMIDI connectivity and firmware cap
 
 ## C. Deliberate clean initialization — NOT YET AUTHORIZED
 
-- The local experimental trial page imports the original untouched 43-object archive and rechecks its CRCs.
+- The local experimental trial page **does not require any legacy archive**. It asks the owner to acknowledge that the chosen unit's existing sounds/projects/settings are intentionally discarded. An original archive is accepted only by the separate optional USER sound restoration workflow.
 - Read-only **PREPARE** calls command 101; firmware checks ALL 53 legacy sectors and issues a short-lived one-time ticket only on exact valid original layout.
 - After an additional typed phrase and owner confirmation, **COMMIT** command 102 repeats all preflight checks before the first erase. Never auto-repeat if interrupted; partial format is a STOP/recovery condition, not a routine retry.
 - On success, power-cycle. Check **32 empty USER**, **32 LIBRARY factory fallbacks**, and **8 empty projects each with A–D**. Do not restore legacy project sections directly into MPR1.
 
 ## D. Restore and actual new workflow
 
-- Import the original archive's USER objects **6, 7, 9** only; their FM6/drum sidecars must be intact. The browser checks all 32 USER slots were empty and verifies each populated sound's complete 304 bytes after the write.
-- Power-cycle **again**, reconnect, and run the independent **read-only post-reboot USER verification**. Audition those nine sounds separately.
+- **For this clean-start scenario, skip old USER restoration entirely.** The device begins with 32 empty USER slots. If someday desired, a separately confirmed optional restore can import original archive objects **6, 7, 9** with FM6/drum sidecars.
+- If optional original USER restoration was used, power-cycle **again** and verify the restored sounds read-only; otherwise proceed directly to importing new sounds or creating presets.
 - Create or replace one LIBRARY sound from the offline JSON, save one reference-based project section, confirm that saving one sound doesn't overwrite other USER/LIBRARY presets, and that a project referencing it updates when its underlying preset is deliberately changed.
 - Power-cycle and verify project, library, and USER persistence; export a complete NEW-format snapshot to local JSON.
 - Only after these tests pass would we consider the new firmware ready for the second FM1 or future updates.
