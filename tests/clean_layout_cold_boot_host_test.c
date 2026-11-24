@@ -87,6 +87,7 @@ static int mprs_read(uint32_t off,void *p,uint32_t n){return st_read(off,p,n);}
 static int lib_flash_read(uint32_t off,void *p,uint32_t n){return st_read(off,p,n);}
 static int mprs_erase(uint32_t off){return st_erase(off);}
 static int lib_flash_erase(uint32_t off){return st_erase(off);}
+#include "../firmware/src/project_refs_store.c"
 /* Program NOR with real one-way 1->0 behavior and a separately
  * interruptible FINAL MPS1 commit-header write. */
 static int mprs_prog(uint32_t off,const void *src,uint32_t n){
@@ -105,7 +106,7 @@ static int mprs_prog(uint32_t off,const void *src,uint32_t n){
     return 0;
 }
 /* Use the REAL MPRS save and readback logic, not a simulated header stub. */
-#include "../firmware/src/project_refs_store.c"
+
 #include "../firmware/src/project_refs_init.c"
 
 static void old_sector(uint32_t obj,uint32_t copy){
