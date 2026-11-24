@@ -107,6 +107,23 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         ed_b(127u);ed_b(1u);return 1;
 #endif
     }
+    if (cmd == 100u) { /* read-only 53-sector format preflight, never approval */
+#if FELUCCA_FLASH_DIAG
+        if(n!=2u || args[0]>=53u || args[1]==0u || args[1]>8u ||
+           (uint32_t)args[0]+args[1]>53u){
+            ed_b(127u);ed_b(1u);return 1;
+        }
+        ed_b(1u);ed_b(args[0]);ed_b(args[1]);
+        for(uint32_t k=0;k<args[1];k++){
+            const uint32_t status=(!flash_ok||transport_busy())?4u:
+              ed_diag_layout_sector((uint32_t)args[0]+k);
+            ed_b(status);
+        }
+        return 1;
+#else
+        ed_b(127u);ed_b(1u);return 1;
+#endif
+    }
     if (cmd == 96u) { /* MPR1_INIT, NOT enabled in ordinary builds */
 /* The combined-layout prototype has NO on-device erase command. Until
  * full USER/settings/auxiliary partitions and recovery are verified, a
