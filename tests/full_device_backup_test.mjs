@@ -97,7 +97,29 @@ let staged=null,sets=0,erasures=0,archiveGets=0;
 async function mock(cmd,args=[],opts={}){
   if(cmd===89)return [1,32,1];
   if(cmd===95)return [1,32,1,0];
-  if(cmd===94)return [args[0],1]; // 32 USER positions are empty in this fixture
+  if(cmd===94){
+    const slot=args[0], bank=mockObjects.get(6+Math.floor(slot/16));
+    if(!bank?.length)return [slot,1];
+    assert.equal(bank.length,3080);
+    const off=8+(slot%16)*192,head=bank.slice(off,off+192);
+    if(head[0]!==0xa5)return [slot,1];
+    const rec=new Uint8Array(304);rec.set(head);
+    if([10,12,15,19,20].includes(rec[2])){
+      const extra=mockObjects.get(9);
+      if(!extra?.length||extra.length!==3728)return [slot,1];
+      const mask=(extra[8]|extra[9]<<8|extra[10]<<16|extra[11]<<24)>>>0;
+      if(!(mask&(1<<slot)))return [slot,1];
+      const start=16+slot*116;
+      let tag=2166136261;
+      for(let i=0;i<192;i++)
+        if(i<4||i>=16)tag=Math.imul(tag^head[i],16777619)>>>0;
+      const expected=(extra[start]|extra[start+1]<<8|
+        extra[start+2]<<16|extra[start+3]<<24)>>>0;
+      if(tag!==expected)return [slot,1];
+      rec.set(extra.slice(start+4,start+116),192);
+    }
+    return [slot,0,...pack7(rec)];
+  }
   if(cmd===91) {
     const v=mockLib.get(args[0]);
     return v?[args[0],0,...pack7(v)]:[args[0],3];
@@ -231,4 +253,82 @@ const corruptingMock=async(cmd,args=[],opts={})=>{
 await assert.rejects(restoreFullDevice(corruptingMock,collected),
   /Global settings verification failed/);
 assert.equal(corruptSettingsOnCommit,false);
+/* Full 32+32 mock transaction with nine distinct, COMPLETE original-style
+ * drum records, including UPF6 sidecars, to exercise the actual 43-object
+ * archive plus separate USER sound validation and read-after-write recovery.
+ * The owner's personal source JSON is NOT committed to this repository. */
+{
+  const slots=[0,1,2,4,5,6,8,9,10];
+  const engines=[19,19,19,15,15,15,10,10,10];
+  const bank=new Uint8Array(3080);
+  bank.set([0x55,0x50,0x42,0x31,192,0,16,0]);
+  const upf=new Uint8Array(3728);
+  upf.set([0x55,0x50,0x46,0x36,1,0,32,0]);
+  const saved=[];
+  const write32=(dst,off,n)=>{
+    for(let i=0;i<4;i++)dst[off+i]=(n>>>(8*i))&255;
+  };
+  let mask=0;
+  for(let i=0;i<9;i++){
+    const slot=slots[i],rec=Uint8Array.from(preset);
+    rec[2]=engines[i];rec[3]=127;rec.fill(0,4,16);
+    rec.set(Buffer.from("KIT-"+String(slot+1).padStart(2,"0")),4);
+    rec[20]=68+i;rec.fill(0,192);
+    for(let k=192;k<303;k++)rec[k]=(k*5+i*37)&255;
+    rec[303]=0xd3;
+    bank.set(rec.slice(0,192),8+slot*192);
+    let tag=2166136261;
+    for(let k=0;k<192;k++)
+      if(k<4||k>=16)tag=Math.imul(tag^rec[k],16777619)>>>0;
+    const at=16+slot*116;
+    write32(upf,at,tag);upf.set(rec.slice(192),at+4);
+    saved.push(Array.from(rec));mask|=1<<slot;
+  }
+  write32(upf,8,mask);
+  mockObjects.set(6,bank);
+  mockObjects.set(9,upf);
+  const nine=await captureFullDevice(mock,"9 KIT MIGRATION SIMULATOR");
+  assert.deepEqual(nine.userPresets.filter(Boolean),saved);
+  assert.equal(nine.archive.objects.length,43);
+  assert.equal(nine.libraryPresets.filter(Boolean).length,1);
+  assert.equal(nine.projects.length,32);
+  assert.equal(nine.selectedProject,1);
+  const stamped=validateFullDevice(nine);
+  assert.deepEqual(stamped.userPresets.filter(Boolean),saved);
+  /* All 43 objects' target bytes, including USER and companion banks, are
+   * erased before the restore to simulate a first-install clean slate.
+   * Initial MPR1/current references are reloaded from the verified archive. */
+  for(const id of [6,7,9])mockObjects.set(id,new Uint8Array(0));
+  mockLib.clear();
+  assert.equal((await captureUser(mock)).length,0);
+  const restored=await restoreFullDevice(mock,nine);
+  assert.equal(restored.restoredProjects,32);
+  const readBack=await captureFullDevice(mock,"9 KIT MIGRATION SIMULATOR");
+  assert.deepEqual(readBack.userPresets.filter(Boolean),saved,
+    "nine original-style drum records lost or aliased on full archive restore");
+  assert.deepEqual(readBack.libraryPresets,nine.libraryPresets);
+  assert.deepEqual(readBack.projects,nine.projects);
+  assert.deepEqual(readBack.currentPerformance,nine.currentPerformance);
+  for(const id of [1,6,7,9,10]){
+    const expected=nine.archive.objects.find(x=>x.id===id);
+    const got=readBack.archive.objects.find(x=>x.id===id);
+    assert.deepEqual(got.bytes,expected.bytes,
+      "important complete source archive object "+id+" failed restore");
+  }
+  /* A silent companion change must prevent a false-success restore.
+   * Strict archive and user sound verification are separate gates. */
+  let corrupted=false;
+  const broken=async(cmd,args=[],opts={})=>{
+    const result=await mock(cmd,args,opts);
+    if(cmd===67&&args[0]===2&&args[1]===9&&!corrupted){
+      mockObjects.get(9)[300]^=1;corrupted=true;
+    }
+    return result;
+  };
+  await assert.rejects(restoreFullDevice(broken,nine),
+    /USER or FM6\/drum-kit sound verification failed|checksum|capture|mismatch|Invalid/);
+  assert.equal(corrupted,true);
+  await restoreFullDevice(mock,nine);
+  console.log("PASS: nine complete custom-style drum USERs -> 43-object MPR1 full-device backup -> blank destination -> restore -> archive+sound+project readback and corruption refusal");
+}
 console.log("PASS: full-device MPR1 validation, strict archive equality, 32-section chunked project restore and write gates");
