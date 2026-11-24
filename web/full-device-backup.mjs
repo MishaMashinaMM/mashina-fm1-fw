@@ -311,19 +311,23 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
 
 /* Optional diagnostic-image-only command 99. Every batch returns:
  * [version=1,start,count, (status,crc32-as-5-seven-bit-bytes)*count].
- * 32 MPR1, 8 LIBRARY, 4 USER and 2 FM6/drum companion sectors are fingerprinted without transmitting
+ * 32 MPR1, 8 LIBRARY, 4 USER, 2 companion, and 7 settings/index/autosave/voice sectors are fingerprinted without transmitting
  * raw preset data or authorizing writes. CRC32 detects ordinary unintended
  * changes, NOT deliberate tampering or ownership/recovery compatibility.
  */
-const FINGERPRINT_46_EXTRA = Object.freeze([0xdc000,0xdd000,0xde000,0xdf000,0x9f000,0xfe000]);
-const fingerprintAddress=(index,version=2)=>
+const FINGERPRINT_EXTRA = Object.freeze([
+  0xdc000,0xdd000,0xde000,0xdf000,0x9f000,0xfe000,
+  0xfc000,0xfd000,0xd8000,0xd9000,0xe5000,0xe6000,0xe7000
+]);
+const fingerprintAddress=(index,version=3)=>
   index<32 ? 0xa0000+index*4096 :
   index<40 ? 0xc0000+(index-32)*4096 :
-  version===2 ? FINGERPRINT_46_EXTRA[index-40] : undefined;
+  index<46 && version>=2 ? FINGERPRINT_EXTRA[index-40] :
+  version>=3 ? FINGERPRINT_EXTRA[index-40] : undefined;
 export async function captureFlashFingerprints(request,progress=()=>{}){
   const sectors=[];
-  for(let start=0;start<46;start+=8){
-    const count=Math.min(8,46-start);
+  for(let start=0;start<53;start+=8){
+    const count=Math.min(8,53-start);
     const reply=Uint8Array.from(await request(99,[start,count]));
     insist(reply.length===3+6*count&&reply[0]===1&&
       reply[1]===start&&reply[2]===count,
@@ -347,17 +351,17 @@ export async function captureFlashFingerprints(request,progress=()=>{}){
         readable:status===0,
         crc32:status===0?crc.toString(16).toUpperCase().padStart(8,"0"):null});
     }
-    progress(sectors.length,46);
+    progress(sectors.length,53);
   }
-  return {format:"mashina-flash-sector-fingerprints",version:2,
+  return {format:"mashina-flash-sector-fingerprints",version:3,
     mode:"READ_ONLY_DIAGNOSTIC",sectorBytes:4096,sectors,
     complete:sectors.every(x=>x.readable)};
 }
 /* Compare only equal, complete sector maps. Does not authorize flash writes. */
 export function compareFlashFingerprints(before,after){
   const validate=x=>x?.format==="mashina-flash-sector-fingerprints"&&
-    (x.version===1||x.version===2)&&x.sectorBytes===4096&&
-    Array.isArray(x.sectors)&&x.sectors.length===(x.version===1?40:46)&&
+    (x.version===1||x.version===2||x.version===3)&&x.sectorBytes===4096&&
+    Array.isArray(x.sectors)&&x.sectors.length===(x.version===1?40:x.version===2?46:53)&&
     x.complete===true&&
     x.sectors.every((s,i)=>s.index===i&&s.readable===true&&
       /^[0-9A-F]{8}$/.test(s.crc32));
