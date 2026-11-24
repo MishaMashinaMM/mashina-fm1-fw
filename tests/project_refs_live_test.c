@@ -139,6 +139,16 @@ int main(void)
                 matched=0;
         bad+=check("project-only parameter map equals actual sound-load retention",matched);
     }
+    bad+=check("all 13 USER/auxiliary format sectors obey exact address whitelist",({
+        int mapOK=1;
+        for(uint32_t i=0;i<6u;i++)
+            if(!clean_user_address_ok(i))mapOK=0;
+        for(uint32_t i=0;i<7u;i++)
+            if(!clean_aux_address_ok(i))mapOK=0;
+        if(clean_user_address_ok(6u)||clean_aux_address_ok(7u))
+            mapOK=0;
+        mapOK;
+    }));
     memset(nor,0xFF,sizeof nor);
     memset(&song,0,sizeof song);
     memset(trk,0,sizeof trk);
