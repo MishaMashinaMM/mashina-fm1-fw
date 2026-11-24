@@ -91,7 +91,7 @@ function makeMock(){
     return mock.request(cmd,args);
   };
   await assert.rejects(()=>restoreOriginalUserBanks(request,source,{authorized:true}),
-    /stopped on object 6/);
+    /Backup PUT refused stage 0 for USER object 6/);
   assert(writes.every(a=>a[1]===6),"failure must not touch another object");
 }
 console.log("PASS: authorized 43-object archive restores ONLY USER banks 6/7/9 and verifies FM6/drum-compatible capture; errors stop without retries");
