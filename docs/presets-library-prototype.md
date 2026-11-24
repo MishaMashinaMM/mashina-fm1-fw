@@ -12,6 +12,13 @@ The highlighted slot is independent of the loaded sound. An unavailable LIBRARY 
 
 **Branch:** `presets-library`, branched from `main`. Not merged, not released, not yet tested on a physical FM1. Do **not** flash this experimental build until its full read/write and recovery tests are approved.
 
+## Emulator acceptance and release boundary (24 November 2026)
+
+- **User-confirmed audition PASS:** the nine complete, individually recovered original USER sounds load in the experimental 32+32 emulator; they sound distinct, and editing/saving one does not change the others. This is manual **emulator** acceptance only; it does not verify device flash behavior.
+- **Full experimental CI PASS:** GitHub Actions run [45473587005](https://github.com/MishaMashinaMM/mashina-fm1-fw/actions/runs/45473587005) completed successfully at commit `cd60c40b9c66368e755b554c4212932ebe0867e7`. It covers host and WebAssembly/storage regressions, native firmware compilation, source flash-map guards and OTA upgrade simulations. The previously prepared [browser emulator](https://github.com/MishaMashinaMM/mashina-fm1-fw/actions/runs/45472775127) was built from an earlier commit and passed its own workflow.
+- **Outstanding, blocking physical release:** read-only physical inspection of the **relocated** `0xA0000..0xC7FFF` project/LIBRARY range; vendor bootloader/firmware update ownership verification; controlled blank-layout initialization, power-loss recovery, independent-bank persistence and full backup/restore on real hardware. Automated tests or a passing emulator audition cannot replace these checks.
+- **Policy:** keep write-capable clean-layout installer unavailable, do not merge into `main`, and do not ask for a physical flash of the experimental layout until physical safety review and an explicit user decision. Preserve the original sound JSON and full snapshots throughout.
+
 ## Agreed workflow
 
 - **001–032**: the existing 32 fully editable USER presets, in fixed positions even when empty, `PC 0–31`.
