@@ -16,7 +16,9 @@ jobs:
       - name: Guard source-level flash partition geometry and installer boundaries
         run: python3 tools/presets_library_flash_map_check.py
       - name: Confirm read-only flash audit cannot enable hardware writes
-        run: node tests/flash_readiness_audit_test.mjs
+        run: |
+          node tests/flash_readiness_audit_test.mjs
+          node tests/flash_fingerprint_test.mjs
       - name: Verify existing storage and report 32-slot capacity
         run: |
           python3 tools/presets_library_capacity.py
