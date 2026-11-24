@@ -29,6 +29,9 @@ static void lcd_blit(uint32_t x,uint32_t y,uint32_t w,uint32_t h,const uint16_t 
 static void panel_setup(void){}
 
 static uint8_t nor[0x100000],flash_ok=1;
+/* Production storage_hw.c declares this marker; the standalone host NOR
+ * harness provides its identical boot-gate state without device HAL. */
+static uint8_t clean_layout_normal_writes;
 static uint32_t erases,writes,outside;
 /* Simulate a single brownout/failing NOR erase during clean installation. */
 static uint32_t fail_erase_at=0xFFFFFFFFu,fail_prog_at=0xFFFFFFFFu;
