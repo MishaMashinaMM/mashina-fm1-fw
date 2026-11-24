@@ -14,6 +14,31 @@ const SOURCE_IDS=[6,7,9];
 function matches(a,b){
   return a.length===b.length&&a.every((v,i)=>v===b[i]);
 }
+/* Read-only verification is intentionally separate from the write session.
+ * Run it only after the owner has physically power-cycled and reconnected.
+ * Matching the 304-byte USER records checks both the base presets and their
+ * FM6/drum companions; it cannot by itself prove audio or bootloader recovery. */
+export async function verifyOriginalUserBanksAfterReboot(request,original){
+  const archive=readBackup(original);
+  requireOk(archive.objects.length===43,"Expected the complete original 43-object archive");
+  const extracted=extractLegacyUserPresets(original);
+  const expected=new Map(extracted.patches.map(p=>[p.slot,p.recordBytes]));
+  const lib=Uint8Array.from(await request(89,[],{timeout:5000,retries:0}));
+  const projects=Uint8Array.from(await request(95,[],{timeout:5000,retries:0}));
+  requireOk(lib.length===3&&lib[0]===1&&lib[1]===32&&lib[2]===1 &&
+    (projects.length===3||projects.length===4)&&projects[0]===1&&
+    projects[1]===32&&projects[2]===1,
+    "Cold-started device is not a write-capable MPR1/LIB32 firmware");
+  const got=await captureUser(request);
+  requireOk(got.length===expected.size,
+    "Cold-boot USER occupancy differs from original sound archive");
+  for(const item of got){
+    const bytes=expected.get(item.slot);
+    requireOk(bytes&&matches(bytes,item.recordBytes),
+      "Cold-boot USER "+(item.slot+1)+" differs from original complete 304-byte sound");
+  }
+  return {verifiedSounds:got.length,readOnly:true,afterReboot:true};
+}
 export async function restoreOriginalUserBanks(request,original,opts={}){
   requireOk(opts.authorized===true,
     "Original USER restore requires explicit owner authorization");
