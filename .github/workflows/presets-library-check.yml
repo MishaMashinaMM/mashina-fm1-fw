@@ -273,3 +273,20 @@ jobs:
           name: mashina-presets-library-32-preview
           path: build/presets-library-preview/
           retention-days: 14
+
+      - name: Stage non-flashable one-device trial review dossier
+        run: |
+          mkdir -p build/one-device-trial-review
+          cp docs/one-device-clean-install-trial.md docs/clean-slate-first-install.md docs/diagnostic-flash-readonly.md build/one-device-trial-review/
+          cp tests/clean_install_release_gate_test.mjs build/one-device-trial-review/
+          printf 'Branch: presets-library\\nCommit: %s\\nStatus: NON-FLASHABLE REVIEW ONLY\\nRequires separately approved physical test: YES\\n' "$GITHUB_SHA" > build/one-device-trial-review/PROVENANCE.txt
+          # Fail closed if this ever accidentally contains firmware or an installer.
+          if find build/one-device-trial-review -type f \\( -name '*.fwsc' -o -name '*.bin' -o -name '*.ufw' -o -name 'installer*' \\) | grep -q .; then
+            echo 'Refusing review bundle containing flashable files'
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-one-device-clean-install-review-NOT-FLASHABLE
+          path: build/one-device-trial-review/
+          retention-days: 14
