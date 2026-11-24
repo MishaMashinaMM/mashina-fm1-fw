@@ -467,7 +467,7 @@ def main():
     # confirmation is required; the first physical install is destructive.
     trial_authorized = (
         non_distributable
-        and a.release == "0.13-clean-trial"
+        and a.release == "0.13-cleantrial"
         and os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
         and os.environ.get("GITHUB_REF") == "refs/heads/presets-library"
         and os.environ.get("MASHINA_ONE_FM1_CLEAN_TRIAL") == "ERASE-ONE-FM1-32X32"
