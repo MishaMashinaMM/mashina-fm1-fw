@@ -109,7 +109,10 @@ jobs:
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
-        run: python3 tools/build.py --release 0.13
+        run: |
+          python3 tools/build.py --release 0.13
+          mkdir -p build/host
+          cp build/felucca-0.13.fwsc build/host/stable-source-for-ota-test.fwsc
       - name: Compile experimental 32-slot library loader with physical writes LOCKED
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
@@ -156,6 +159,10 @@ jobs:
           FELUCCA_PROJECT_REFS_FORMAT: "1"
         run: python3 tools/build.py --release 0.13
 
+      - name: Simulate upgrade of actual firmware packages and verify ALL data-flash sectors
+        run: |
+          cc -std=gnu11 -O2 -Wall -Wextra -o build/host/ldr_test tests/ldr_test.c
+          build/host/ldr_test build/host/stable-source-for-ota-test.fwsc build/felucca-0.13.fwsc
       - name: Build read-only PROBE firmware (legacy saves may still write)
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
