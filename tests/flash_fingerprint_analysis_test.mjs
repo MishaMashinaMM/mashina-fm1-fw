@@ -24,6 +24,7 @@ assert.throws(()=>analyzeFlashFingerprints({...diag,version:1}),/version-2/);
 sectors[2].readable=false;
 assert.throws(()=>analyzeFlashFingerprints(diag),/unreadable/);
 const newLayout=structuredClone(diag);
+newLayout.fingerprints.sectors[2].readable=true;
 newLayout.fingerprints.sectors.slice(32).forEach((sec,i)=>{sec.address=0xc0000+i*4096;sec.readable=true;});
 const moved=analyzeFlashFingerprints(newLayout);
 assert.equal(moved.libraryBaseAddress,"0xC0000");
