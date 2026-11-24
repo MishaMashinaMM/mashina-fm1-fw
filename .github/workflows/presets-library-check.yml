@@ -167,7 +167,7 @@ jobs:
         run: |
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/ldr_test tests/ldr_test.c
           build/host/ldr_test build/host/stable-source-for-ota-test.fwsc build/felucca-0.13.fwsc
-      - name: Build read-only PROBE firmware (legacy saves may still write)
+      - name: Build persistent-data-WRITE-BLOCKED flash PROBE firmware (OTA staging still writable)
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
@@ -197,7 +197,7 @@ jobs:
               'READ-ONLY FLASH PROBE / v0.13-diag. '
               'This install STILL REFLASHES the firmware. '
               'Back up your running v0.13 projects, presets and settings first. '
-              'Only experimental writes are blocked; legacy saves and automatic autosave may still write flash. '
+              'The diagnostic app HAL blocks USER/project/settings/autosave writes; OTA staging remains writable. '
               'Use only Inspect flash; do not save settings, projects or presets. Not a public release.'
               '</p>\\n' + needle)
           assert "READ-ONLY FLASH PROBE" in html
