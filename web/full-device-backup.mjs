@@ -338,7 +338,7 @@ export async function captureFlashFingerprints(request,progress=()=>{}){
         "Unreadable sector must never claim a validated CRC");
       const index=start+j;
       const address=index<32?0xa0000+index*4096:
-        0xea000+(index-32)*4096;
+        0xc0000+(index-32)*4096;
       sectors.push({index,address,
         readable:status===0,
         crc32:status===0?crc.toString(16).toUpperCase().padStart(8,"0"):null});
