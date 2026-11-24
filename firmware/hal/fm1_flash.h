@@ -52,12 +52,13 @@ static inline void *fl_far(void *p) { void *volatile q = p; return q; }
 /* Felucca's own store (projects, songs; settings; the autosave) */
 #define FL_STORE_OK(off, n) (FL_IN(off, n, FL_DATA_LO, FL_DATA_HI) || FL_IN(off, n, FL_GLOB_LO, FL_GLOB_HI) || \
                              FL_IN(off, n, FL_AUTO_LO, FL_VBANK_HI))   /* (the autosave and the FM6 voice bank) */
-/* The proposed LIBRARY area is deliberately NOT writable by the normal
- * firmware flash driver. Only a separately compiled, experimentally gated
- * LIB32_WRITE=1 image may touch 0xEA000..0xF1FFF. The bootloader's
- * FL_RANGE_OK override continues to have its own restricted policy. */
+/* LIBRARY is proposed in retired FUN project sectors 0xC0000..0xC7FFF,
+ * already inside the normal application's FL_STORE_OK window. This is safe
+ * from the *new* MPR1 project's address range but NOT authorization to format.
+ * Actual LIB1 write calls remain compile-gated by FELUCCA_LIB32_WRITE.
+ * The bootloader's FL_RANGE_OK override has its own restricted policy. */
 #if defined(FELUCCA_LIB32_WRITE) && FELUCCA_LIB32_WRITE
-#define FL_LIB32_OK(off,n) FL_IN(off,n,0x000EA000u,0x000F2000u)
+#define FL_LIB32_OK(off,n) FL_IN(off,n,0x000C0000u,0x000C8000u)
 #else
 #define FL_LIB32_OK(off,n) 0
 #endif
