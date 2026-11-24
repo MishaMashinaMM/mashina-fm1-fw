@@ -159,7 +159,9 @@ jobs:
           FELUCCA_PROJECT_REFS: "1"
           FELUCCA_PROJECT_REFS_WRITE: "1"
           FELUCCA_PROJECT_REFS_FORMAT: "1"
-        run: python3 tools/build.py --release 0.13
+        run: |
+          python3 tools/build.py --release 0.13
+          python3 tools/check_app_flash_headroom.py
 
       - name: Simulate upgrade of actual firmware packages and verify ALL data-flash sectors
         run: |
@@ -177,6 +179,7 @@ jobs:
           FELUCCA_PROJECT_REFS_FORMAT: "0"
         run: |
           python3 tools/build.py --release 0.13-diag
+          python3 tools/check_app_flash_headroom.py
           OUT=build/read-only-diagnostic
           VERSION="v0.13-diag-${GITHUB_SHA::7}"
           python3 web/make_site.py build/felucca-0.13-diag.fwsc "$VERSION" "$OUT"
