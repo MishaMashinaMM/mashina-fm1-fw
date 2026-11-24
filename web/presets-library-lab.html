@@ -139,6 +139,7 @@ tr:nth-child(2n){background:#161616}
  <button id="probe-flash" type="button" disabled>Inspect flash (read-only)</button>
  <button id="backup-legacy" type="button" disabled>Back up original FM1 projects, USER & settings (read-only)</button>
  <label class="file">Verify saved original backup <input id="verify-legacy-backup" type="file" accept=".json,application/json"/></label>
+ <label class="file">Extract original USER sounds from saved backup (offline, read-only) <input id="extract-legacy-user" type="file" accept=".json,application/json"/></label>
  <button id="backup-projects" type="button" disabled>Backup 8 projects (A–D)</button>
  <button id="view-projects" type="button" disabled>Inspect FM1 project references</button>
  <label class="file">Preview projects JSON <input id="preview-projects" type="file" accept=".json,application/json"/></label>
@@ -175,6 +176,7 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
   from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {captureBackup,readBackup} from "./fm1backup.js";
+import {extractLegacyUserPresets} from "./legacy-user-extract.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
@@ -570,6 +572,22 @@ $("backup-legacy").addEventListener("click",()=>action(async()=>{
     "Re-import it using Verify saved original backup to confirm the saved bytes. "+
     "Retain it with the original firmware for rollback; it is NOT an MPR1 project file.";
 }));
+/* Recover curated USER sounds from the ORIGINAL, saved 43-object
+ * archive. The result is a portable list of exact 304-byte binary records,
+ * preserving FM6/drum companions. Never uploads, clears or rewrites an FM1.
+ * Old FUN project snapshots are NOT converted to new MPR1 references. */
+$("extract-legacy-user").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";if(!file)return;
+  await action(async()=>{
+    const parsed=JSON.parse(await file.text());
+    const output=extractLegacyUserPresets(parsed);
+    downloadFile("mashina-original-user-sounds-304.json",output);
+    $("status").textContent="Extracted "+output.patches.length+
+      " complete original USER sounds, including drum/FM6 companions, into offline JSON. "+
+      "No FM1 connection or writes were used. This file is a portable sound pack, "+
+      "not a migrated project or a replacement for the complete original archive.";
+  });
+});
 $("verify-legacy-backup").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";
   if(!file)return;
