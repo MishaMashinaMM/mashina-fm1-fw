@@ -57,6 +57,9 @@ static int lib_flash_erase(uint32_t addr)
     return lib_host_erase(addr);
 #elif FELUCCA_FLASH && FELUCCA_LIB32_WRITE
     uint32_t took, f; int rc;
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if (!clean_layout_normal_writes) return -10;
+#endif
     if (!flash_ok || !lib_range_write(addr, LIB_SECTOR) ||
         (addr & (LIB_SECTOR - 1u)) || transport_busy()) return -1;
     f = irq_save();
@@ -74,6 +77,9 @@ static int lib_flash_prog(uint32_t addr, const void *src, uint32_t n)
     return lib_host_prog(addr,src,n);
 #elif FELUCCA_FLASH && FELUCCA_LIB32_WRITE
     uint32_t took, f; int rc;
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if (!clean_layout_normal_writes) return -10;
+#endif
     if (!flash_ok || !lib_range_write(addr, n) ||
         n > 256u || (addr & 255u)+n > 256u || transport_busy()) return -1;
     f = irq_save();
