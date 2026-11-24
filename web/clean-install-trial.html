@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MASHINA — one-device clean-install trial (UNRELEASED)</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,Arial,sans-serif;background:#101010;color:#eee}
+body{max-width:880px;margin:0 auto;padding:28px 18px;line-height:1.5}
+h1{font-size:2.1rem;line-height:1.12;margin-bottom:8px}h1 span{color:#ff9900}
+h2{font-size:1.16rem;margin-top:0}
+.panel{background:#1b1b1b;border:1px solid #414141;border-radius:7px;padding:20px;margin:18px 0}
+.warning{border-left:4px solid #ff9900;padding:9px 14px;background:#292011}
+label{display:block;margin:12px 0}
+button,input[type=text],input[type=file]{font:inherit}
+button{padding:9px 14px;background:#ff9900;color:#161616;border:0;border-radius:5px;font-weight:700;margin:8px 8px 8px 0}
+button:disabled{background:#555;color:#aaa;cursor:not-allowed}
+input[type=text]{padding:9px;background:#101010;color:#fff;border:1px solid #777;max-width:100%;width:330px}
+small,.subtle{color:#bbb}
+#status{white-space:pre-wrap;word-break:break-word;border:1px solid #666;background:#080808;padding:16px;min-height:64px}
+strong{color:#ffb03a}
+</style></head><body>
+<h1>MASHINA<br><span>FM1 PERFORMANCE FW</span></h1>
+<p>One-device 32+32 first-install trial — <strong>UNRELEASED / ENGINEERING ONLY</strong></p>
+<p class="warning"><strong>Destructive operation.</strong> The final action erases the device's old USER presets, project sections and settings. It is not a sound-library upload or firmware updater. Do not connect both FM1 units, use this on ordinary firmware, or attempt a reset without a verified rollback archive and established recovery procedure. No public flashable clean-install firmware is available.</p>
+<section class="panel"><h2>1. Verify offline legacy archive</h2>
+<p>Import the untouched original <code>felucca-backup</code> JSON. Its 43 retained objects must pass all individual CRC32 checks. The file is validated locally, never uploaded or modified.</p>
+<label>Original device backup <input id="archive" type="file" accept=".json,application/json"></label>
+<div id="archive-state" class="subtle">No verified archive selected.</div>
+</section>
+<section class="panel"><h2>2. Connect exactly one experimental FM1</h2>
+<p>Only firmware that advertises write-enabled LIB32 and MPR1 support, AND recognizes the separately compile-gated reset command, can proceed. The ordinary released firmware cannot perform this reset.</p>
+<button id="connect" type="button">Connect FM1</button><button id="disconnect" type="button" disabled>Disconnect</button>
+<div id="device-state" class="subtle">Not connected.</div>
+</section>
+<section class="panel"><h2>3. Deliberate physical reset</h2>
+<label><input type="checkbox" id="one-unit"> I am using one FM1 only, and the other FM1 remains unchanged.</label>
+<label><input type="checkbox" id="rollback"> I have independently retained a verified archive and the working firmware/recovery files.</label>
+<label>Type <strong>ERASE THIS FM1</strong> to enable the read-only preflight.<br>
+<input id="phrase" type="text" autocomplete="off" spellcheck="false" placeholder="ERASE THIS FM1"></label>
+<button id="preflight" type="button" disabled>Prepare: inspect all 53 sectors (no writes)</button>
+<button id="commit" type="button" disabled>Destructive first install — erase one FM1</button>
+<p class="subtle">PREPARE issues WebMIDI command 101, a read-only scan. It returns a short-lived one-time nonce only if all expected sectors are valid. COMMIT issues command 102 only after a second explicit confirmation, using the nonce within 15 seconds. The firmware repeats its entire sector preflight before writing. An interrupted erase or marker commit must be handled as a recovery case — NEVER automatically retry it.</p>
+</section>
+<h2>Transfer status</h2><div role="status" aria-live="polite" id="status">No writes have been requested.</div>
+<p class="subtle">Source review page. This page does not contain a flashable firmware package. Do not publish it as a normal installer.</p>
+<script type="module">
+import {connectLibraryMidi} from "./presets-library-midi.mjs";
+import {readBackup} from "./fm1backup.js";
+const $=id=>document.getElementById(id);
+let midi=null, validArchive=false, authorizedFirmware=false,nonce=null,preparedAt=0,busy=false,resetDone=false;
+const status=s=>{$("status").textContent=s;};
+function invalidate(){nonce=null;preparedAt=0;$("commit").disabled=true;}
+function canPrepare(){return !busy&&!resetDone&&validArchive&&authorizedFirmware&&$("one-unit").checked&&
+  $("rollback").checked&&$("phrase").value==="ERASE THIS FM1";}
+function refresh(){
+ $("connect").disabled=busy||resetDone;
+ $("disconnect").disabled=busy||!midi;
+ $("preflight").disabled=!canPrepare();
+ if(!canPrepare())invalidate();
+}
+async function request(cmd,args){
+ if(!midi)throw Error("FM1 is not connected");
+ return Uint8Array.from(await midi.request(cmd,args,{timeout:12000,retries:0}));
+}
+$("archive").addEventListener("change",async e=>{
+ validArchive=false;invalidate();
+ const file=e.target.files?.[0];
+ try{
+  if(!file)throw Error("Select your original legacy JSON");
+  const backup=readBackup(JSON.parse(await file.text()));
+  if(backup.objects.length!==43)throw Error("Expected exactly 43 legacy objects");
+  validArchive=true;
+  $("archive-state").textContent="Verified 43 legacy objects and individual CRC32 checksums: "+file.name;
+  status("Backup parsed locally. Check that it belongs to this device and keep a second offline copy.");
+ }catch(error){$("archive-state").textContent="Backup refused: "+error.message;status("No write authorized.");}
+ refresh();
+});
+$("connect").addEventListener("click",async()=>{
+ if(busy)return;busy=true;refresh();
+ try{
+  midi?.close();midi=null;authorizedFirmware=false;invalidate();
+  const candidate=await connectLibraryMidi();
+  midi=candidate;
+  const lib=await request(89,[]);
+  const project=await request(95,[]);
+  authorizedFirmware=lib.length===3&&lib[0]===1&&lib[1]===32&&lib[2]===1&&
+    project.length===4&&project[0]===1&&project[1]===32&&project[2]===1&&project[3]===1;
+  $("device-state").textContent="Connected: "+candidate.name+"; "+(authorizedFirmware?
+    "experimental write-enabled capabilities detected (a further read-only format preflight is required)":
+    "no authorized formatter capability — reset disabled");
+  status("Connected without writing. No erase requested.");
+ }catch(err){midi?.close();midi=null;authorizedFirmware=false;status("Connect refused: "+err.message);}
+ finally{busy=false;refresh();}
+});
+$("disconnect").addEventListener("click",()=>{
+ midi?.close();midi=null;authorizedFirmware=false;invalidate();
+ $("device-state").textContent="Disconnected.";status("Disconnected. No further writes possible.");refresh();
+});
+for(const id of ["one-unit","rollback","phrase"])$(id).addEventListener("input",()=>{invalidate();refresh();});
+$("preflight").addEventListener("click",async()=>{
+ if(!canPrepare())return;
+ busy=true;invalidate();refresh();
+ try{
+  const response=await request(101,[]);
+  if(response.length!==2 || response[0]!==0 || response[1]>127)
+   throw Error("Firmware refused complete 53-sector preflight (code "+Array.from(response).join(",")+")");
+  nonce=response[1];preparedAt=Date.now();
+  status("Read-only 53-sector preflight ACCEPTED. No flash erase has occurred. To proceed, use the destructive confirmation within 15 seconds.");
+  $("commit").disabled=false;
+ }catch(error){status("Preflight BLOCKED: "+error.message+". Do not attempt COMMIT.");}
+ finally{busy=false;refresh();if(nonce!==null&&canPrepare())$("commit").disabled=false;}
+});
+$("commit").addEventListener("click",async()=>{
+ if(!canPrepare()||nonce===null||Date.now()-preparedAt>12000){invalidate();status("Authorization expired. Repeat read-only preflight.");return;}
+ const accepted=confirm("DESTRUCTIVE FIRST INSTALL\n\nThis will erase USER presets, projects and settings on ONE connected FM1. Your saved JSON file is NOT on the device. Do you explicitly authorize this irreversible reset now?");
+ if(!accepted){invalidate();status("Cancelled; no destructive command sent.");return;}
+ const ticket=nonce;invalidate();busy=true;refresh();
+ try{
+  const phrase=Array.from("MASHINA32",c=>c.charCodeAt(0));
+  const response=await request(102,[...phrase,ticket]);
+  if(response.length!==1 || response[0]!==0)throw Error("Firmware rejected/failed reset (response "+Array.from(response).join(",")+"). Do not retry before inspecting recovery state.");
+  resetDone=true;
+  status("Firmware reported completed one-device clean initialization. POWER CYCLE THIS FM1 before any edits/saves. Verify 32 empty USER slots, 32 compiled LIBRARY fallbacks and eight empty projects A–D. Do not re-run initialization.");
+ }catch(error){status("STOP: "+error.message+" The formatter may have partially erased flash. Do not resend COMMIT or restart formatting automatically.");}
+ finally{busy=false;refresh();}
+});
+refresh();
+</script>
+</body></html>
