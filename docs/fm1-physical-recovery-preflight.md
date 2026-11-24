@@ -13,6 +13,24 @@ The FM1 JieLi WL82/AC791N has a mask-ROM USB download mode called `WL82 UBOOT1.0
 
 **Board identity is critical:** Seeed XIAO RP2040, XIAO RP2040 Plus, XIAO nRF52840 Sense and nRF52840 Sense Plus are distinct products. Use the published XIAO RP2040 firmware and wiring ONLY after checking the exact PCB marking. The nRF52840 variant is not a drop-in replacement for this RP2040-specific Transporter build.
 
+## Primary route: ordinary USB cable, NO XIAO needed
+
+**First choice:** [M-Flasher](https://github.com/jvitkauskas/m-flasher) ([Windows download and guide](https://jvitkauskas.github.io/m-apps/flasher/)). Its documented **Back up the whole flash** operation is read-only and captures the full 1 MiB device image plus JSON metadata. The utility can put a normally running FM-1/Felucca into the WL82 ROM download mode over its ordinary USB-MIDI connection. MASHINA is a modified Felucca-family firmware, so successful identification must be confirmed on the physical unit; never assume the tool can reach every custom build.
+
+For a Windows 10 owner with two FM1 units:
+
+1. Pick ONE unit. Leave the second entirely unplugged and unchanged. Confirm the old 43-object backup and your nine-sound portable archive are independently retained.
+2. Download M-Flasher from the developer's official page. Connect the chosen, charged FM1 via a normal USB **data** cable, without a hub. No RP2040, breakout cable, or special wiring is needed for this step.
+3. In M-Flasher, identify the device and inspect its displayed flash chip/model. If it offers **DOWNLOAD MODE**, that command reboots the unit into ROM download mode; it is not a flash erase/write. Confirm that it is the intended FM1 before continuing. If the command fails or the device identification is unexpected, STOP.
+4. Choose **Back up the whole flash**. This operation must ONLY save a dump; do not choose firmware installation, **Restore**, **Install m-bootloader**, **Flash bootloader**, or any auto-recommended bootloader change. If prompted to install m-bootloader, choose **No**. Do not proceed if software requests a write for the backup.
+5. Save the first `1 MiB .bin` plus its metadata privately. Start a SECOND independent physical backup/read session on the SAME unit, saving under a different name. Avoid using a copy of the first file as the second.
+6. Extract the non-flashable MASHINA trial review artifact and run `python tools/verify_fm1_recovery_dumps.py FIRST.bin SECOND.bin` on Windows (or `py` instead of `python`). The hashes and byte-for-byte equality must match. Keep both original dumps in at least two separate offline locations; do not attach them to public GitHub.
+7. Exit download mode using M-Flasher's **Restart** or power-cycle the FM1. Verify that the original MASHINA firmware still boots and plays before proceeding to any installation planning.
+
+This does not yet prove a full-flash restore will succeed. It does provide the required original-device data that can be used for recovery if a later destructive format fails. Importantly, **the XIAO RP2040 and shielded USB-C breakout remain UNUSED unless ordinary USB recovery itself is unavailable.**
+
+Source: M-Flasher [README](https://github.com/jvitkauskas/m-flasher), [usage and download-mode guidance](https://github.com/jvitkauskas/m-flasher/blob/main/docs/usage.md) and [safety](https://github.com/jvitkauskas/m-flasher/blob/main/docs/safety.md).
+
 ## Hardware connection, ONLY after identity and cable pinout are verified
 
 The documented **XIAO RP2040** Transporter mapping is:
@@ -31,7 +49,7 @@ A commercially documented USB data cable is the alternative for normal non-recov
 
 1. Preserve **two separate original 43-object USER/project archives**, verify all 43 CRCs, and keep the nine-sound portable pack. These files are NOT a byte-for-byte flash dump.
 2. Record the exact XIAO board markings and cable conductor continuity; identify the FM1's flash ID and chip identity read-only. Do not assume both FM1 units have the same flash chip.
-3. While one FM1 still boots, obtain **two independent full 1 MiB flash dumps** from separately initiated read sessions (FM-1 Transporter/M-Flasher or a verified ROM recovery tool). Retain both privately; do not upload them to public GitHub. Read-only actions only.
+3. While one FM1 still boots, use **M-Flasher over ordinary USB first** to capture two independent full 1 MiB flash dumps from separate read sessions. Do not connect XIAO for this. Retain both privately; do not upload them to public GitHub. Read-only actions only.
 4. Verify the two offline files via `python3 tools/verify_fm1_recovery_dumps.py first.bin second.bin`. It refuses truncation, identical input paths, blank boot/application areas, and any one-byte mismatch — including mismatches in settings/user sectors above 0x93000. Save the displayed hashes next to the private dumps. Do not publish the binaries.
 5. Confirm that a known-good stock V15 recovery package and the exact-version tools are accessible, and independently check the package identity/hash against the tool's documentation. A successful dump is **not proof** that recovery writing will work.
 6. Verify a safe recovery procedure with the owner, including recovery of the *actual original state* using that FM1's full dump, not just reinstalling stock V15. No physical recovery write is authorized by this checklist; that is a separate high-risk action.
