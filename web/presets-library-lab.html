@@ -602,8 +602,10 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
       `slots ${x.slotStart}–${x.slotEnd}: ${x.status}`).join(" · ")+"\n"+
     audit.messages.join("\n")+"\n"+
     checksumNote+"\n"+
+    preflightNote+"\n"+
+    (cleanLayoutPreflight?cleanLayoutPreflight.counts.map(x=>x.name+": "+x.count).join(" · ")+"\n":"")+
     (patternReview?patternReview.messages.join("\n")+"\n":"")+
-    "Saved mashina-flash-diagnostic.json with independent readiness audit and optional 53-sector CRC report. No flash writes performed by the probe.";
+    "Saved mashina-flash-diagnostic.json with CRC fingerprints AND exact 53-sector preflight where supported. This remains a read-only diagnostic; no physical writes occurred.";
 }));
 let flashBefore=null,flashAfter=null;
 function flashCompareStatus(message){$("flash-compare-status").textContent=message;}
