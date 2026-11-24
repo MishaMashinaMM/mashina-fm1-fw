@@ -108,7 +108,10 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 #endif
     }
     if (cmd == 96u) { /* MPR1_INIT, NOT enabled in ordinary builds */
-#if FELUCCA_PROJECT_REFS && FELUCCA_PROJECT_REFS_FORMAT
+/* The combined-layout prototype has NO on-device erase command. Until
+ * full USER/settings/auxiliary partitions and recovery are verified, a
+ * project-only format would create an inconsistent half-clean device. */
+#if FELUCCA_PROJECT_REFS && FELUCCA_PROJECT_REFS_FORMAT && !FELUCCA_CLEAN_INSTALL_LAYOUT
         static const uint8_t key[4]={0x4Du,0x50u,0x52u,0x31u}; /* "MPR1" */
         if(n!=4u || memcmp(args,key,4u)) {
             ed_b(1u);
