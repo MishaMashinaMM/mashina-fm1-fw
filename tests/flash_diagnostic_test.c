@@ -68,22 +68,30 @@ int main(void){
     bad+=ck("foreign data in alternate sector is flagged",ed_diag_project_bank(0)==3);
     bad+=ck("all 16 bank positions lie within proposed reservation",
             st_sector(OBJ_SONG1+15,1)==0xBF000u);
-    /* 46 candidate sectors: 32 MPR1, 8 LIB, 4 USER, 2 companions,
-     * in bounded 256-byte reads, without a write or raw MIDI sound data. */
+    /* 53 candidates: 32 MPR1, 8 LIB, 4 USER, 2 companions,
+     * 2 settings, 2 song-index, 2 autosave and 1 FM6 voice sector;
+     * no flash write or raw MIDI sound payload is ever transmitted. */
     {
         uint32_t crc=0u;
-        const uint32_t locations[8]={0xA0000u,0xBF000u,0xC0000u,0xC7000u,
-                                     0xDC000u,0xDF000u,0x9F000u,0xFE000u};
-        const uint32_t indexes[8]={0u,31u,32u,39u,40u,43u,44u,45u};
+        const uint32_t locations[15]={
+          0xA0000u,0xBF000u,0xC0000u,0xC7000u,
+          0xDC000u,0xDF000u,0x9F000u,0xFE000u,
+          0xFC000u,0xFD000u,0xD8000u,0xD9000u,
+          0xE5000u,0xE6000u,0xE7000u
+        };
+        const uint32_t indexes[15]={
+          0u,31u,32u,39u,40u,43u,44u,45u,
+          46u,47u,48u,49u,50u,51u,52u
+        };
         int exact=1;
-        for(uint32_t i=0;i<8u;i++){
+        for(uint32_t i=0;i<15u;i++){
             uint32_t expected=st_crc32(nor+locations[i],4096u);
             if(ed_diag_sector_crc(indexes[i],&crc)!=0u || crc!=expected)
                 exact=0;
         }
-        bad+=ck("exact CRC32 for MPR1, LIBRARY, USER and companion sectors",exact);
+        bad+=ck("exact CRC32 for all active-state project/sound/settings sectors",exact);
         bad+=ck("out-of-range fingerprints always refused",
-                ed_diag_sector_crc(46u,&crc)==4u &&
+                ed_diag_sector_crc(53u,&crc)==4u &&
                 ed_diag_sector_crc(255u,&crc)==4u &&
                 ed_diag_sector_crc(0u,NULL)==4u);
         bad+=ck("CRC probes do not write any flash",writes==0);
