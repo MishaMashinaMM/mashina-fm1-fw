@@ -173,7 +173,7 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
   from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
-import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,compareFlashFingerprints} from "./full-device-backup.mjs";
+import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
 import {analyzeFlashFingerprints} from "./flash-fingerprint-analysis.mjs";
 import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
@@ -570,6 +570,18 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
       checksumNote+=" Offline pattern analysis unavailable: "+error.message;
     }
   }
+  let cleanLayoutPreflight=null,preflightNote="";
+  try {
+    cleanLayoutPreflight=await captureCleanLayoutPreflight(device.request,
+      (i,n)=>$("status").textContent=
+        "READ ONLY: checking committed headers, payloads and types "+i+"/"+n);
+    preflightNote=cleanLayoutPreflight.allowedContent
+      ? "All 53 sectors contain erased data or source-validated retired records. Physical writes remain BLOCKED."
+      : "Exact preflight found foreign/corrupt/new-format content: initialization MUST refuse.";
+  } catch(error) {
+    preflightNote="Exact per-sector preflight unavailable: "+error.message+
+      ". Formatting remains BLOCKED.";
+  }
   downloadFile("mashina-flash-diagnostic.json",{
     format:"mashina-flash-diagnostic",version:2,
     created:new Date().toISOString(),
@@ -579,7 +591,8 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     libraryAllBlank:health.libraryAllBlank,
     audit,fingerprints,
     fingerprintAnalysis:patternReview,
-    fingerprintNote:checksumNote
+    fingerprintNote:checksumNote,
+    cleanLayoutPreflight,preflightNote
   });
   $("status").textContent=
     "PHYSICAL WRITES BLOCKED — read-only probe does not prove sector ownership.\n"+
