@@ -35,6 +35,13 @@ for(const id of ["archive","connect","one-unit","rollback","phrase","preflight",
 assert.match(trialPage,/const data=JSON\.parse\(await file\.text\(\)\)/);
 assert.match(trialPage,/const backup=readBackup\(data\)/);
 assert.match(trialPage,/backup\.objects\.length!==43/);
+const canPrepare=trialPage.slice(trialPage.indexOf("function canPrepare()"),trialPage.indexOf("function refresh()"));
+assert(!canPrepare.includes("validArchive"),
+  "Clean installation must not require preserving old sounds or legacy JSON");
+assert.match(canPrepare,/authorizedFirmware/);
+assert.match(trialPage,/Skip this entirely if you want 32 empty USER slots/);
+assert.match(trialPage,/OPTIONAL if you do not wish to retain any existing data/);
+
 assert.match(trialPage,/restoreCapable=lib\.length===3/);
 assert.match(trialPage,/authorizedFirmware=restoreCapable/);
 assert.match(trialPage,/project\.length===4/);
