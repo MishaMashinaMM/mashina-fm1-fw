@@ -68,9 +68,9 @@ static int mprs_init_clean_break(void)
  * A power cut during erasure leaves only old verified/erased sector pairs, so
  * the same preflight can restart without automatically overwriting new data.
  *
- * IMPORTANT: This covers ONLY the 40 retired FUN sectors. USER, FM6/drum
- * companions, settings, song index, autosave and old project 1 are out of
- * scope; the full clean-install procedure must handle those separately.
+ * The operation covers all active project, LIBRARY, USER, companion and
+ * auxiliary settings, index, autosave and voice-bank partitions. Old first
+ * project and unreferenced legacy sectors are deliberately left untouched.
  * Do not publish a physical installer until those operations, the updater,
  * backup/restore and interruption recovery have been independently verified.
  */
@@ -106,7 +106,8 @@ static int clean_lib_legacy_sector(uint32_t bank,uint32_t copy)
  * USER 001..032 are two 16-record st objects (4 x 4KiB sectors), and the
  * FM6/drum companion uses the separately owned 0x9F000 / 0xFE000 sectors.
  * Former FM6-bank data can occupy the same companion pair. Do not touch
- * voice-bank/OTA staging at 0xE7000, settings or unknown USR partitions.
+ * unknown USR partitions. The current clean-install prototype separately
+ * handles voice-bank and settings sectors after complete preflight.
  * This code is unreachable unless CLEAN_INSTALL_LAYOUT is compile-enabled.
  */
 static uint32_t clean_user_object(uint32_t index)
@@ -151,6 +152,60 @@ static int clean_user_legacy_sector(uint32_t index)
     (void)index;return 0;
 #endif
 }
+/* Seven remaining active-state sectors require a clean slate too:
+ * settings (FC000/FD000), old song selection (D8000/D9000),
+ * RESTORE LAST / FM6 staging (E5000/E6000), FM6 voice bank (E7000).
+ * The loader/OTA recovery map must be physically verified before enabling
+ * these erasures. CRC-valid staged FM6 voices are accepted in autosave A/B;
+ * a foreign, corrupted or partly written copy is never auto-formatted.
+ * Unreferenced old P1/SONG sectors are intentionally left alone.
+ */
+static uint32_t clean_aux_address(uint32_t index)
+{
+    if(index<2u)return st_sector(OBJ_SETTINGS,index);
+    if(index<4u)return st_sector(OBJ_SONGIDX,index-2u);
+    if(index<6u)return st_sector(OBJ_AUTOSAVE,index-4u);
+    return FVB_HOME;
+}
+static int clean_aux_erased_sector(uint32_t index)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    static const uint32_t expected[7]={
+        0xFC000u,0xFD000u,0xD8000u,0xD9000u,
+        0xE5000u,0xE6000u,0xE7000u
+    };
+    uint8_t page[256];
+    uint32_t base;
+    if(index>=7u)return 0;
+    base=clean_aux_address(index);
+    if(base!=expected[index])return 0;
+    for(uint32_t off=0;off<ST_SECTOR;off+=sizeof page){
+        if(st_read(base+off,page,sizeof page))return 0;
+        for(uint32_t i=0;i<sizeof page;i++)if(page[i]!=0xFFu)return 0;
+        fm1_wdt_feed();
+    }
+    return 1;
+#else
+    (void)index;return 0;
+#endif
+}
+static int clean_aux_legacy_sector(uint32_t index)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    st_hdr_t h;
+    if(index>=7u)return 0;
+    if(index<2u)return st_copy_valid(OBJ_SETTINGS,index,&h);
+    if(index<4u)return st_copy_valid(OBJ_SONGIDX,index-2u,&h);
+    if(index<6u){
+        const uint32_t copy=index-4u;
+        return st_copy_valid(OBJ_AUTOSAVE,copy,&h) ||
+               fvb_valid(clean_aux_address(index),1u,&h)==0;
+    }
+    return fvb_valid(FVB_HOME,0u,&h)==0;
+#else
+    (void)index;return 0;
+#endif
+}
 static int clean_layout_preflight(void)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
@@ -175,6 +230,11 @@ static int clean_layout_preflight(void)
     for(uint32_t index=0;index<6u;index++){
         if(!clean_user_sector_erased(index) &&
            !clean_user_legacy_sector(index))return 1;
+        fm1_wdt_feed();
+    }
+    for(uint32_t index=0;index<7u;index++){
+        if(!clean_aux_erased_sector(index) &&
+           !clean_aux_legacy_sector(index))return 1;
         fm1_wdt_feed();
     }
     return 0;
@@ -205,8 +265,17 @@ static int clean_layout_initialize(void)
             fm1_wdt_feed();
         }
     }
-    /* The physical caller must reboot to rebuild RAM mirrors from the now
-     * empty USER banks. No command is exposed in downloadable firmware. */
+    for(uint32_t index=0;index<7u;index++){
+        if(!clean_aux_erased_sector(index)){
+            if(st_erase(clean_aux_address(index)) ||
+               !clean_aux_erased_sector(index))return 2;
+            fm1_wdt_feed();
+        }
+    }
+    /* The physical caller must reboot to reload empty USER/project slots,
+     * default global settings/song selection and no RESTORE LAST / voice
+     * bank. Unreferenced retired project sectors remain untouched.
+     * No destructive command is exposed in downloadable firmware. */
     return 0;
 #else
     return 2;
