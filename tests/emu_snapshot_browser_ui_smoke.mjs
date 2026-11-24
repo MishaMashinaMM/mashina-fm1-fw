@@ -11,6 +11,8 @@ import {encodeEmulatorFlash,decodeEmulatorFlash} from "../web/emu/emulator-flash
 import {editEmulatorUserSnapshot,crc32} from "../web/emulator-snapshot-editor.mjs";
 import {encodeProject,decodeProject} from "../web/projects-library-codec.mjs";
 import {inspectEmulatorFlash} from "../web/emulator-library-inspector.mjs";
+import {BACKUP_IDS,bkCrc} from "../web/fm1backup.js";
+import {encodeRecord} from "../web/presets-library-codec.mjs";
 const dir=process.argv[2]??"build/presets-library-smoke";
 const which=name=>{
   const r=spawnSync("which",[name],{encoding:"utf8"});
@@ -51,6 +53,38 @@ try{
   assert.deepEqual(errors,[],"Web Library startup JavaScript errors");
   assert.equal(await page.locator("#backup-legacy").isDisabled(),true);
   assert.equal(await page.locator("#probe-flash").isDisabled(),true);
+  /* Offline legacy USER extraction needs no MIDI permission. The browser
+   * must process the saved original archive and offer a download without
+   * changing any live device slot or activating physical write controls. */
+  const legacySound=Uint8Array.from(encodeRecord({
+    name:"ORIGINAL",engine:0,params:Array(127).fill(3)
+  }));
+  const oldUser=new Uint8Array(3080);
+  oldUser.set([0x55,0x50,0x42,0x31,192,0,16,0]);
+  oldUser.set(legacySound.slice(0,192),8);
+  const legacyArchive={
+    format:"felucca-backup",version:1,firmware:"original test",
+    objects:BACKUP_IDS.map(id=>{
+      const data=id===0||id===1?Uint8Array.of(1,2,3,4):
+                 id===6?oldUser:new Uint8Array(0);
+      return {id,size:data.length,crc:data.length?bkCrc(data):0,
+        data:Buffer.from(data).toString("base64")};
+    })
+  };
+  const [legacyDownload]=await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#extract-legacy-user").setInputFiles({
+      name:"original-backup.json",mimeType:"application/json",
+      buffer:Buffer.from(JSON.stringify(legacyArchive))
+    })
+  ]);
+  assert.equal(legacyDownload.suggestedFilename(),"mashina-original-user-sounds-304.json");
+  const extracted=JSON.parse(fs.readFileSync(await legacyDownload.path(),"utf8"));
+  assert.deepEqual(extracted.patches.map(p=>p.slot),[0]);
+  assert.deepEqual(extracted.patches[0].recordBytes,Array.from(legacySound));
+  assert.equal(await page.locator("#probe-flash").isDisabled(),true);
+  assert.deepEqual(errors,[],"Browser errors after offline USER archive conversion");
+
   const target=JSON.stringify(encodeEmulatorFlash({}));
   await page.locator("#inspect-emu").setInputFiles({
     name:"target.json",mimeType:"application/json",buffer:Buffer.from(target)});
