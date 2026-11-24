@@ -307,12 +307,12 @@ jobs:
           FELUCCA_CLEAN_INSTALL_LAYOUT: "1"
           FELUCCA_FLASH_DIAG: "0"
         run: |
-          python3 tools/build.py --release 0.13-clean-trial
+          python3 tools/build.py --release 0.13-cleantrial
           python3 tools/check_app_flash_headroom.py
-          test -s build/felucca-0.13-clean-trial.fwsc
+          test -s build/felucca-0.13-cleantrial.fwsc
           TRIAL=build/mashina-one-fm1-clean-trial
           mkdir -p "$TRIAL"
-          python3 web/make_site.py build/felucca-0.13-clean-trial.fwsc "v0.13-clean-trial-${GITHUB_SHA::7}" "$TRIAL"
+          python3 web/make_site.py build/felucca-0.13-cleantrial.fwsc "v0.13-cleantrial-${GITHUB_SHA::7}" "$TRIAL"
           mkdir -p "$TRIAL/first-install/emu"
           cp web/clean-install-trial.html "$TRIAL/first-install/index.html"
           cp web/fm1backup.js web/presets-library-midi.mjs web/legacy-user-bank-restore.mjs \
@@ -322,8 +322,8 @@ jobs:
              web/factory-catalog-selection.mjs "$TRIAL/first-install/"
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs "$TRIAL/first-install/emu/"
           cp docs/first-fm1-32x32-install-runbook.md "$TRIAL/README.md"
-          cp build/felucca-0.13-clean-trial.fwsc "$TRIAL/"
-          (cd "$TRIAL" && sha256sum felucca-0.13-clean-trial.fwsc > SHA256SUMS)
+          cp build/felucca-0.13-cleantrial.fwsc "$TRIAL/"
+          (cd "$TRIAL" && sha256sum felucca-0.13-cleantrial.fwsc > SHA256SUMS)
           printf 'ONE-FM1 DESTRUCTIVE TRIAL ONLY\\nBranch: %s\\nCommit: %s\\nSecond device: UNTOUCHED\\n' "$GITHUB_REF" "$GITHUB_SHA" > "$TRIAL/PROVENANCE.txt"
           test -s "$TRIAL/webapp/installer/index.html"
           test -s "$TRIAL/first-install/index.html"
