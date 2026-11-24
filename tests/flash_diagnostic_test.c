@@ -71,7 +71,7 @@ int main(void){
     /* 40 candidate sectors (32 MPR1 + 8 LIB32) are fingerprinted
      * in bounded 256-byte reads, without any write or raw MIDI data. */
     {
-        uint32_t crc=0u,locations[4]={0xA0000u,0xBF000u,0xEA000u,0xF1000u};
+        uint32_t crc=0u,locations[4]={0xA0000u,0xBF000u,0xC0000u,0xC7000u};
         uint32_t indexes[4]={0u,31u,32u,39u};
         int exact=1;
         for(uint32_t i=0;i<4u;i++){
