@@ -272,6 +272,15 @@ static int clean_layout_initialize(void)
             fm1_wdt_feed();
         }
     }
+    /* Commit a self-identifying EMPTY MPR1 first project bank LAST.
+     * Both records in that bank are all-zero / logically unassigned.
+     * A later accidental invocation must reject this NEW-format sector
+     * before any erasure, even if the user saved no projects yet.
+     * Reuse existing project record scratch: no new 1824-byte buffer.
+     * If the final commit is interrupted, reject unknown partial data and
+     * require explicit recovery rather than silently erasing it. */
+    memset(proj_wire_u.raw,0,MPR_MAX_RECORD);
+    if(mprs_save(0u,proj_wire_u.raw))return 2;
     /* The physical caller must reboot to reload empty USER/project slots,
      * default global settings/song selection and no RESTORE LAST / voice
      * bank. Unreferenced retired project sectors remain untouched.
