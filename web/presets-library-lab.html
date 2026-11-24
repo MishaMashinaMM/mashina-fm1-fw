@@ -145,6 +145,16 @@ tr:nth-child(2n){background:#161616}
  <label class="file" id="label-restore-projects">Restore projects JSON <input id="restore-projects" type="file" accept=".json,application/json" disabled/></label>
  <label class="file" id="label-restore-full">Restore complete FM1 JSON <input id="restore-full" type="file" accept=".json,application/json" disabled/></label>
 </div>
+<details id="flash-compare-panel" style="margin:12px 0 18px">
+ <summary>Compare two physical flash diagnostics offline (read-only)</summary>
+ <p>Use two separately downloaded <code>mashina-flash-diagnostic.json</code> reports from the same FM1 to compare all 40 candidate sector CRC32 fingerprints. Comparison does not write anything and never grants physical flash permission. Both reports must contain complete fingerprints.</p>
+ <div class="toolbar">
+  <label class="file">Before diagnostic JSON <input id="flash-compare-before" type="file" accept=".json,application/json"/></label>
+  <label class="file">After diagnostic JSON <input id="flash-compare-after" type="file" accept=".json,application/json"/></label>
+  <button id="flash-compare-run" type="button" disabled>Compare read-only fingerprints</button>
+ </div>
+ <p id="flash-compare-status" class="stats" role="status">Choose two complete diagnostics to compare. Both original files are kept intact.</p>
+</details>
 <p class="foot">Project and full-device restores require write-enabled experimental firmware and a fresh offline full-device backup of the target FM1. Restores are not atomic across every bank: retain the JSON file for recovery if USB disconnects.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
@@ -163,7 +173,7 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
   from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
-import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints} from "./full-device-backup.mjs";
+import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,compareFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
 import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
@@ -564,6 +574,48 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     checksumNote+"\n"+
     "Saved mashina-flash-diagnostic.json with independent readiness audit and optional 40-sector CRC report. No flash writes performed by the probe.";
 }));
+let flashBefore=null,flashAfter=null;
+function flashCompareStatus(message){$("flash-compare-status").textContent=message;}
+for(const [id,which] of [["flash-compare-before","before"],["flash-compare-after","after"]]){
+  $(id).addEventListener("change",async e=>{
+    const file=e.target.files?.[0];e.target.value="";
+    if(!file)return;
+    try{
+      const data=JSON.parse(await file.text());
+      if(data?.format!=="mashina-flash-diagnostic"||data.version!==2||
+         data.audit?.decision!=="PHYSICAL_WRITES_BLOCKED"||
+         data.fingerprints?.complete!==true)
+        throw Error("Expected a complete version-2 read-only MASHINA diagnostic, not an emulator or device-restore JSON");
+      if(which==="before")flashBefore={file:file.name,data};
+      else flashAfter={file:file.name,data};
+      $("flash-compare-run").disabled=!(flashBefore&&flashAfter);
+      flashCompareStatus("Loaded "+file.name+" as "+which+". "+
+        (flashBefore&&flashAfter?"Both reports are ready for offline CRC comparison.":"Load the other report next."));
+    }catch(error){
+      flashCompareStatus("Rejected "+file.name+": "+error.message);
+    }
+  });
+}
+$("flash-compare-run").addEventListener("click",()=>{
+  if(!flashBefore||!flashAfter)return;
+  try{
+    const result=compareFlashFingerprints(flashBefore.data.fingerprints,flashAfter.data.fingerprints);
+    const labels=result.changed.map(x=>"0x"+x.address.toString(16).toUpperCase()+
+      " ("+x.before+" → "+x.after+")");
+    flashCompareStatus(result.same?
+      "All 40 candidate sector CRC32 fingerprints match. This does NOT establish that vendor firmware update/recovery owns or preserves the flash safely; physical writes remain BLOCKED.":
+      "WARNING: "+labels.length+" sectors changed: "+labels.join(", ")+
+      ". Stop experimental flash work and investigate. Physical writes remain BLOCKED.");
+    downloadFile("mashina-flash-fingerprint-comparison.json",{
+      format:"mashina-flash-fingerprint-comparison",version:1,
+      before:flashBefore.file,after:flashAfter.file,
+      created:new Date().toISOString(),
+      ...result,physicalWritesAllowed:false
+    });
+  }catch(error){
+    flashCompareStatus("Comparison refused: "+error.message+". Physical writes remain BLOCKED.");
+  }
+});
 let emuInspection=null,emuOriginalFlash=null,emuSnapshotSources=[],emuUserSources=[],emuFactorySources=[];
 let emuSourceLabel="",emuPending=new Map(),emuPendingRefs=new Map();
 const emuSetText=(id,value)=>$(id).textContent=value;
