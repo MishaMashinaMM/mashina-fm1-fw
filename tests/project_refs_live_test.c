@@ -615,8 +615,12 @@ int main(void)
          * case, not an automatic permission to finish destroying data. */
         memset(nor,0xFF,sizeof nor);
         fail_erase_at=fail_prog_at=0xFFFFFFFFu;
-        const uint8_t original[16]={0x46,0x4F,0x52,0x45,0x49,0x47,0x4E};
-        bad+=check("prepare old FUN sector for mid-erase brownout",
+        /* A tiny record lives entirely in the first 2 KiB; tearing that
+         * range would accidentally leave a fully blank sector. Exercise a
+         * real long FUN payload spanning BOTH halves instead. */
+        uint8_t original[3072];
+        for(uint32_t k=0;k<sizeof original;k++)original[k]=(uint8_t)(k*17u+3u);
+        bad+=check("prepare long old FUN payload spanning torn erase boundary",
                    st_save(OBJ_SONG1,original,sizeof original)==0 &&
                    clean_layout_preflight()==0);
         torn_erase_at=erases;
