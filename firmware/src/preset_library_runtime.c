@@ -65,8 +65,39 @@ static void library_metadata_refresh(uint32_t slot)
 }
 static void library_metadata_boot(void)
 {
-    for (uint32_t i=0;i<LIB_SLOTS;i++)
-        library_metadata_refresh(i);
+    /* Scan each 8-sound bank only ONCE. Repeated lib_slot_read() for
+     * every empty slot would unnecessarily scan the same 8KiB erased
+     * sectors eight times and delay startup / starve the watchdog. */
+    for (uint32_t bank=0;bank<LIB_BANKS;bank++) {
+        uint32_t seq=0u;
+        int copy=lib_latest(bank,&seq);
+        int state=2;  /* unknown/corrupt bank: unavailable */
+        if(copy>=0) {
+            lib_head_t head;
+            if(lib_valid(bank,(uint32_t)copy,&head))state=1;
+        } else if(lib_uncommitted(bank)) state=0;
+        for(uint32_t j=0;j<LIB_PER_BANK;j++) {
+            uint32_t slot=bank*LIB_PER_BANK+j;
+            library_meta_kind[slot]=state==2?2u:0u;
+            library_meta_engine[slot]=0u;
+            library_meta_name[slot][0]=0;
+            if(state==1) {
+                const uint8_t *raw=lib_work+j*LIB_ENTRY;
+                const up_rec_t *rec=(const up_rec_t *)raw;
+                if(lib_record_valid(raw) && up_valid(rec)) {
+                    memcpy(library_meta_name[slot],rec->name,12u);
+                    library_meta_name[slot][12]=0;
+                    library_meta_engine[slot]=rec->engine;
+                    library_meta_kind[slot]=1u;
+                } else {
+                    uint32_t i;
+                    for(i=0;i<LIB_ENTRY && !raw[i];i++){}
+                    if(i<LIB_ENTRY) library_meta_kind[slot]=2u;
+                }
+            }
+        }
+        fm1_wdt_feed();
+    }
 }
 static uint32_t library_metadata(uint32_t slot, char *name, uint32_t *engine)
 {
