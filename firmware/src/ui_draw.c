@@ -1762,13 +1762,13 @@ static void draw_columns(void)
     if (cur_page()->graph == GR_BROWSE) {
         uint32_t total, cur = preset_pos(&total);
         char count[8];
-        if (cur < total) fmt_int(val, (int32_t)cur + 1);
+        if (cur < total) fmt_int(val, (int32_t)preset_number(cur));
         else str_cpy(val, total ? "--" : "NONE", sizeof val);
         /* Keep the full position/total in the value itself. The previous
          * code dropped /total at position 100 because it was split into
          * a separate unit, even though the small font fits the full text. */
         if (total) {
-            fmt_int(count, (int32_t)total);
+            fmt_int(count, (int32_t)(UP_SLOTS + LIB_FACTORY_SLOTS));
             if (str_len(val) + 1u + str_len(count) < sizeof val) {
                 str_cpy(val + str_len(val), "/", sizeof val - str_len(val));
                 str_cpy(val + str_len(val), count, sizeof val - str_len(val));
@@ -1777,7 +1777,7 @@ static void draw_columns(void)
         draw_column(0, "No.", val, "", VAL(0u), -1, ICON_NONE);
         draw_column(1, "ENG", TSEL->eng_req == ENGI_DRUMLAB ? "D-LAB" : ENGINES[TSEL->eng_req]->name, "", VAL(1u), -1, engine_icon(ENGINES[TSEL->eng_req]->name));
         draw_column(2, "FAV", preset_favorite() ? "ON" : "OFF", "", VAL(2u), -1, ICON_X_STAR);
-        draw_column(3, "LIST", N_LIST[list_get()], "", VAL(3u), -1, ICON_X_FOLDER);
+        draw_column(3, "BANK", N_BROWSE_BANK[browse_bank], "", VAL(3u), -1, ICON_X_FOLDER);
         return;
     }
     if (cur_page()->graph == GR_PATS) {                  /* PAT, then LOAD (a GO button) */
