@@ -137,6 +137,8 @@ tr:nth-child(2n){background:#161616}
 </div>
 <div class="toolbar">
  <button id="probe-flash" type="button" disabled>Inspect flash (read-only)</button>
+ <button id="backup-legacy" type="button" disabled>Back up original FM1 projects, USER & settings (read-only)</button>
+ <label class="file">Verify saved original backup <input id="verify-legacy-backup" type="file" accept=".json,application/json"/></label>
  <button id="backup-projects" type="button" disabled>Backup 8 projects (A–D)</button>
  <button id="view-projects" type="button" disabled>Inspect FM1 project references</button>
  <label class="file">Preview projects JSON <input id="preview-projects" type="file" accept=".json,application/json"/></label>
@@ -172,6 +174,7 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
         importFactoryDrumRecords,buildFactoryUpload}
   from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
+import {captureBackup,readBackup} from "./fm1backup.js";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
 import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
@@ -191,6 +194,7 @@ let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=f
 // Authorization requires re-importing the exact JSON saved to disk, not just
 // clicking a download link. Evidence is invalidated on connection or writes.
 let pendingLibraryBackup=null,pendingFullBackup=null;
+let pendingLegacyBackup=null,verifiedLegacyBackup=false;
 let inspectedProjects=null;
 let sourceCatalog=null,sourceSelection=Array(32).fill(null),sourceKitRecords=null;
 let catalogNeedsPrepare=false,preparedOrigin="No upload pack prepared";
@@ -400,6 +404,7 @@ function connectionStatus(){
   $("backup-device").disabled=busy||!device;
   $("upload-device").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!cap?.writable||!backedUp||catalogNeedsPrepare;
   $("probe-flash").disabled=busy||!device;
+  $("backup-legacy").disabled=busy||!device;
   $("backup-projects").disabled=busy||!device||!projectCap;
   $("view-projects").disabled=busy||!device||!projectCap;
   $("backup-full").disabled=busy||!device||!projectCap;
@@ -475,6 +480,7 @@ $("export").addEventListener("click",()=>{
 $("connect").addEventListener("click",()=>action(async()=>{
   device?.close();device=null;cap=null;projectCap=null;backedUp=false;wholeBackup=false;
   pendingLibraryBackup=null;pendingFullBackup=null;
+  pendingLegacyBackup=null;verifiedLegacyBackup=false;
   const d=await connectLibraryMidi();
   try{
     const c=await capability(d.request);
@@ -545,6 +551,40 @@ $("upload-device").addEventListener("click",()=>action(async()=>{
   const n=await uploadPrepared(device.request,cap,entries,(i,total)=>$("status").textContent=`Writing and verifying ${i}/${total} LIBRARY slots...`);
   $("status").textContent=`Verified ${n} complete LIBRARY presets on FM1. Keep your JSON backup for firmware updates.`;
 }));
+/* Legacy v0.13 snapshot BEFORE destructive clean-break migration. This
+ * uses only the firmware's existing BACKUP LIST/GET read protocol and checks
+ * per-object CRCs. A saved FELU project snapshot is NOT an MPR1 reference
+ * project; it must never be imported into the new project layout. Keep this
+ * archive for a rollback to the matching legacy firmware only. */
+$("backup-legacy").addEventListener("click",()=>action(async()=>{
+  if(!device)throw Error("Connect the FM1 first");
+  const backup=await captureBackup(([cmd,args],options)=>
+    device.request(cmd,args,options),"legacy MASHINA (read-only)",
+    (done,total)=>$("status").textContent=
+      "READ ONLY: backing up original projects, USER and settings "+done+"/"+total);
+  readBackup(backup); // validates every included object's CRC and completeness
+  pendingLegacyBackup=JSON.stringify(backup);
+  verifiedLegacyBackup=false;
+  downloadFile("mashina-original-fm1-before-clean-install.json",backup);
+  $("status").textContent="Original 8-project, USER and settings archive downloaded. "+
+    "Re-import it using Verify saved original backup to confirm the saved bytes. "+
+    "Retain it with the original firmware for rollback; it is NOT an MPR1 project file.";
+}));
+$("verify-legacy-backup").addEventListener("change",async e=>{
+  const file=e.target.files?.[0];e.target.value="";
+  if(!file)return;
+  await action(async()=>{
+    if(!pendingLegacyBackup)throw Error("Create a fresh original backup on this connection first");
+    const imported=JSON.parse(await file.text());
+    const validated=readBackup(imported);
+    if(JSON.stringify(imported)!==pendingLegacyBackup)
+      throw Error("Imported original archive does not byte-match the fresh device backup");
+    verifiedLegacyBackup=true;
+    $("status").textContent="Verified original backup: "+validated.objects.length+
+      " objects, all CRC32-checked and byte-matched to this connection. "+
+      "Old project snapshots must only be restored with compatible old firmware.";
+  });
+});
 $("probe-flash").addEventListener("click",()=>action(async()=>{
   if(!device)throw new Error("Connect first");
   const health=await probeFlash(device.request);
