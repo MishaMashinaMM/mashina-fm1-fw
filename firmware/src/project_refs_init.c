@@ -102,6 +102,55 @@ static int clean_lib_legacy_sector(uint32_t bank,uint32_t copy)
     (void)bank;(void)copy;return 0;
 #endif
 }
+/* USER/companion are intentionally distinct partitions from retired FUN:
+ * USER 001..032 are two 16-record st objects (4 x 4KiB sectors), and the
+ * FM6/drum companion uses the separately owned 0x9F000 / 0xFE000 sectors.
+ * Former FM6-bank data can occupy the same companion pair. Do not touch
+ * voice-bank/OTA staging at 0xE7000, settings or unknown USR partitions.
+ * This code is unreachable unless CLEAN_INSTALL_LAYOUT is compile-enabled.
+ */
+static uint32_t clean_user_object(uint32_t index)
+{
+    return index < 4u ? OBJ_UPRESET0 + index/2u : OBJ_UPFM6;
+}
+static uint32_t clean_user_copy(uint32_t index)
+{
+    return index < 4u ? index%2u : index-4u;
+}
+static int clean_user_sector_erased(uint32_t index)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    uint8_t page[256];
+    uint32_t obj=clean_user_object(index),copy=clean_user_copy(index);
+    uint32_t base;
+    if(index>=6u)return 0;
+    base=st_sector(obj,copy);
+    if(index<4u && (base<0xDC000u || base>=0xE0000u))return 0;
+    if(index==4u && base!=0x9F000u)return 0;
+    if(index==5u && base!=0xFE000u)return 0;
+    for(uint32_t off=0;off<ST_SECTOR;off+=sizeof page){
+        if(st_read(base+off,page,sizeof page))return 0;
+        for(uint32_t k=0;k<sizeof page;k++)if(page[k]!=0xFFu)return 0;
+        fm1_wdt_feed();
+    }
+    return 1;
+#else
+    (void)index;return 0;
+#endif
+}
+static int clean_user_legacy_sector(uint32_t index)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    st_hdr_t header;
+    if(index>=6u)return 0;
+    uint32_t obj=clean_user_object(index),copy=clean_user_copy(index);
+    if(st_copy_valid(obj,copy,&header))return 1;
+    if(index>=4u && st_copy_valid(OBJ_FM6BANK,copy,&header))return 1;
+    return 0;
+#else
+    (void)index;return 0;
+#endif
+}
 static int clean_layout_preflight(void)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
@@ -121,6 +170,13 @@ static int clean_layout_preflight(void)
                !clean_lib_legacy_sector(bank,copy))return 1;
             fm1_wdt_feed();
         }
+    /* USER and FM6/drum companion are preflighted in the SAME pass,
+     * before a single project or library sector is erased. */
+    for(uint32_t index=0;index<6u;index++){
+        if(!clean_user_sector_erased(index) &&
+           !clean_user_legacy_sector(index))return 1;
+        fm1_wdt_feed();
+    }
     return 0;
 #else
     return 2;
@@ -141,6 +197,16 @@ static int clean_layout_initialize(void)
                 fm1_wdt_feed();
             }
         }
+    for(uint32_t index=0;index<6u;index++){
+        if(!clean_user_sector_erased(index)){
+            if(st_erase(st_sector(clean_user_object(index),
+                                  clean_user_copy(index))) ||
+               !clean_user_sector_erased(index))return 2;
+            fm1_wdt_feed();
+        }
+    }
+    /* The physical caller must reboot to rebuild RAM mirrors from the now
+     * empty USER banks. No command is exposed in downloadable firmware. */
     return 0;
 #else
     return 2;
