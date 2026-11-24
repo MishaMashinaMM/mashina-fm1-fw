@@ -18,7 +18,7 @@ It inspects **all 46 sector copies (184 KiB total)** before the first destructiv
 
 **This is not yet a complete device reset or user-facing installer.** It does not erase the old first-project and remaining legacy sections, song index, settings, autosave, or FM6 voice bank. After successful formatting a **reboot** is necessary to rebuild empty USER and companion RAM mirrors. A full clean-slate first-install experience additionally needs validated reset/default behavior for the other stored settings and unused legacy data. In the combined-layout prototype, the old project-only SysEx initializer is explicitly disabled to avoid a partially clean installation. The entire combined formatter is **build-only** and is never included in the downloadable read-only diagnostic.
 
-The next engineering gate is a complete source-owned storage-partition inventory, verification of the new 6 USER/companion candidate sectors on a physical device, and restore/recovery validation. In particular, **do not automatically erase** the old `0xEA000..0xF1FFF` USR candidate, the FM6 voice-bank staging region, or any unverified bootloader/OTA scratch area.
+The read-only diagnostic has been extended to fingerprint the six USER/companion candidates as well as the original 40 sectors. Before enabling the clean-install format path on real hardware, acquire a fresh physical 46-sector report, confirm the source-owned partition map and independently validate updater/recovery behavior. A CRC32 capture by itself cannot authorize writing. In particular, **do not automatically erase** the old `0xEA000..0xF1FFF` USR candidate, the FM6 voice-bank staging region, or any unverified bootloader/OTA scratch area.
 
 ## First-install ordering, after independent hardware approval
 
