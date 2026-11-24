@@ -1897,24 +1897,30 @@ static void preset_hinted(void)                     /* after a sound load: SEQ >
 
 static void preset_go(uint32_t n)                    /* load absolute 0-based slot into selected track */
 {
-    uint32_t k, e = preset_all_at(n, &k);
-    if (e == NENGINES) {
-        if (k >= UP_SLOTS || !up_used(k)) return;
-        up_load(k);
-    } else {
+    /* Choose by PHYSICAL slot number. A failed LIBRARY lookup must never
+     * alias USER 001 just because the fallback catalog lacks an entry. */
+    if (n < UP_SLOTS) {
+        if (!up_used(n)) return; /* empty USER address */
+        up_load(n);
+    } else if (n < UP_SLOTS + LIB_FACTORY_SLOTS) {
 #if FELUCCA_LIB32
-        if (n >= UP_SLOTS) {
-            if (library_slot_apply(n - UP_SLOTS)) {
-                ui_message("LIBRARY UNAVAILABLE");
-                ui.force = 1;
-                return; /* keep the browsing cursor, not the previous sound */
-            }
-        } else
-#endif
-        {
-            if (e != TSEL->eng_req) select_engine(e);
-            apply_preset(k);
+        if (library_slot_apply(n - UP_SLOTS)) {
+            ui_message("LIBRARY UNAVAILABLE");
+            ui.force = 1;
+            return; /* keep browsing at this slot without changing the sound */
         }
+#else
+        uint32_t k, e = library_factory_at(n - UP_SLOTS, &k);
+        if (e >= NENGINES) {
+            ui_message("LIBRARY UNAVAILABLE");
+            ui.force = 1;
+            return;
+        }
+        if (e != TSEL->eng_req) select_engine(e);
+        apply_preset(k);
+#endif
+    } else {
+        return;
     }
     preset_hinted();
 }
@@ -2006,12 +2012,11 @@ static void preset_step(int32_t direction)
      * Failed or unreadable LIBRARY entries remain selectable. Empty USER
      * slots are skipped for auditioning but stay numbered in the directory. */
     for (count = 0; count < total; count++) {
-        uint32_t k, e, absolute;
+        uint32_t absolute;
         cur = cur >= total ? (direction > 0 ? 0 : total - 1u) :
                              (cur + (direction > 0 ? 1u : total - 1u)) % total;
         absolute = browse_start() + cur;
-        e = preset_all_at(absolute, &k);
-        if (e != NENGINES || up_used(k)) {
+        if (absolute >= UP_SLOTS || up_used(absolute)) {
             browse_cursor = (uint8_t)absolute;
             browse_cursor_valid = 1u;
             preset_go(absolute);
