@@ -14,6 +14,20 @@ const api=read("firmware/src/editor_library.c");
 const config=read("firmware/src/felucca.c");
 const workflow=read(".github/workflows/presets-library-check.yml");
 const flashGate=read("tools/presets_library_flash_map_check.py");
+const trialPage=read("web/clean-install-trial.html");
+for(const id of ["archive","connect","one-unit","rollback","phrase","preflight","commit"])
+  assert(trialPage.includes('id="'+id+'"'),"Missing trial safety control "+id);
+assert.match(trialPage,/readBackup\(JSON\.parse\(await file\.text\(\)\)\)/);
+assert.match(trialPage,/backup\.objects\.length!==43/);
+assert.match(trialPage,/authorizedFirmware=lib\.length===3/);
+assert.match(trialPage,/project\.length===4/);
+assert.match(trialPage,/\$\("phrase"\)\.value==="ERASE THIS FM1"/);
+assert.match(trialPage,/await request\(101,\[\]\)/);
+assert.match(trialPage,/confirm\("DESTRUCTIVE FIRST INSTALL/);
+assert.match(trialPage,/await request\(102,\[\.\.\.phrase,ticket\]\)/);
+assert.match(trialPage,/retries:0/);
+assert.match(trialPage,/Do not resend COMMIT/);
+
 
 for(const flag of ["FELUCCA_CLEAN_INSTALL_LAYOUT","FELUCCA_PROJECT_REFS_FORMAT"]) {
   assert.match(build,new RegExp('os\\.environ\\.get\\("'+flag+'"\\) == "1"'));
