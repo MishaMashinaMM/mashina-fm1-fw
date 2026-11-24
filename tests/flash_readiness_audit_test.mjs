@@ -26,8 +26,8 @@ const damaged=auditFlashProbe({...blank,projects:[3,...Array(15).fill(0)]});
 assert.equal(damaged.unknownOrUnreadable,true);
 const unreadable=auditFlashProbe({...blank,library:[0,4,0,0]});
 assert.equal(unreadable.unknownOrUnreadable,true);
-for(const p of [blank,retired,occupied,damaged,unreadable])
-  assert.equal(auditFlashProbe(p).decision,"PHYSICAL_WRITES_BLOCKED");
+for(const audit of [a,retired,occupied,damaged,unreadable])
+  assert.equal(audit.decision,"PHYSICAL_WRITES_BLOCKED");
 assert.throws(()=>auditFlashProbe({projects:[0],library:blank.library}),/exactly/);
 assert.throws(()=>auditFlashProbe({projects:blank.projects,library:[0,5,0,0]}),/status codes/);
 assert.throws(()=>auditFlashProbe({projects:blank.projects,library:[0,0.5,0,0]}),/status codes/);
