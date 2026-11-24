@@ -459,7 +459,8 @@ def main():
     # if a caller supplies --release. This gate applies to local builds too.
     # Future physical first-install authorization requires a separately
     # reviewed release path, not a one-line environment-variable bypass.
-    non_distributable = os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1"
+    non_distributable = (os.environ.get("FELUCCA_CLEAN_INSTALL_LAYOUT") == "1" or
+                         os.environ.get("FELUCCA_PROJECT_REFS_FORMAT") == "1")
     if non_distributable:
         (OUT / name).unlink(missing_ok=True)
         if a.release:
@@ -481,8 +482,8 @@ def main():
     if errors:
         raise SystemExit("build: checks failed")
     if non_distributable:
-        print("SAFE BUILD-ONLY: FELUCCA_CLEAN_INSTALL_LAYOUT=1.")
-        print("NO .fwsc / installer / release artifact created for the destructive prototype.")
+        print("SAFE BUILD-ONLY: one-time project/clean-layout formatter enabled.")
+        print("NO .fwsc / installer / release artifact created for a destructive formatter.")
         print(f"app      {OUT / 'felucca.bin'}  {len(img)} B (NOT FOR DEVICE INSTALL)")
         return 0
     pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY), ota, PRODUCT)
