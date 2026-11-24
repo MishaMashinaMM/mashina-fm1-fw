@@ -1,6 +1,6 @@
 # First physical FM1 32+32 installation — staged execution plan
 
-**Status: PREPARATION ONLY. No downloadable destructive firmware package is authorized or provided.**
+**Status: ONE-DEVICE EXPERIMENT PREPARATION.** A deliberately gated, manually triggered GitHub Actions build can package a destructive first-install trial **only after the full regression workflow completes successfully**. The ordinary installer and automatic builds remain non-destructive. This is not a public firmware release.
 Branch: `presets-library`. Exactly **one** FM1 will be used when the owner separately authorizes the first-install test; the other is deliberately left unchanged. Keep the XIAO RP2040 as an emergency tool, not part of normal installation.
 
 ## Why this is NOT a normal firmware update
@@ -10,7 +10,7 @@ The new storage scheme uses 32 USER + 32 LIBRARY slots. Its 8 projects each have
 1. Flash the new application in the usual way (old data still physically present). The new program may temporarily show empty/invalid projects before initialization; **do not save projects, USER sounds, library sounds or settings in this intermediate state**.
 2. Once running, explicitly invoke the one-time **53-sector clean initializer** through its separate, double-confirmed WebMIDI preflight/commit protocol. This destroys the old projects, USER banks, FM6/drum companions, settings and aux objects. The backup MUST precede this action.
 
-The command-101/102 implementation is still **source-only**. The build release gate blocks packaging any firmware with destructive initialization. A deliberate separate authorization and tested rollback plan are needed before a flashable candidate can be issued.
+Commands 101/102 are included only in the special first-install firmware. The build release gate prevents ordinary push/diagnostic/release builds from packaging destructive initialization; the single exception requires a human-triggered `presets-library` Actions workflow with the typed confirmation `ERASE ONE FM1`, plus an exact release ID and all six explicit storage flags. The resulting artifact is an **experimental one-device package**, not a public installer.
 
 ## A. Pre-flash evidence — no experimental writes
 
@@ -23,9 +23,9 @@ The command-101/102 implementation is still **source-only**. The build release g
 
 **Recovery limitation:** reinstalling working firmware cannot recreate erased user data; this is acceptable for a deliberate fresh install only if you really do not need that original data. Two matching optional full-flash backups strengthen rollback options but do not guarantee recovery.
 
-## B. Controlled first application install — NOT YET AUTHORIZED
+## B. Controlled first application install — single-unit manually confirmed experiment
 
-The future trial package must be tied to a single reviewed Git commit and GitHub Actions build, have its size and SHA-256 reported, and include a private one-device installer link with the correct firmware identity. Never use the public MASHINA main-branch installer for the experimental layout.
+After all checks pass, the repository owner may run GitHub Actions **Presets library experimental checks** manually from the `presets-library` branch, entering **ERASE ONE FM1**. Only that action can publish `mashina-ONE-FM1-clean-start-32x32-DESTRUCTIVE-TRIAL`, containing the exact firmware `.fwsc`, SHA-256 manifest, dedicated `webapp/installer/`, and separate `first-install/` reset page. Extract the whole artifact, open a command prompt in the extracted root, run `py -m http.server 8000`, and open `http://localhost:8000/webapp/installer/` in Chrome or Edge. After firmware flashing and reconnecting, use `http://localhost:8000/first-install/` for the explicitly confirmed 53-sector initialization. **Never use the public `main` installer for this trial.**
 
 The dedicated first-install build has an additional boot-time write lock: ordinary USER/settings/autosave, MPR1 and LIBRARY erase/program calls refuse writes while old storage remains. Only the confirmed, synchronous clean formatter temporarily unlocks writes; they lock again immediately afterward and are re-enabled only after the next cold boot validates a complete committed first MPS1 bank. This is a source-level safety feature, not physical validation. **Do not attempt to save anything between installation and format, even if the interface allows editing.**
 
@@ -52,4 +52,4 @@ Do not try to reset the device again or overwrite unrecognized flash sectors. Sa
 
 ## Current gate
 
-As of this runbook, **no physical flashable 53-sector formatter** has been published. All host CI tests, including tear-boundary and post-reboot mocks, are necessary but cannot prove the first physical erase/recovery works. Source modifications alone must not bypass `tools/build.py` packaging protection.
+The non-flashable default release gate is retained. An exact manual one-unit release path is staged but should be used only after the full CI completes successfully and the owner intentionally confirms the destructive test. Simulated host tests cannot prove the first physical erase/recovery works. If installation or first initialization fails, **stop** and use the XIAO only if ordinary USB recovery is unavailable.
