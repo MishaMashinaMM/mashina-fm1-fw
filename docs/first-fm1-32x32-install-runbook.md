@@ -27,6 +27,8 @@ The command-101/102 implementation is still **source-only**. The build release g
 
 The future trial package must be tied to a single reviewed Git commit and GitHub Actions build, have its size and SHA-256 reported, and include a private one-device installer link with the correct firmware identity. Never use the public MASHINA main-branch installer for the experimental layout.
 
+The dedicated first-install build has an additional boot-time write lock: ordinary USER/settings/autosave, MPR1 and LIBRARY erase/program calls refuse writes while old storage remains. Only the confirmed, synchronous clean formatter temporarily unlocks writes; they lock again immediately afterward and are re-enabled only after the next cold boot validates a complete committed first MPS1 bank. This is a source-level safety feature, not physical validation. **Do not attempt to save anything between installation and format, even if the interface allows editing.**
+
 After installing, confirm device boot, USB/WebMIDI connectivity and firmware capability flags BEFORE any format command. If boot or connection fails, **stop**; use the previously saved original full-flash backup and the recovery plan. Don't attempt an uninformed extra flash.
 
 ## C. Deliberate clean initialization — NOT YET AUTHORIZED
