@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 static uint8_t nor[0x100000];
-static int fail_after = -1, tear_after = -1, wrong_region;
+static int fail_after = -1, tear_after = -1, erase_torn = -1, wrong_region;
 static uint32_t writes;
 static int lib_flash_read(uint32_t off, void *p, uint32_t n)
 {
@@ -19,6 +19,11 @@ static int lib_flash_erase(uint32_t off)
     if (off < 0xC0000u || off + 4096u > 0xC8000u || off % 4096u) { wrong_region++; return -1; }
     if (fail_after == 0) return -1;
     if (fail_after > 0) fail_after--;
+    if (erase_torn == 0) {
+        memset(nor+off,0xFF,2048);
+        erase_torn = -1; writes++; return -1;
+    }
+    if (erase_torn > 0) erase_torn--;
     memset(nor+off,0xFF,4096);
     writes++;
     return 0;
@@ -115,6 +120,23 @@ int main(void)
         if(!all)break;
     }
     bad+=check("torn payload/header page preserves bank and neighboring sounds",all);
+    all=1;
+    for(int cut=0;cut<2;cut++) {
+        if(lib_slot_write(17,r[17])){all=0;break;}
+        erase_torn=cut;
+        (void)lib_slot_write(17,newer);
+        erase_torn=-1;
+        if(lib_slot_read(17,got)||memcmp(got,r[17],LIB_ENTRY)){
+            all=0;break;
+        }
+        for(uint32_t slot=16;slot<24;slot++)if(slot!=17)
+            if(lib_slot_read(slot,got)||memcmp(got,r[slot],LIB_ENTRY)){
+                all=0;break;
+            }
+        if(!all)break;
+    }
+    bad+=check("partial erase of alternate copy preserves all eight sounds",all);
+
 
     /* Corrupt latest copy: CRC rejects it and falls back to older commit. */
     bad+=check("oldest valid copy survives a damaged newest copy",({
