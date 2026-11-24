@@ -79,7 +79,7 @@ static uint32_t ed_ui_set(const uint8_t *a, uint32_t n)
 #endif
 #ifdef FELUCCA_FAVORITES
     case 3:
-        favorites.filter = a[1]; list_type = 0; break;   /* (0.9.12: FAV or ALL, no type) */
+        favorites.filter = a[1]; favorites.factory[15][18] = 0; break; /* obsolete LIST type cleared */
 #endif
     }
     ui.force = 1;
