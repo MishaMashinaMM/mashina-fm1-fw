@@ -81,7 +81,7 @@ def check():
     build = src("tools/build.py")
     for flag in ("FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
-                 "FELUCCA_PROJECT_REFS_FORMAT"):
+                 "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT"):
         assert '"' + flag + '"' in build, f"tools/build.py no longer forwards {flag}"
     hal = src(flash)
     assert "#if defined(FELUCCA_LIB32_WRITE) && FELUCCA_LIB32_WRITE" in hal
