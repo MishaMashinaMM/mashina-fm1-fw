@@ -32,6 +32,7 @@ static uint8_t nor[0x100000],flash_ok=1;
 static uint32_t erases,writes,outside;
 /* Simulate a single brownout/failing NOR erase during clean installation. */
 static uint32_t fail_erase_at=0xFFFFFFFFu,fail_prog_at=0xFFFFFFFFu;
+static uint32_t torn_erase_at=0xFFFFFFFFu;
 static int st_read(uint32_t off,void *dst,uint32_t n)
 {
     if(off>0x100000u || n>0x100000u-off)return -1;
@@ -41,6 +42,13 @@ static int st_erase(uint32_t off)
 {
     if(off>=0x100000u || (off&4095u)){outside++;return -1;}
     if(erases==fail_erase_at){fail_erase_at=0xFFFFFFFFu;return -1;}
+    if(erases==torn_erase_at){
+        /* Brownout during NOR erase: unknown partially erased sector, not
+         * a valid legacy record and not blank. Must NEVER auto-retry. */
+        torn_erase_at=0xFFFFFFFFu;
+        memset(nor+off,0xFF,2048);
+        return -1;
+    }
     memset(nor+off,0xFF,4096);erases++;return 0;
 }
 static int st_prog(uint32_t off,const void *src,uint32_t n)
@@ -600,6 +608,28 @@ int main(void)
             uint32_t state=ed_diag_layout_sector(0u);
             state==1u || state==3u;
         }));
+    }
+    {
+        /* A real brownout can leave sector bytes half-erased, rather than
+         * failing the erase before changing any byte. That is a recovery
+         * case, not an automatic permission to finish destroying data. */
+        memset(nor,0xFF,sizeof nor);
+        fail_erase_at=fail_prog_at=0xFFFFFFFFu;
+        const uint8_t original[16]={0x46,0x4F,0x52,0x45,0x49,0x47,0x4E};
+        bad+=check("prepare old FUN sector for mid-erase brownout",
+                   st_save(OBJ_SONG1,original,sizeof original)==0 &&
+                   clean_layout_preflight()==0);
+        torn_erase_at=erases;
+        bad+=check("half-erased legacy sector interrupts clean initialization",
+                   clean_layout_initialize()==2 &&
+                   torn_erase_at==0xFFFFFFFFu);
+        uint32_t erasesAtFailure=erases, writesAtFailure=writes;
+        bad+=check("partial sector never passed as valid retired record or erased",
+                   ed_diag_layout_sector(0u)==3u &&
+                   clean_layout_preflight()==1);
+        bad+=check("a second invocation never repairs torn erase destructively",
+                   clean_layout_initialize()==1 &&
+                   erases==erasesAtFailure && writes==writesAtFailure);
     }
     bad+=check("brownout simulations touched no out-of-bound flash",outside==0u);
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
