@@ -9,7 +9,7 @@ import {FORMAT,VERSION,encodeEmulatorFlash,decodeEmulatorFlash,restorePersistent
 
 const SIZE=0x100000,SECTOR=4096;
 const nor=new Uint8Array(SIZE).fill(255);
-const owned=[0x97000,0xA0000,0xBF000,0xE5000,0xEA000,0xF1000,0xFC000,0xFF000];
+const owned=[0x97000,0xA0000,0xBF000,0xE5000,0xC0000,0xC7000,0xFC000,0xFF000];
 for(let i=0;i<owned.length;i++){
   nor[owned[i]+7]=i+1;
   nor[owned[i]+31]=i+120;
