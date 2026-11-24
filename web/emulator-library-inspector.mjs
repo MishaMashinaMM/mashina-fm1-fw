@@ -82,7 +82,7 @@ export function inspectEmulatorFlash(file){
   }
   // LIB1 bank: four pairs, eight complete 304-byte override sounds each.
   for(let bank=0;bank<4;bank++){
-    const base=0xea000+bank*8192;
+    const base=0xc0000+bank*8192;
     const payload=pick(sectors,[base,base+4096],
       (d,c)=>parseLib(d,c,bank),"LIBRARY bank "+bank);
     for(let i=0;i<8;i++){
