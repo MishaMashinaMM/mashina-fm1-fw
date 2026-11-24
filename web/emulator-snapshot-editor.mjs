@@ -9,7 +9,7 @@ import {inspectEmulatorFlash} from "./emulator-library-inspector.mjs";
 import {decodeRecord,encodeRecord} from "./presets-library-codec.mjs";
 import {decodeProject,encodeProject} from "./projects-library-codec.mjs";
 import {importFactoryCatalog,importFactoryDrumRecords} from "./factory-catalog-selection.mjs";
-const SECTOR=4096, LIB_BASE=0xea000, PAYLOAD=256, BANK_BYTES=2432;
+const SECTOR=4096, LIB_BASE=0xc0000, PAYLOAD=256, BANK_BYTES=2432;
 const check=(ok,msg)=>{if(!ok)throw Error(msg);};
 const u32=(x,p)=>(x[p]|x[p+1]<<8|x[p+2]<<16|x[p+3]<<24)>>>0;
 const put32=(x,p,n)=>{for(let i=0;i<4;i++)x[p+i]=(n>>>(8*i))&255;};
