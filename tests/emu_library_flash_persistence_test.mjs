@@ -8,7 +8,7 @@ import {STORE_AREAS,storeSectors,restoreSectors} from "../web/emu/worklet.js";
 
 const ERASED=0xFF, SIZE=0x100000, SECTOR=4096;
 const nor=new Uint8Array(SIZE).fill(ERASED);
-const touched=[0x97000,0xA0000,0xBF000,0xDFFFF&~4095,
+const touched=[0x97000,0xA0000,0xBF000,0xC0000,0xC1000,0xC7000,0xDFFFF&~4095,
   0xE5000,0xEA000,0xEB000,0xF1000,0xFC000,0xFF000];
 for(let i=0;i<touched.length;i++)nor[touched[i]+47]=i+1;
 for(const off of [0xE0000,0xE4000,0xE7000,0xE8000,0xE9000,0xF2000,0xFB000])
@@ -16,8 +16,10 @@ for(const off of [0xE0000,0xE4000,0xE7000,0xE8000,0xE9000,0xF2000,0xFB000])
 const sectors=storeSectors(nor);
 assert.deepEqual(Object.keys(sectors).map(Number).sort((a,b)=>a-b),
   touched.slice().sort((a,b)=>a-b));
+assert.ok(STORE_AREAS.some(([lo,hi])=>lo<=0xC0000&&hi>=0xC8000),
+  "whole reclaimed 32-KiB LIBRARY reservation must persist");
 assert.ok(STORE_AREAS.some(([lo,hi])=>lo<=0xEA000&&hi>=0xF2000),
-  "whole 32-KiB library reservation must persist");
+  "legacy emulator JSON source sectors must remain importable offline");
 const next=new Uint8Array(SIZE).fill(ERASED);
 restoreSectors(next,sectors);
 for(let i=0;i<touched.length;i++)
