@@ -191,6 +191,9 @@ int main(void){
                 ed_diag_layout_sector(53u)==4u&&
                 ed_diag_sector_address(53u)==0u);
     }
+    /* Reset instrumentation after host-only fixture creation (st_save).
+     * The diagnostic classifier itself must perform zero programs/erases. */
+    writes=0;
     bad+=ck("all exact preflight classifications remain read-only",writes==0);
     bad+=ck("all flash probes remain entirely read-only",writes==0);
     printf("FLASH DIAG: %s\n",bad?"FAIL":"ALL TESTS PASSED");
