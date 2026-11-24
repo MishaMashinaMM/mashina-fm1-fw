@@ -226,6 +226,36 @@ int main(void){
     const uint32_t done=erases;
     errors+=ck("completed first install NEVER formats a second time",
                clean_layout_initialize()==1 && erases==done && programs==1);
+    /* The first normal MPR1 write after formatting must not overwrite the
+     * other section of its bank, and must persist USER/LIBRARY references
+     * plus project-only settings through an independent flash read. */
+    uint8_t record[MPR_MAX_RECORD]={0},again[MPR_MAX_RECORD];
+    const uint8_t refs[MPR_TRACKS]={0u,31u,32u,63u,255u,255u};
+    const uint8_t name[MPR_NAME]={'T','E','S','T',0};
+    const uint8_t settings[]={0x37u,0x52u,0xA1u,0x19u};
+    const int encoded=mpr_encode(record,0u,refs,name,settings,sizeof settings);
+    errors+=ck("MPR1 section encoder stores independent USER/LIB references",
+               encoded==(int)(MPR_HEADER+sizeof settings));
+    errors+=ck("first project save after clean initialization succeeds",
+               encoded>0 && mprs_save(0u,record)==0);
+    errors+=ck("new MPR1 section survives NOR readback",
+               mprs_load(0u,again)==0 && !memcmp(again,record,sizeof record));
+    uint32_t section=99u,sz=0u;
+    uint8_t decoded_refs[MPR_TRACKS]={0},decoded_name[MPR_NAME]={0},data[8]={0};
+    errors+=ck("decoded project retains USER/LIBRARY references and settings",
+               mpr_decode(again,(uint32_t)encoded,&section,decoded_refs,
+                   decoded_name,data,sizeof data,&sz)!=0 &&
+               section==0u && sz==sizeof settings &&
+               !memcmp(decoded_refs,refs,sizeof refs) &&
+               !memcmp(data,settings,sizeof settings));
+    memset(again,0x5Au,sizeof again);
+    int paired_empty=mprs_load(1u,again)==0;
+    for(uint32_t i=0;i<sizeof again;i++)
+        if(again[i]!=0u)paired_empty=0;
+    errors+=ck("first saved section preserves paired section B",paired_empty);
+    const uint32_t after_save=erases;
+    errors+=ck("newly saved MPR1 bank also refuses another clean reset",
+               clean_layout_initialize()==1 && erases==after_save);
     errors+=ck("no physical executable is produced by this host test",1);
     printf("CLEAN FORMAT: %s\n",errors?"FAIL":"ALL TESTS PASSED");
     return !!errors;
