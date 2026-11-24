@@ -59,6 +59,13 @@ for(const flag of ["FELUCCA_CLEAN_INSTALL_LAYOUT","FELUCCA_PROJECT_REFS_FORMAT"]
 assert(build.includes('if non_distributable and not trial_authorized:'));
 assert(build.includes('and a.release == "0.13-cleantrial"'));
 assert(build.includes('os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"'));
+assert(build.includes('os.environ.get("GITHUB_EVENT_NAME") == "push"'));
+assert(build.includes('os.environ.get("MASHINA_TRIAL_PUSH_AUTH") =='));
+assert(build.includes('"AUTHORIZE ONE FM1 CLEAN TRIAL"'));
+assert(workflow.includes("github.event.head_commit.message == 'AUTHORIZE ONE FM1 CLEAN TRIAL'"),
+  "Destructive trial artifact must require one exact owner-authorized commit");
+assert(workflow.includes("github.ref == 'refs/heads/presets-library'"));
+
 assert(build.includes('os.environ.get("GITHUB_REF") == "refs/heads/presets-library"'));
 assert(build.includes('os.environ.get("MASHINA_ONE_FM1_CLEAN_TRIAL") == "ERASE-ONE-FM1-32X32"'));
 assert(build.includes('and all(os.environ.get(k) == "1"'));
