@@ -18,6 +18,12 @@ Diagnostic-only WebMIDI **command 100** therefore classifies **each** of the 53 
 
 The updated Web Library can also use the existing read-only backup protocol to export and re-import a byte-matched **legacy** archive covering the older projects (8 × A–D), USER sounds and settings. It must be kept for rollback to compatible legacy firmware; those old project snapshots must never be imported as MPR1 reference records. No destructive operation has been exposed by these additions.
 
+## Offline recovery of the original custom USER sounds
+
+The Web Library now provides **Extract original USER sounds from saved backup (offline, read-only)**. It accepts the owner's verified original 43-object `felucca-backup` JSON and exports a separate `mashina-original-user-sounds-304.json` sound pack. This converter validates the original archive's individual CRC32 checksums, reconstructs occupied USER 001–032 records byte-for-byte, requires matching 112-byte FM6/drum companions and per-slot tags when needed, and preserves original slot indexes. Empty slots remain empty. It uses no USB, WebMIDI or flash writes and never modifies the original JSON.
+
+The resulting file can be inspected/imported through the existing 304-byte MASHINA Web Library staging UI **as a selection of sounds**, but it is **not** an automatic USER-bank restore or migration of old FUN project data. A future new-format physical USER restore must independently support address-targeted USER writes and full post-write readback. This pack also does not replace the original 43-object rollback archive.
+
 ## Implementation status: 53-sector clean-layout preflight (24 November 2026)
 
 An additional **compile-disabled-by-default** routine now exists in `project_refs_init.c` behind the independent `FELUCCA_CLEAN_INSTALL_LAYOUT=1` flag (also requires the MPR1 project, LIBRARY, and one-time formatter write gates).
