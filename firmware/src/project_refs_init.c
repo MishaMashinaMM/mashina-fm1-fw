@@ -118,17 +118,28 @@ static uint32_t clean_user_copy(uint32_t index)
 {
     return index < 4u ? index%2u : index-4u;
 }
+/* Exact whitelist, not just a broad USER address range. A future storage
+ * map change must REFUSE initialization rather than silently format the new
+ * location merely because it holds a CRC-valid unrelated storage record. */
+static int clean_user_address_ok(uint32_t index)
+{
+    static const uint32_t expected[6]={
+        0xDC000u,0xDD000u,0xDE000u,0xDF000u,0x9F000u,0xFE000u
+    };
+    if(index>=6u)return 0;
+    const uint32_t copy=clean_user_copy(index);
+    if(st_sector(clean_user_object(index),copy)!=expected[index])return 0;
+    if(index>=4u && st_sector(OBJ_FM6BANK,copy)!=expected[index])return 0;
+    return 1;
+}
 static int clean_user_sector_erased(uint32_t index)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
     uint8_t page[256];
     uint32_t obj=clean_user_object(index),copy=clean_user_copy(index);
     uint32_t base;
-    if(index>=6u)return 0;
+    if(!clean_user_address_ok(index))return 0;
     base=st_sector(obj,copy);
-    if(index<4u && (base<0xDC000u || base>=0xE0000u))return 0;
-    if(index==4u && base!=0x9F000u)return 0;
-    if(index==5u && base!=0xFE000u)return 0;
     for(uint32_t off=0;off<ST_SECTOR;off+=sizeof page){
         if(st_read(base+off,page,sizeof page))return 0;
         for(uint32_t k=0;k<sizeof page;k++)if(page[k]!=0xFFu)return 0;
@@ -143,7 +154,7 @@ static int clean_user_legacy_sector(uint32_t index)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
     st_hdr_t header;
-    if(index>=6u)return 0;
+    if(!clean_user_address_ok(index))return 0;
     uint32_t obj=clean_user_object(index),copy=clean_user_copy(index);
     if(st_copy_valid(obj,copy,&header))return 1;
     if(index>=4u && st_copy_valid(OBJ_FM6BANK,copy,&header))return 1;
@@ -167,18 +178,21 @@ static uint32_t clean_aux_address(uint32_t index)
     if(index<6u)return st_sector(OBJ_AUTOSAVE,index-4u);
     return FVB_HOME;
 }
-static int clean_aux_erased_sector(uint32_t index)
+static int clean_aux_address_ok(uint32_t index)
 {
-#if FELUCCA_CLEAN_INSTALL_LAYOUT
     static const uint32_t expected[7]={
         0xFC000u,0xFD000u,0xD8000u,0xD9000u,
         0xE5000u,0xE6000u,0xE7000u
     };
+    return index<7u && clean_aux_address(index)==expected[index];
+}
+static int clean_aux_erased_sector(uint32_t index)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
     uint8_t page[256];
     uint32_t base;
-    if(index>=7u)return 0;
+    if(!clean_aux_address_ok(index))return 0;
     base=clean_aux_address(index);
-    if(base!=expected[index])return 0;
     for(uint32_t off=0;off<ST_SECTOR;off+=sizeof page){
         if(st_read(base+off,page,sizeof page))return 0;
         for(uint32_t i=0;i<sizeof page;i++)if(page[i]!=0xFFu)return 0;
@@ -193,7 +207,7 @@ static int clean_aux_legacy_sector(uint32_t index)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
     st_hdr_t h;
-    if(index>=7u)return 0;
+    if(!clean_aux_address_ok(index))return 0;
     if(index<2u)return st_copy_valid(OBJ_SETTINGS,index,&h);
     if(index<4u)return st_copy_valid(OBJ_SONGIDX,index-2u,&h);
     if(index<6u){
