@@ -63,6 +63,8 @@ static void project_cur_name(char *b);
 #if FELUCCA_LIB32
 static void library_track_name(const track_t *t, char *out);
 static void library_track_name_set(const track_t *t, const char *name);
+/* Display-only RAM metadata: 1=uploaded, 0=factory fallback, 2=unavailable. */
+static uint32_t library_metadata(uint32_t slot, char *name, uint32_t *engine);
 #endif
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
 static void mpr_capture_source(const track_t *t); /* defined after project.c captures */
