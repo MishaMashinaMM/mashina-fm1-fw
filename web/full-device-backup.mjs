@@ -308,3 +308,60 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
   }
   return {restoredProjects:32,librarySlots:32,userSlots:32,settingsRestored:true};
 }
+
+/* Optional diagnostic-image-only command 99. Every batch returns:
+ * [version=1,start,count, (status,crc32-as-5-seven-bit-bytes)*count].
+ * 32 MPR1 sectors and 8 LIBRARY sectors are fingerprinted without transmitting
+ * raw preset data or authorizing writes. CRC32 detects ordinary unintended
+ * changes, NOT deliberate tampering or ownership/recovery compatibility.
+ */
+export async function captureFlashFingerprints(request,progress=()=>{}){
+  const sectors=[];
+  for(let start=0;start<40;start+=8){
+    const count=Math.min(8,40-start);
+    const reply=Uint8Array.from(await request(99,[start,count]));
+    insist(reply.length===3+6*count&&reply[0]===1&&
+      reply[1]===start&&reply[2]===count,
+      "FM1 does not support compatible read-only flash fingerprint diagnostics");
+    for(let j=0;j<count;j++){
+      const at=3+j*6,status=reply[at];
+      insist(status===0||status===4,
+        "Flash fingerprint sector returned an unknown read status");
+      let crc=0;
+      for(let k=0;k<5;k++){
+        const b=reply[at+1+k];
+        insist(b<=127&&(k!==4||b<=15),
+          "Flash fingerprint includes invalid 7-bit CRC value");
+        crc=(crc | (b << (7*k)))>>>0;
+      }
+      insist(status!==4||crc===0,
+        "Unreadable sector must never claim a validated CRC");
+      const index=start+j;
+      const address=index<32?0xa0000+index*4096:
+        0xea000+(index-32)*4096;
+      sectors.push({index,address,
+        readable:status===0,
+        crc32:status===0?crc.toString(16).toUpperCase().padStart(8,"0"):null});
+    }
+    progress(sectors.length,40);
+  }
+  return {format:"mashina-flash-sector-fingerprints",version:1,
+    mode:"READ_ONLY_DIAGNOSTIC",sectorBytes:4096,sectors,
+    complete:sectors.every(x=>x.readable)};
+}
+/* Compare only equal, complete sector maps. Does not authorize flash writes. */
+export function compareFlashFingerprints(before,after){
+  const validate=x=>x?.format==="mashina-flash-sector-fingerprints"&&
+    x.version===1&&x.sectorBytes===4096&&
+    Array.isArray(x.sectors)&&x.sectors.length===40&&x.complete===true&&
+    x.sectors.every((s,i)=>s.index===i&&s.readable===true&&
+      /^[0-9A-F]{8}$/.test(s.crc32));
+  insist(validate(before)&&validate(after),
+    "Complete, compatible fingerprints from both diagnostic sessions are required");
+  const changes=before.sectors.filter((s,i)=>
+    s.crc32!==after.sectors[i].crc32)
+    .map(x=>({index:x.index,address:x.address,
+      before:x.crc32,after:after.sectors[x.index].crc32}));
+  return {same:changes.length===0,changed:changes,
+    note:"CRC32 comparisons do not prove bootloader ownership or guarantee collision-free integrity."};
+}
