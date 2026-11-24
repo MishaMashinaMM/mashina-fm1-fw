@@ -12,7 +12,7 @@
 
 ## First-install ordering, after independent hardware approval
 
-1. Establish the ownership and update/recovery safety of the proposed LIBRARY sector range; do **not** infer that the USR package descriptor grants permission. Presently **BLOCKED**.
+1. Reclaim eight old FUN project sectors at **0xC0000–0xC7FFF** for LIB1, rather than using the unknown **0xEA000–0xF1FFF USR** area. Verify that the exact physical sectors contain retired FUN records or are erased and that the loader and other stores cannot write them unexpectedly. The proposed physical reallocation is **not yet tested**.
 2. Independently test the exact updater/recovery path on a single FM1 with an offline backup, and explicitly approve a destructive clean install. The app-level HAL read-only diagnostic does not govern stock SPL or bootloader operations.
 3. Make the first-install formatting operation explicit and one-shot, never automatic on boot, and restrict writes to verified exact partitions. Do not erase all of USR or all of NOR.
 4. Initialize the new MPR1 paired project-bank sectors (current candidates 0xA0000–0xBFFFF); deliberately erase legacy project records as part of the fresh start, only after the storage map is approved.
