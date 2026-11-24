@@ -106,6 +106,34 @@ try{
   assert.equal(finalView.library[0].name,"THALES");
   assert.deepEqual(errors,[],"Browser errors after USER/project staging and export");
   console.log("PASS: real Chrome queues a USER-to-USER copy and remaps P1:A/T1 to the newly saved slot; complete JSON is checked");
+  // Entirely offline: compare two valid diagnostic fingerprint files. Even
+  // identical checksums must never grant permission to program real NOR.
+  const fingerprints={format:"mashina-flash-sector-fingerprints",version:1,
+    mode:"READ_ONLY_DIAGNOSTIC",sectorBytes:4096,complete:true,
+    sectors:Array.from({length:40},(_,i)=>({
+      index:i,address:i<32?0xa0000+i*4096:0xea000+(i-32)*4096,
+      readable:true,crc32:(i+1000).toString(16).toUpperCase().padStart(8,"0")
+    }))};
+  const beforeReport={format:"mashina-flash-diagnostic",version:2,
+    audit:{decision:"PHYSICAL_WRITES_BLOCKED"},fingerprints};
+  const afterReport=structuredClone(beforeReport);
+  await page.locator("#flash-compare-panel summary").click();
+  await page.locator("#flash-compare-before").setInputFiles({
+    name:"before.json",mimeType:"application/json",
+    buffer:Buffer.from(JSON.stringify(beforeReport))});
+  await page.locator("#flash-compare-after").setInputFiles({
+    name:"after.json",mimeType:"application/json",
+    buffer:Buffer.from(JSON.stringify(afterReport))});
+  const [comparison]=await Promise.all([
+    page.waitForEvent("download"),page.locator("#flash-compare-run").click()
+  ]);
+  const compared=JSON.parse(fs.readFileSync(await comparison.path(),"utf8"));
+  assert.equal(compared.same,true);
+  assert.equal(compared.physicalWritesAllowed,false);
+  assert.match(await page.locator("#flash-compare-status").textContent(),/remain BLOCKED/);
+  assert.deepEqual(errors,[],"Browser errors after CRC comparison");
+  console.log("PASS: Chrome compares two full read-only flash reports and never enables physical writes");
+
 
 }finally{
   if(browser)await browser.close();
