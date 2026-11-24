@@ -22,6 +22,12 @@
 7. **One-device trial:** after separate explicit permission, never target both devices. Keep external power/USB stable. Check all sound and project settings, one independent USER edit, one LIBRARY replacement, controlled cold restart, backup/export and restore, then subsequent MASHINA update persistence.
 8. **Stop conditions:** any unknown/unreadable/foreign 53-sector classification, source address mismatch, bootloader/recovery uncertainty not consciously accepted for this trial, missing backup, failed build/headroom/OTA test, or unexpected post-install state blocks release.
 
+## Physical recovery evidence, newly documented
+
+The supported FM-1 Transporter recovery route using an actual **Seeed XIAO RP2040** and an externally wired USB-C data breakout was identified. See [the read-only physical recovery preflight](fm1-physical-recovery-preflight.md) for identification of the precise RP2040 board, safe D+/D−/ground wiring and VBUS isolation, and the independent dump requirements. The owner's USB-C **five-core** cable must be electrically identified before using it; colors are not reliable proof. The nRF52840 Sense variants are not interchangeable with the documented RP2040 Transporter image.
+
+The command `python3 tools/verify_fm1_recovery_dumps.py first.bin second.bin` now checks two independent 1 MiB dumps, rejecting mismatches even inside user data above 0x93000; this is **offline and read-only**. Both full binary dumps must remain private. Neither an untested RP2040 setup nor a byte-exact backup is proof that a physical rollback will work. Firmware package/build release gates remain unchanged.
+
 ## What can be issued without further approval
 
 A **non-flashable review bundle** containing source commit, read-only 53-sector diagnostic, preflight report, regression logs, build-size report, and testing instructions. Do not label this bundle “installer.”
