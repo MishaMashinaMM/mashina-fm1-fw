@@ -12,7 +12,6 @@
 /* Implemented later by the read-only diagnostic, with complete FUN CRC
  * validation. Previewing a legacy bank never implies permission to erase. */
 static uint32_t ed_diag_project_bank(uint32_t bank);
-static uint8_t library_diag_preview_legacy;
 #endif
 #include "preset_library_store.c"
 #include "preset_library_wire.c"
