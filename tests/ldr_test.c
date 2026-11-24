@@ -170,6 +170,9 @@ int main(int argc, char **argv)
     size_t olen;
     static uint8_t user[0x1000], store[0x100000 - 0x93000];
     uint8_t *old, head[0x4000];
+    /* Entire protected experimental LIB32 region must survive upgrades,
+     * including pathological bytes matching the loader's record signature. */
+    static uint8_t library_before[0x8000];
     uint32_t ofo, nfo, i;
     int bad = 0, rc;
     if (argc < 3) { printf("usage: ldr_test OLD.fwsc NEW.fwsc [APP_SLOT]\n"); return 2; }
@@ -191,7 +194,15 @@ int main(int argc, char **argv)
         memcpy(nor + 0xE8F00, r, sizeof r);
         /* Simulate a maliciously matching update-record signature inside the
          * reserved MASHINA library. The cleaner MUST leave this sector alone. */
-        memcpy(nor + 0xEBF00, r, sizeof r);
+        /* Exercise all eight LIBRARY sectors, not just the first.
+         * Insert valid-looking vendor update markers at every tail. */
+        for (uint32_t sector = 0; sector < 8u; sector++) {
+            uint32_t base = 0xEA000u + sector * 0x1000u;
+            for (uint32_t j = 0; j < 0x1000u; j++)
+                nor[base + j] = (uint8_t)(sector * 23u + j * 11u + (j >> 3));
+            memcpy(nor + base + 0xF00u, r, sizeof r);
+        }
+        memcpy(library_before, nor + 0xEA000u, sizeof library_before);
         for (i = 0; i < 0x1000u; i++) nor[0xA0000 + i] = (uint8_t)(i * 7u);
         memcpy(nor + 0xA0F00, r, sizeof r);
         memcpy(user, nor + 0xA0000, sizeof user);
@@ -223,8 +234,8 @@ int main(int argc, char **argv)
     bad += check("update records cleared (RAM + flash 0xE4F00, the stock firmware's 0xE8F00)",
                  record_cleared && nor[0xE4F06] == 0xFF && nor[0xE8F06] == 0xFF);
     bad += check("user data in Felucca's store that looks like a record is kept", !memcmp(nor + 0xA0000, user, sizeof user));
-    bad += check("library sector survives upgrade even if it mimics an OTA record",
-                 nor[0xEBF06] == 0x41 && nor[0xEBF07] == 0x54);
+    bad += check("all eight LIBRARY sectors preserved byte-exactly, even with forged OTA markers",
+                 !memcmp(nor + 0xEA000u, library_before, sizeof library_before));
     bad += check("no write outside the allowed windows", bad_range == 0);
     bad += check("[0x93000, 1 MiB) byte-identical but the record sectors", !memcmp(nor + 0x93000, store, sizeof store));
     bad += app_area(argc > 3 ? (uint32_t)strtoul(argv[3], NULL, 0) : 0u);
