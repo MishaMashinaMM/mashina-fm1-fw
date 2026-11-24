@@ -59,7 +59,7 @@ assert.deepEqual(result.patches[2].recordBytes,Array.from(sound18));
 assert.equal(result.originalFirmware,original.firmware);
 assert.equal(parseImportedLibrary(result).length,3);
 const changed=structuredClone(original);
-changed.objects.find(o=>o.id===6).crc^=0x01;
+changed.objects.find(o=>o.id===6).crc=(changed.objects.find(o=>o.id===6).crc^0x01)>>>0;
 assert.throws(()=>extractLegacyUserPresets(changed),/checksum/);
 const mismatched=structuredClone(original);
 const comp=Uint8Array.from(companion);
