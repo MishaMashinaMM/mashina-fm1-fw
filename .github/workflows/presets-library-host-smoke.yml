@@ -42,6 +42,8 @@ jobs:
             tests/glo_boot_page_test.mjs; do
             node --check "$file"
           done
+      - name: Verify independent FM1 recovery dump verifier (host-only)
+        run: python3 -m unittest discover -s tests -p verify_fm1_recovery_dumps_test.py -v
       - name: Verify destructive first-install release remains locked
         run: node tests/clean_install_release_gate_test.mjs
       - name: Execute Web Library and backup regressions
