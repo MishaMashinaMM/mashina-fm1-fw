@@ -76,6 +76,18 @@ def check():
     assert "#if defined(FELUCCA_LIB32_WRITE) && FELUCCA_LIB32_WRITE" in hal
     assert "FL_LIB32_OK(off,n)" in hal and "|| FL_LIB32_OK(off,n)" in hal, (
         "LIB32 writes must be bounded by an explicit flash HAL gate")
+    # The opt-in physical diagnostic MUST be read-only for every persistent
+    # sound/project/settings sector, not just MPR1 and LIB32. The only
+    # allowed write range is OTA loader staging so stable firmware remains
+    # reinstallable. Both erase and program go through FL_RANGE_OK.
+    assert re.search(
+        r"#ifndef FL_RANGE_OK\s*#if defined\(FELUCCA_FLASH_DIAG\) && FELUCCA_FLASH_DIAG\s*"
+        r"#define FL_RANGE_OK\(off, n\) FL_IN\(off, n, FL_OTA_LO, FL_OTA_HI\)",
+        hal), "Diagnostic firmware HAL must deny all data-flash writes"
+    assert "if (!FL_RANGE_OK(off, 0x1000u)" in hal and \
+           "if (!FL_RANGE_OK(off, n)" in hal, (
+        "Both 4KiB erase and page program must enforce the diagnostic write gate")
+    print("PASS: diagnostic app HAL blocks USER/MPR1/LIBRARY/globals/autosave writes; only OTA staging remains writable")
     fw = src("firmware/src/felucca.c")
     for flag in ("FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
                  "FELUCCA_PROJECT_REFS_FORMAT"):
