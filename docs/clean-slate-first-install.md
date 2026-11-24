@@ -27,9 +27,10 @@ Source: `mashina-flash-diagnostic.json` captured 2026-11-24 08:19:12Z on one FM1
 
 - All 40 4-KiB sector CRC32s were readable; this is fingerprint-only evidence, not raw-flash inspection.
 - All 16 proposed MPR1 paired banks report valid retired FUN project records. No FUN-to-MPR1 migration is required by product design.
-- All four proposed LIB1 paired banks report unknown data. The eight CRC32s at 0xEA000–0xF1FFF show a repeated 16-KiB sequence (sector 0 equals 4, 1 equals 5, 2 equals 6, 3 equals 7).
+- All four **old USR LIB1 candidates** reported unknown data. The eight CRC32s at 0xEA000–0xF1FFF show a repeated 16-KiB sequence (sector 0 equals 4, 1 equals 5, 2 equals 6, 3 equals 7).
 - None of the eight library-sector CRC32s equals F154670A (the CRC32 of 4096 bytes of 0xFF).
-- **Interpretation:** the candidate LIBRARY sectors are occupied or otherwise inconsistent with an erased bank; repeated CRCs cannot distinguish repeated content, address aliasing or a read-path error. Do not wipe these sectors merely because legacy data is disposable.
+- **Interpretation:** the **old USR** candidate sectors are occupied or otherwise inconsistent with an erased bank; repeated CRCs cannot distinguish repeated content, address aliasing or a read-path error. Do not wipe these sectors.
+- **New candidate `0xC0000–0xC7FFF`:** present in source-level legacy FUN project allocations and not inspected by the old physical CRC diagnostic. A fresh read-only test is still needed before authorizing any writes.
 
 ## Current physical gate
 
