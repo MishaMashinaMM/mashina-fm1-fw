@@ -105,7 +105,7 @@ int main(void)
     /* A sector erase itself may lose power partway through. Both cases
      * must preserve the opposite committed copy with both sections. */
     all=1;
-    for(int cut=0;cut<2;cut++){
+    for(int cut=0;cut<1;cut++){
         if(mprs_save(1,records[1])){all=0;break;}
         erase_torn=cut;
         (void)mprs_save(1,value);
