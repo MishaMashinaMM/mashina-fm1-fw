@@ -78,5 +78,22 @@ Status codes: **blank**, **committed**, **retired project**, **unknown** or
 A bank of retired project sections must only be cleared after a complete
 verified offline backup and an explicit future formatting decision.
 
+The resulting `mashina-flash-diagnostic.json` (format version 2) now embeds
+an independent, **read-only readiness audit** with the exact candidate bank
+addresses, project-section/slot mapping, occupied/blank/corrupt counts,
+reasons for blocking, and four explicit **unverified** conditions:
+
+- physical sector ownership;
+- stock bootloader/recovery/OTA preservation;
+- verified complete offline backup;
+- demonstrated restoration on a physical FM1.
+
+The audit's decision is **always `PHYSICAL_WRITES_BLOCKED`**, even if every
+sector is reported erased. This is deliberate: clean sector signatures only
+tell us about *current contents*, not who is authorized to erase/program
+them or how every firmware installer will handle those addresses.
+The diagnostic artifact does not automatically enable an installer,
+factory reset or write capability.
+
 **No installer or device write was executed by ChatGPT.** The artifact is
 prepared for user-controlled installation and inspection only.
