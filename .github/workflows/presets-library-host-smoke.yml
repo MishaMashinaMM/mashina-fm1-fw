@@ -78,7 +78,7 @@ jobs:
           cp web/fm1backup.js web/projects-library-codec.mjs web/projects-library-view.mjs build/presets-library-smoke/
           cp web/performance-backup.mjs web/full-device-backup.mjs build/presets-library-smoke/
           cp web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs build/presets-library-smoke/
-          cp web/flash-readiness.mjs build/presets-library-smoke/
+          cp web/flash-readiness.mjs web/flash-fingerprint-analysis.mjs build/presets-library-smoke/
           mkdir -p build/presets-library-smoke/emu
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/presets-library-smoke/emu/
           python3 tools/check_library_preview.py build/presets-library-smoke
