@@ -77,6 +77,25 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         }
         return 1;
     }
+    if (cmd == 99u) { /* READ-ONLY sector CRC fingerprints; diagnostic image only */
+#if FELUCCA_FLASH_DIAG
+        if(n!=2u || args[0]>=40u || args[1]==0u || args[1]>8u ||
+           (uint32_t)args[0]+args[1]>40u){
+            ed_b(127u);ed_b(1u);return 1;
+        }
+        ed_b(1u);ed_b(args[0]);ed_b(args[1]);
+        for(uint32_t k=0;k<args[1];k++){
+            uint32_t hash=0u;
+            uint32_t status=(!flash_ok || transport_busy())?4u:
+              ed_diag_sector_crc((uint32_t)args[0]+k,&hash);
+            ed_b(status);
+            for(uint32_t i=0;i<5u;i++)ed_b(hash>>(7u*i));
+        }
+        return 1;
+#else
+        ed_b(127u);ed_b(1u);return 1;
+#endif
+    }
     if (cmd == 96u) { /* MPR1_INIT, NOT enabled in ordinary builds */
 #if FELUCCA_PROJECT_REFS && FELUCCA_PROJECT_REFS_FORMAT
         static const uint8_t key[4]={0x4Du,0x50u,0x52u,0x31u}; /* "MPR1" */
