@@ -228,6 +228,14 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         }
     }
     length = lib_wire_reply(cmd,args,n,response);
+    /* A successful USB replacement/erase changes the PRESETS page metadata
+     * immediately, without waiting for the next cold-boot scan. Re-read only
+     * the written slot; never accept metadata from an unverified PUT packet. */
+    if ((cmd == LIB_WIRE_PUT || cmd == LIB_WIRE_ERASE) &&
+        length == 2u && response[1] == 0u && n && args[0] < LIB_SLOTS) {
+        library_metadata_refresh(args[0]);
+        ui.force = 1;
+    }
     if (cmd == LIB_WIRE_CAP && length == 3u) {
 #if FELUCCA_LIB32_WRITE
         response[2] = flash_ok ? 1u : 0u;
