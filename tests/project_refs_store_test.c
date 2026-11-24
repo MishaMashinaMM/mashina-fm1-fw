@@ -118,6 +118,32 @@ int main(void)
     bad+=ck("partially erased destination never damages committed project pair",all);
 
 
+    /* Validate real A/B CRC fallback, then fail closed when both committed
+     * generations are damaged. Neither case is allowed to erase a bank. */
+    bad+=ck("re-establish two valid project-bank generations",({
+        int ok=mprs_save(1,records[1])==0 &&
+               mprs_save(1,records[1])==0;
+        mprs_head_t h0,h1;
+        ok && mprs_valid(0,0,&h0) && mprs_valid(0,1,&h1);
+    }));
+    {
+        uint32_t seq=0;
+        int newest=mprs_latest(0,&seq);
+        int ok=0;
+        if(newest>=0){
+            nor[mprs_base(0,(uint32_t)newest)+MPRS_HEADER_OFF+123u]^=0x01u;
+            ok=mprs_load(0,got)==0 &&
+               !memcmp(got,records[0],sizeof got) &&
+               mprs_load(1,got)==0 &&
+               !memcmp(got,records[1],sizeof got);
+            bad+=ck("damaged newest CRC falls back to intact project pair",ok);
+            nor[mprs_base(0,(uint32_t)(1-newest))]^=0x01u;
+            int before=writes;
+            bad+=ck("two corrupt A/B project copies block saves without erasure",
+                    mprs_load(1,got)==2 &&
+                    mprs_save(1,records[1])==2 && writes==before);
+        } else bad+=ck("damaged newest CRC falls back to intact project pair",0);
+    }
     {
         uint32_t a=mprs_base(15,0),b=mprs_base(15,1);
         memset(nor+a,0xFF,4096);memset(nor+b,0xFF,4096);
