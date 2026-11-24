@@ -163,7 +163,7 @@ import {SOURCE_FORMAT,SELECTION_FORMAT,importFactoryCatalog,defaultFactorySelect
   from "./factory-catalog-selection.mjs";
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
-import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash} from "./full-device-backup.mjs";
+import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
 import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
 import {inspectProjectReferences} from "./projects-library-view.mjs";
@@ -533,6 +533,17 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
   if(!device)throw new Error("Connect first");
   const health=await probeFlash(device.request);
   const audit=auditFlashProbe(health);
+  let fingerprints=null,checksumNote="";
+  try {
+    fingerprints=await captureFlashFingerprints(device.request,
+      (i,n)=>$("status").textContent="READ ONLY: fingerprinting candidate flash sectors "+i+"/"+n);
+    checksumNote=fingerprints.complete?
+      "All 40 candidate sectors were CRC32-fingerprinted without writing flash.":
+      "Some sectors were unreadable; NO writes are permitted.";
+  }catch(error){
+    checksumNote="Optional CRC32 fingerprint unavailable: "+error.message+
+      ". The physical flash readiness decision remains BLOCKED.";
+  }
   downloadFile("mashina-flash-diagnostic.json",{
     format:"mashina-flash-diagnostic",version:2,
     created:new Date().toISOString(),
@@ -540,7 +551,8 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     unknown:health.unknown,
     canInitializeProjects:health.canInitializeProjects,
     libraryAllBlank:health.libraryAllBlank,
-    audit
+    audit,fingerprints,
+    fingerprintNote:checksumNote
   });
   $("status").textContent=
     "PHYSICAL WRITES BLOCKED — read-only probe does not prove sector ownership.\n"+
@@ -549,7 +561,8 @@ $("probe-flash").addEventListener("click",()=>action(async()=>{
     "LIBRARY FLASH (4 paired banks): "+audit.libraryBanks.map(x=>
       `slots ${x.slotStart}–${x.slotEnd}: ${x.status}`).join(" · ")+"\n"+
     audit.messages.join("\n")+"\n"+
-    "Saved mashina-flash-diagnostic.json with independent readiness audit; no flash writes performed by the probe.";
+    checksumNote+"\n"+
+    "Saved mashina-flash-diagnostic.json with independent readiness audit and optional 40-sector CRC report. No flash writes performed by the probe.";
 }));
 let emuInspection=null,emuOriginalFlash=null,emuSnapshotSources=[],emuUserSources=[],emuFactorySources=[];
 let emuSourceLabel="",emuPending=new Map(),emuPendingRefs=new Map();
