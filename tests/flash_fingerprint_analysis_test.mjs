@@ -45,4 +45,20 @@ assert.equal(newReview.decision,"PHYSICAL_WRITES_BLOCKED");
 const wrongExtra=structuredClone(expanded);
 wrongExtra.fingerprints.sectors[45].address=0xEA000;
 assert.throws(()=>analyzeFlashFingerprints(wrongExtra),/Invalid or unreadable/);
+const allState=structuredClone(expanded);
+allState.fingerprints.version=3;
+for(const address of [0xFC000,0xFD000,0xD8000,0xD9000,0xE5000,0xE6000,0xE7000])
+  allState.fingerprints.sectors.push({
+    index:allState.fingerprints.sectors.length,address,readable:true,
+    crc32:address===0xE7000?ERASED_4K_CRC32:"1234ABCD"
+  });
+const report53=analyzeFlashFingerprints(allState);
+assert.equal(report53.librarySectorCount,8);
+assert.equal(report53.userCompanionSectorCount,6);
+assert.equal(report53.auxiliarySectorCount,7);
+assert.deepEqual(report53.auxiliaryErasedSectorAddresses,["0xE7000"]);
+assert.equal(report53.decision,"PHYSICAL_WRITES_BLOCKED");
+const wrongAux=structuredClone(allState);
+wrongAux.fingerprints.sectors[52].address=0xEA000;
+assert.throws(()=>analyzeFlashFingerprints(wrongAux),/Invalid or unreadable/);
 console.log("PASS: physical flash repeated CRC analysis is read-only, exact-address validated, never grants write permission");
