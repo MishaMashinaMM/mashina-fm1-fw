@@ -96,7 +96,6 @@ static void library_metadata_boot(void)
                 }
             }
         }
-        fm1_wdt_feed();
     }
 }
 static uint32_t library_metadata(uint32_t slot, char *name, uint32_t *engine)
