@@ -36,6 +36,14 @@ export async function restoreOriginalUserBanks(request,original,opts={}){
     (projects.length===3||projects.length===4)&&projects[0]===1&&
     projects[1]===32&&projects[2]===1,
     "Device does not advertise an approved write-capable 32+32 MPR1 build");
+  /* A fresh clean-start restore must never silently replace user-created
+   * sounds already on the target FM1. Partial failures require an explicit,
+   * separately reviewed recovery route, not automatic repeat. */
+  if(opts.requireEmpty!==false){
+    const before=await captureUser(request);
+    requireOk(before.length===0,
+      "Target USER bank is not empty: refusing to overwrite existing sounds");
+  }
   let wrote=0;
   const put=async(args)=>{
     const r=Uint8Array.from(await request(67,args,{timeout:30000,retries:0}));
