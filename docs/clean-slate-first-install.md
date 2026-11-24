@@ -10,6 +10,14 @@
 - Project settings: ordinary defaults, no FUN import or compatibility layer.
 - 107-preset master catalog and protected user-created emulator JSON backups: remain immutable external sources; not all 107 are simultaneously stored in the FM1.
 
+## 53-sector physical inspection and repeated CRC32 finding
+
+The read-only browser report now includes 53 source-owned active-state sector CRC32 fingerprints. A repeated whole-sector checksum is **not** evidence that physical flash aliases itself. In particular, `0x127B0F88` is the reproducible CRC32 for an otherwise erased 4096-byte sector containing a valid, **zero-length committed FELU record**. The record stores its own header CRC32, so different object IDs, sequence numbers and A/B slots still yield the same whole-sector checksum. A standalone host regression now constructs different, CRC-valid FUN project records and verifies that their bytes differ while their whole-sector CRC32 is identical. **This pattern alone is not proof of an empty record:** header/payload and any extension still require independent CRC and address/type validation.
+
+Diagnostic-only WebMIDI **command 100** therefore classifies **each** of the 53 exact candidate sectors without exposing raw sound/project bytes: 0 erased, 1 already-new-format MPR1, 2 expected source-owned CRC-validated old record, 3 unknown/corrupt or 4 unreadable. This classification uses the same legacy types and sector addresses as the compile-disabled clean installer. A matching report with only status 0 or 2 is supporting evidence for the proposed content layout, **not permission to write**; stock bootloader/recovery, verified backups and an explicitly gated installation still need independent checks.
+
+The updated Web Library can also use the existing read-only backup protocol to export and re-import a byte-matched **legacy** archive covering the older projects (8 × A–D), USER sounds and settings. It must be kept for rollback to compatible legacy firmware; those old project snapshots must never be imported as MPR1 reference records. No destructive operation has been exposed by these additions.
+
 ## Implementation status: 53-sector clean-layout preflight (24 November 2026)
 
 An additional **compile-disabled-by-default** routine now exists in `project_refs_init.c` behind the independent `FELUCCA_CLEAN_INSTALL_LAYOUT=1` flag (also requires the MPR1 project, LIBRARY, and one-time formatter write gates).
