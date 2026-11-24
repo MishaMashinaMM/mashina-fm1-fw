@@ -6,6 +6,7 @@
  */
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import {spawnSync} from "node:child_process";
 
 const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
 const build=read("tools/build.py");
@@ -15,6 +16,12 @@ const config=read("firmware/src/felucca.c");
 const workflow=read(".github/workflows/presets-library-check.yml");
 const flashGate=read("tools/presets_library_flash_map_check.py");
 const trialPage=read("web/clean-install-trial.html");
+const inline=trialPage.match(/<script type="module">([\\s\\S]*?)<\\/script>/);
+assert(inline,"Trial page must have one explicit ES module script");
+const syntax=spawnSync(process.execPath,["--input-type=module","--check"],
+  {input:inline[1],encoding:"utf8"});
+assert.equal(syntax.status,0,"Trial browser script syntax invalid: "+syntax.stderr);
+
 for(const id of ["archive","connect","one-unit","rollback","phrase","preflight","commit"])
   assert(trialPage.includes('id="'+id+'"'),"Missing trial safety control "+id);
 assert.match(trialPage,/readBackup\(JSON\.parse\(await file\.text\(\)\)\)/);
