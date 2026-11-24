@@ -29,7 +29,7 @@ static int mprs_legacy_sector(uint32_t bank,uint32_t copy)
     st_hdr_t h;
     uint32_t obj=OBJ_SONG1+bank;
     if(st_sector(obj,copy)!=mprs_base(bank,copy))return 0;
-    return st_head(obj,copy,&h)==0 && st_body(obj,copy,&h)==0;
+    return st_copy_valid(obj,copy,&h);
 }
 static int mprs_init_clean_break(void)
 {
@@ -97,7 +97,7 @@ static int clean_lib_legacy_sector(uint32_t bank,uint32_t copy)
     const uint32_t obj=OBJ_SONG1+MPRS_BANKS+bank;
     if(bank>=LIB_BANKS || copy>1u ||
        st_sector(obj,copy)!=lib_base(bank,copy))return 0;
-    return st_head(obj,copy,&h)==0 && st_body(obj,copy,&h)==0;
+    return st_copy_valid(obj,copy,&h);
 #else
     (void)bank;(void)copy;return 0;
 #endif
