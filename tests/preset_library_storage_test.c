@@ -138,12 +138,22 @@ int main(void)
     bad+=check("partial erase of alternate copy preserves all eight sounds",all);
 
 
+    /* Previous torn-erase simulation intentionally invalidates the unused
+     * copy. Recommit twice to create two valid A/B generations before
+     * corrupting the latest one; otherwise this fallback test would be
+     * testing recovery from TWO failed copies, which must fail closed. */
+    bad+=check("re-establish two committed copies for CRC fallback",({
+        int ok=lib_slot_write(17,r[17])==0 &&
+               lib_slot_write(17,r[17])==0;
+        lib_head_t h0,h1;
+        ok && lib_valid(2,0,&h0) && lib_valid(2,1,&h1);
+    }));
     /* Corrupt latest copy: CRC rejects it and falls back to older commit. */
     bad+=check("oldest valid copy survives a damaged newest copy",({
         uint32_t seq; int current=lib_latest(2,&seq),ok=0;
         if(current>=0) {
             nor[lib_base(2,(uint32_t)current)+LIB_PAYLOAD_OFF+21u]^=1u;
-            ok=lib_slot_read(17,got)==0; /* only guaranteed: fallback record valid */
+            ok=lib_slot_read(17,got)==0 && !memcmp(got,r[17],LIB_ENTRY);
         }
         ok;
     }));
