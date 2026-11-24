@@ -169,6 +169,21 @@ jobs:
           python3 tools/build.py --release 0.13
           python3 tools/check_app_flash_headroom.py
 
+      - name: Compile optional combined clean-install layout (build ONLY; never deploy)
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "1"
+          FELUCCA_PROJECT_REFS: "1"
+          FELUCCA_PROJECT_REFS_WRITE: "1"
+          FELUCCA_PROJECT_REFS_FORMAT: "1"
+          FELUCCA_CLEAN_INSTALL_LAYOUT: "1"
+        run: |
+          python3 tools/build.py --release 0.13
+          python3 tools/check_app_flash_headroom.py
+          # This output is deliberately NOT packaged or uploaded. The only
+          # device firmware artifact in this workflow is the later diag build.
       - name: Simulate upgrade of actual firmware packages and verify ALL data-flash sectors
         run: |
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/ldr_test tests/ldr_test.c
