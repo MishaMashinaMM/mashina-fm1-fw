@@ -8,6 +8,7 @@
 #define FELUCCA_PROJECT_REFS 1
 #define FELUCCA_PROJECT_REFS_WRITE 1
 #define FELUCCA_PROJECT_REFS_FORMAT 1 /* host NOR only, never a firmware release */
+#define FELUCCA_CLEAN_INSTALL_LAYOUT 1 /* full 40-sector preflight, simulated NOR ONLY */
 #define MASHINA_LIB_HOST_FLASH 1
 #define MASHINA_MPRS_HOST_FLASH 1
 #define main hostsim_main
@@ -386,6 +387,61 @@ int main(void)
         }));
         bad+=check("fresh four-track project SAVE requires no manual preset assignments",
                    project_save_as(0,"BOOT FOUR")==0 && project_used(0));
+    }
+    /* PROPOSED CLEAN INSTALL: preflight ALL 40 project/LIBRARY sectors
+     * before erasing any of them. Never touch an actual device here. */
+    {
+        uint32_t beforeWrites=writes,beforeErases=erases;
+        bad+=check("combined formatter rejects previously saved MPR1 records",
+                   clean_layout_preflight()==1 && writes==beforeWrites &&
+                   erases==beforeErases);
+        memset(nor+MPRS_BASE,0xFF,MPRS_BANKS*2u*MPRS_SECTOR);
+        memset(nor+LIB_BASE,0xFF,LIB_BANKS*2u*LIB_SECTOR);
+        uint8_t oldData[24]={0x4D,0x41,0x53,0x48,0x49,0x4E,0x41,0x11};
+        bad+=check("simulated retired project sector can be written as FUN",
+                   !st_save(OBJ_SONG1+2u,oldData,sizeof oldData));
+        bad+=check("simulated retired LIBRARY sector can be written as FUN",
+                   !st_save(OBJ_SONG1+16u,oldData,sizeof oldData));
+        bad+=check("simulated final LIBRARY bank can hold CRC-valid FUN",
+                   !st_save(OBJ_SONG1+19u,oldData,sizeof oldData));
+        /* The very last proposed 4 KiB sector is deliberately poisoned:
+         * complete preflight MUST reject before erasing the first sector. */
+        const uint32_t poisoned=LIB_BASE+LIB_BANKS*2u*LIB_SECTOR-1u;
+        nor[poisoned]=0xA5u;
+        beforeWrites=writes;beforeErases=erases;
+        bad+=check("late unknown LIBRARY sector aborts ALL project erases",
+                   clean_layout_initialize()==1 && writes==beforeWrites &&
+                   erases==beforeErases &&
+                   nor[st_sector(OBJ_SONG1+2u,0)]!=0xFFu);
+        nor[poisoned]=0xFFu;
+        beforeWrites=writes;
+        const uint8_t savedUser=nor[0xDC000u];
+        const uint8_t savedSettings=nor[0xFC000u];
+        const uint8_t savedAutosave=nor[0xE5000u];
+        const uint8_t savedProject1=nor[0x97000u];
+        const uint8_t savedSongIndex=nor[0xD8000u];
+        bad+=check("combined clean format accepts only verified FUN and blank",
+                   clean_layout_initialize()==0);
+        int allBlank=1;
+        for(uint32_t address=MPRS_BASE;
+            address<LIB_BASE+LIB_BANKS*2u*LIB_SECTOR;address++)
+            if(nor[address]!=0xFFu){allBlank=0;break;}
+        bad+=check("complete 160 KiB project/LIBRARY layout is now erased",
+                   allBlank && writes==beforeWrites);
+        bad+=check("no USER, settings, autosave, song index or old P1 sector erased",
+                   nor[0xDC000u]==savedUser &&
+                   nor[0xFC000u]==savedSettings &&
+                   nor[0xE5000u]==savedAutosave &&
+                   nor[0x97000u]==savedProject1 &&
+                   nor[0xD8000u]==savedSongIndex);
+        beforeErases=erases;
+        bad+=check("combined clean format can resume when already erased",
+                   clean_layout_initialize()==0 && erases==beforeErases);
+        nor[LIB_BASE+4095u]=0x22u;
+        beforeErases=erases;
+        bad+=check("unknown bytes never auto-erase on a repeated first install",
+                   clean_layout_initialize()==1 && erases==beforeErases);
+        nor[LIB_BASE+4095u]=0xFFu;
     }
     printf("MPR LIVE: %s (NOR erases=%u writes=%u)\n",bad?"FAIL":"ALL TESTS PASSED",erases,writes);
     return !!bad;
