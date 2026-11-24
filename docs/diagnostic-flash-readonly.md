@@ -31,12 +31,13 @@
   CRC-verified legacy `FELU` project records, or CRC-verified `MPS1`
   reference records. Mixed, unreadable or unknown content is flagged.
   The separate LIBRARY probe checks blank or committed LIBRARY banks and, in diagnostic mode, also recognizes CRC-validated retired FUN sectors in the reclaimed candidate area. Unknown/mixed data still blocks any format or write.
-- This build now captures **46 read-only 4 KiB CRC32 fingerprints**: 32 MPR1 (0xA0000–0xBFFFF), 8 LIBRARY (0xC0000–0xC7FFF), 4 USER (0xDC000–0xDFFFF), and 2 companion sectors (0x9F000 / 0xFE000). Earlier JSONs with 40 fingerprints remain available for comparison against the **same historical address map** only. CRC32 alone does not identify whether a sector contains valid old data, and never authorizes erasure.
+- This build now captures **53 read-only 4 KiB CRC32 fingerprints**: 32 MPR1 (0xA0000–0xBFFFF), 8 LIBRARY (0xC0000–0xC7FFF), 4 USER (0xDC000–0xDFFFF), 2 companions (0x9F000 / 0xFE000), 2 settings (0xFC000 / 0xFD000), 2 song index (0xD8000 / 0xD9000), 2 autosave (0xE5000 / 0xE6000) and FM6 voice bank (0xE7000). Earlier JSONs with 40 or 46 fingerprints remain available for comparison against the **same historical address map** only. CRC32 alone does not identify whether a sector contains valid old data, and never authorizes erasure.
 
 This build is a **new candidate-region diagnostic**; the user's earlier November 24 JSON captured the older `0xEA000..0xF1FFF` proposal and cannot substitute for inspecting `0xC0000..0xC7FFF`. Both JSON layouts remain interpretable offline.
 - Diagnostic-only WebMIDI command **99** reads CRC32 fingerprints of the 32
-  candidate MPR1 sectors, eight LIBRARY sectors, four USER sectors and two
-  companion sectors (46 × 4096 bytes, split into six read-only requests). Each sector is read in 256-byte pages with
+  candidate MPR1 sectors, eight LIBRARY sectors, four USER sectors, two
+  companion sectors, and seven settings/index/autosave/voice sectors
+  (53 × 4096 bytes, split into seven read-only requests). Each sector is read in 256-byte pages with
   watchdog feeding; the browser receives **checksums only**, never private
   preset or project data. Busy or unreadable flash is reported as unavailable.
   This command is not present in ordinary firmware builds.
@@ -112,9 +113,9 @@ factory reset or write capability.
 
 ## Compare sector contents across two diagnostic sessions
 
-A version-2 diagnostic JSON now optionally includes `fingerprints` with 46
-address-indexed CRC32 results (fingerprint-map version 2). Historical reports
-with 40 results (fingerprint-map version 1) remain supported offline. The Web Library now contains
+A version-2 diagnostic JSON now optionally includes `fingerprints` with 53
+address-indexed CRC32 results (fingerprint-map version 3). Historical reports
+with 40 (map version 1) or 46 (map version 2) remain supported offline. The Web Library now contains
 **Compare two physical flash diagnostics offline (read-only)**. Import the
 *before* and *after* diagnostic JSON files there. The browser validates that
 each file contains a complete readable set of matching address-mapped sectors, then compares them and downloads
