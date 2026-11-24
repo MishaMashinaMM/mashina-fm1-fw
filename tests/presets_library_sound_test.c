@@ -34,6 +34,7 @@ static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 }
 #include "../firmware/src/preset_library_runtime.c"
 
+#ifndef LIBRARY_TEST_NO_MAIN
 int main(void)
 {
     uint8_t blob[LIB_ENTRY], savedAnalog[LIB_ENTRY], erased[LIB_ENTRY], before[sizeof(up_rec_t)], kit[UPF_PK], after[UPF_PK];
@@ -196,3 +197,5 @@ int main(void)
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
 }
+
+#endif /* LIBRARY_TEST_NO_MAIN */
