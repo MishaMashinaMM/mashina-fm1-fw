@@ -320,7 +320,35 @@ console.log("PASS: real WASM fresh boot reads selective USER/LIBRARY changes and
     assert.deepEqual(afterBoot[i].recordBytes,oldSounds[i].recordBytes,
       "physical-format synthetic USER "+(oldSlots[i]+1)+" changed during firmware boot");
   assert.equal(inspectEmulatorFlash(cold).projects.sections.filter(Boolean).length,0);
-  console.log("PASS: 43-object legacy backup -> nine distinct drum kits -> clean 32+32 MPR1 emulator flash -> boot -> export/import; exact records, 32 factory fallbacks and no old projects");
+  /* First new MPR1 project: begin with an empty 8xA–D grid, then save a
+   * native project and remap three tracks to three preserved USER drums.
+   * On cold restart, the MPR1 project must resolve names and kit sidecars,
+   * without depending on the retired FUN project serialization. */
+  assert.equal(fw.web_mpr_test_save(),0,"new clean project SAVE must succeed");
+  const saved=encodeEmulatorFlash(storeSectors(
+    new Uint8Array(fw.memory.buffer,fw.web_nor(),fw.web_nor_size())));
+  const changes=editEmulatorProjectReferences(saved,[
+    {project:1,section:"A",track:1,reference:0}, // USER 001
+    {project:1,section:"A",track:2,reference:4}, // USER 005
+    {project:1,section:"A",track:3,reference:8}, // USER 009
+    {project:1,section:"A",track:4,reference:32}, // factory LIBRARY 033
+  ]);
+  const editedSection=decodeProject(changes.inspection.projects.sections[0]);
+  assert.deepEqual(editedSection.refs.slice(0,4),[0,4,8,32]);
+  assert.equal(changes.inspection.projects.sections.filter(Boolean).length,1);
+  const {instance:again}=await WebAssembly.instantiate(wasm,{});
+  const device=again.exports;device._initialize();device.web_nor_erase();
+  restoreSectors(new Uint8Array(device.memory.buffer,device.web_nor(),device.web_nor_size()),
+    decodeEmulatorFlash(changes.snapshot));
+  device.web_boot();
+  assert.equal(device.web_mpr_test_used(),1,"fresh new MPR1 project missing");
+  assert.equal(device.web_mpr_test_load(),0,"new MPR1 project A failed to recall");
+  assert.deepEqual([0,1,2,3].map(i=>device.web_mpr_ref(i)),[1,5,9,33]);
+  const afterNewProject=encodeEmulatorFlash(storeSectors(
+    new Uint8Array(device.memory.buffer,device.web_nor(),device.web_nor_size())));
+  assert.deepEqual(userSourceRecords(afterNewProject).map(x=>x.recordBytes),
+    oldSounds.map(x=>x.recordBytes),"new project RECALL rewrote authored USER drums");
+  console.log("PASS: 43-object legacy backup -> nine distinct drum kits -> clean 32+32 MPR1 emulator flash -> boot -> export/import -> native project save -> USER references -> cold recall");
 }
 
 const legacyFm6=new Uint8Array(3472);
