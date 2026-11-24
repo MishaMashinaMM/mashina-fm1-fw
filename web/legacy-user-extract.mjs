@@ -6,6 +6,9 @@
 import {readBackup} from "./fm1backup.js";
 import {decodeRecord} from "./presets-library-codec.mjs";
 import {libraryBackupFile} from "./presets-library-sync.mjs";
+import {encodeEmulatorFlash} from "./emu/emulator-flash-backup.mjs";
+import {editEmulatorUserSnapshot,userSourceRecords} from "./emulator-snapshot-editor.mjs";
+import {inspectEmulatorFlash} from "./emulator-library-inspector.mjs";
 
 const ensure=(ok,msg)=>{if(!ok)throw Error(msg);};
 const u32=(a,i)=>(a[i]|a[i+1]<<8|a[i+2]<<16|a[i+3]<<24)>>>0;
@@ -66,4 +69,38 @@ export function extractLegacyUserPresets(input){
   output.originalFirmware=archive.firmware??"";
   output.originalArchiveCreated=archive.created??"";
   return output;
+}
+
+/* Make a brand-new, fully offline MPR1 emulator NOR snapshot from the legacy
+ * 43-object archive. Only complete USER 304-byte records are carried over:
+ * original embedded FUN projects, original global settings, and all flash
+ * sectors from the physical device are intentionally NOT copied. New MPR1
+ * projects begin empty and LIBRARY 033–064 use compiled factory fallbacks.
+ *
+ * Never use this JSON as a physical FM1 firmware/restore image.
+ */
+export function freshMpr1EmulatorFromLegacy(input){
+  const archive=extractLegacyUserPresets(input);
+  const edits=archive.patches.map(p=>({slot:p.slot+1,recordBytes:p.recordBytes}));
+  const blank=encodeEmulatorFlash({});
+  const snapshot=edits.length
+    ?editEmulatorUserSnapshot(blank,edits).snapshot
+    :blank;
+  const view=inspectEmulatorFlash(snapshot);
+  const records=userSourceRecords(snapshot);
+  ensure(view.users.filter(x=>x.status==="saved").length===edits.length,
+    "Clean emulator USER slot count mismatch");
+  ensure(view.library.length===32 &&
+    view.library.every(x=>x.status==="factory"),
+    "Clean emulator must use 32 original compiled factory fallback sounds");
+  ensure(view.projects.sections.length===32 &&
+    view.projects.sections.every(x=>x===null),
+    "Clean emulator must start with eight empty A–D projects");
+  for(const p of archive.patches){
+    const got=records.find(x=>x.id==="U"+(p.slot+1));
+    ensure(got?.available && JSON.stringify(got.recordBytes)===
+      JSON.stringify(p.recordBytes),
+      "Clean emulator USER "+(p.slot+1)+" differs from the original archive");
+  }
+  return snapshot;
 }
