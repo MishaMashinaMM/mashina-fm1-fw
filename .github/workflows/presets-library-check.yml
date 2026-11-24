@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Verify independent FM1 recovery dump verifier (host-only)
+        run: python3 -m unittest discover -s tests -p verify_fm1_recovery_dumps_test.py -v
       - name: Guard source-level flash partition geometry and installer boundaries
         run: python3 tools/presets_library_flash_map_check.py
       - name: Confirm read-only flash audit cannot enable hardware writes
