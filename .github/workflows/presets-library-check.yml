@@ -270,6 +270,7 @@ jobs:
         run: |
           mkdir -p build/presets-library-preview
           cp web/presets-library-lab.html build/presets-library-preview/index.html
+          cp web/library-064-single-write.html build/presets-library-preview/library-064-single-write.html
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-preview/
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs build/presets-library-preview/
           cp build/host/factory-drum-records.json build/presets-library-preview/
@@ -283,6 +284,8 @@ jobs:
           cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs build/presets-library-preview/emu/
       - name: Check standalone Web Library JS syntax and bundled imports
         run: python3 tools/check_library_preview.py build/presets-library-preview
+      - name: Check single-slot physical trial remains limited to LIBRARY 064
+        run: node tests/library_single_write_gate_test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: mashina-presets-library-32-preview
