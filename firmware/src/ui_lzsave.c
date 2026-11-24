@@ -269,6 +269,25 @@ static void graph_lz_presets(void)
         } else {
             str_cpy(nm, ENGINES[e]->presets[k].name, sizeof nm);
             en = ENGINES[e]->name;
+#if FELUCCA_LIB32
+            /* The fixed LIBRARY directory maps to physical positions 033..064.
+             * An override carries its OWN engine and name, independent of
+             * the compiled factory sound used if this slot is blank.
+             * Read only the RAM cache: no flash reads in the render loop. */
+            {
+                uint32_t slot = browse_start() + i;
+                if (slot >= UP_SLOTS && slot < UP_SLOTS + LIB_FACTORY_SLOTS) {
+                    uint32_t actual_engine = 0u;
+                    uint32_t kind = library_metadata(slot - UP_SLOTS, nm, &actual_engine);
+                    if (kind == 1u)
+                        en = actual_engine < NENGINES ? ENGINES[actual_engine]->name : "ERROR";
+                    else if (kind == 2u) {
+                        str_cpy(nm, "UNAVAILABLE", sizeof nm);
+                        en = "ERROR";
+                    }
+                }
+            }
+#endif
         }
         cv_rect(0, y, 240, 14, bg);
         GFX_HOOK_ALIGN(0, y, 0, y + 14, AL_V, "preset row centred");
