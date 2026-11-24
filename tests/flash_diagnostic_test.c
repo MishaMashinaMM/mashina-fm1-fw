@@ -86,6 +86,18 @@ int main(void){
                 ed_diag_sector_crc(0u,NULL)==4u);
         bad+=ck("CRC probes do not write any flash",writes==0);
     }
+    /* Reclaimed LIB1 banks are four retired legacy FUN section pairs. */
+    bad+=ck("new LIBRARY candidate starts in retired project storage",
+            st_sector(OBJ_SONG1+16,0)==0xC0000u &&
+            st_sector(OBJ_SONG1+19,1)==0xC7000u);
+    bad+=ck("reclaimed blank FUN sector is recognized",
+            ed_diag_project_bank(16)==0);
+    bad+=ck("host prepares authentic legacy FUN content in C0000",
+            st_save(OBJ_SONG1+16,data,sizeof data)==0);
+    writes=0;
+    bad+=ck("read-only probe recognizes retired FUN in LIBRARY candidate",
+            ed_diag_project_bank(16)==2);
+    bad+=ck("retired LIBRARY candidate inspection never writes",writes==0);
     bad+=ck("all flash probes remain entirely read-only",writes==0);
     printf("FLASH DIAG: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
