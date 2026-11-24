@@ -55,17 +55,17 @@ static void fl_plain_window_init(void){}
 #include "../firmware/src/upreset.c"
 static int lib_host_read(uint32_t off,void *dst,uint32_t n)
 {
-    if(off<0xEA000u || off>0xF2000u || n>0xF2000u-off){outside++;return -1;}
+    if(off<0xC0000u || off>0xC8000u || n>0xC8000u-off){outside++;return -1;}
     return st_read(off,dst,n);
 }
 static int lib_host_erase(uint32_t off)
 {
-    if(off<0xEA000u || off>=0xF2000u || (off&4095u)){outside++;return -1;}
+    if(off<0xC0000u || off>=0xC8000u || (off&4095u)){outside++;return -1;}
     return st_erase(off);
 }
 static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 {
-    if(off<0xEA000u || off>0xF2000u || n>0xF2000u-off ||
+    if(off<0xC0000u || off>0xC8000u || n>0xC8000u-off ||
        (off&255u)+n>256u){outside++;return -1;}
     return st_prog(off,p,n);
 }
