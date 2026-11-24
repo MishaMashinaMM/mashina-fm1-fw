@@ -468,7 +468,12 @@ def main():
     trial_authorized = (
         non_distributable
         and a.release == "0.13-cleantrial"
-        and os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+        and (
+            os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+            or (os.environ.get("GITHUB_EVENT_NAME") == "push"
+                and os.environ.get("MASHINA_TRIAL_PUSH_AUTH") ==
+                    "AUTHORIZE ONE FM1 CLEAN TRIAL")
+        )
         and os.environ.get("GITHUB_REF") == "refs/heads/presets-library"
         and os.environ.get("MASHINA_ONE_FM1_CLEAN_TRIAL") == "ERASE-ONE-FM1-32X32"
         and all(os.environ.get(k) == "1" for k in (
