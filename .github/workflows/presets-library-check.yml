@@ -3,6 +3,11 @@ on:
   push:
     branches: [presets-library, presets-library-reclaim]
   workflow_dispatch:
+    inputs:
+      confirm_one_fm1:
+        description: "For dangerous one-unit package: type ERASE ONE FM1 exactly. Empty = regression checks ONLY."
+        required: false
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -283,6 +288,52 @@ jobs:
           name: mashina-presets-library-32-preview
           path: build/presets-library-preview/
           retention-days: 14
+
+      # Only a human-initiated Run workflow with the exact typed phrase can
+      # produce a package capable of formatting all 53 old data sectors.
+      # Ordinary pushes, other branches and all other build variants still
+      # create NO destructive .fwsc artifact whatsoever.
+      - name: Build explicitly authorized ONE-FM1 clean-start firmware
+        if: github.event_name == 'workflow_dispatch' && inputs.confirm_one_fm1 == 'ERASE ONE FM1' && github.ref == 'refs/heads/presets-library'
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          MASHINA_ONE_FM1_CLEAN_TRIAL: ERASE-ONE-FM1-32X32
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "1"
+          FELUCCA_PROJECT_REFS: "1"
+          FELUCCA_PROJECT_REFS_WRITE: "1"
+          FELUCCA_PROJECT_REFS_FORMAT: "1"
+          FELUCCA_CLEAN_INSTALL_LAYOUT: "1"
+          FELUCCA_FLASH_DIAG: "0"
+        run: |
+          python3 tools/build.py --release 0.13-clean-trial
+          python3 tools/check_app_flash_headroom.py
+          test -s build/felucca-0.13-clean-trial.fwsc
+          TRIAL=build/mashina-one-fm1-clean-trial
+          mkdir -p "$TRIAL"
+          python3 web/make_site.py build/felucca-0.13-clean-trial.fwsc "v0.13-clean-trial-${GITHUB_SHA::7}" "$TRIAL"
+          mkdir -p "$TRIAL/first-install/emu"
+          cp web/clean-install-trial.html "$TRIAL/first-install/index.html"
+          cp web/fm1backup.js web/presets-library-midi.mjs web/legacy-user-bank-restore.mjs \
+             web/legacy-user-extract.mjs web/presets-library-sync.mjs \
+             web/presets-library-codec.mjs web/projects-library-codec.mjs \
+             web/emulator-library-inspector.mjs web/emulator-snapshot-editor.mjs \
+             web/factory-catalog-selection.mjs "$TRIAL/first-install/"
+          cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs "$TRIAL/first-install/emu/"
+          cp docs/first-fm1-32x32-install-runbook.md "$TRIAL/README.md"
+          cp build/felucca-0.13-clean-trial.fwsc "$TRIAL/"
+          (cd "$TRIAL" && sha256sum felucca-0.13-clean-trial.fwsc > SHA256SUMS)
+          printf 'ONE-FM1 DESTRUCTIVE TRIAL ONLY\\nBranch: %s\\nCommit: %s\\nSecond device: UNTOUCHED\\n' "$GITHUB_REF" "$GITHUB_SHA" > "$TRIAL/PROVENANCE.txt"
+          test -s "$TRIAL/webapp/installer/index.html"
+          test -s "$TRIAL/first-install/index.html"
+      - name: Upload explicitly authorized ONE-FM1 clean-start trial (NOT A PUBLIC RELEASE)
+        if: github.event_name == 'workflow_dispatch' && inputs.confirm_one_fm1 == 'ERASE ONE FM1' && github.ref == 'refs/heads/presets-library'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-ONE-FM1-clean-start-32x32-DESTRUCTIVE-TRIAL
+          path: build/mashina-one-fm1-clean-trial/
+          retention-days: 7
 
       - name: Stage non-flashable one-device trial review dossier
         run: |
