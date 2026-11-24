@@ -57,3 +57,92 @@ static int mprs_init_clean_break(void)
     return 2;
 #endif
 }
+
+/* COMBINED CLEAN-BREAK LAYOUT — experimental and never callable in standard
+ * firmware. Project storage A0000..BFFFF and the reclaimed LIB1 sectors
+ * C0000..C7FFF must be checked BEFORE touching even one old sector.
+ *
+ * Accepted bytes: fully erased sector, or a complete CRC-verified OLD FUN
+ * project sector for the exact legacy object/copy that owned that address.
+ * Any MPR1/LIB1/new-format, corrupt, foreign or unreadable sector => refuse.
+ * A power cut during erasure leaves only old verified/erased sector pairs, so
+ * the same preflight can restart without automatically overwriting new data.
+ *
+ * IMPORTANT: This covers ONLY the 40 retired FUN sectors. USER, FM6/drum
+ * companions, settings, song index, autosave and old project 1 are out of
+ * scope; the full clean-install procedure must handle those separately.
+ * Do not publish a physical installer until those operations, the updater,
+ * backup/restore and interruption recovery have been independently verified.
+ */
+static int clean_lib_erased_sector(uint32_t bank,uint32_t copy)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    uint8_t page[256];
+    uint32_t base=lib_base(bank,copy);
+    if(bank>=LIB_BANKS || copy>1u)return 0;
+    for(uint32_t off=0;off<LIB_SECTOR;off+=sizeof page){
+        if(lib_flash_read(base+off,page,sizeof page))return 0;
+        for(uint32_t k=0;k<sizeof page;k++)if(page[k]!=0xFFu)return 0;
+        fm1_wdt_feed();
+    }
+    return 1;
+#else
+    (void)bank;(void)copy;return 0;
+#endif
+}
+static int clean_lib_legacy_sector(uint32_t bank,uint32_t copy)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    st_hdr_t h;
+    const uint32_t obj=OBJ_SONG1+MPRS_BANKS+bank;
+    if(bank>=LIB_BANKS || copy>1u ||
+       st_sector(obj,copy)!=lib_base(bank,copy))return 0;
+    return st_head(obj,copy,&h)==0 && st_body(obj,copy,&h)==0;
+#else
+    (void)bank;(void)copy;return 0;
+#endif
+}
+static int clean_layout_preflight(void)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    if(!flash_ok || transport_busy())return 2;
+    /* Exact 128+32 KiB application storage, no USR or other partitions. */
+    if(MPRS_BASE!=0xA0000u || MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR!=LIB_BASE ||
+       LIB_BASE+LIB_BANKS*2u*LIB_SECTOR!=0xC8000u)return 2;
+    for(uint32_t bank=0;bank<MPRS_BANKS;bank++)
+        for(uint32_t copy=0;copy<2u;copy++){
+            if(!mprs_erased_sector(bank,copy) &&
+               !mprs_legacy_sector(bank,copy))return 1;
+            fm1_wdt_feed();
+        }
+    for(uint32_t bank=0;bank<LIB_BANKS;bank++)
+        for(uint32_t copy=0;copy<2u;copy++){
+            if(!clean_lib_erased_sector(bank,copy) &&
+               !clean_lib_legacy_sector(bank,copy))return 1;
+            fm1_wdt_feed();
+        }
+    return 0;
+#else
+    return 2;
+#endif
+}
+static int clean_layout_initialize(void)
+{
+#if FELUCCA_CLEAN_INSTALL_LAYOUT
+    uint32_t status=clean_layout_preflight();
+    if(status)return (int)status; /* zero erases on any preflight failure */
+    /* Project formatter has its own repeated preflight and bounded erases. */
+    if(mprs_init_clean_break())return 2;
+    for(uint32_t bank=0;bank<LIB_BANKS;bank++)
+        for(uint32_t copy=0;copy<2u;copy++){
+            if(!clean_lib_erased_sector(bank,copy)){
+                if(lib_flash_erase(lib_base(bank,copy)) ||
+                   !clean_lib_erased_sector(bank,copy))return 2;
+                fm1_wdt_feed();
+            }
+        }
+    return 0;
+#else
+    return 2;
+#endif
+}
