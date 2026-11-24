@@ -56,8 +56,14 @@ assert.match(trialPage,/Do not resend COMMIT/);
 for(const flag of ["FELUCCA_CLEAN_INSTALL_LAYOUT","FELUCCA_PROJECT_REFS_FORMAT"]) {
   assert.match(build,new RegExp('os\\.environ\\.get\\("'+flag+'"\\) == "1"'));
 }
-assert.match(build,/if non_distributable:\s*\n\s*print\("SAFE BUILD-ONLY:/);
-assert(build.indexOf('if non_distributable:\n        print("SAFE BUILD-ONLY:') <
+assert.match(build,/if non_distributable and not trial_authorized:\\s*\\n\\s*print\\("SAFE BUILD-ONLY:/);
+assert.match(build,/and a\\.release == "0\\.13-clean-trial"/);
+assert.match(build,/os\\.environ\\.get\\("GITHUB_EVENT_NAME"\\) == "workflow_dispatch"/);
+assert.match(build,/os\\.environ\\.get\\("GITHUB_REF"\\) == "refs\\/heads\\/presets-library"/);
+assert.match(build,/os\\.environ\\.get\\("MASHINA_ONE_FM1_CLEAN_TRIAL"\\) == "ERASE-ONE-FM1-32X32"/);
+assert.match(build,/and all\\(os\\.environ\\.get\\(k\\) == "1"/);
+assert.match(build,/os\\.environ\\.get\\("FELUCCA_FLASH_DIAG", "0"\\) == "0"/);
+assert(build.indexOf('if non_distributable and not trial_authorized:\n        print("SAFE BUILD-ONLY:') <
        build.indexOf("pkg = fm1pkg_make.ufw("),
        "destructive formatter must return before firmware packaging");
 assert.match(build,/\(OUT \/ name\)\.unlink\(missing_ok=True\)/);
