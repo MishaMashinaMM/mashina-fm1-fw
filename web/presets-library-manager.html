@@ -66,7 +66,7 @@ input[type=checkbox]{accent-color:var(--orange);margin:0 3px;vertical-align:midd
 .backup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
 .backup-grid .panel{padding:14px}.backup-grid .field{margin:10px 0}.backup-grid .row{margin:8px 0}
 .backup-grid .advanced{grid-column:1/-1}
-footer{grid-column:1/-1;color:var(--muted);font-size:11px;border-top:1px solid #333;padding-top:6px}
+footer{grid-column:1/-1;color:var(--muted);font-size:11px;border-top:1px solid #333;padding-top:6px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}#write-state{border-left:1px solid #555;padding-left:8px;font-size:12px}#write-state[data-ready=true]{color:var(--orange);font-weight:600}
 dialog{width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;padding:22px;border:1px solid #666;border-radius:9px;background:#202020;color:#eee;box-shadow:0 18px 80px #0009}
 dialog::backdrop{background:rgba(0,0,0,.74)}
 dialog h2{font-size:21px;margin:0 0 14px;color:var(--orange)}
@@ -106,7 +106,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 @media(max-width:850px){.workspace,.backup-grid{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.slot-panel{order:1}.side{order:0}.queue-list{max-height:180px}}
 @media(max-width:560px){.dual-tables,.side{grid-template-columns:1fr}.backup-grid .advanced{grid-column:auto}.section-head{gap:4px}.status{max-height:90px}.scroll{max-height:none}}
 </style></head><body><main>
-<header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><span id="connection" class="muted">Disconnected</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
+<header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><span id="connection" class="muted">Disconnected</span><span id="write-state" class="muted" aria-live="polite">No verified backup</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
 <div id="status" class="status" role="status">Connect your initialized FM1, then create and verify a complete backup in BACKUP. Offline sound packs can be imported without connecting.</div>
 <nav aria-label="Library sections"><button data-tab="user" aria-selected="true">USER</button><button data-tab="library" aria-selected="false">LIBRARY</button><button data-tab="projects" aria-selected="false">PROJECTS</button><button data-tab="backup" aria-selected="false">BACKUP</button></nav>
 <section id="tab-user"><div class="section-head"><h2>USER <span class="muted">001–032</span></h2><p>Restore complete sounds into empty USER slots.</p></div>
@@ -130,7 +130,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="panel"><h3>1 · Current device backup</h3><p>32 USER, 32 LIBRARY, 32 sections, current performance and settings. Verify the downloaded file to unlock writes; reconnecting or performing a write invalidates authorization.</p><button id="backup-capture" class="primary" disabled>Backup complete FM1</button><label class="field">Verify saved complete backup<input id="backup-verify" type="file" accept=".json" disabled></label><p id="backup-summary">No device snapshot.</p></div>
 <div class="panel"><h3>2 · Restore a complete backup</h3><p class="warn">Only changed records are restored. An interrupted transfer may leave partial state. Preserve the target backup and never retry automatically.</p><label class="field">Choose source complete backup (.json)<input id="full-import" type="file" accept=".json"></label><p id="full-impact" class="impact">No source selected.</p><button id="full-apply" class="primary" disabled>Restore complete FM1</button></div>
 <div class="panel advanced"><h3>Advanced / offline tools</h3><p>Legacy sound extraction, emulator snapshots, factory catalog selection and flash diagnostics. Disconnect first.</p><a href="./advanced.html" id="advanced-link">Open experimental lab</a></div></div></section>
-<footer>Initialized-device manager · No firmware installation or formatting · Keep all original sound packs and complete backups.</footer>
+<footer><span>Initialized-device manager · No firmware installation or formatting · Keep all original sound packs and complete backups.</span><a href="./guide.html" id="library-guide" target="_blank" rel="noopener">Web Library guide</a></footer>
 <dialog id="operation" aria-labelledby="op-title" aria-describedby="op-warning">
 <h2 id="op-title" tabindex="-1">Working…</h2>
 <div id="op-message" class="op-message" role="status" aria-live="polite"></div>
@@ -211,7 +211,12 @@ function fallback(i){return factoryFallbacks[i]?factoryFallbacks[i]+" (factory)"
 function sourceControls(bank){
   const src=$(bank+"-source"),target=$(bank+"-target"),old=src.value,oldTarget=target.value;
   src.replaceChildren();opt(src,"","Choose source sound");
-  for(const p of sources(bank))opt(src,p.id,p.name);
+  const groups=new Map();
+  for(const p of sources(bank)){
+    const group=p.id.startsWith("I")?"Imported sound pack":p.id.startsWith("userPresets")?"Device USER":p.id.startsWith("libraryPresets")?"Device LIBRARY overrides":"Factory catalog";
+    if(!groups.has(group)){const node=document.createElement("optgroup");node.label=group;src.append(node);groups.set(group,node);}
+    opt(groups.get(group),p.id,p.name);
+  }
   if([...src.options].some(o=>o.value===old))src.value=old;
   target.replaceChildren();opt(target,"","Choose destination");
   if(snapshot)for(let i=0;i<32;i++){
@@ -242,6 +247,8 @@ function sourceControls(bank){
 function projectName(p){return p?(decodeProject(p).name||"Saved section")+" · "+decodeProject(p).refs.filter(r=>r!==255).map(r=>num(r+1)).join(", "):"Empty";}
 function render(){
   $("connection").textContent=dev?dev.name+(writable?" · Writable":" · Read-only"):"Disconnected";
+  $("write-state").textContent=busy?"Operation in progress":!dev?"No verified backup":!writable?"Read-only firmware":verified?"Backup verified · Writes unlocked":pending?"Verify downloaded backup · Writes locked":"Capture backup · Writes locked";
+  $("write-state").dataset.ready=String(ready());
   $("connect").disabled=busy||!!dev;$("disconnect").disabled=busy||!dev;
   $("backup-capture").disabled=busy||!dev;$("backup-verify").disabled=busy||!pending;
   $("backup-summary").textContent=snapshot? snapshot.userPresets.filter(Boolean).length+" USER · "+snapshot.libraryPresets.filter(Boolean).length+" LIBRARY overrides · "+snapshot.projects.filter(Boolean).length+" saved sections · "+(verified?"Backup verified":"Backup not verified"):"No device snapshot.";

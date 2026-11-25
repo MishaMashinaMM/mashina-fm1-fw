@@ -54,6 +54,11 @@ try{
   await page.waitForFunction(()=>document.querySelectorAll("#user-source option").length>100);
   assert.equal(await page.locator("#user-apply").isDisabled(),true);
   assert.equal(await page.locator("#library-apply").isDisabled(),true);
+  assert.equal(await page.locator("#user-source optgroup[label='Factory catalog'] option").count(),107);
+  assert.equal(await page.locator("#write-state").textContent(),"No verified backup");
+  const guide=await page.request.get("http://127.0.0.1:8765/guide.html");
+  assert(guide.ok(),"Packaged Web Library guide missing");
+  assert.match(await guide.text(),/Verify saved complete backup/);
   assert.equal(await page.locator("#projects-apply").isDisabled(),true);
   assert.equal(await page.locator("#full-apply").isDisabled(),true);
   const rec=Array.from(encodeRecord({name:"UI TEST",engine:0,params:Array(127).fill(2)}));
@@ -156,6 +161,8 @@ try{
   await page.locator("#op-close").click();
   await page.locator("#backup-verify").setInputFiles(await captured.path());
   await page.waitForFunction(()=>document.querySelector("#backup-summary").textContent.includes("Backup verified"));
+  assert.match(await page.locator("#write-state").textContent(),/Backup verified · Writes unlocked/);
+  assert.equal(await page.locator("#user-source optgroup[label='Device USER'] option").count(),1);
   for(const tab of ["user","library","projects"]){
     await page.locator("[data-tab="+tab+"]").click();
     assert.equal(await page.locator("#tab-"+tab+" tbody tr").count(),32);

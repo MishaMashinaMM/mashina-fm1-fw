@@ -1,5 +1,15 @@
 # Presets Library — experimental 32 USER + 32 LIBRARY
 
+## Current acceptance status — 25 November 2026
+
+The following is the current branch status; the dated development notes below are historical and do not describe the present physical test boundary.
+
+- One FM1 was deliberately initialized using the separately authorized clean trial, then updated with the initialized-device-only image. The second unit has not been changed.
+- Physical acceptance covers USER save/persistence, individual and batch LIBRARY overrides, factory reset, USER sound recovery including complete drum companions, project section restoration, and complete logical backup restoration. The last live-only restore returned SUCCESS with full-state read-back verified by the Web Library. An earlier intermittent live-performance mismatch was not reproduced on the last trial; its cause remains unconfirmed. A previous intermittent backup CRC issue also has a dedicated regression.
+- Desktop manager: USER, LIBRARY, PROJECTS and BACKUP, 32 positions in two columns, centered blocking operation modal. Chrome acceptance at 1536×864 and 1536×728 passed in quick host run [45625871904](https://github.com/MishaMashinaMM/mashina-fm1-fw/actions/runs/45625871904); full experimental run [45625871571](https://github.com/MishaMashinaMM/mashina-fm1-fw/actions/runs/45625871571) passed.
+- The standalone package includes a [Web Library guide](../web/presets-library-guide.html). It describes the actual initialized-device workflow and backup boundaries, not the previous prototype interface.
+- Release boundary: no merge, public installer, default build-flag change, general-purpose destructive initialization, or second-unit flash has been authorized. Public distribution still requires an explicit decision about the first-install experience, protection of existing firmware data, a version and packaging review, and matching published manuals. The current test artifacts remain separate from the public stable installer.
+
 ## SAVE > PRESETS browser (24 November 2026)
 
 The old Jiant sound-type LIST on K4 has been removed. K4 now selects BANK: ALL (001-064), USER (001-032), or LIB (033-064). K1 and the PRESETS encoder navigate actual physical positions. K2 remains ENG; K3 remains FAV.

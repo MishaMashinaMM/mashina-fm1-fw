@@ -89,6 +89,7 @@ jobs:
           mkdir -p build/presets-library-smoke
           cp web/presets-library-lab.html build/presets-library-smoke/advanced.html
           cp web/presets-library-manager.html build/presets-library-smoke/index.html
+          cp web/presets-library-guide.html build/presets-library-smoke/guide.html
           cp web/presets-library-codec.mjs web/presets-library-midi.mjs web/presets-library-sync.mjs build/presets-library-smoke/
           cp web/factory-presets-from-code.json web/factory-catalog-selection.mjs build/presets-library-smoke/
           cp build/host/factory-drum-records.json build/presets-library-smoke/
