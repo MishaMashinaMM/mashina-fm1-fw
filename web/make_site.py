@@ -171,6 +171,8 @@ def main(pkg, version, out, prev=None):
         f.unlink()
     brand = (HERE / "jiant-ui.css").read_text(encoding="utf-8")
     installer_html = html.replace("/*JIANT_UI*/", brand).replace("/*BUILD_TAG*/", release_tag)
+    if version != "0.14":
+        installer_html = installer_html.replace("v0.14 · MASHINA · BUILD", f"v{version.lstrip(chr(118))} · MASHINA · BUILD")
     (inst / "index.html").write_text(installer_html, encoding="utf-8")
     # New permanent URL gives browsers a fresh document even when the older installer URL was cached.
     fresh = out / "webapp" / ("installer-orange-v" + version.replace(".", ""))
@@ -203,9 +205,16 @@ def main(pkg, version, out, prev=None):
         library.mkdir(parents=True, exist_ok=True)
         for src, dest in (("presets-library-manager.html", "index.html"), ("presets-library-guide.html", "guide.html"), ("initialize-library.html", "initialize.html")):
             shutil.copy(HERE / src, library / dest)
-        for f in ("presets-library-codec.mjs", "presets-library-midi.mjs", "presets-library-sync.mjs", "factory-presets-from-code.json", "factory-catalog-selection.mjs", "full-device-backup.mjs", "projects-library-codec.mjs", "projects-library-view.mjs", "performance-backup.mjs", "fm1backup.js", "legacy-user-extract.mjs"):
+        for f in ("presets-library-codec.mjs", "presets-library-midi.mjs", "presets-library-sync.mjs", "factory-presets-from-code.json", "factory-catalog-selection.mjs", "full-device-backup.mjs", "projects-library-codec.mjs", "projects-library-view.mjs", "performance-backup.mjs", "fm1backup.js", "legacy-user-extract.mjs", "emulator-snapshot-editor.mjs", "emulator-library-inspector.mjs"):
             shutil.copy(HERE / f, library / f)
+        (library / "emu").mkdir(exist_ok=True)
+        for f in ("worklet.js", "emulator-flash-backup.mjs"):
+            shutil.copy(HERE / "emu" / f, library / "emu" / f)
         shutil.copy(HERE.parent / "build/host/factory-drum-records.json", library / "factory-drum-records.json")
+        # The engineering lab is not part of the public manager. Keep the
+        # DOM element for its harmless event binding, but do not expose a link.
+        public_manager = library / "index.html"
+        public_manager.write_text(public_manager.read_text(encoding="utf-8").replace('<div class="panel advanced">', '<div class="panel advanced" style="display:none">').replace('href="./advanced.html"', 'href="./guide.html"'), encoding="utf-8")
     shutil.copy(HERE / "404.html", out / "404.html")
     (out / "index.html").write_text(
         '<!doctype html><meta charset="utf-8"><title>MASHINA</title>'

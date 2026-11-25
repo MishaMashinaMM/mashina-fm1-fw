@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 # MASHINA main: optional standalone FM1 test installer.
-# This workflow does NOT publish Pages, merge, tag, or replace stable v0.13.
-name: MASHINA v0.13 device-test installer
+# This workflow does NOT publish Pages, merge, tag, or replace stable v0.14.
+name: MASHINA v0.14 device-test installer
 on:
   workflow_dispatch:
 permissions:
@@ -52,14 +52,17 @@ jobs:
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
           set -o pipefail
-          python3 tools/build.py --release 0.13 2>&1 | tee firmware-build.log
-          test -s build/felucca-0.13.fwsc
+          python3 tools/build.py --release 0.14 2>&1 | tee firmware-build.log
+          test -s build/felucca-0.14.fwsc
           test -s build/felucca.bin
       - name: Package standalone MASHINA preview web installer
         run: |
-          VERSION="v0.13-mashina-${GITHUB_SHA::7}-preview"
+          VERSION="0.14"
           OUT="build/mashina-device-test"
-          python3 web/make_site.py build/felucca-0.13.fwsc "$VERSION" "$OUT"
+          mkdir -p build/host
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DMASHINA_HOST_TEST=1 -Ibuild/gen -Ifirmware/src -o build/host/factory_drum_export tests/factory_drum_export.c -lm
+          build/host/factory_drum_export > build/host/factory-drum-records.json
+          python3 web/make_site.py build/felucca-0.14.fwsc "$VERSION" "$OUT"
           test -s "$OUT/webapp/installer/index.html"
           test -s "$OUT/firmware/felucca-$VERSION.fwsc"
           python3 - "$OUT/webapp/installer/index.html" "$VERSION" <<'PY'
@@ -68,16 +71,16 @@ jobs:
           p, version = Path(sys.argv[1]), sys.argv[2]
           html = p.read_text(encoding="utf-8")
           # Branding is limited to this generated test installer; the public
-          # v0.13 web source, translations and installer safety logic stay intact.
+          # v0.14 web source, translations and installer safety logic stay intact.
           html = html.replace("<title>MASHINA — Installer</title>",
                               "<title>MASHINA — FM1 Device-Test Installer</title>")
           html = html.replace('aria-label="MASHINA home">MASHINA<span class="fm"> FM1 PERFORMANCE FW</span>',
                               'aria-label="MASHINA source repository">MASHINA<span class="fm"> FM1 PERFORMANCE FW</span>')
           html = html.replace("MASHINA source</a>", "MASHINA source</a>")
           html = html.replace('id="release-stamp" style=', 'id="release-stamp" style=')
-          html = html.replace("v0.13 · MASHINA · BUILD /*BUILD_TAG*/", "MASHINA · DEVICE TEST · " + version)
+          html = html.replace("v0.14 · MASHINA · BUILD /*BUILD_TAG*/", "MASHINA · DEVICE TEST · " + version)
           # Prominent warning above the flash action prevents confusing a
-          # optional standalone package separate from the published stable v0.13.
+          # optional standalone package separate from the published stable v0.14.
           needle = '  <p><button id="go" disabled data-t="install"></button></p>'
           assert needle in html, "Installer button anchor changed; stop packaging"
           html = html.replace(needle,
@@ -93,14 +96,16 @@ jobs:
           (cd "$OUT/firmware" && sha256sum felucca-*.fwsc > SHA256SUMS)
           cp firmware-build.log "$OUT/firmware/BUILD-LOG.txt"
           cat > "$OUT/READ-ME-FIRST.txt" <<'EOF'
-          MASHINA - FM1 PERFORMANCE FW / v0.13 DEVICE TEST
+          MASHINA - FM1 PERFORMANCE FW / v0.14 DEVICE TEST
           =================================================
           Branch: main. Built from the source commit in firmware/SOURCE_COMMIT.
           This is REAL flashable firmware, NOT a browser emulator.
-          The DRUM-IND engine and EDIT display fix passed physical FM1 testing.
-          The splash shows release v0.13 (no -atmos suffix), while the ZIP
+          Includes 32 USER + 32 LIBRARY, reference projects and the Web Library.
+          Initialize storage only on a first-install device; existing data is erased.
+          Already initialized 32+32 devices must not be initialized again.
+          The splash shows release v0.14 (no -atmos suffix), while the ZIP
           package name includes a source commit to distinguish this candidate.
-          The stable public v0.13 installer and main branch are unchanged.
+          The stable public v0.14 installer and main branch are unchanged.
 
           BEFORE FLASHING:
           Back up project slots, user presets, and settings. Keep a recovery
@@ -117,7 +122,7 @@ jobs:
 
           FIRST PHYSICAL TESTS:
           - Boot: MASHINA orange heading, abstract cog, FM1 PERFORMANCE FW,
-            original Jiant attribution, and v0.13 without the preview suffix.
+            original Jiant attribution, and v0.14 without the preview suffix.
           - HOME long-press: SCREEN/AUDIO/MIDI/USB/CONTROLS/SYSTEM.
             No CLICK, CLICK LEVEL, or COUNT-IN; BPM LOCK retained.
           - ABOUT: MASHINA identity and project QR, live MIDI focus, original
@@ -136,16 +141,16 @@ jobs:
       - name: Upload standalone MASHINA browser flasher
         uses: actions/upload-artifact@v4
         with:
-          name: mashina-v013-main-device-test-web-installer
+          name: mashina-v014-main-device-test-web-installer
           path: build/mashina-device-test/
           if-no-files-found: error
           retention-days: 14
       - name: Upload raw firmware and full build log
         uses: actions/upload-artifact@v4
         with:
-          name: mashina-v013-main-firmware-build
+          name: mashina-v014-main-firmware-build
           path: |
-            build/felucca-0.13.fwsc
+            build/felucca-0.14.fwsc
             build/felucca.bin
             firmware-build.log
           if-no-files-found: error

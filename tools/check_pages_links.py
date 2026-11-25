@@ -13,6 +13,7 @@ expected = {
     "Play in emulator": "emu/index.html",
     "FM1 web installer": "webapp/installer/index.html",
     "Web editor": "webapp/editor/index.html",
+    "Web Library": "web-library/index.html",
     "User manual": "manual/index.html",
 }
 base = "https://mishamashinamm.github.io"

@@ -15,22 +15,26 @@ for (const [name, text] of [['home', home], ['installer', installer],
   ['editor', editor], ['emulator', emulator], ['README', readme]]) {
   assert.match(text, /MASHINA/i, `${name} must identify MASHINA`);
 }
-for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'manual/']) {
-  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v013/")}"`), `homepage must link to ${href}`);
+for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'web-library/', 'manual/']) {
+  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v014/")}"`), `homepage must link to ${href}`);
 }
 assert.match(home, /<strong>MASHINA<\/strong><span>FM1 PERFORMANCE FW<\/span>/, 'homepage must have a two-line MASHINA wordmark');
 assert.match(home, /data-i18n="safety"/, 'homepage must retain firmware backup warning');
 assert.doesNotMatch(home, /not yet been verified on physical FM1 hardware|has not yet been verified on physical FM1 hardware/i, 'homepage must not claim current firmware is untested');
-assert.match(readme, /^# MASHINA .* v0\.13$/m, 'README must use the release-only title');
+assert.match(readme, /^# MASHINA .* v0\.14$/m, 'README must use the release-only title');
 assert.doesNotMatch(readme, /this visual discrepancy is \*\*not yet fixed\*\*/i, 'README must not list the corrected LIBRARY display as unresolved');
-assert.match(installer, /MASHINA v0\.13: six-track (?:external )?MIDI/, 'installer must identify the current MASHINA external MIDI performance features');
+assert.match(installer, /MASHINA v0\.14: six-track (?:external )?MIDI/, 'installer must identify the current MASHINA external MIDI performance features');
 assert.match(editor, /id="backup-export"/, 'editor must retain complete backup export');
 assert.match(editor, /id="backup-import"/, 'editor must retain complete backup restore');
 assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'MASHINA editor must not offer disabled sequencer');
 assert.doesNotMatch(editor, /const TABS = \[[^\n]*"sequencer"/, 'disabled sequencer must not be navigable');
 assert.doesNotMatch(emulator, /id="sample-bank-controls"|id="sample-play"|id="sample-bank"/, 'MASHINA emulator must not offer sample kits');
 assert.doesNotMatch(emulator, /withSampleBank|encodeSampleBank|sampleKit:|factory-voices\.json/, 'MASHINA emulator must not load sample kits');
-assert.match(workflow, /python3 tools\/build\.py/, 'site must package MASHINA firmware');
+assert.match(workflow, /python3 tools\/build\.py --release 0\.14/, 'site must package MASHINA v0.14 firmware');
+assert.match(workflow,/MASHINA_EMU_REFS=1/);
+assert.match(readme,/32 USER.*32 LIBRARY/);
+assert.match(readme,/8 projects × 4 sections/);
+assert.match(installer,/web-library\/initialize\.html/);
 assert.match(workflow, /(?:sh|bash) web\/emu\/build\.sh/, 'site must build the MASHINA emulator');
 assert.doesNotMatch(workflow, /\bweb\/(?:STABLE|PREVIEW|CLASSIC)\b/, 'site must not publish pinned upstream firmware');
 const translations = read('web/mashina-translations.js');
@@ -44,5 +48,5 @@ for (const lang of ['en', 'es', 'ja', 'ru', 'sr', 'hi']) {
   assert.match(translations, new RegExp('"'+lang+'"\\s*:\\s*\\{'), 'homepage missing '+lang+' translation');
 }
 assert.ok((translations.match(/DRUM-IND/g)||[]).length >= 6, 'homepage must describe DRUM-IND in all six languages');
-assert.doesNotMatch(readme, /New in v0\.13|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
+assert.doesNotMatch(readme, /New in v0\.14|EDIT screen fix|flicker-free|regression tests/i, 'README must describe features, not release history');
 console.log('PASS: MASHINA site pages, links, metadata and build source');

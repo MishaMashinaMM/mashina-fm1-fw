@@ -3,21 +3,8 @@
 # installer, editor and emulator files remain exactly as originally released.
 name: Publish MASHINA documentation
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'README.md'
-      - 'docs/MASHINA_MANUAL*.md'
-      - 'web/drums-home.html'
-      - 'web/mashina-translations.js'
-      - 'web/mashina-nav.js'
-      - 'web/mashina-manual-locale.js'
-      - 'web/manual/index.html'
-      - 'web/make_site.py'
-      - 'tools/check_site_languages.py'
-      - 'tools/check_pages_links.py'
-      - 'tools/check_installer_locales.py'
-      - '.github/workflows/publish-docs.yml'
+  # Main already builds the complete site on every push. Manual-only avoids
+  # republishing an older firmware bundle during a release deployment.
   workflow_dispatch:
 concurrency:
   group: mashina-docs-pages
