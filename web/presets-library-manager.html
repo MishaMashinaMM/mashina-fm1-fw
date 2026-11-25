@@ -125,7 +125,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="workspace">
 <div class="panel slot-panel"><h3>Device LIBRARY <span class="fine">32 slots · hover or focus for full text</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots-second"></tbody></table></div></div></div>
 <div class="side"><div class="panel source-panel"><h3>Sound source</h3><label class="field">Import sound pack (.json)<input id="library-import" type="file" accept=".json"></label><div class="row"><button id="library-export" disabled>Export device LIBRARY overrides</button><button id="library-import-all" disabled>Queue imported slot mapping</button></div><label class="field">Source sound<select id="library-source"></select></label><label class="field">Destination<select id="library-target"></select></label><div class="row"><button id="library-add" disabled>Add to LIBRARY queue</button><button id="library-reset" disabled>Queue factory reset</button></div></div>
-<div class="panel queue-panel"><h3>LIBRARY write queue</h3><label class="fine"><input id="library-allow-saved" type="checkbox"> Allow changes to sounds used by saved projects</label><p class="fine">Reload affected sections to hear replacements. Live references remain protected.</p><div class="queue-list" id="library-queue"></div><p id="library-impact" class="fine impact"></p><div class="row queue-actions"><button id="library-apply" class="primary" disabled>Apply queued LIBRARY changes</button><button id="library-clear">Clear queue</button></div></div>
+<div class="panel queue-panel"><h3>LIBRARY write queue</h3><p class="fine">Replacing a preset changes its sound in all projects that use it. Presets currently loaded on FM1 cannot be replaced.</p><div class="queue-list" id="library-queue"></div><p id="library-impact" class="fine impact"></p><div class="row queue-actions"><button id="library-apply" class="primary" disabled>Apply queued LIBRARY changes</button><button id="library-clear">Clear queue</button></div></div>
 </div></div></section>
 <section id="tab-projects" hidden><div class="section-head"><h2>PROJECTS <span class="muted">8 × A–D</span></h2><p>Restore section settings and shared preset references, not sound records.</p></div>
 <div class="workspace"><div class="panel slot-panel"><h3>Project sections <span class="fine">32 sections · hover or focus for full text</span></h3><div class="dual-tables"><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Restore?</th></tr></thead><tbody id="project-rows"></tbody></table></div><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Restore?</th></tr></thead><tbody id="project-rows-second"></tbody></table></div></div></div>
@@ -258,7 +258,8 @@ function sources(bank){
   if(snapshot){for(const [key,offset] of [["userPresets",1],["libraryPresets",33]])snapshot[key].forEach((r,i)=>{if(r)a.push({id:key+i,name:(offset===1?"USER ":"LIBRARY ")+num(i+offset)+" · "+label(r),recordBytes:r});});}
   return a.concat(factory.filter(x=>x.available).map(x=>({...x,name:"Factory · "+x.name})));
 }
-const libOptions=()=>({allowSavedReferences:$("library-allow-saved").checked});
+// Saved sections intentionally share presets. The APPLY confirmation lists affected sections.
+const libOptions=()=>({allowSavedReferences:true});
 function fallback(i){return factoryFallbacks[i]?factoryFallbacks[i]+" (factory)":"Factory fallback";}
 function sourceControls(bank){
   const src=$(bank+"-source"),target=$(bank+"-target"),old=src.value,oldTarget=target.value;
@@ -278,7 +279,7 @@ function sourceControls(bank){
   }
   if([...target.options].some(o=>o.value===oldTarget))target.value=oldTarget;
   const slot=target.value===""?null:Number(target.value),r=slot===null?null:snapshot?.[bank==="user"?"userPresets":"libraryPresets"][slot];
-  const blocked=slot===null||!snapshot||references(slot+(bank==="user"?0:32),bank==="library"&&libOptions().allowSavedReferences)||(bank==="user"&&r);
+  const blocked=slot===null||!snapshot||references(slot+(bank==="user"?0:32),bank==="library")||(bank==="user"&&r);
   $(bank+"-add").disabled=busy||!!blocked||!src.value;
   if(bank==="library")$("library-reset").disabled=busy||!!blocked||!r;
   $(bank+"-export").disabled=busy||!snapshot;$(bank+"-import-all").disabled=busy||!snapshot||!packs[bank].length;$(bank+"-clear").disabled=busy;src.disabled=busy;target.disabled=busy;
@@ -291,7 +292,7 @@ function sourceControls(bank){
     const plan=bank==="user"?planUserBatch(snapshot,items):planLibraryChanges(snapshot,items,libOptions());
     ok=bank==="user"?plan.objectIds.length>0:plan.length>0;
     msg=ok?items.length+" queued destination(s). "+(verified?"Backup verified.":"Verify current backup before applying."):"No actual changes.";
-    if(bank==="library"&&ok){const uses=plan.flatMap(x=>references(x.slot+32)?[num(x.slot+33)+": "+references(x.slot+32)]:[]);if(uses.length)msg+=" Affected saved references: "+uses.join("; ")+". ";}
+    if(bank==="library"&&ok){const uses=plan.flatMap(x=>references(x.slot+32)?[num(x.slot+33)+": "+references(x.slot+32)]:[]);if(uses.length)msg+=" Affected projects: "+uses.join("; ")+". ";}
   }catch(e){msg="Blocked: "+e.message;}
   $(bank+"-impact").textContent=msg;$(bank+"-apply").disabled=!ready()||!ok;
   rows(bank+"-slots",Array.from({length:32},(_,i)=>{const ref=i+(bank==="user"?0:32),r=snapshot?.[bank==="user"?"userPresets":"libraryPresets"][i];return [num(ref+1),!snapshot?"Not inspected":r?label(r):bank==="user"?"Empty":fallback(i),references(ref)||"—"];}));
@@ -313,7 +314,7 @@ function render(){
   let fullOk=false,fullMsg=fullSource?"Capture a complete target backup first.":"No source selected.";
   if(snapshot&&fullSource)try{const p=planFullRestore(snapshot,fullSource);fullOk=!!(p.objectIds.length+p.library.length);fullMsg=p.users.length+" USER changes · "+p.library.length+" LIBRARY changes · "+p.sections.length+" section changes · "+p.objectIds.length+" archive objects. "+(p.objectIds.includes(0)?"Current live performance will also be restored. ":"Current live performance will not be written. ")+(p.detached?" Live performance will be restored as unsaved (same musical settings).":"")+(fullOk?"":" Already identical; no writes necessary.");}catch(e){fullMsg="Blocked: "+e.message;}
   $("full-impact").textContent=fullMsg+(fullOk&&!ready()?" Verify the newly downloaded complete backup in BACKUP before restoring.":"");$("full-apply").disabled=!ready()||!fullOk;
-  for(const id of ["user-import","library-import","projects-import","full-import","library-allow-saved"])$(id).disabled=busy;
+  for(const id of ["user-import","library-import","projects-import","full-import"])$(id).disabled=busy;
 }
 function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
 for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
@@ -353,10 +354,9 @@ for(const bank of ["user","library"]){
   $(bank+"-clear").onclick=()=>{queues[bank].clear();render();};
   $(bank+"-apply").onclick=async()=>{const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes})),options=libOptions();
     const affected=bank==="library"?items.flatMap(x=>references(x.slot+32)?[num(x.slot+33)+": "+references(x.slot+32)]:[]):[];
-    if(!await askConfirmation({title:bank==="user"?"Restore USER sounds":"Apply LIBRARY changes",message:"Apply "+items.length+" queued "+bank.toUpperCase()+" change(s)? Keep the backup and do not disconnect.",summary:affected.length?"Saved project references will use the replacement on recall:\n"+affected.join("\n"):"",action:bank==="user"?"RESTORE":"APPLY"}))return;
+    if(!await askConfirmation({title:bank==="user"?"Restore USER sounds":"Apply LIBRARY changes",message:"Apply "+items.length+" queued "+bank.toUpperCase()+" change(s)? Keep the backup and do not disconnect.",summary:affected.length?"These project sections will use the new sound the next time they are loaded:\n"+affected.join("\n"):"",action:bank==="user"?"RESTORE":"APPLY"}))return;
     apply(async before=>{const f=bank==="user"?applyVerifiedUserBatch:applyVerifiedLibraryChanges;const result=await f(dev.request,before,items,progress,options);q.clear();return result;},"mashina-full-fm1-after-"+bank+".json",bank==="user"?"Restoring USER sounds":"Updating LIBRARY sounds");};
 }
-$("library-allow-saved").onchange=render;
 $("library-reset").onclick=()=>{queues.library.set(Number($("library-target").value),null);render();};
 $("projects-export").onclick=()=>download("mashina-projects-8x4.json",projectsBackup(snapshot.projects));
 fileInput("projects-import",file=>{projectFile=projectsBackup(restoreProjectsBackup(file));selected.clear();status("Project file loaded. Select individual sections or all changed sections.");});

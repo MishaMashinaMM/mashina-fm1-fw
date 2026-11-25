@@ -104,7 +104,7 @@ try{
     const {encodeRecord,pack7}=await import("/presets-library-codec.mjs");
     const pad=r=>{const d=new Uint8Array(MAX_RECORD);d.set(r);return d;};
     const records=Array.from({length:32},(_,i)=>pad(encodeProject({
-      section:i%4,refs:[0,32,33,34,35,36],name:"PROJECT "+String(i+1).padStart(2,"0"),
+      section:i%4,refs:[0,32,33,34,35,i===31?63:36],name:"PROJECT "+String(i+1).padStart(2,"0"),
       settingsBytes:[1,2,3]
     })));
     const sound=encodeRecord({name:"TWELVE CHARS",engine:0,params:Array(127).fill(2)});
@@ -195,9 +195,17 @@ try{
   await pressCancel("#user-apply");
   assert.match(await page.locator("#user-queue").textContent(),/002/);
   await page.locator("[data-tab=library]").click();
+  assert.equal(await page.locator("#library-allow-saved").count(),0);
   await page.locator("#library-source").selectOption("F1");
+  await page.locator("#library-target").selectOption("0");
+  assert.equal(await page.locator("#library-add").isDisabled(),true,"Currently loaded LIBRARY 033 stays protected");
   await page.locator("#library-target").selectOption("31");
+  assert.equal(await page.locator("#library-add").isEnabled(),true,"Saved-only reference must not require a permission checkbox");
   await page.locator("#library-add").click();
+  assert.match(await page.locator("#library-impact").textContent(),/P8:D\/T6/);
+  await page.locator("#library-apply").click();
+  assert.match(await page.locator("#confirm-summary").textContent(),/064: P8:D\/T6/);
+  await page.locator("#confirm-cancel").click();
   await pressCancel("#library-apply");
   assert.match(await page.locator("#library-queue").textContent(),/064/);
   const baseBackup=JSON.parse(fs.readFileSync(await captured.path(),"utf8"));
