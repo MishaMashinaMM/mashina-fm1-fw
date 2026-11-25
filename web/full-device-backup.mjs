@@ -434,7 +434,7 @@ function sameFullPayload(a,b) {
   insist(ao.length===bo.length && ao.every((o,i)=>o.id===bo[i].id &&
     byteEq(o.bytes,bo[i].bytes)),"Archive payload changed");
 }
-export function planLibraryChanges(file,changes) {
+export function planLibraryChanges(file,changes,{allowSavedReferences=false}={}) {
   const full=validateFullDevice(file);
   insist(Array.isArray(changes)&&changes.length>0&&changes.length<=32,"Select LIBRARY changes");
   const seen=new Set(),planned=[];
@@ -449,17 +449,19 @@ export function planLibraryChanges(file,changes) {
         if(r===ref)uses.push("P"+(Math.floor(i/4)+1)+":"+"ABCD"[i%4]+"/T"+(t+1));
       });
     }
+    const live=[];
     decodeProject(full.currentPerformance).refs.forEach((r,t)=>{
-      if(r===ref)uses.push("Current performance/T"+(t+1));
+      if(r===ref)live.push("Current performance/T"+(t+1));
     });
-    insist(!uses.length,"LIBRARY "+String(slot+33).padStart(3,"0")+" is referenced by "+uses.join(", ")+" — change blocked");
+    const blocked=allowSavedReferences?live:[...uses,...live];
+    insist(!blocked.length,"LIBRARY "+String(slot+33).padStart(3,"0")+" is referenced by "+blocked.join(", ")+" — change blocked");
     planned.push({slot,recordBytes:record});
   }
   return planned;
 }
-export async function applyVerifiedLibraryChanges(request,verifiedFile,changes,progress=()=>{}) {
+export async function applyVerifiedLibraryChanges(request,verifiedFile,changes,progress=()=>{},options={}) {
   const baseline=validateFullDevice(verifiedFile);
-  const plan=planLibraryChanges(baseline,changes);
+  const plan=planLibraryChanges(baseline,changes,options);
   const libcap=await capability(request),prcap=await projectCapability(request);
   insist(libcap.writable&&prcap.writable&&!prcap.canInitialize,
     "Use the initialized update firmware with formatting disabled");
@@ -718,4 +720,28 @@ export function planFullRestore(verified,file){
 }
 export async function applyVerifiedFullRestore(request,verified,file,progress=()=>{}){
   return transferRestorePlan(request,verified,planFullRestore(verified,file),progress);
+}
+
+
+/* Offline queue proposal. Imported USER sounds already present verbatim
+ * are skipped. Prefer the original USER position when empty, otherwise
+ * allocate the first free slot. Never overwrite an occupied/queued slot,
+ * and refuse the entire proposed addition when it cannot fit. */
+export function proposeUserImport(verified,patches,queued=[]){
+  const full=validateFullDevice(verified);
+  insist(Array.isArray(patches)&&patches.length<=32,"Invalid imported sound pack");
+  const unavailable=new Set(queued.map(x=>x.slot));
+  const records=[...full.userPresets.filter(Boolean),...queued.map(x=>x.recordBytes)];
+  const changes=[],skipped=[];
+  for(const p of patches){
+    const r=decodeRecord(p.recordBytes).recordBytes;
+    if(records.some(x=>equalJson(x,r))){skipped.push(decodeRecord(r).name);continue;}
+    const eligible=i=>Number.isInteger(i)&&i>=0&&i<32&&!unavailable.has(i)&&full.userPresets[i]===null;
+    const slot=eligible(p.slot)?p.slot:Array.from({length:32},(_,i)=>i).find(eligible);
+    insist(slot!==undefined,"Not enough empty USER slots for this imported pack");
+    // Validate all destinations and record layouts before returning a queue.
+    planUserRestore(full,slot,r);
+    unavailable.add(slot);records.push(r);changes.push({slot,recordBytes:r});
+  }
+  return {changes,skipped};
 }

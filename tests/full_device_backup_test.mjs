@@ -4,7 +4,7 @@ import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
 import {captureUser} from "../web/presets-library-sync.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -525,4 +525,25 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   missing.sections[3]=encodeProject({section:3,refs:[a,255,255,255,255,255],name:"MISSING",settingsBytes:[1]});
   assert.throws(()=>planProjectRestore(baseline,missing,[3]),/empty USER slot/);
   console.log("PASS: manager multi-USER batch, selective project writes, aliases, delta full restore, no-op and stale backup refusal");
+}
+
+
+{
+  const before=await captureFullDevice(mock,"REFERENCE POLICY");
+  // Put a saved-only reference in a non-selected project; current still
+  // references LIBRARY 033/034. Permit a saved-only change explicitly.
+  const saved=structuredClone(before);
+  const p=encodeProject({section:0,refs:[52,255,255,255,255,255],name:"SAVED REF",settingsBytes:[1]});
+  saved.projects[4]=p;saved.archive.objects.find(o=>o.id===44).size=MAX_RECORD;
+  Object.assign(saved.archive.objects.find(o=>o.id===44),raw(pad(p)));
+  assert.throws(()=>planLibraryChanges(saved,[{slot:20,recordBytes:preset}]),/referenced/);
+  assert.equal(planLibraryChanges(saved,[{slot:20,recordBytes:preset}],{allowSavedReferences:true}).length,1);
+  assert.throws(()=>planLibraryChanges(saved,[{slot:1,recordBytes:preset}],{allowSavedReferences:true}),/Current performance/);
+  const existing=before.userPresets.find(Boolean);
+  const analog=Array.from(encodeRecord({engine:0,name:"IMPORT QUEUE",params:Array(127).fill(12)}));
+  const occupied=before.userPresets.findIndex(Boolean);
+  const q=proposeUserImport(before,[{slot:occupied,recordBytes:existing},{slot:occupied,recordBytes:analog}]);
+  assert.equal(q.skipped.length,1);assert.equal(q.changes.length,1);
+  assert.equal(before.userPresets[q.changes[0].slot],null);
+  console.log("PASS: intentional saved reference changes, live protection, automatic safe USER import queue");
 }
