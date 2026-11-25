@@ -3,7 +3,7 @@
  * Mirrors the firmware's ST (USER), MPRS and LIB1 A/B commit selection.
  * This module NEVER mutates the input NOR, device, or Web Library's editor.
  */
-import {decodeEmulatorFlash} from "./emu/emulator-flash-backup.mjs";
+import {decodeEmulatorFlash,snapshotLibrarySlots} from "./emu/emulator-flash-backup.mjs";
 import {decodeProject,projectsBackup} from "./projects-library-codec.mjs";
 import {decodeRecord} from "./presets-library-codec.mjs";
 import {importFactoryCatalog,defaultFactorySelection} from "./factory-catalog-selection.mjs";
@@ -63,6 +63,7 @@ function userName(d){
 }
 export function inspectEmulatorFlash(file){
   const sectors=decodeEmulatorFlash(file),projects=[],library=[],users=[];
+  const slots=snapshotLibrarySlots(file);
   // MPR1 bank: sixteen pairs, each containing two fixed 1824-byte sections.
   for(let bank=0;bank<16;bank++){
     const base=0xa0000+bank*8192;
@@ -75,13 +76,14 @@ export function inspectEmulatorFlash(file){
       need(!erased(raw),"PROJECT "+(index+1)+": unexpected erased record");
       try {
         const info=decodeProject(Array.from(raw));
+        need(info.refs.every(ref=>ref===255||ref<32+slots),"Project reference exceeds snapshot geometry");
         need(info.section===index%4,"PROJECT "+(index+1)+": wrong section number");
         projects.push(info.recordBytes);
       }catch(e){throw Error("PROJECT "+(index+1)+": "+e.message);}
     }
   }
   // LIB1 bank: four pairs, eight complete 304-byte override sounds each.
-  for(let bank=0;bank<4;bank++){
+  for(let bank=0;bank<slots/8;bank++){
     const base=0xc0000+bank*8192;
     const oldBase=0xea000+bank*8192;
     // An exported experimental NOR snapshot may still use the OLD USR
@@ -89,7 +91,7 @@ export function inspectEmulatorFlash(file){
     // Prefer a valid current-layout bank if both exist.
     const hasNew=[0,1].some(copy=>
       !!parseLib(sectorAt(sectors,base+copy*4096),copy,bank));
-    const hasOld=[0,1].some(copy=>
+    const hasOld=bank<4&&[0,1].some(copy=>
       !!parseLib(sectorAt(sectors,oldBase+copy*4096),copy,bank));
     const selected=hasNew||!hasOld?base:oldBase;
     const payload=pick(sectors,[selected,selected+4096],
@@ -136,17 +138,17 @@ export function inspectEmulatorFlash(file){
  * 304-byte override always wins over the compiled fallback. */
 export function resolveFactoryFallbacks(inspection,catalogInput){
   const catalog=importFactoryCatalog(catalogInput);
-  const selection=defaultFactorySelection(catalog);
-  need(Array.isArray(inspection?.library)&&inspection.library.length===32,
-       "Expected 32 inspected LIBRARY positions");
-  need(selection.length===32&&selection.every(Number.isInteger),
-       "Protected catalog does not define all 32 factory defaults");
+  const slots=inspection?.library?.length;
+  need(slots===32||slots===96,"Expected 32 or 96 inspected LIBRARY positions");
+  const selection=defaultFactorySelection(catalog,slots);
+  need(selection.length===slots&&selection.every(Number.isInteger),
+       "Protected catalog does not define every factory default");
   const library=inspection.library.map((entry,i)=>{
     need(entry.slot===i+33&&["factory","overridden"].includes(entry.status),
          "Unexpected LIBRARY position or state");
     if(entry.status==="overridden")return {...entry};
     const patch=catalog.presets[selection[i]];
-    need(patch?.initialLibrarySlot===entry.slot,
+    need(patch&&(i>=32||patch.initialLibrarySlot===entry.slot),
          "Factory catalog slot mapping mismatch at "+entry.slot);
     return {...entry,name:patch.name,engine:patch.engine,
       engineName:patch.engineName,factoryIndex:patch.factoryIndex};

@@ -38,7 +38,7 @@ function bankState(sectors,bank){
   // Preserve all 8 sounds from a pre-relocation emulator snapshot, which
   // stored LIB1 in old USR sectors. The target C0000 bank must be erased:
   // never overwrite an occupied current-layout/retired project sector.
-  if(!current){
+  if(!current&&bank<4){
     const previous=0xea000+bank*2*SECTOR;
     const oldCopies=[0,1].map(copy=>{
       const bytes=sector(sectors,previous+copy*SECTOR);
@@ -83,14 +83,15 @@ export function snapshotSourceRecords(snapshot){
  * null clears only the override -> restores the firmware factory fallback.
  */
 export function editEmulatorLibrarySnapshot(snapshot,edits){
-  check(Array.isArray(edits)&&edits.length>0&&edits.length<=32,
-    "Provide 1..32 LIBRARY changes");
   const before=inspectEmulatorFlash(snapshot);
+  const count=before.library.length;
+  check(Array.isArray(edits)&&edits.length>0&&edits.length<=count,
+    "Provide valid LIBRARY changes");
   const sectors=decodeEmulatorFlash(snapshot);
   const seen=new Set(),grouped=new Map(),changed=[];
   for(const edit of edits){
     const slot=edit?.slot;
-    check(Number.isInteger(slot)&&slot>=33&&slot<=64&&!seen.has(slot),
+    check(Number.isInteger(slot)&&slot>=33&&slot<=32+count&&!seen.has(slot),
       "Invalid or repeated LIBRARY slot "+slot);
     seen.add(slot);
     const record=edit.recordBytes===null?new Uint8Array(304):
@@ -116,7 +117,7 @@ export function editEmulatorLibrarySnapshot(snapshot,edits){
     page.set(payload,PAYLOAD);
     out[base+nextCopy*SECTOR]=page;
   }
-  const result=encodeEmulatorFlash(out);
+  const result=encodeEmulatorFlash(out,count);
   const after=inspectEmulatorFlash(result);
   for(const edit of edits){
     const index=edit.slot-33;
@@ -321,7 +322,7 @@ export function editEmulatorUserSnapshot(snapshot,edits){
   out[upf.addresses[upf.copy]]=stCommitted(8,upf.copy,
     upf.current?((upf.current.sequence+1)>>>0):1,upf.data);
   changedOffsets.add(upf.addresses[upf.copy]);
-  const exported=encodeEmulatorFlash(out);
+  const exported=encodeEmulatorFlash(out,before.library.length);
   const after=inspectEmulatorFlash(exported);
   const sources=userSourceRecords(exported);
   for(const {slot,recordBytes} of edits){
@@ -363,7 +364,7 @@ export function editEmulatorProjectReferences(snapshot,edits){
     check(Number.isInteger(project)&&project>=1&&project<=8&&
       "ABCD".includes(section)&&typeof section==="string"&&section.length===1&&
       Number.isInteger(track)&&track>=1&&track<=6&&
-      Number.isInteger(reference)&&(reference===255||(reference>=0&&reference<64)),
+      Number.isInteger(reference)&&(reference===255||(reference>=0&&reference<32+old.library.length)),
       "Invalid project, section, track or source reference");
     const pos=(project-1)*4+"ABCD".indexOf(section),key=pos+":"+track;
     check(!seen.has(key),"Duplicate track reference assignment");
@@ -413,7 +414,7 @@ export function editEmulatorProjectReferences(snapshot,edits){
     put32(next,16,crc32(payload));next.set(payload,256);
     out[base+copy*SECTOR]=next;
   }
-  const image=encodeEmulatorFlash(out),result=inspectEmulatorFlash(image);
+  const image=encodeEmulatorFlash(out,old.library.length),result=inspectEmulatorFlash(image);
   for(const {project,section,track,reference} of report){
     const idx=(project-1)*4+"ABCD".indexOf(section);
     const oldRec=decodeProject(old.projects.sections[idx]);

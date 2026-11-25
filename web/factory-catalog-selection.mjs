@@ -5,7 +5,7 @@
  * incomplete drum kits are NEVER converted into guessed binary records.
  * An offline selection remains self-contained even if the source file moves.
  */
-import {encodeRecord,decodeRecord,LIBRARY_SLOTS} from "./presets-library-codec.mjs";
+import {encodeRecord,decodeRecord,LIBRARY_SLOTS,validLibrarySize} from "./presets-library-codec.mjs";
 
 const fail=(condition,message)=>{if(!condition)throw Error(message);};
 const SIDECAR_ENGINES=new Set([10,15,19,20]);
@@ -86,8 +86,8 @@ export function importFactoryCatalog(input){
 // JSON round-trip gives a plain deep copy, supported on older Chromium too.
 function structuredCloneCompatible(v){return JSON.parse(JSON.stringify(v));}
 function validSelectionIndexes(indexes){
-  fail(Array.isArray(indexes)&&indexes.length===LIBRARY_SLOTS,
-       "A selection must describe exactly 32 LIBRARY positions");
+  fail(Array.isArray(indexes)&&validLibrarySize(indexes.length),
+       "A selection must describe exactly 32 or 96 LIBRARY positions");
   return indexes.map((v,i)=>{
     if(v===null)return null;
     fail(uint(v,106),"Invalid source factory index in LIBRARY "+(i+33));
@@ -135,12 +135,23 @@ function validatedKits(catalog,kits){
   }));
 }
 
-export function defaultFactorySelection(catalog){
+export function defaultFactorySelection(catalog,slots=LIBRARY_SLOTS){
   const c=importFactoryCatalog(catalog);
-  const list=Array(LIBRARY_SLOTS).fill(null);
-  for(const p of c.presets)
-    if(p.initialLibrarySlot!==undefined)
-      list[p.initialLibrarySlot-33]=p.factoryIndex-1;
+  fail(validLibrarySize(slots),"Unsupported factory LIBRARY geometry");
+  const byEngine=new Map();
+  for(const p of c.presets){
+    if(!byEngine.has(p.engine))byEngine.set(p.engine,[]);
+    byEngine.get(p.engine).push(p);
+  }
+  const list=[];
+  for(let round=0;list.length<slots&&round<c.presets.length;round++)
+    for(const engine of byEngine.values()){
+      const p=engine[round];
+      if(p&&list.length<slots)list.push(p.factoryIndex-1);
+    }
+  fail(list.length===slots,"Compiled catalog too small");
+  for(let i=0;i<32;i++)
+    fail(c.presets[list[i]].initialLibrarySlot===i+33,"Existing factory mapping changed");
   return list;
 }
 export function validateFactorySelection(catalog,indexes,kits=null){
@@ -165,15 +176,16 @@ export function factorySelectionFile(catalog,indexes,kits=null){
   const refs=validSelectionIndexes(indexes);
   const full= kits===null ? null : importFactoryDrumRecords(kits,c);
   validateFactorySelection(c,refs,full);
-  return {format:SELECTION_FORMAT,version:1,
+  return {format:refs.length===96?"mashina-factory-selection-96":SELECTION_FORMAT,version:1,
           catalog:c,selection:refs,
           ...(full?{drumRecords:full}:{})};
 }
 export function importFactorySelection(file){
-  fail(file?.format===SELECTION_FORMAT&&file.version===1,
-       "Not a MASHINA 32-slot factory selection JSON");
+  fail([SELECTION_FORMAT,"mashina-factory-selection-96"].includes(file?.format)&&file.version===1,
+       "Not a MASHINA factory selection JSON");
   const catalog=importFactoryCatalog(file.catalog);
   const selection=validSelectionIndexes(file.selection);
+  fail(selection.length===(file.format===SELECTION_FORMAT?32:96),"Factory selection geometry mismatch");
   const drumRecords=file.drumRecords===undefined?null:
                     importFactoryDrumRecords(file.drumRecords,catalog);
   validateFactorySelection(catalog,selection,drumRecords);
@@ -186,7 +198,7 @@ export function buildFactoryUpload(catalog,indexes,kits=null){
   const c=importFactoryCatalog(catalog),refs=validSelectionIndexes(indexes);
   const fullKits=validatedKits(c,kits);
   const records=[];
-  for(let slot=0;slot<LIBRARY_SLOTS;slot++){
+  for(let slot=0;slot<refs.length;slot++){
     const index=refs[slot];
     if(index===null)continue;
     const p=c.presets[index];

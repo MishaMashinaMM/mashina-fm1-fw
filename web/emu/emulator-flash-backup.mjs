@@ -27,7 +27,14 @@ function unb64(text) {
   if(s.length!==SECTOR)throw Error("Invalid sector size");
   return Uint8Array.from(s,c=>c.charCodeAt(0));
 }
-export function encodeEmulatorFlash(sectors) {
+export function snapshotLibrarySlots(value) {
+  const obj=typeof value==="string"?JSON.parse(value):value;
+  const slots=obj?.librarySlots??32;
+  if(slots!==32&&slots!==96)throw Error("Invalid emulator LIBRARY geometry");
+  return slots;
+}
+export function encodeEmulatorFlash(sectors,librarySlots=32) {
+  snapshotLibrarySlots({librarySlots});
   const out=[];
   for(const [key,raw] of Object.entries(sectors)) {
     const off=Number(key),data=raw instanceof Uint8Array?raw:new Uint8Array(raw);
@@ -39,15 +46,22 @@ export function encodeEmulatorFlash(sectors) {
   out.sort((a,b)=>a.offset-b.offset);
   if(out.length>MAX_SECTORS)throw Error("Too many flash sectors");
   return {format:FORMAT,version:VERSION,sectorSize:SECTOR,
-    kind:"experimental-browser-NOR-only",sectors:out};
+    kind:"experimental-browser-NOR-only",...(librarySlots===96?{librarySlots}:{}),sectors:out};
 }
-export function decodeEmulatorFlash(value) {
+export function decodeEmulatorFlash(value,targetSlots=null) {
   const obj=typeof value==="string"?JSON.parse(value):value;
   if(!obj || typeof obj!=="object" || Array.isArray(obj) ||
      obj.format!==FORMAT || obj.version!==VERSION ||
      obj.sectorSize!==SECTOR || obj.kind!=="experimental-browser-NOR-only" ||
      !Array.isArray(obj.sectors) || obj.sectors.length>MAX_SECTORS)
     throw Error("Not a compatible MASHINA emulator flash backup");
+  const slots=snapshotLibrarySlots(obj);
+  if(targetSlots!==null){
+    snapshotLibrarySlots({librarySlots:targetSlots});
+    if(slots>targetSlots)throw Error("Expanded backup requires LIB96 emulator");
+    if(slots<targetSlots&&obj.sectors.some(s=>s.offset>=0xc8000&&s.offset<0xd8000))
+      throw Error("Old backup contains nonblank expanded LIBRARY region; refusing to reinterpret it");
+  }
   const sectors={},seen=new Set();
   for(const row of obj.sectors){
     if(!row||typeof row!=="object"||!allowed(row.offset)||seen.has(row.offset))

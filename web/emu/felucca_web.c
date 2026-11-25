@@ -217,17 +217,17 @@ static void fl_plain_window_init(void) {}
  * No HAL/SPI flash driver or USB editor is present in the browser build. */
 static int lib_host_read(uint32_t off, void *p, uint32_t n)
 {
-    if(off<0xC0000u || off>=0xC8000u || n>0xC8000u-off)return -1;
+    if(off<0xC0000u || off>=MASHINA_LIBRARY_END || n>MASHINA_LIBRARY_END-off)return -1;
     return st_read(off,p,n);
 }
 static int lib_host_erase(uint32_t off)
 {
-    if(off<0xC0000u || off>=0xC8000u || (off&4095u))return -1;
+    if(off<0xC0000u || off>=MASHINA_LIBRARY_END || (off&4095u))return -1;
     return st_erase(off);
 }
 static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 {
-    if(off<0xC0000u || off>=0xC8000u || n>0xC8000u-off ||
+    if(off<0xC0000u || off>=MASHINA_LIBRARY_END || n>MASHINA_LIBRARY_END-off ||
        n>256u || ((off&255u)+n)>256u)return -1;
     return st_prog(off,p,n);
 }
@@ -395,6 +395,11 @@ EXPORT uint32_t web_flash_writes_count(void) { return web_flash_writes; }
 /* Browser CI-only inspection of REAL firmware MPR1 invariants. These are
  * read-only probes apart from web_mpr_test_save(), which writes only the
  * emulator's in-memory NOR and is never called by the browser page. */
+EXPORT uint32_t web_lib_slots(void) { return LIB_SLOTS; }
+EXPORT uint32_t web_lib_factory_engine(uint32_t slot)
+{ uint32_t k; return library_factory_at(slot,&k); }
+EXPORT uint32_t web_lib_factory_index(uint32_t slot)
+{ uint32_t k; library_factory_at(slot,&k); return k; }
 EXPORT uint32_t web_mpr_ref(uint32_t track)
 { return track < NTRK ? trk[track].user : 0u; }
 EXPORT uint32_t web_mpr_dirty(uint32_t track)

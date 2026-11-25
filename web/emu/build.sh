@@ -16,6 +16,12 @@ VERSION=$(sed -n 's/^#define FELUCCA_VERSION "\([^"]*\)".*/\1/p' firmware/src/fe
 # Branch-only simulator for reference-only projects / 32 LIBRARY slots.
 # This is an in-browser WASM NOR simulation, not a hardware installer.
 case "${MASHINA_EMU_REFS:-0}" in 0|1) ;; *) echo "emu: MASHINA_EMU_REFS must be 0 or 1" >&2; exit 1;; esac
+case "${MASHINA_EMU_LIB96:-0}" in 0|1) ;; *) echo "emu: MASHINA_EMU_LIB96 must be 0 or 1" >&2; exit 1;; esac
+LIBRARY_SLOTS=32
+if [ "${MASHINA_EMU_LIB96:-0}" = 1 ]; then
+    [ "${MASHINA_EMU_REFS:-0}" = 1 ] || { echo "emu: LIB96 requires MPR1 simulator" >&2; exit 1; }
+    LIBRARY_SLOTS=96
+fi
 if [ "${MASHINA_EMU_REFS:-0}" = 1 ]; then
     VERSION="${EMU_VERSION:-$VERSION-mpr1-sim}"
 else
@@ -26,6 +32,7 @@ mkdir -p build/emu/fonts
 emcc ${EMU_OPT:--O2} -ffp-contract=off -std=gnu99 -w ${EMU_CFLAGS:-} \
     "-DFELUCCA_NO_SEQUENCER=${FELUCCA_NO_SEQUENCER:-1}" \
     "-DMASHINA_EMU_REFS=${MASHINA_EMU_REFS:-0}" \
+    "-DMASHINA_EMU_LIB96=${MASHINA_EMU_LIB96:-0}" \
     "-DFELUCCA_VERSION=\"$VERSION\"" -Ibuild/gen -Ifirmware/src \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o build/emu/felucca.wasm web/emu/felucca_web.c
@@ -33,7 +40,7 @@ emcc ${EMU_OPT:--O2} -ffp-contract=off -std=gnu99 -w ${EMU_CFLAGS:-} \
 # Ship the navigation and translation assets with the isolated artifact.
 # Installed Pages sites may have these in the parent folder; downloaded
 # previews must not require any files outside build/emu.
-sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" \
+sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" -e "s/@LIBRARY_SLOTS@/$LIBRARY_SLOTS/g" \
     -e 's#../mashina-nav.css#./mashina-nav.css#g' \
     -e 's#../mashina-nav.js#./mashina-nav.js#g' \
     -e 's#../mashina-emu-locale.js#./mashina-emu-locale.js#g' \

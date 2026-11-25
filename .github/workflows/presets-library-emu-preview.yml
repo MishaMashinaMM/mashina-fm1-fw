@@ -1,7 +1,7 @@
 name: Presets library MPR1 browser emulator (no device firmware)
 on:
   push:
-    branches: [presets-library, presets-library-reclaim]
+    branches: [presets-library, presets-library-reclaim, presets-library-96]
     paths:
       - '.github/workflows/presets-library-emu-preview.yml'
       - 'web/emu/**'
@@ -74,10 +74,20 @@ jobs:
         run: node tests/emu_library_inspector_test.mjs
       - name: Check offline selective LIBRARY edits against real emulator NOR
         run: node tests/emu_snapshot_selective_edit_test.mjs
+      - name: Compile and test separate expanded emulator (WASM only)
+        if: github.ref == 'refs/heads/presets-library-96'
+        env:
+          MASHINA_EMU_REFS: '1'
+          MASHINA_EMU_LIB96: '1'
+          EMU_VERSION: 'v0.14-lib96-sim'
+          EMU_PREVIEW: '1'
+        run: |
+          sh web/emu/build.sh
+          node tests/emu_lib96_test.mjs
       - name: Include safety notes with downloadable emulator
         run: |
           cat > build/emu/EXPERIMENTAL-README.txt <<'TXT'
-          MASHINA MPR1/LIB32 WebAssembly emulator (experimental branch only)
+          MASHINA MPR1/LIBRARY WebAssembly emulator (experimental branch only)
           This ZIP contains browser simulator assets, NOT an FM1 installer or .fwsc.
           Simulated NOR is held in browser memory and saved browser storage.
           The factory 107-preset source catalog is not overwritten by this preview.
@@ -86,6 +96,6 @@ jobs:
           TXT
       - uses: actions/upload-artifact@v4
         with:
-          name: mashina-mpr1-lib32-browser-emulator-experimental
+          name: mashina-mpr1-browser-emulator-${{ github.ref == 'refs/heads/presets-library-96' && 'lib96' || 'lib32' }}-experimental
           path: build/emu/
           retention-days: 14

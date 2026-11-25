@@ -7,7 +7,10 @@
 #if defined(MASHINA_LIB96_HOST_TEST) && !defined(MASHINA_HOST_TEST)
 #error "Expanded preset integration is host-only"
 #endif
-#if defined(MASHINA_LIB96_NOR_TEST) || defined(MASHINA_LIB96_HOST_TEST)
+#if defined(MASHINA_EMU_LIB96) && MASHINA_EMU_LIB96 && !defined(FELUCCA_WEB)
+#error "Expanded simulator geometry requires browser build"
+#endif
+#if defined(MASHINA_LIB96_NOR_TEST) || defined(MASHINA_LIB96_HOST_TEST) || (defined(MASHINA_EMU_LIB96) && MASHINA_EMU_LIB96)
 #define MASHINA_LIBRARY_SLOTS 96u
 #define MASHINA_LIBRARY_END 0xD8000u
 #else
