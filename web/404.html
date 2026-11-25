@@ -29,7 +29,12 @@ function jiantTarget(pathname) {
   const m = /^\/mashina-fm1-fw(?:\/|$)(.*)$/i.exec(p);
   const rest = (m ? m[1] : p.replace(/^\/+/, "")).toLowerCase();
   let to = "";
-  if (/edit/.test(rest)) to = "webapp/editor/";
+  if (/web-library|presets-library/.test(rest)) {
+    if (/guide\.html/.test(rest)) to = "web-library/guide.html";
+    else if (/initialize\.html/.test(rest)) to = "web-library/initialize.html";
+    else to = "web-library/";
+  }
+  else if (/edit/.test(rest)) to = "webapp/editor/";
   else if (/emu|emulat|simul/.test(rest)) to = "emu/";
   else if (/instal|updat|actualiz|flash|upgrad|webapp|firmware|fwsc/.test(rest)) to = "webapp/installer/";
   else if (/manual|docs/.test(rest)) to = "manual/";
@@ -49,6 +54,7 @@ if (to) location.replace(to + location.search + location.hash);
   <ul>
     <li><a href="/mashina-fm1-fw/webapp/installer/">Installer</a></li>
     <li><a href="/mashina-fm1-fw/webapp/editor/">Editor</a></li>
+    <li><a href="/mashina-fm1-fw/web-library/">Web Library</a></li>
     <li><a href="/mashina-fm1-fw/emu/">Emulator</a></li>
     <li><a href="/mashina-fm1-fw/manual/">Manual</a></li>
     <li><a href="/mashina-fm1-fw/">Home</a></li>
