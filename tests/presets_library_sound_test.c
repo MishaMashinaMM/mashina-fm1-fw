@@ -73,7 +73,29 @@ int main(void)
         head_title(title);
         bad+=check("PRESETS header follows track selection",
                    title[0]=='T' && title[1]=='2' && title[2]==' ');
-        track_select(0);
+        {
+            uint32_t total;
+            preset_go(0u); /* T2 now references USER 001. T1 uses LIBRARY 033. */
+            browse_bank = BROWSE_USER;
+            browse_cursor = 0u;
+            browse_cursor_valid = 1u;
+            track_select(0u);
+            bad+=check("track switch follows actual LIBRARY preset and reveals it from USER filter",
+                       browse_bank==BROWSE_ALL && preset_pos(&total)==UP_SLOTS &&
+                       TSEL->user==UP_SLOTS+1u && TSEL->p[P_ATK]==49);
+            browse_bank = BROWSE_LIBRARY;
+            browse_cursor = UP_SLOTS;
+            browse_cursor_valid = 1u;
+            track_select(1u);
+            bad+=check("track switch follows actual USER preset from LIBRARY filter",
+                       browse_bank==BROWSE_ALL && preset_pos(&total)==0u &&
+                       TSEL->user==1u && TSEL->p[P_ATK]==49);
+            browse_cursor = UP_SLOTS+4u;
+            browse_cursor_valid = 1u;
+            track_select(0u);
+            bad+=check("ALL bank reanchors after browsing a different track",
+                       preset_pos(&total)==UP_SLOTS && !browse_cursor_valid);
+        }
         go_page(GR_SLOTS);
         head_title(title);
         bad+=check("Project header remains a project title",title[0]=='P');
@@ -234,9 +256,17 @@ int main(void)
         {
             char title[40],name[16];
             go_page(GR_BROWSE);
+            browse_cursor = 32u;
+            browse_cursor_valid = 1u;
+            browse_bank = BROWSE_LIBRARY;
             track_select(1);
             head_title(title);
             sound_name(TSEL,name);
+            { uint32_t total;
+              bad+=check("track switch centers LIBRARY 128 within existing LIBRARY bank",
+                         browse_bank==BROWSE_LIBRARY && preset_pos(&total)==95u && total==96u);
+            }
+            browse_bank = BROWSE_ALL;
             bad+=check("PRESETS header and common name helper use uploaded LIBRARY 128 name",
                        !strcmp(title,"T2 - LIB ONE") && !strcmp(name,"LIB ONE"));
             track_select(chosen);

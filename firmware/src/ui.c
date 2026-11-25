@@ -2051,6 +2051,17 @@ static void track_select(uint32_t i)
     if (i >= NTRK || i == song.sel)
         return;
     song.sel = (uint8_t)i;
+    /* A browse cursor belongs to the previous track. Re-anchor to the
+     * newly selected track's actual sound, without loading or modifying it. */
+    browse_cursor_valid = 0u;
+    if (!ui.home && !ui.layer && cur_page()->graph == GR_BROWSE) {
+        uint32_t total, pos = preset_all_pos(&total);
+        /* Keep the chosen bank if it contains the track's preset. Otherwise
+         * show ALL so the actual assignment is visible. */
+        if (pos < total && (pos < browse_start() ||
+                            pos >= browse_start() + browse_length()))
+            browse_bank = BROWSE_ALL;
+    }
     ui.entry_open = 0;
     ui.hot_t = 0;
     ui.cursor = 0;
