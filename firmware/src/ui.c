@@ -1691,6 +1691,29 @@ static int library_slot_ready(uint32_t slot); /* 0 playable/factory; 1 corrupt/u
 #endif
 static uint32_t library_factory_at(uint32_t n, uint32_t *k)
 {
+#if MASHINA_LIBRARY_SLOTS == 96u
+    /* Curated LIB96: all 89 non-drum sounds in original catalog order,
+     * followed by the seven specifically selected factory kits. */
+    static const uint8_t drum_engine[] = {ENGI_DRUM, ENGI_DRUM, ENGI_DRUMLAB, ENGI_DRUMLAB,
+                                          ENGI_DRUMAC, ENGI_DRUMAC, ENGI_DRUMIND};
+    static const uint8_t drum_index[] = {0, 1, 0, 1, 0, 2, 0};
+    uint32_t r;
+    for (r = 0; r < NENG_SHOWN; r++) {
+        uint32_t e = eng_vis(r), count;
+        if (e == ENGI_DRUM || e == ENGI_DRUMLAB || e == ENGI_DRUMAC || e == ENGI_DRUMIND)
+            continue;
+        count = preset_shown(e);
+        if (n < count) {
+            *k = preset_nth(ENGINES[e], n);
+            return e;
+        }
+        n -= count;
+    }
+    if (n < NELEM(drum_engine)) {
+        *k = preset_nth(ENGINES[drum_engine[n]], drum_index[n]);
+        return drum_engine[n];
+    }
+#else
     uint32_t round, r;
     for (round = 0; round < LIB_FACTORY_SLOTS; round++)
         for (r = 0; r < NENG_SHOWN; r++) {
@@ -1701,6 +1724,7 @@ static uint32_t library_factory_at(uint32_t n, uint32_t *k)
                 return e;
             }
         }
+#endif
     *k = 0;
     return NENGINES;
 }

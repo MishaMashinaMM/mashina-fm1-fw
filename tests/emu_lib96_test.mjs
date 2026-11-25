@@ -14,6 +14,10 @@ e.web_nor_erase();e.web_boot();
 assert.equal(e.web_lib_slots(),96);
 const master=JSON.parse(readFileSync("web/factory-presets-from-code.json","utf8"));
 const defaults=defaultFactorySelection(master,96);
+assert.equal(new Set(defaults).size,96);
+assert.deepEqual(defaults.slice(0,89),master.presets.flatMap((p,i)=>p.requiresEngineFactoryKit?[]:[i]));
+assert.deepEqual(defaults.slice(89).map(i=>master.presets[i].name),
+  ["BUTTLER-1","BUTTLER-2","ZIZEK-1","ZIZEK-2","KRIPKE-1","KRIPKE-3","BADIOU-1"]);
 for(let i=0;i<96;i++){
   const p=master.presets[defaults[i]];
   assert.equal(e.web_lib_factory_engine(i),p.engine,"engine mapping slot "+(i+33));
@@ -24,7 +28,7 @@ const nor=new Uint8Array(e.memory.buffer,e.web_nor(),e.web_nor_size());
 const initial=encodeEmulatorFlash(storeSectors(nor),96);
 const resolved=resolveFactoryFallbacks(inspectEmulatorFlash(initial),master);
 assert.equal(resolved.library.length,96);
-assert.equal(resolved.library[95].name,master.presets[defaults[95]].name);
+assert.deepEqual(resolved.library.map(p=>p.name),defaults.map(i=>master.presets[i].name));
 const recordBytes=Array.from(encodeRecord({engine:0,name:"LIB128 TEST",params:Array(127).fill(0)}));
 const edited=editEmulatorLibrarySnapshot(initial,[{slot:128,recordBytes}]);
 assert.deepEqual(edited.inspection.library[95].recordBytes,recordBytes);

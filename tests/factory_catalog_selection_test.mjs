@@ -21,6 +21,15 @@ assert.equal(original.presets.length,107);
 assert.equal(original.presets.filter(p=>p.fm6).length,10);
 const defaults=defaultFactorySelection(catalog);
 assert.equal(defaults.length,32);
+const expanded=defaultFactorySelection(catalog,96);
+assert.equal(new Set(expanded).size,96);
+assert.deepEqual(expanded.slice(0,89),catalog.presets.flatMap((p,i)=>p.requiresEngineFactoryKit?[]:[i]));
+assert.deepEqual(expanded.slice(89).map(i=>catalog.presets[i].name),
+  ["BUTTLER-1","BUTTLER-2","ZIZEK-1","ZIZEK-2","KRIPKE-1","KRIPKE-3","BADIOU-1"]);
+const expandedView=validateFactorySelection(catalog,expanded);
+assert.equal(expandedView.ready,89);
+assert.equal(expandedView.blocked,7);
+assert.deepEqual(importFactorySelection(factorySelectionFile(catalog,expanded)).selection,expanded);
 assert.equal(defaults.filter(i=>i!==null).length,32);
 const view=validateFactorySelection(catalog,defaults);
 assert.equal(view.ready+view.blocked,32);

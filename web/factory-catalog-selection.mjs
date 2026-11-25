@@ -138,6 +138,13 @@ function validatedKits(catalog,kits){
 export function defaultFactorySelection(catalog,slots=LIBRARY_SLOTS){
   const c=importFactoryCatalog(catalog);
   fail(validLibrarySize(slots),"Unsupported factory LIBRARY geometry");
+  if(slots===96){
+    const melodic=c.presets.filter(p=>!SIDECAR_ENGINES.has(p.engine));
+    const names=["BUTTLER-1","BUTTLER-2","ZIZEK-1","ZIZEK-2","KRIPKE-1","KRIPKE-3","BADIOU-1"];
+    const drums=names.map(name=>c.presets.find(p=>p.name===name&&SIDECAR_ENGINES.has(p.engine)));
+    fail(melodic.length===89&&drums.every(Boolean),"Curated LIB96 factory mapping incomplete");
+    return [...melodic,...drums].map(p=>p.factoryIndex-1);
+  }
   const byEngine=new Map();
   for(const p of c.presets){
     if(!byEngine.has(p.engine))byEngine.set(p.engine,[]);

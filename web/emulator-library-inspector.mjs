@@ -148,7 +148,7 @@ export function resolveFactoryFallbacks(inspection,catalogInput){
          "Unexpected LIBRARY position or state");
     if(entry.status==="overridden")return {...entry};
     const patch=catalog.presets[selection[i]];
-    need(patch&&(i>=32||patch.initialLibrarySlot===entry.slot),
+    need(patch&&(slots===96||patch.initialLibrarySlot===entry.slot),
          "Factory catalog slot mapping mismatch at "+entry.slot);
     return {...entry,name:patch.name,engine:patch.engine,
       engineName:patch.engineName,factoryIndex:patch.factoryIndex};
