@@ -79,14 +79,14 @@ export function snapshotSourceRecords(snapshot){
  * header. Preserve the previous committed copy for recovery. No merge from
  * unrelated snapshots, and all other USER/project/settings bytes are exact.
  *
- * edits: [{slot: 33..64, recordBytes: 304-byte array|null}]
+ * edits: [{slot: 33..(32 + library count), recordBytes: 304-byte array|null}]
  * null clears only the override -> restores the firmware factory fallback.
  */
 export function editEmulatorLibrarySnapshot(snapshot,edits){
   const before=inspectEmulatorFlash(snapshot);
   const count=before.library.length;
   check(Array.isArray(edits)&&edits.length>0&&edits.length<=count,
-    "Provide valid LIBRARY changes");
+    `Provide 1..${count} LIBRARY changes`);
   const sectors=decodeEmulatorFlash(snapshot);
   const seen=new Set(),grouped=new Map(),changed=[];
   for(const edit of edits){
