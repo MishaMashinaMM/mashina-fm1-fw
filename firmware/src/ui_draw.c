@@ -252,6 +252,15 @@ static uint16_t head_title(char *b)
     b[2] = 0;
     if (!ui.home && !ui.layer && pg->fam == FAM_FX)
         return T_ACCENT;
+    /* PRESETS assigns sounds to the selected track, not the project.
+     * Keep the track and its actual loaded sound visible while browsing. */
+    if (!ui.home && !ui.layer && pg->fam == FAM_SAVE && pg->graph == GR_BROWSE) {
+        str_cpy(b + 2, " - ", 4);
+        sound_name(TSEL, b + 5);
+        if (!b[5])
+            str_cpy(b + 5, trk_engp(TSEL)->name, 16);
+        return T_VALUE;
+    }
     if (glob) {
         char nm[16];
         b[0] = 'P';
@@ -957,7 +966,7 @@ static void sound_name(const track_t *t, char *b)
     if (user_of(t) < UP_SLOTS)
         up_name(user_of(t), b);
 #if FELUCCA_LIB32
-    else if (t->user > UP_SLOTS && t->user <= UP_SLOTS + 32u)
+    else if (t->user > UP_SLOTS && t->user <= UP_SLOTS + LIB_FACTORY_SLOTS)
         library_track_name(t, b);
 #endif
     else if (e->npresets)
@@ -2689,7 +2698,7 @@ static void draw_mixer_table(void)
         if (user_of(t) < UP_SLOTS)
             up_name(user_of(t), vname);
 #if FELUCCA_LIB32
-        else if (t->user > UP_SLOTS && t->user <= UP_SLOTS + 32u)
+        else if (t->user > UP_SLOTS && t->user <= UP_SLOTS + LIB_FACTORY_SLOTS)
             library_track_name(t, vname);
 #endif
         else if (e->npresets)

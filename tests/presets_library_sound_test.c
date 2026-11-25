@@ -63,6 +63,21 @@ int main(void)
         bad+=check("uploaded library sound name appears without reading flash again",
                    !strcmp(name,"LIB ONE"));
     }
+    {
+        char title[40];
+        go_page(GR_BROWSE);
+        head_title(title);
+        bad+=check("PRESETS header shows selected track and uploaded sound",
+                   !strcmp(title,"T1 - LIB ONE"));
+        track_select(1);
+        head_title(title);
+        bad+=check("PRESETS header follows track selection",
+                   title[0]=='T' && title[1]=='2' && title[2]==' ');
+        track_select(0);
+        go_page(GR_SLOTS);
+        head_title(title);
+        bad+=check("Project header remains a project title",title[0]=='P');
+    }
     bad+=check("original editable USER 1 remains byte-identical",
                !memcmp(before,up_rec(0),sizeof before));
     /* PC32 targets track 2 without changing track selection or track 1. */
@@ -216,6 +231,16 @@ int main(void)
                    trk[1].user==128u && trk[1].p[P_ATK]==49 && song.sel==chosen);
         bad+=check("final slot reference resolves without changing selection",
                    !project_reference_load(5,127u) && trk[5].user==128u && song.sel==chosen);
+        {
+            char title[40],name[16];
+            go_page(GR_BROWSE);
+            track_select(1);
+            head_title(title);
+            sound_name(TSEL,name);
+            bad+=check("PRESETS header and common name helper use uploaded LIBRARY 128 name",
+                       !strcmp(title,"T2 - LIB ONE") && !strcmp(name,"LIB ONE"));
+            track_select(chosen);
+        }
         bad+=check("expanded writes stay inside reservation",lib_sim_outside==0);
     }
 #endif
