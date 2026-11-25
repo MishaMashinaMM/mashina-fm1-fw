@@ -121,6 +121,8 @@ jobs:
           mkdir -p build/host
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/clean_layout_formatter_host_test tests/clean_layout_formatter_host_test.c
           build/host/clean_layout_formatter_host_test
+          cc -std=gnu11 -O2 -Wall -Wextra -DFELUCCA_PUBLIC_LAYOUT=1 -o build/host/public_layout_formatter_test tests/clean_layout_formatter_host_test.c
+          build/host/public_layout_formatter_test
           cc -std=gnu11 -O2 -Wall -Wextra -o build/host/clean_layout_cold_boot_host_test tests/clean_layout_cold_boot_host_test.c
           build/host/clean_layout_cold_boot_host_test
       - name: Compile and execute pure host NOR and WebMIDI tests

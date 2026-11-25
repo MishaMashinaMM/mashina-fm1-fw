@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MASHINA · First installation</title>
+<style>body{background:#111;color:#eee;font:16px system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 18px}h1{color:#f90;letter-spacing:.04em;margin-bottom:0}h2{font-size:20px}small{color:#bbb}a{color:#f90}button,input{font:inherit;padding:10px;margin:8px 0}button{background:#f90;color:#111;border:0;border-radius:5px;font-weight:700;cursor:pointer}button:disabled{background:#555;color:#aaa;cursor:default}input{background:#222;color:#eee;border:1px solid #777}section{border:1px solid #444;border-radius:8px;padding:16px;margin:18px 0}#status{white-space:pre-wrap;min-height:3em}label{display:block}</style></head>
+<body><h1>MASHINA</h1><small>FM1 PERFORMANCE FW · FIRST INSTALLATION</small>
+<p><a href="./">Back to Web Library</a> · <a href="../webapp/installer/">Firmware installer</a></p>
+<section><h2>Initialize storage once</h2><p>Only after installing MASHINA v0.14 for the first time. This is a clean start, not a migration: previous presets, projects and settings will be erased. Save anything you wish to keep using the previous firmware's own tools before installing. A device already initialized for MASHINA's 32+32 storage is not eligible, and normal updates retain its data.</p>
+<button id="connect">Connect FM1</button> <button id="disconnect" disabled>Disconnect</button>
+<p id="device">Not connected.</p><label>To confirm the destructive first installation, type <strong>ERASE THIS FM1</strong>.<br><input id="phrase" autocomplete="off" spellcheck="false" disabled></label>
+<button id="initialize" disabled>Initialize storage</button>
+<p>Do not disconnect, play or operate the FM1 during initialization. Reboot the device after success, then open the Web Library.</p></section>
+<section><h2>Status</h2><p id="status" role="status" aria-live="polite">No writes requested.</p></section>
+<script type="module">
+import {connectLibraryMidi} from "./presets-library-midi.mjs";
+const $=id=>document.getElementById(id);
+let connection=null,eligible=false,busy=false,attempted=false;
+const status=s=>{$("status").textContent=s;};
+function render(){
+  $("connect").disabled=busy||!!connection;
+  $("disconnect").disabled=busy||!connection;
+  $("phrase").disabled=busy||!eligible||attempted;
+  $("initialize").disabled=busy||!eligible||attempted||$("phrase").value!=="ERASE THIS FM1";
+}
+function lost(){connection=null;eligible=false;status("Disconnected. If a transfer was in progress, inspect the device before any further action.");render();}
+$("connect").onclick=async()=>{
+  busy=true;render();
+  try{
+    connection=await connectLibraryMidi({onDisconnect:lost});
+    const current=connection;
+    const lib=await current.request(89,[]),project=await current.request(95,[]);
+    if(connection!==current||!current.connected)throw Error("Connection lost");
+    eligible=lib.length===3&&lib[0]===1&&lib[1]===32&&lib[2]===0&&project.length===4&&project[0]===1&&project[1]===32&&project[2]===0&&project[3]===1;
+    $("device").textContent=current.name+(eligible?" · first installation required":" · initialization unavailable");
+    status(eligible?"Uninitialized MASHINA storage detected. No writes performed.":"This firmware is not eligible for first initialization. If it is already initialized, use the Web Library.");
+  }catch(e){connection?.close();connection=null;eligible=false;status(e.message);}
+  finally{busy=false;render();}
+};
+$("disconnect").onclick=()=>{connection?.close();connection=null;eligible=false;$("phrase").value="";$("device").textContent="Not connected.";render();};
+$("phrase").oninput=render;
+$("initialize").onclick=async()=>{
+  if(!eligible||busy||attempted||$("phrase").value!=="ERASE THIS FM1")return;
+  if(!confirm("Initialize MASHINA storage? Existing presets, projects and settings on this FM1 will be erased. This cannot be undone."))return;
+  busy=true;attempted=true;render();const current=connection;
+  try{
+    status("Inspecting the 53 owned user-data sectors; no writes yet…");
+    const ticket=await current.request(101,[],{timeout:60000,retries:0});
+    if(connection!==current||!current.connected||ticket.length!==2||ticket[0]!==0)throw Error("First-install preflight refused: "+Array.from(ticket));
+    status("Initializing MASHINA user-data storage. Do not disconnect USB.");
+    const result=await current.request(102,[77,65,83,72,73,78,65,51,50,ticket[1]],{timeout:120000,retries:0});
+    if(connection!==current||!current.connected||result.length!==1||result[0]!==0)throw Error("Initialization did not complete: "+Array.from(result));
+    status("SUCCESS. Power-cycle the FM1 now, then open Web Library and capture a complete backup.");
+  }catch(e){status("STOP — "+e.message+". Do not automatically retry. Inspect the device and keep any original backup.");}
+  finally{eligible=false;busy=false;render();}
+};
+window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else connection?.close();});
+render();
+</script></body></html>

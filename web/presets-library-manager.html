@@ -166,7 +166,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 @media(max-width:1179px){.collection-list{max-height:280px}.manual-controls{max-height:none}}
 @media(max-width:560px){.collection-filters{flex-wrap:wrap}}
 </style></head><body><main>
-<header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><span id="connection" class="muted">Disconnected</span><span id="write-state" class="muted" aria-live="polite">No verified backup</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
+<header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><a id="initialize-link" href="initialize.html" hidden>Initialize storage</a><span id="connection" class="muted">Disconnected</span><span id="write-state" class="muted" aria-live="polite">No verified backup</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
 <div id="status" class="status" role="status">Connect your initialized FM1, then create and verify a complete backup in BACKUP. Offline sound packs can be imported without connecting.</div>
 <nav aria-label="Library sections"><button data-tab="user" aria-selected="true">USER</button><button data-tab="library" aria-selected="false">LIBRARY</button><button data-tab="projects" aria-selected="false">PROJECTS</button><button data-tab="backup" aria-selected="false">BACKUP</button></nav>
 <section id="tab-user"><div class="section-head"><h2>USER <span class="muted">001–032</span></h2><p>Drag sounds to numbered slots; drag slots to move or swap. Changes are staged until applied.</p></div>
@@ -232,7 +232,7 @@ import {factorySourceRecords} from "./emulator-snapshot-editor.mjs";
 import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,planUserLayout,applyVerifiedUserLayout,planLibraryLayout,applyVerifiedLibraryLayout,composeFullPerformance,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
 const $=id=>document.getElementById(id),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const num=n=>String(n).padStart(3,"0"),pLabel=i=>"P"+(Math.floor(i/4)+1)+":"+("ABCD"[i%4]);
-let dev=null,writable=false,busy=false,snapshot=null,verified=null,pending=null,projectFile=null,fullSource=null;
+let dev=null,writable=false,needsInitialization=false,busy=false,snapshot=null,verified=null,pending=null,projectFile=null,fullSource=null;
 let factory=[],factoryFallbacks=[],factoryFallbackRecords=[],engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
 let offlineWorkspace=false,collections={user:[],library:[],projects:[]},pages={user:0,library:0,projects:0},dragState=null;
 const PAGE_SIZE=50;
@@ -628,7 +628,9 @@ function render(){
   $("write-state").textContent=busy?"Operation in progress":offlineWorkspace?"Offline editing · No USB writes":!dev?"No verified backup":!writable?"Read-only firmware":verified?"Backup verified · Writes unlocked":pending?"Verify downloaded backup · Writes locked":"Capture backup · Writes locked";
   $("write-state").dataset.ready=String(ready());
   $("connect").disabled=busy||!!dev;$("disconnect").disabled=busy||!dev;
-  $("backup-capture").disabled=busy||!dev;$("backup-verify").disabled=busy||!pending;
+  $("initialize-link").hidden=!needsInitialization;
+  $("initialize-link").onclick=e=>{if(busy){e.preventDefault();return;}dev?.close();dev=null;writable=false;invalidate();};
+  $("backup-capture").disabled=busy||!dev||needsInitialization;$("backup-verify").disabled=busy||!pending;
   $("backup-summary").textContent=snapshot? snapshot.userPresets.filter(Boolean).length+" USER · "+snapshot.libraryPresets.filter(Boolean).length+" LIBRARY overrides · "+snapshot.projects.filter(Boolean).length+" saved sections · "+(verified?"Backup verified":"Backup not verified"):"No device snapshot.";
   for(const bank of ["user","library"])sourceControls(bank);
   $("projects-export").disabled=busy||!snapshot;$("projects-all").disabled=busy||!projectFile;
@@ -657,7 +659,7 @@ async function run(fn,operation=null){
 function fileInput(id,fn){$(id).onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)run(async()=>fn(JSON.parse(await f.text()),f.name));};}
 function disconnected(connection){
   if(dev!==connection)return;
-  dev=null;writable=false;snapshot=null;invalidate();clearStaging();
+  dev=null;writable=false;needsInitialization=false;snapshot=null;invalidate();clearStaging();
   if($("confirmation").open)answerConfirmation(false);
   status("FM1 disconnected. Reconnect, capture and verify a new complete backup before writing.","error");render();
 }
@@ -668,10 +670,10 @@ $("connect").onclick=()=>run(async()=>{
   candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial}),onDisconnect:()=>disconnected(candidate)});
   try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);
     if(!candidate.connected)throw Error("FM1 disconnected during connection.");
-    dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");
+    dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;needsInitialization=p.canInitialize&&!p.writable;status(needsInitialization?"First installation required. Disconnect, then open Initialize storage.":"Connected. Go to BACKUP and create a complete device backup.");tab("backup");
   }catch(e){candidate.close();throw e;}
 },"Connecting FM1");
-$("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;snapshot=null;offlineWorkspace=false;invalidate();clearStaging();status("Disconnected.");});
+$("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;needsInitialization=false;snapshot=null;offlineWorkspace=false;invalidate();clearStaging();status("Disconnected.");});
 $("backup-capture").onclick=()=>run(async()=>{
   const connection=dev;invalidate();snapshot=null;
   const f=await captureFullDevice(connection.request,connection.name,progress);

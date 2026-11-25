@@ -173,7 +173,7 @@ def main(pkg, version, out, prev=None):
     installer_html = html.replace("/*JIANT_UI*/", brand).replace("/*BUILD_TAG*/", release_tag)
     (inst / "index.html").write_text(installer_html, encoding="utf-8")
     # New permanent URL gives browsers a fresh document even when the older installer URL was cached.
-    fresh = out / "webapp" / "installer-orange-v013"
+    fresh = out / "webapp" / ("installer-orange-v" + version.replace(".", ""))
     fresh.mkdir(parents=True, exist_ok=True)
     (fresh / "index.html").write_text(installer_html, encoding="utf-8")
     shutil.copy(pkg, fw / name)
@@ -198,6 +198,14 @@ def main(pkg, version, out, prev=None):
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "factory-samples.json", "factory-voices.json", "FACTORY-VOICES.md", "FACTORY-SAMPLES.md"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
+    if version == "0.14":
+        library = out / "web-library"
+        library.mkdir(parents=True, exist_ok=True)
+        for src, dest in (("presets-library-manager.html", "index.html"), ("presets-library-guide.html", "guide.html"), ("initialize-library.html", "initialize.html")):
+            shutil.copy(HERE / src, library / dest)
+        for f in ("presets-library-codec.mjs", "presets-library-midi.mjs", "presets-library-sync.mjs", "factory-presets-from-code.json", "factory-catalog-selection.mjs", "full-device-backup.mjs", "projects-library-codec.mjs", "projects-library-view.mjs", "performance-backup.mjs", "fm1backup.js", "legacy-user-extract.mjs"):
+            shutil.copy(HERE / f, library / f)
+        shutil.copy(HERE.parent / "build/host/factory-drum-records.json", library / "factory-drum-records.json")
     shutil.copy(HERE / "404.html", out / "404.html")
     (out / "index.html").write_text(
         '<!doctype html><meta charset="utf-8"><title>MASHINA</title>'

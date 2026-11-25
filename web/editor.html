@@ -325,7 +325,7 @@
       <h2 data-t="backupTitle"></h2>
       <p class="bar"><button id="backup-export" data-t="backupExport"></button>
         <button id="backup-import" data-t="backupImport"></button><input id="backup-file" type="file" accept=".json,application/json" hidden></p>
-      <p class="dim" id="backup-help"></p>
+      <p class="dim" id="backup-help"></p><p id="library-backup-link" hidden><a href="../../web-library/">MASHINA Web Library · USER / LIBRARY / PROJECTS / BACKUP</a></p>
     </div>
     <div class="group" id="songchain" hidden style="margin-top:16px">
       <h2 data-t="songTitle"></h2>
@@ -854,7 +854,7 @@ class Link {
   }
 }
 
-const editorPort = (p) => /felucca|jiant|fm[ _-]*1|m[ _-]*vave/i.test(p.name || "") && p.state !== "disconnected";
+const editorPort = (p) => /mashina|felucca|jiant|fm[ _-]*1|m[ _-]*vave/i.test(p.name || "") && p.state !== "disconnected";
 async function openEditorMidi(access, hooks = {}, selected = {}) {
   const select = (ports, id) => [...ports.values()].filter(p => p.state !== "disconnected" && (id ? p.id === id : editorPort(p)));
   const inputs = select(access.inputs, selected.input), outputs = select(access.outputs, selected.output);
@@ -3827,7 +3827,9 @@ setInterval(async () => {
 
 /* Complete archives remain on this computer; no project is uploaded to a server. */
 function renderBackup() {
-  const caps = dev?.info?.backupCaps || 0;
+  const referenceLayout=/\bv0\.14\b/i.test(dev?.info?.version||"");
+  const caps = referenceLayout?0:(dev?.info?.backupCaps || 0);
+  $("library-backup-link").hidden=!referenceLayout;
   $("backup-export").disabled = !(caps & 1);
   $("backup-import").disabled = !(caps & 2);
   $("backup-help").textContent = t(caps & 1 ? "backupHelp" : "backupOld");
@@ -3836,7 +3838,7 @@ const backupModule = () => import("./fm1backup.js");
 const backupProgress = (done, total) => sayK("backupWorking", `${Math.round(done / Math.max(1, total) * 100)}%`);
 $("backup-export").addEventListener("click", () => op(async () => {
   const d = dev;
-  if (!(d?.info?.backupCaps & 1)) return;
+  if (/\bv0\.14\b/i.test(d?.info?.version||"")||!(d?.info?.backupCaps & 1)) return;
   const { captureBackup } = await backupModule();
   assertSession(d);
   const file = await captureBackup((r, o) => sessionRequest(d, r, o), d.info.version, backupProgress);
@@ -3847,7 +3849,7 @@ $("backup-export").addEventListener("click", () => op(async () => {
 $("backup-import").addEventListener("click", () => { if (dev?.info?.backupCaps & 2) $("backup-file").click(); });
 $("backup-file").addEventListener("change", () => {
   const file = $("backup-file").files[0], d = dev; $("backup-file").value = "";
-  if (!file || !(d?.info?.backupCaps & 2)) return;
+  if (/\bv0\.14\b/i.test(d?.info?.version||"")||!file || !(d?.info?.backupCaps & 2)) return;
   op(async () => {
     if (file.size > 600000) throw new Error("Backup file too large");
     const { readBackup, restoreBackup } = await backupModule();
