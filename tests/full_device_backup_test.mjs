@@ -699,6 +699,7 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
 }
 
 /* Expanded geometry round trip and mismatch rejection before any PUT. */
+{
 mockLibrarySlots=96;
 mockLib.set(95,Uint8Array.from(preset));
 const expanded=await captureFullDevice(mock,"LIB96 SIMULATOR");
@@ -721,3 +722,5 @@ await assert.rejects(restoreFullDevice(async(cmd,args,opts)=>{
 },expanded),/geometry mismatch/);
 assert.equal(forbiddenWrites,0);
 console.log("PASS: expanded LIBRARY 128 capture, restore, delta and geometry guard");
+
+}
