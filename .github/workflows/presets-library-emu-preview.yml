@@ -11,6 +11,7 @@ on:
       - 'firmware/src/**'
       - 'tools/**'
       - 'tests/emu_library_flash_persistence_test.mjs'
+      - 'tests/emu_lib96_test.mjs'
       - 'tests/emu_mpr1_fresh_save_test.mjs'
       - 'tests/emu_mpr1_restore_last_test.mjs'
       - 'tests/emu_flash_backup_roundtrip_test.mjs'

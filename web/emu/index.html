@@ -146,6 +146,12 @@ footer small { font-size: 11px; opacity: .8; }
     <label><span data-ml="ccVal">CC value</span> <input id="midi-test-cc-value" type="number" min="0" max="127" value="64"></label>
     <button id="midi-test-send-cc" type="button" disabled data-ml="sendCC">Send CC</button>
   </div>
+  <div class="controls">
+    <label><span data-ml="channel">Channel</span> <input id="midi-test-pc-channel" type="number" min="1" max="16" value="1"></label>
+    <label><span data-ml="pcNum">Program Change (0–127)</span> <input id="midi-test-pc" type="number" min="0" max="127" value="127"></label>
+    <button id="midi-test-send-pc" type="button" disabled data-ml="sendPC">Send PC</button>
+  </div>
+  <p data-ml="pcHint">PC 0–127 addresses preset 001–128 on LIB96. Channel 16 is reserved for projects and sections.</p>
   <div class="pads" id="midi-test-pads" aria-label="Selected track drum MIDI assignments"></div>
   <p id="midi-test-pad-status" data-ml="drums">Select a DRUM-X or DRUM-LAB track to use its MIDI note assignments. Set Channel to that track's RX channel. All Notes Off sends CC123 on every channel.</p>
 </details>
@@ -614,6 +620,11 @@ for (const row of [2, 3]) {
 }
 document.getElementById("midi-test-send-cc").addEventListener("click", () => {
   if (node) midiTestSend(0xB0 | testChannel(), testCC(), testCCValue());
+});
+document.getElementById("midi-test-send-pc").addEventListener("click", () => {
+  const channel = testValue("midi-test-pc-channel", 1, 16) - 1;
+  const program = testValue("midi-test-pc", 0, 127);
+  if (node) midiTestSend(0xC0 | channel, program, 0);
 });
 document.getElementById("midi-test-panic").addEventListener("click", () => {
   for (const timer of testTimers) clearTimeout(timer);

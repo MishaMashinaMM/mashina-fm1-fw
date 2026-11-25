@@ -42,3 +42,19 @@ assert.equal(b.web_mpr_assign(0,127),0);
 assert.equal(b.web_mpr_assign(0,128),1);
 assert.throws(()=>decodeEmulatorFlash(project.snapshot,32),/requires LIB96/);
 console.log("PASS: 96 compiled factory mappings, final-slot NOR edit and project recall after independent WASM boot");
+
+// Exercise the actual browser MIDI enqueue path (not the direct assign helper).
+for(let i=0;i<180;i++)b.web_render(1024);
+const pcHtml=readFileSync("build/emu/index.html","utf8");
+assert.match(pcHtml,/id="midi-test-pc-channel"[^>]*min="1" max="16"/);
+assert.match(pcHtml,/id="midi-test-pc"[^>]*min="0" max="127"/);
+assert.match(pcHtml,/midiTestSend\(0xC0 \| channel, program, 0\)/);
+for(const program of [32,63,64,95,127]){
+  b.web_midi(0xC0,program,0);
+  for(let i=0;i<12;i++)b.web_render(1024);
+  assert.equal(b.web_mpr_ref(0),program+1,"CH1 PC "+program+" through MIDI queue");
+}
+b.web_midi(0xCF,127,0);
+for(let i=0;i<12;i++)b.web_render(1024);
+assert.equal(b.web_mpr_ref(0),128,"CH16 must not change a track preset");
+console.log("PASS: browser Program Change input and queued MIDI PC through 127");
