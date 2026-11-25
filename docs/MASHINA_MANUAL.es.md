@@ -83,8 +83,8 @@ En **GLO → SYSTEM → ROUTE**, **1-4** usa las pistas 1–4 cuyos canales coin
 | --- | --- | --- |
 | K1 MIN | Nota MIDI más baja permitida | 0–127 |
 | K2 MAX | Nota MIDI más alta permitida | 0–127 |
-| K3 V.MIN | Velocidad mínima permitida | 1–127 |
-| K4 V.MAX | Velocidad máxima permitida | 1–127 |
+| K3 VMN | Velocidad mínima permitida | 1–127 |
+| K4 VMX | Velocidad máxima permitida | 1–127 |
 
 **Ambos extremos son inclusivos.** Con el mismo RX, T1 puede cubrir las notas bajas y T2 las altas (split), o cubrir notas superpuestas (capas). Si las dos usan el mismo rango de notas, pero T1 acepta velocidad **1–80** y T2 **81–127**, la fuerza de ejecución elige el timbre.
 
@@ -104,8 +104,8 @@ Abrí **GLO → MIX → ZONES**. Estos valores filtran las notas MIDI externas a
 | --- | --- | --- |
 | **K1 MIN** | Nota más baja | 0–127 |
 | **K2 MAX** | Nota más alta | 0–127 |
-| **K3 V.MIN** | Velocidad mínima | 1–127 |
-| **K4 V.MAX** | Velocidad máxima | 1–127 |
+| **K3 VMN** | Velocidad mínima | 1–127 |
+| **K4 VMX** | Velocidad máxima | 1–127 |
 
 Usá rangos de notas sin superposición para crear un **split**; rangos superpuestos para crear **capas**. Con el mismo rango de notas y distintas velocidades podés alternar sonidos suaves y fuertes. Las zonas corresponden al MIDI externo; el teclado integrado toca la pista seleccionada.
 

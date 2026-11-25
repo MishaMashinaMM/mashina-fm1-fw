@@ -74,8 +74,8 @@ Open **GLO → MIX → ZONES**. For each selected track:
 | --- | --- | --- |
 | **K1** | MIN — lowest accepted MIDI note | 0–127 |
 | **K2** | MAX — highest accepted MIDI note | 0–127 |
-| **K3** | V.MIN — lowest accepted velocity | 1–127 |
-| **K4** | V.MAX — highest accepted velocity | 1–127 |
+| **K3** | VMN — lowest accepted velocity | 1–127 |
+| **K4** | VMX — highest accepted velocity | 1–127 |
 
 Both endpoints are inclusive. **Non-overlapping note ranges** create keyboard splits. **Overlapping note ranges** make layers. Different velocity ranges create soft/hard playing layers.
 
