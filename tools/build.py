@@ -240,7 +240,8 @@ def build_app():
                  "FELUCCA_CDC_DEFAULT", "FELUCCA_SEQ_PROBE", "FELUCCA_NO_SEQUENCER",
                  "FELUCCA_FLASH_DIAG", "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
-                 "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT"):
+                 "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT",
+                 "FELUCCA_INITIALIZED_UPDATE"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/felucca.c
         if v in ("0", "1"):
             flags.append(f"-D{flag}={v}")
@@ -482,6 +483,15 @@ def main():
             "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT"))
         and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"
     )
+    if a.release == "0.13-update" or os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1":
+        if not (a.release == "0.13-update"
+                and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"
+                and all(os.environ.get(k) == "1" for k in (
+                    "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
+                    "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE"))
+                and not non_distributable
+                and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"):
+            raise SystemExit("Update-only release requires initialized-layout write gate and no formatter")
     if non_distributable:
         (OUT / name).unlink(missing_ok=True)
         if a.release:

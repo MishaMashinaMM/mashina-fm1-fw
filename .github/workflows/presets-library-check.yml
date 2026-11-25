@@ -292,6 +292,58 @@ jobs:
           path: build/presets-library-preview/
           retention-days: 14
 
+      # Explicitly authorized update of the already initialized test FM1.
+      - name: Build initialized-device-only v0.13 update
+        if: github.ref == 'refs/heads/presets-library' && github.event_name == 'push' && github.event.head_commit.message == 'PREPARE ONE FM1 INITIALIZED UPDATE'
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "1"
+          FELUCCA_PROJECT_REFS: "1"
+          FELUCCA_PROJECT_REFS_WRITE: "1"
+          FELUCCA_PROJECT_REFS_FORMAT: "0"
+          FELUCCA_CLEAN_INSTALL_LAYOUT: "0"
+          FELUCCA_INITIALIZED_UPDATE: "1"
+          FELUCCA_FLASH_DIAG: "0"
+        run: |
+          python3 tools/build.py --release 0.13-update
+          python3 tools/check_app_flash_headroom.py
+          test -s build/felucca-0.13-update.fwsc
+          build/host/ldr_test build/host/write-capable-source-for-ota-test.fwsc build/felucca-0.13-update.fwsc
+          OUT=build/mashina-initialized-update
+          VERSION="v0.13-update-$(git rev-parse --short=7 HEAD)"
+          python3 web/make_site.py build/felucca-0.13-update.fwsc "$VERSION" "$OUT"
+          python3 - "$OUT/webapp/installer/index.html" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          html = p.read_text(encoding="utf-8")
+          needle = '  <p><button id="go" disabled data-t="install"></button></p>'
+          assert needle in html
+          html = html.replace(needle,
+              '<p style="border:2px solid #ff9900;padding:14px;font-weight:700">'
+              'INITIALIZED FM1 ONLY / v0.13-update. This still reflashes firmware. '
+              'Use only the previously initialized 32+32 test FM1 after a verified complete backup. '
+              'Do not use on the second unit. No first-install or format step. '
+              'Stop if any preset or project is missing after reboot.</p>\n' + needle)
+          p.write_text(html, encoding="utf-8")
+          PY
+          cp build/felucca-0.13-update.fwsc "$OUT/"
+          cp -a build/presets-library-preview "$OUT/web-library"
+          python3 tools/check_library_preview.py "$OUT/web-library"
+          (cd "$OUT" && sha256sum felucca-0.13-update.fwsc > SHA256SUMS)
+          printf 'INITIALIZED ONE-FM1 UPDATE ONLY\nBranch: %s\nCommit: %s\nFORMAT DISABLED\nSecond device: UNTOUCHED\n' "$GITHUB_REF" "$GITHUB_SHA" > "$OUT/PROVENANCE.txt"
+          test -s "$OUT/webapp/installer/index.html"
+          test ! -e "$OUT/first-install"
+      - name: Upload initialized-device-only update (not a public release)
+        if: github.ref == 'refs/heads/presets-library' && github.event_name == 'push' && github.event.head_commit.message == 'PREPARE ONE FM1 INITIALIZED UPDATE'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mashina-ONE-FM1-initialized-update-32x32
+          path: build/mashina-initialized-update/
+          retention-days: 7
+
       # Only a human-initiated Run workflow with the exact typed phrase can
       # produce a package capable of formatting all 53 old data sectors.
       # Ordinary pushes, other branches and all other build variants still

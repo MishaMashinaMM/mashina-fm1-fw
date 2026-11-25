@@ -3283,7 +3283,7 @@ static void persist_boot(void)                    /* before settings_init / pane
     irq_restore(f);
     if (!flash_ok)
         return;
-#if FELUCCA_CLEAN_INSTALL_LAYOUT
+#if FELUCCA_CLEAN_INSTALL_LAYOUT || FELUCCA_INITIALIZED_UPDATE
     /* Before touching old settings, require an entire CRC-valid MPS1 bank
      * marker from the PREVIOUS boot. Old FUN records are NOT a substitute.
      * Before first format this leaves all normal writes locked; after format

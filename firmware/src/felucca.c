@@ -69,6 +69,13 @@
 #if FELUCCA_CLEAN_INSTALL_LAYOUT && (!FELUCCA_PROJECT_REFS_FORMAT || !FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_LIB32_WRITE || !FELUCCA_PROJECT_REFS || !FELUCCA_FLASH)
 #error "Combined clean-install preflight requires all independent experimental storage gates"
 #endif
+/* Update-only images require an existing committed MPS1 boot marker. */
+#ifndef FELUCCA_INITIALIZED_UPDATE
+#define FELUCCA_INITIALIZED_UPDATE 0
+#endif
+#if FELUCCA_INITIALIZED_UPDATE && (!FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_LIB32_WRITE || FELUCCA_PROJECT_REFS_FORMAT || FELUCCA_CLEAN_INSTALL_LAYOUT || FELUCCA_FLASH_DIAG)
+#error "Initialized update requires writable MPR1/LIB1 and no formatter or diagnostic mode"
+#endif
 #if FELUCCA_FLASH_DIAG && (!FELUCCA_FLASH || !FELUCCA_LIB32 || FELUCCA_LIB32_WRITE || FELUCCA_PROJECT_REFS || FELUCCA_PROJECT_REFS_WRITE || FELUCCA_PROJECT_REFS_FORMAT || FELUCCA_CLEAN_INSTALL_LAYOUT)
 #error "Read-only flash diagnostic requires LIB32 reads and prohibits all experimental project/preset writes"
 #endif

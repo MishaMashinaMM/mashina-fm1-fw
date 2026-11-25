@@ -124,3 +124,22 @@ const synchronousClean=api.slice(api.indexOf("if (cmd == 102u)"),api.indexOf("if
 assert.match(synchronousClean,/clean_layout_normal_writes=1u;\s*const uint32_t result=\(uint32_t\)clean_layout_initialize\(\);\s*clean_layout_normal_writes=0u;/,
              "only synchronous verified clean commit may temporarily unlock state writes");
 console.log("PASS: first-install formatter stays compile-only, guarded, non-downloadable and non-callable over USB");
+
+/* Update-only images keep the cold-boot lock, without destructive commands. */
+assert.match(config,/#define FELUCCA_INITIALIZED_UPDATE 0/);
+assert.match(config,/#if FELUCCA_INITIALIZED_UPDATE && .*FELUCCA_PROJECT_REFS_FORMAT.*FELUCCA_CLEAN_INSTALL_LAYOUT/);
+for(const source of [storeHw,projectHw,libraryHw,projectBoot])
+  assert(source.includes("#if FELUCCA_CLEAN_INSTALL_LAYOUT || FELUCCA_INITIALIZED_UPDATE"));
+assert.match(api,/ed_b\(flash_ok && clean_layout_normal_writes \? 1u : 0u\)/);
+assert.match(api,/response\[2\] = flash_ok && clean_layout_normal_writes \? 1u : 0u/);
+assert(build.includes('a.release == "0.13-update"'));
+const update=workflow.slice(workflow.indexOf("      # Explicitly authorized update"),workflow.indexOf("      # Only a human-initiated Run workflow"));
+for(const flag of ["FELUCCA_PROJECT_REFS_FORMAT","FELUCCA_CLEAN_INSTALL_LAYOUT","FELUCCA_FLASH_DIAG"])
+  assert(update.includes(flag+': "0"'));
+for(const flag of ["FELUCCA_INITIALIZED_UPDATE","FELUCCA_LIB32","FELUCCA_LIB32_WRITE","FELUCCA_PROJECT_REFS","FELUCCA_PROJECT_REFS_WRITE"])
+  assert(update.includes(flag+': "1"'));
+assert(update.includes("PREPARE ONE FM1 INITIALIZED UPDATE"));
+assert(update.includes("build/host/ldr_test"));
+assert(update.includes('test ! -e "$OUT/first-install"'));
+assert(!update.includes("clean-install-trial.html"));
+console.log("PASS: initialized-only update retains boot marker write lock, no formatter, separate artifact");

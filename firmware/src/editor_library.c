@@ -24,7 +24,11 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         if(n) {ed_b(127u);ed_b(1u);return 1;}
         ed_b(1u);ed_b(32u);
 #if FELUCCA_PROJECT_REFS_WRITE
+#if FELUCCA_INITIALIZED_UPDATE
+        ed_b(flash_ok && clean_layout_normal_writes ? 1u : 0u);
+#else
         ed_b(flash_ok?1u:0u);
+#endif
 #else
         ed_b(0u);
 #endif
@@ -238,7 +242,11 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
     }
     if (cmd == LIB_WIRE_CAP && length == 3u) {
 #if FELUCCA_LIB32_WRITE
+#if FELUCCA_INITIALIZED_UPDATE
+        response[2] = flash_ok && clean_layout_normal_writes ? 1u : 0u;
+#else
         response[2] = flash_ok ? 1u : 0u;
+#endif
 #else
         response[2] = 0u;
 #endif
