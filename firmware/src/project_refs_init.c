@@ -37,11 +37,13 @@ static int mprs_init_clean_break(void)
     uint32_t bank,copy;
     if(!flash_ok || transport_busy())return 2;
     /* Every sector is inspected before the very first destructive write. */
+#if !FELUCCA_PUBLIC_LAYOUT
     for(bank=0;bank<MPRS_BANKS;bank++)
         for(copy=0;copy<2u;copy++)
             if(!mprs_erased_sector(bank,copy) &&
                !mprs_legacy_sector(bank,copy))
                 return 1; /* unknown, corrupt or new MPR1 data */
+#endif
     for(bank=0;bank<MPRS_BANKS;bank++)
         for(copy=0;copy<2u;copy++)
             if(!mprs_erased_sector(bank,copy)) {
@@ -220,6 +222,21 @@ static int clean_aux_legacy_sector(uint32_t index)
     (void)index;return 0;
 #endif
 }
+#if FELUCCA_PUBLIC_LAYOUT
+/* All addresses are fixed MASHINA user-data sectors. Foreign preset
+ * bytes are not a migration requirement. Read each whole sector before
+ * the explicit format; refuse any initialized MPS1 marker or read error.
+ * Nothing outside the exact 53-sector whitelist can be formatted. */
+static int clean_public_readable(uint32_t address)
+{
+    uint8_t page[256];
+    for(uint32_t off=0;off<4096u;off+=sizeof page){
+        if(st_read(address+off,page,sizeof page))return 0;
+        fm1_wdt_feed();
+    }
+    return 1;
+}
+#endif
 static int clean_layout_preflight(void)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
@@ -227,6 +244,21 @@ static int clean_layout_preflight(void)
     /* Exact 128+32 KiB application storage, no USR or other partitions. */
     if(MPRS_BASE!=0xA0000u || MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR!=LIB_BASE ||
        LIB_BASE+LIB_BANKS*2u*LIB_SECTOR!=0xC8000u)return 2;
+#if FELUCCA_PUBLIC_LAYOUT
+    mprs_head_t marker;
+    if(mprs_valid(0u,0u,&marker)||mprs_valid(0u,1u,&marker))return 1;
+    for(uint32_t bank=0;bank<MPRS_BANKS;bank++)
+        for(uint32_t copy=0;copy<2u;copy++)
+            if(!clean_public_readable(mprs_base(bank,copy)))return 2;
+    for(uint32_t bank=0;bank<LIB_BANKS;bank++)
+        for(uint32_t copy=0;copy<2u;copy++)
+            if(!clean_public_readable(lib_base(bank,copy)))return 2;
+    for(uint32_t k=0;k<6u;k++)
+        if(!clean_user_address_ok(k)||!clean_public_readable(st_sector(clean_user_object(k),clean_user_copy(k))))return 2;
+    for(uint32_t k=0;k<7u;k++)
+        if(!clean_aux_address_ok(k)||!clean_public_readable(clean_aux_address(k)))return 2;
+    return 0;
+#else
     for(uint32_t bank=0;bank<MPRS_BANKS;bank++)
         for(uint32_t copy=0;copy<2u;copy++){
             if(!mprs_erased_sector(bank,copy) &&
@@ -252,6 +284,7 @@ static int clean_layout_preflight(void)
         fm1_wdt_feed();
     }
     return 0;
+#endif /* FELUCCA_PUBLIC_LAYOUT */
 #else
     return 2;
 #endif

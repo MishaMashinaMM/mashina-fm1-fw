@@ -54,7 +54,7 @@ SDK_SHA256 = {
     "cfg/eq_cfg_hw.bin": "41167491bffed4651750719c973d2758adeb9021a5670d02d6a53c85ed80ea7d",
 }
 
-PRODUCT = "FM-1_911"                # MASHINA FM1 package identity; release builds are FM-1_9XY
+PRODUCT = "FM-1_914"                # MASHINA FM1 package identity; release builds are FM-1_9XY
 VERSION = None                      # FELUCCA_VERSION for release builds (default: firmware/src/felucca.c)
 
 
@@ -241,7 +241,7 @@ def build_app():
                  "FELUCCA_FLASH_DIAG", "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
                  "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT",
-                 "FELUCCA_INITIALIZED_UPDATE"):
+                 "FELUCCA_INITIALIZED_UPDATE", "FELUCCA_PUBLIC_LAYOUT"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/felucca.c
         if v in ("0", "1"):
             flags.append(f"-D{flag}={v}")
@@ -450,6 +450,25 @@ def main():
         PRODUCT = "FM-1_9" + (m[2] if len(m[2]) == 2 else m[1] + m[2])
         VERSION = "v" + a.release.lower()      # e.g. v1.0, v1.1-rc1
         name = f"felucca-{a.release}.fwsc"
+    # v0.14 is the first public reference-layout release. Explicitly
+    # select the complete, mutually exclusive storage configuration here,
+    # rather than silently distributing the old FUN storage build.
+    public_authorized = a.release == "0.14"
+    if public_authorized:
+        release_flags = {
+            "FELUCCA_LIB32": "1", "FELUCCA_LIB32_WRITE": "1",
+            "FELUCCA_PROJECT_REFS": "1", "FELUCCA_PROJECT_REFS_WRITE": "1",
+            "FELUCCA_PROJECT_REFS_FORMAT": "1", "FELUCCA_CLEAN_INSTALL_LAYOUT": "1",
+            "FELUCCA_PUBLIC_LAYOUT": "1", "FELUCCA_INITIALIZED_UPDATE": "0",
+            "FELUCCA_FLASH_DIAG": "0", "FELUCCA_FLASH": "1", "FELUCCA_OTA": "1",
+            "FELUCCA_NO_SEQUENCER": "1",
+        }
+        for k, v in release_flags.items():
+            if os.environ.get(k, v) != v:
+                raise SystemExit(f"v0.14 release requires {k}={v}")
+            os.environ[k] = v
+    elif os.environ.get("FELUCCA_PUBLIC_LAYOUT", "0") != "0":
+        raise SystemExit("Public layout is reserved for the v0.14 release build")
     fm1pkg_make.SDK = a.sdk
     for rel, sha in SDK_SHA256.items():          # fail early without the SDK
         if hashlib.sha256(fm1pkg_make.sdk_file(rel)).hexdigest() != sha:
@@ -492,6 +511,10 @@ def main():
                 and not non_distributable
                 and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"):
             raise SystemExit("Update-only release requires initialized-layout write gate and no formatter")
+    # The public release is a separately reviewed configuration, with an
+    # explicit user-confirmed first-install action and permanent marker lock.
+    if public_authorized:
+        non_distributable = False
     if non_distributable:
         (OUT / name).unlink(missing_ok=True)
         if a.release:

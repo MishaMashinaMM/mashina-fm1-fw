@@ -69,6 +69,14 @@
 #if FELUCCA_CLEAN_INSTALL_LAYOUT && (!FELUCCA_PROJECT_REFS_FORMAT || !FELUCCA_PROJECT_REFS_WRITE || !FELUCCA_LIB32_WRITE || !FELUCCA_PROJECT_REFS || !FELUCCA_FLASH)
 #error "Combined clean-install preflight requires all independent experimental storage gates"
 #endif
+/* Public v0.14 clean start is explicit, only on an uninitialized device.
+ * The release builder enables this together with all storage gates. */
+#ifndef FELUCCA_PUBLIC_LAYOUT
+#define FELUCCA_PUBLIC_LAYOUT 0
+#endif
+#if FELUCCA_PUBLIC_LAYOUT && (!FELUCCA_CLEAN_INSTALL_LAYOUT || FELUCCA_FLASH_DIAG)
+#error "Public layout requires the guarded first-install implementation"
+#endif
 /* Update-only images require an existing committed MPS1 boot marker. */
 #ifndef FELUCCA_INITIALIZED_UPDATE
 #define FELUCCA_INITIALIZED_UPDATE 0
@@ -110,7 +118,7 @@
 #define FELUCCA_ID "FM-1_913"    /* package identity (build.py: the .fwsc marker string) */
 #endif
 #ifndef FELUCCA_VERSION
-#define FELUCCA_VERSION "v0.13" /* JIANT's (based on Felucca 1.1.5.1): the splash, the menu, the console, the editor */
+#define FELUCCA_VERSION "v0.14" /* JIANT's (based on Felucca 1.1.5.1): the splash, the menu, the console, the editor */
 #endif
 #if FELUCCA_OTA && !FELUCCA_FLASH
 #error "FELUCCA_OTA needs FELUCCA_FLASH"

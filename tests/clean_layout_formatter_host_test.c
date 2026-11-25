@@ -104,6 +104,13 @@ static int mprs_save(uint32_t slot,const uint8_t *raw) {
     programs++;
     return 0;
 }
+#if FELUCCA_PUBLIC_LAYOUT
+typedef struct {uint32_t marker;} mprs_head_t;
+static int mprs_valid(uint32_t bank,uint32_t copy,mprs_head_t *head){
+    st_read(mprs_base(bank,copy),head,sizeof *head);
+    return head->marker==0x3153504Du;
+}
+#endif
 #include "../firmware/src/project_refs_init.c"
 
 static void old_sector(uint32_t obj,uint32_t copy){
@@ -139,6 +146,21 @@ static int ck(const char *label,int success){
 }
 int main(void){
     int errors=0;
+#if FELUCCA_PUBLIC_LAYOUT
+    reset_source();
+    /* Arbitrary foreign bytes in owned sectors are allowed only by this public first-install path. */
+    memset(nor+0xC0000u,0x37,4096u);
+    nor[0xE7000u+4000u]=0x19u;
+    nor[0xEA000u]=0x88; nor[0x4000u]=0x77; nor[0xE0000u]=0x66;
+    errors+=ck("foreign source layout passes read-only preflight",clean_layout_preflight()==0&&erases==0&&programs==0);
+    errors+=ck("confirmed format commits marker last",clean_layout_initialize()==0&&programs==1);
+    errors+=ck("foreign bytes cleared; protected app/OTA/USR unchanged",erased(0xC0000u)&&erased(0xE7000u)&&nor[0xEA000u]==0x88&&nor[0x4000u]==0x77&&nor[0xE0000u]==0x66);
+    const uint32_t done=erases;
+    errors+=ck("valid MPS1 marker refuses repeat initialization",clean_layout_initialize()==1&&erases==done&&programs==1);
+    reset_source();fail_erase_after=20;
+    errors+=ck("interruption never commits a marker",clean_layout_initialize()==2&&programs==0);
+    return !!errors;
+#else
     reset_source();
     errors+=ck("valid original 53-sector source passes read-only preflight",
                clean_layout_preflight()==0 && erases==0 && programs==0);
@@ -201,4 +223,5 @@ int main(void){
     errors+=ck("no physical executable is produced by this host test",1);
     printf("CLEAN FORMAT: %s\n",errors?"FAIL":"ALL TESTS PASSED");
     return !!errors;
+#endif
 }
