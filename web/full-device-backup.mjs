@@ -815,13 +815,21 @@ function stageUserLayout(full,changes){
 export function planUserLayout(verified,changes){
   const baseline=validateFullDevice(verified),expected=structuredClone(baseline);
   stageUserLayout(expected,changes);
-  const refs=decodeProject(baseline.currentPerformance).refs;
-  for(const ref of refs)if(ref<32)insist(equalJson(baseline.userPresets[ref],expected.userPresets[ref]),"USER "+String(ref+1).padStart(3,"0")+" is currently loaded on FM1");
-  const checked=validateFullDevice(expected);
-  return {expected:checked,library:[],objectIds:[9,6,7].filter(id=>objectDiff(baseline,checked,id))};
+  // The complete-restore planner reloads the live performance last if any
+  // of its referenced sounds changed. Stored section references are not
+  // modified. A cleared USER slot must not leave a missing dependency.
+  return planFullRestore(baseline,validateFullDevice(expected));
 }
 export async function applyVerifiedUserLayout(request,verified,changes,progress=()=>{}){
   return transferRestorePlan(request,verified,planUserLayout(verified,changes),progress);
+}
+export function planLibraryLayout(verified,changes){
+  const baseline=validateFullDevice(verified);
+  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=32,"Select 1–32 LIBRARY changes");
+  return planFullRestore(baseline,composeFullPerformance(baseline,{library:changes}));
+}
+export async function applyVerifiedLibraryLayout(request,verified,changes,progress=()=>{}){
+  return transferRestorePlan(request,verified,planLibraryLayout(verified,changes),progress);
 }
 /* Compose an independent complete performance file, with all queued bank
  * and project edits, retaining the base's global settings and live state.

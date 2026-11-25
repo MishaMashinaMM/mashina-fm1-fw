@@ -203,6 +203,15 @@ try{
     assert.match(await page.locator("#write-state").textContent(),/Writes unlocked/);
     assert.equal(await page.evaluate(()=>window.mockWrites),0);
   };
+  // Loaded USER 001 must accept a drag without writing; warning appears
+  // on confirmation. Cancel and restore the previous staging for later tests.
+  await page.locator("#user-collection [data-entry=I0]").dragTo(page.locator("#user-slots tr[data-slot='0']"));
+  assert.equal(await page.locator("#user-slots tr[data-slot='0']").getAttribute("data-pending"),"true");
+  await page.locator("#user-apply").click();
+  assert.match(await page.locator("#confirm-message").textContent(),/current performance will reload/i);
+  await page.locator("#confirm-cancel").click();
+  assert.equal(await page.evaluate(()=>window.mockWrites),0);
+  await page.locator("#user-clear").click();
   await page.locator("#user-collection [data-entry=I0]").dragTo(page.locator("#user-slots tr[data-slot='1']"));
   assert.equal(await page.locator("#user-slots tr[data-slot='1']").getAttribute("data-pending"),"true");
   assert.equal(await page.evaluate(()=>window.mockWrites),0);
@@ -213,7 +222,9 @@ try{
   await page.locator("#library-manual summary").click();
   await page.locator("#library-source").selectOption("F1");
   await page.locator("#library-target").selectOption("0");
-  assert.equal(await page.locator("#library-add").isDisabled(),true,"Currently loaded LIBRARY 033 stays protected");
+  assert.equal(await page.locator("#library-add").isEnabled(),true,"Currently loaded LIBRARY 033 can be replaced");
+  await page.locator("#library-add").click();
+  assert.equal(await page.locator("#library-slots tr[data-slot='0']").getAttribute("data-pending"),"true");
   await page.locator("#library-target").selectOption("31");
   assert.equal(await page.locator("#library-add").isEnabled(),true,"Saved-only reference must not require a permission checkbox");
   await page.locator("#library-add").click();
@@ -221,6 +232,7 @@ try{
   assert.match(await page.locator("#library-impact").textContent(),/P8:D\/T6/);
   await page.locator("#library-apply").click();
   assert.match(await page.locator("#confirm-summary").textContent(),/064: P8:D\/T6/);
+  assert.match(await page.locator("#confirm-message").textContent(),/current performance will reload/i);
   await page.locator("#confirm-cancel").click();
   await pressCancel("#library-apply");
   assert.match(await page.locator("#library-queue").textContent(),/064/);

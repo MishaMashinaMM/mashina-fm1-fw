@@ -4,7 +4,7 @@ import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
 import {captureUser} from "../web/presets-library-sync.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore,planUserLayout,applyVerifiedUserLayout,composeFullPerformance} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore,planUserLayout,applyVerifiedUserLayout,planLibraryLayout,applyVerifiedLibraryLayout,composeFullPerformance} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -631,4 +631,52 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   assert.equal(readCollection("projects",collectionFile("projects",projects)).length,1200);
   assert.ok(projectCollectionFromSections(composed.projects).some(p=>p.sections[3]&&decodeProject(p.sections[3]).name==="COMPOSED"));
   console.log("PASS: USER layout swap with drum companions, full offline performance composition, 2200-sound and 1200-project collection round trips");
+}
+
+
+// Replace every slot, including sounds in the currently loaded performance.
+// Both USER banks and all LIBRARY changes must commit before object 0 reload.
+// No project/settings objects are rewritten. The previous legacy selective
+// helper remains fail-closed; the new manager uses the layout planners.
+{
+  const original=await captureFullDevice(mock,"FULL BANK LAYOUT");
+  const a=original.userPresets.findIndex(Boolean);assert.ok(a>=0);
+  const originalLive=mockObjects.get(0).slice();
+  const live=encodeProject({...decodeProject(original.currentPerformance),section:0,refs:[a,32,255,255,255,255]});
+  mockObjects.set(0,pad(live));
+  const before=await captureFullDevice(mock,"ACTIVE BANK LAYOUT");
+  const changes=Array.from({length:32},(_,slot)=>({slot,recordBytes:Array.from(encodeRecord({engine:0,name:"ALL U "+slot,params:Array(127).fill(21+slot)}))}));
+  const plan=planUserLayout(before,changes);
+  assert.equal(plan.users.length,32);
+  assert.deepEqual(plan.objectIds.slice(-1),[0]);
+  assert.ok(plan.objectIds.includes(6)&&plan.objectIds.includes(7));
+  assert.deepEqual(plan.expected.projects,before.projects);
+  assert.deepEqual(plan.expected.currentPerformance,before.currentPerformance);
+  assert.throws(()=>planUserLayout(before,[{slot:a,recordBytes:null}]),/missing USER/);
+  const commits=[];
+  const counted=async(cmd,args,opts)=>{
+    const reply=await mock(cmd,args,opts);
+    if(cmd===67&&args[0]===2&&reply[2]===0)commits.push(args[1]);
+    if(cmd===92&&reply[1]===0)commits.push("L"+args[0]);
+    return reply;
+  };
+  const user=await applyVerifiedUserLayout(counted,before,changes);
+  assert.deepEqual(commits,plan.objectIds);
+  assert.deepEqual(user.after.userPresets,changes.map(x=>x.recordBytes));
+  const libChanges=changes.map(({slot})=>({slot,recordBytes:Array.from(encodeRecord({engine:0,name:"ALL L "+slot,params:Array(127).fill(55+slot)}))}));
+  const libPlan=planLibraryLayout(user.after,libChanges);
+  assert.equal(libPlan.library.length,32);
+  assert.deepEqual(libPlan.objectIds,[0]);
+  commits.length=0;
+  const lib=await applyVerifiedLibraryLayout(counted,user.after,libChanges);
+  assert.deepEqual(commits,[...Array.from({length:32},(_,i)=>"L"+i),0]);
+  assert.deepEqual(lib.after.libraryPresets,libChanges.map(x=>x.recordBytes));
+  assert.deepEqual(lib.after.projects,before.projects);
+  assert.deepEqual(lib.after.currentPerformance,before.currentPerformance);
+  const reset=planLibraryLayout(lib.after,[{slot:0,recordBytes:null}]);
+  assert.deepEqual(reset.objectIds,[0]);
+  assert.equal(reset.expected.libraryPresets[0],null);
+  assert.deepEqual(planLibraryLayout(lib.after,[libChanges[0]]).objectIds,[]);
+  mockObjects.set(0,originalLive);
+  console.log("PASS: all 32 USER and all 32 LIBRARY replacements including loaded sounds, live reload last, no project/settings writes");
 }
