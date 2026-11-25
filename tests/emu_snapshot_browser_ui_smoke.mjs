@@ -90,13 +90,39 @@ try{
     }
   }
   // Test real modal top-layer locking with a pending WebMIDI permission
-  // request. No hardware or writes are involved. A successful mock connect
-  // is followed by a deliberately rejected backup manifest.
-  await page.evaluate(()=>{
+  // request, a complete simulated 43-object backup, and a failed backup.
+  // The fixture fills all 32 project sections with long reference lists.
+  // No physical device, private backup, or write command is used.
+  await page.evaluate(async()=>{
+    const {bkU32,bkR32,bkCrc,bkPack,BACKUP_IDS}=await import("/fm1backup.js");
+    const {encodeProject,MAX_RECORD}=await import("/projects-library-codec.mjs");
+    const {encodeRecord,pack7}=await import("/presets-library-codec.mjs");
+    const pad=r=>{const d=new Uint8Array(MAX_RECORD);d.set(r);return d;};
+    const records=Array.from({length:32},(_,i)=>pad(encodeProject({
+      section:i%4,refs:[0,32,33,34,35,36],name:"PROJECT "+String(i+1).padStart(2,"0"),
+      settingsBytes:[1,2,3]
+    })));
+    const sound=encodeRecord({name:"TWELVE CHARS",engine:0,params:Array(127).fill(2)});
+    const user=new Uint8Array(3080);user.set([85,80,66,49,192,0,16,0]);user.set(sound.slice(0,192),8);
+    const data=new Map(BACKUP_IDS.map(id=>[id,
+      id===0?records[0]:id===1?Uint8Array.of(1,2,3,4):id>=2&&id<=5?records[id-2]:
+      id===6?user:id===10?Uint8Array.of(83,79,78,71,2,0,0,0):id>=40?records[id-40]:new Uint8Array(0)]));
     const input={name:"FM1 UI mock",manufacturer:"Test",state:"connected",onmidimessage:null};
+    window.failMockBackup=false;window.mockWrites=0;
     const output={name:input.name,manufacturer:input.manufacturer,state:"connected",
-      send(msg){const cmd=msg[4],reply=cmd===89?[1,32,1]:cmd===95?[1,32,1,0]:[1,2,0];
-        setTimeout(()=>input.onmidimessage?.({data:[240,125,70,76,cmd,...reply,247]}),150);}};
+      send(msg){
+        const cmd=msg[4],args=msg.slice(5,-1);let reply;
+        if(cmd===89)reply=[1,32,1];
+        else if(cmd===95)reply=[1,32,1,0];
+        else if(cmd===65)reply=window.failMockBackup?[1,2,0]:[1,0,43,...BACKUP_IDS.flatMap(id=>{
+          const bytes=data.get(id);return [id,...bkU32(bytes.length),...bkU32(bkCrc(bytes))];})];
+        else if(cmd===66){const id=args[0],off=bkR32(args,1),n=args[6]|args[7]<<7;
+          reply=[id,0,...bkU32(off),n&127,n>>>7,...bkPack(data.get(id).slice(off,off+n))];}
+        else if(cmd===94)reply=args[0]===0?[0,0,...pack7(sound)]:[args[0],1];
+        else if(cmd===91)reply=[args[0],3];
+        else{window.mockWrites++;throw Error("Unexpected UI test write "+cmd);}
+        setTimeout(()=>input.onmidimessage?.({data:[240,125,70,76,cmd,...reply,247]}),cmd===65?150:12);
+      }};
     Object.defineProperty(navigator,"requestMIDIAccess",{configurable:true,value:()=>new Promise(resolve=>{
       window.releaseMidi=()=>resolve({inputs:new Map([[1,input]]),outputs:new Map([[1,output]])});
     })});
@@ -116,6 +142,36 @@ try{
   assert.match(await page.locator("#op-title").textContent(),/complete/);
   await page.locator("#op-close").click();
   assert.equal(await page.locator("#tab-backup").isVisible(),true);
+  const downloaded=page.waitForEvent("download");
+  await page.locator("#backup-capture").click();
+  assert.equal(await page.locator("#operation").evaluate(d=>d.matches(":modal")),true);
+  assert.equal(await page.locator("#op-close").isDisabled(),true);
+  await page.waitForFunction(()=>document.querySelector("#op-progress").hasAttribute("value")&&document.querySelector("#op-progress").value>0);
+  assert.match(await page.locator("#op-detail").textContent(),/% of current phase/);
+  assert.match(await page.locator("#op-warning").textContent(),/Do not disconnect USB/);
+  const captured=await downloaded;
+  assert.equal(captured.suggestedFilename(),"mashina-full-fm1-backup.json");
+  await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+  assert.equal(await page.locator("#operation").getAttribute("data-state"),"ok");
+  await page.locator("#op-close").click();
+  await page.locator("#backup-verify").setInputFiles(await captured.path());
+  await page.waitForFunction(()=>document.querySelector("#backup-summary").textContent.includes("Backup verified"));
+  for(const tab of ["user","library","projects"]){
+    await page.locator("[data-tab="+tab+"]").click();
+    assert.equal(await page.locator("#tab-"+tab+" tbody tr").count(),32);
+    const metrics=await page.locator("#tab-"+tab).evaluate(s=>({
+      tables:[...s.querySelectorAll(".scroll")].map(x=>x.scrollHeight-x.clientHeight),
+      page:document.documentElement.scrollHeight-innerHeight
+    }));
+    assert(metrics.page<=1&&metrics.tables.every(x=>x<=1),tab+" populated layout overflow "+JSON.stringify(metrics));
+  }
+  await page.locator("[data-tab=projects]").click();
+  assert.match(await page.locator("#project-rows-second tr").last().textContent(),/P8:D.*PROJECT 32/);
+  await page.locator("[data-tab=user]").click();
+  assert.match(await page.locator("#user-slots tr").first().textContent(),/TWELVE CHARS/);
+  assert.match(await page.locator("#user-slots tr").first().locator("td").last().locator("span").getAttribute("title"),/P8:D\/T1/);
+  await page.locator("[data-tab=backup]").click();
+  await page.evaluate(()=>window.failMockBackup=true);
   await page.locator("#backup-capture").click();
   assert.equal(await page.locator("#operation").evaluate(d=>d.matches(":modal")),true);
   assert.equal(await page.locator("#op-close").isDisabled(),true);
@@ -125,6 +181,7 @@ try{
   await page.locator("#op-close").click();
   assert.equal(await page.locator("#full-apply").isDisabled(),true);
   await page.locator("#disconnect").click();
+  assert.equal(await page.evaluate(()=>window.mockWrites),0);
   console.log("PASS: compact desktop layout, all 32 slots per tab, native centered operation lock, success/error acknowledgement");
   assert.deepEqual(errors,[],"New manager startup errors");
   await page.goto("http://127.0.0.1:8765/advanced.html",{waitUntil:"networkidle"});
