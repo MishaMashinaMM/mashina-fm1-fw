@@ -2,7 +2,7 @@
  * Browser USB WebMIDI adapter for the experimental LIB32 page.
  * Never sends a command unless the user explicitly clicks Connect or Upload.
  */
-export async function connectLibraryMidi({choosePort=null}={}){
+export async function connectLibraryMidi({choosePort=null,onDisconnect=null}={}){
   if(!navigator.requestMIDIAccess)throw new Error("WebMIDI is unavailable; use Chrome or Edge over HTTPS.");
   const access=await navigator.requestMIDIAccess({sysex:true});
   const outputs=[...access.outputs.values()],inputs=[...access.inputs.values()];
@@ -71,8 +71,21 @@ export async function connectLibraryMidi({choosePort=null}={}){
       }
     }
   }
-  return {name:out.name,request,close(){
+  function close(){
     if(closed)return;closed=true;input.onmidimessage=old;
+    access.removeEventListener?.("statechange",stateChanged);
     if(waiting){const w=waiting;waiting=null;clearTimeout(w.timer);w.reject(new Error("MIDI connection closed"));}
-  }};
+  }
+  function stateChanged(e){
+    // Bind authorization to this specific port pair, not merely its name.
+    // A quick unplug/replug must never reuse a verified session.
+    if(closed)return;
+    const port=e.port;
+    if((port===input||port===out)&&port.state==="disconnected"||
+       out.state==="disconnected"||input.state==="disconnected"){
+      close();onDisconnect?.();
+    }
+  }
+  access.addEventListener?.("statechange",stateChanged);
+  return {name:out.name,request,close,get connected(){return !closed&&out.state!=="disconnected"&&input.state!=="disconnected";}};
 }

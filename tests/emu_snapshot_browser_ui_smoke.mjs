@@ -99,11 +99,11 @@ try{
   // Test real modal top-layer locking with a pending WebMIDI permission
   // request, a complete simulated 43-object backup, and a failed backup.
   // The fixture fills all 32 project sections with long reference lists.
-  // No physical device, private backup, or write command is used.
+  // No physical device or private backup is used; writes go only to a simulated MIDI endpoint.
   await page.evaluate(async()=>{
-    const {bkU32,bkR32,bkCrc,bkPack,BACKUP_IDS}=await import("/fm1backup.js");
+    const {bkU32,bkR32,bkCrc,bkPack,bkUnpack,BACKUP_IDS}=await import("/fm1backup.js");
     const {encodeProject,MAX_RECORD}=await import("/projects-library-codec.mjs");
-    const {encodeRecord,pack7}=await import("/presets-library-codec.mjs");
+    const {encodeRecord,pack7,unpack7}=await import("/presets-library-codec.mjs");
     const pad=r=>{const d=new Uint8Array(MAX_RECORD);d.set(r);return d;};
     const records=Array.from({length:32},(_,i)=>pad(encodeProject({
       section:i%4,refs:[0,32,33,34,35,i===31?63:36],name:"PROJECT "+String(i+1).padStart(2,"0"),
@@ -115,7 +115,8 @@ try{
       id===0?records[0]:id===1?Uint8Array.of(1,2,3,4):id>=2&&id<=5?records[id-2]:
       id===6?user:id===10?Uint8Array.of(83,79,78,71,2,0,0,0):id>=40?records[id-40]:new Uint8Array(0)]));
     const input={name:"FM1 UI mock",manufacturer:"Test",state:"connected",onmidimessage:null};
-    window.failMockBackup=false;window.mockWrites=0;
+    window.failMockBackup=false;window.mockWrites=0;window.allowMockWrites=false;
+    const library=new Map(),listeners=new Set();let staged=null;
     const output={name:input.name,manufacturer:input.manufacturer,state:"connected",
       send(msg){
         const cmd=msg[4],args=msg.slice(5,-1);let reply;
@@ -125,13 +126,37 @@ try{
           const bytes=data.get(id);return [id,...bkU32(bytes.length),...bkU32(bkCrc(bytes))];})];
         else if(cmd===66){const id=args[0],off=bkR32(args,1),n=args[6]|args[7]<<7;
           reply=[id,0,...bkU32(off),n&127,n>>>7,...bkPack(data.get(id).slice(off,off+n))];}
-        else if(cmd===94)reply=args[0]===0?[0,0,...pack7(sound)]:[args[0],1];
-        else if(cmd===91)reply=[args[0],3];
-        else{window.mockWrites++;throw Error("Unexpected UI test write "+cmd);}
+        else if(cmd===94){
+          const slot=args[0],bank=data.get(6+Math.floor(slot/16)),pos=8+(slot%16)*192;
+          const base=bank.slice(pos,pos+192),record=new Uint8Array(304);
+          record.set(base);reply=base[0]===0xA5?[slot,0,...pack7(record)]:[slot,1];
+        }
+        else if(cmd===91)reply=library.has(args[0])?[args[0],0,...pack7(library.get(args[0]))]:[args[0],3];
+        else{
+          window.mockWrites++;
+          if(!window.allowMockWrites)throw Error("Unexpected UI test write "+cmd);
+          if(cmd===92){library.set(args[0],unpack7(args.slice(1)));reply=[args[0],0];}
+          else if(cmd===93){library.delete(args[0]);reply=[args[0],0];}
+          else if(cmd===67){
+            const phase=args[0],id=args[1];reply=[phase,id,0];
+            if(phase===0)staged={id,bytes:new Uint8Array(bkR32(args,2)),crc:bkR32(args,7)};
+            else if(phase===1){const off=bkR32(args,2);staged.bytes.set(bkUnpack(args.slice(7),Math.min(256,staged.bytes.length-off)),off);}
+            else if(phase===2){
+              if(staged.id!==id||bkCrc(staged.bytes)!==staged.crc)throw Error("Mock staged object mismatch");
+              data.set(id,staged.bytes);staged=null;
+              if(id>=40&&id<44)data.set(id-38,data.get(id).slice());
+            }else if(phase===3)staged=null;
+          }else throw Error("Unexpected mock write "+cmd);
+        }
         setTimeout(()=>input.onmidimessage?.({data:[240,125,70,76,cmd,...reply,247]}),cmd===65?150:12);
       }};
+    const access={inputs:new Map([[1,input]]),outputs:new Map([[1,output]]),
+      addEventListener:(type,fn)=>{if(type==="statechange")listeners.add(fn);},
+      removeEventListener:(type,fn)=>{if(type==="statechange")listeners.delete(fn);}};
+    window.disconnectMock=()=>{output.state="disconnected";for(const fn of [...listeners])fn({port:output});};
+    window.bumpMockLive=()=>{const r=data.get(0).slice();const p=Array.from(r.slice(32,35));p[0]^=1;data.set(0,pad(encodeProject({section:0,refs:[0,32,33,34,35,36],name:"DEVICE EDIT",settingsBytes:p})));};
     Object.defineProperty(navigator,"requestMIDIAccess",{configurable:true,value:()=>new Promise(resolve=>{
-      window.releaseMidi=()=>resolve({inputs:new Map([[1,input]]),outputs:new Map([[1,output]])});
+      window.releaseMidi=()=>{input.state=output.state="connected";resolve(access);};
     })});
   });
   await page.locator("#connect").click();
@@ -296,8 +321,59 @@ try{
   assert.equal(await page.locator("#op-title").textContent(),"Operation stopped");
   await page.locator("#op-close").click();
   assert.equal(await page.locator("#full-apply").isDisabled(),true);
-  await page.locator("#disconnect").click();
+  // Recover once from the intentional failure above, then make USER,
+  // LIBRARY and PROJECTS writes in a single authorized session.
   assert.equal(await page.evaluate(()=>window.mockWrites),1);
+  await page.evaluate(()=>{window.failMockBackup=false;window.allowMockWrites=true;});
+  const captureAndVerify=async()=>{
+    await page.locator("[data-tab=backup]").click();
+    const [backup]=await Promise.all([page.waitForEvent("download"),page.locator("#backup-capture").click()]);
+    await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+    assert.equal(await page.locator("#operation").getAttribute("data-state"),"ok");
+    await page.locator("#op-close").click();
+    assert.match(await page.locator("#write-state").textContent(),/Writes locked/);
+    await page.locator("#backup-verify").setInputFiles(await backup.path());
+    await page.waitForFunction(()=>document.querySelector("#write-state").dataset.ready==="true");
+  };
+  await captureAndVerify();
+  for(const [tab,id,filename] of [["user","#user-apply","user"],["library","#library-apply","library"],["projects","#projects-apply","projects"]]){
+    await page.locator("[data-tab="+tab+"]").click();
+    assert.equal(await page.locator(id).isEnabled(),true,tab+" is locked despite verified previous read-back");
+    const count=await page.evaluate(()=>window.mockWrites);
+    await page.locator(id).click();
+    const [updated]=await Promise.all([page.waitForEvent("download"),page.locator("#confirm-accept").click()]);
+    assert.equal(updated.suggestedFilename(),"mashina-full-fm1-after-"+filename+".json");
+    await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+    assert.equal(await page.locator("#operation").getAttribute("data-state"),"ok");
+    assert.match(await page.locator("#op-message").textContent(),/Full state verified/);
+    await page.locator("#op-close").click();
+    assert.match(await page.locator("#write-state").textContent(),/Backup verified · Writes unlocked/);
+    assert.equal(await page.locator("#backup-verify").isDisabled(),true,"No repeat manual verification");
+    assert.ok(await page.evaluate(()=>window.mockWrites)>count);
+  }
+  // A physical-side edit after successful read-back still blocks the
+  // very next transfer before the first write.
+  await page.locator("[data-tab=user]").click();
+  await page.locator("#user-collection [data-entry=I0]").dragTo(page.locator("#user-slots tr[data-slot='2']"));
+  const beforeStale=await page.evaluate(()=>window.mockWrites);
+  await page.evaluate(()=>window.bumpMockLive());
+  await page.locator("#user-apply").click();
+  await page.locator("#confirm-accept").click();
+  await page.waitForFunction(()=>document.querySelector("#operation").open);
+  await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+  assert.equal(await page.locator("#operation").getAttribute("data-state"),"error");
+  assert.match(await page.locator("#op-message").textContent(),/Device changed since verified backup/);
+  await page.locator("#op-close").click();
+  assert.equal(await page.evaluate(()=>window.mockWrites),beforeStale);
+  assert.equal(await page.locator("#user-apply").isDisabled(),true);
+  await captureAndVerify();
+  // USB unplug must invalidate even a recently verified session.
+  await page.evaluate(()=>window.disconnectMock());
+  assert.equal(await page.locator("#connect").isEnabled(),true);
+  assert.equal(await page.locator("#user-apply").isDisabled(),true);
+  assert.equal(await page.locator("#backup-verify").isDisabled(),true);
+  assert.match(await page.locator("#write-state").textContent(),/No verified backup/);
+  console.log("PASS: consecutive USER, LIBRARY, PROJECTS transfers after one verification; stale state and physical disconnect lock writes");
   console.log("PASS: themed write confirmations, cancel/Escape preserve state, RESTORE starts protected transfer without typing");
   console.log("PASS: compact desktop layout, all 32 slots per tab, native centered operation lock, success/error acknowledgement");
   assert.deepEqual(errors,[],"New manager startup errors");

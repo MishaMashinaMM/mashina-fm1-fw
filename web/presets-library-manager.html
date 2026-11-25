@@ -197,7 +197,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="row"><button id="projects-export" disabled>Export device projects</button><button id="projects-all" disabled>Select changed sections</button></div></div><div class="panel project-actions"><h3>Restore selection</h3><p id="projects-impact" class="fine impact"></p><div class="row"><button id="projects-apply" class="primary" disabled>Restore selected project sections</button><button id="projects-clear">Clear selection</button></div></div></div>
 </div></section>
 <section id="tab-backup" hidden><div class="section-head"><h2>BACKUP &amp; RESTORE</h2><p>Complete logical device backups. Keep your original JSON files.</p></div><div class="backup-grid">
-<div class="panel"><h3>1 · Current device backup</h3><p>32 USER, 32 LIBRARY, 32 sections, current performance and settings. Verify the downloaded file to unlock writes; reconnecting or performing a write invalidates authorization.</p><button id="backup-capture" class="primary" disabled>Backup complete FM1</button><label class="field">Verify saved complete backup<input id="backup-verify" type="file" accept=".json" disabled></label><p id="backup-summary">No device snapshot.</p></div>
+<div class="panel"><h3>1 · Current device backup</h3><p>32 USER, 32 LIBRARY, 32 sections, current performance and settings. Verify the first downloaded file to unlock writes. Successful transfers automatically verify and save the updated state. Reconnect or a failed transfer requires a new backup.</p><button id="backup-capture" class="primary" disabled>Backup complete FM1</button><label class="field">Verify saved complete backup<input id="backup-verify" type="file" accept=".json" disabled></label><p id="backup-summary">No device snapshot.</p></div>
 <div class="panel"><h3>2 · Restore a complete backup</h3><p class="warn">Only changed records are restored. An interrupted transfer may leave partial state. Preserve the target backup and never retry automatically.</p><label class="field">Choose source complete backup (.json)<input id="full-import" type="file" accept=".json"></label><p id="full-impact" class="impact">No source selected.</p><button id="full-apply" class="primary" disabled>Restore complete FM1</button></div>
 <div class="panel"><h3>3 · Performance file</h3><p>Save all USER, LIBRARY, project sections, current performance and device settings as one restorable file, including staged changes. Or open a saved file offline and arrange it without connecting FM1.</p><div class="row"><button id="performance-save" class="primary" disabled>Save complete performance</button><button id="performance-open" disabled>Open source offline</button><button id="performance-close" disabled>Close offline workspace</button></div><p id="performance-status" class="fine"></p></div>
 <div class="panel advanced"><h3>Advanced / offline tools</h3><p>Legacy sound extraction, emulator snapshots, factory catalog selection and flash diagnostics. Disconnect first.</p><a href="./advanced.html" id="advanced-link">Open experimental lab</a></div></div></section>
@@ -460,8 +460,16 @@ function progress(phase,i,n){
   }
 }
 function invalidate(){verified=null;pending=null;}
-function acceptSnapshot(file,name){snapshot=validateFullDevice(file);pending=JSON.stringify(snapshot);verified=null;download(name,snapshot);}
-function ready(){return !!(dev&&writable&&verified&&!busy);}
+function acceptSnapshot(file,name,{checked=false}={}){
+  // Only a completed, exact full-state read-back may advance the session
+  // baseline automatically. A manual capture still requires offline proof.
+  const next=validateFullDevice(file);
+  download(name,next);
+  snapshot=next;
+  verified=checked?next:null;
+  pending=checked?null:JSON.stringify(next);
+}
+function ready(){return !!(dev?.connected&&writable&&verified&&!busy);}
 function sources(bank){
   const a=packs[bank].map((p,i)=>({id:"I"+i,name:"Imported · "+p.name,recordBytes:p.recordBytes}));
   const imported=new Set(a.map(p=>JSON.stringify(p.recordBytes)));
@@ -539,11 +547,43 @@ async function run(fn,operation=null){
   finally{busy=false;try{render();}finally{if(operation)finishOperation();}}
 }
 function fileInput(id,fn){$(id).onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)run(async()=>fn(JSON.parse(await f.text()),f.name));};}
-$("connect").onclick=()=>run(async()=>{if(offlineWorkspace&&hasEdits())throw Error("Save the complete performance, then close the offline workspace before connecting.");offlineWorkspace=false;clearStaging();invalidate();snapshot=null;const candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial})});try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");}catch(e){candidate.close();throw e;}},"Connecting FM1");
+function disconnected(connection){
+  if(dev!==connection)return;
+  dev=null;writable=false;snapshot=null;invalidate();clearStaging();
+  if($("confirmation").open)answerConfirmation(false);
+  status("FM1 disconnected. Reconnect, capture and verify a new complete backup before writing.","error");render();
+}
+$("connect").onclick=()=>run(async()=>{
+  if(offlineWorkspace&&hasEdits())throw Error("Save the complete performance, then close the offline workspace before connecting.");
+  offlineWorkspace=false;clearStaging();invalidate();snapshot=null;
+  let candidate;
+  candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial}),onDisconnect:()=>disconnected(candidate)});
+  try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);
+    if(!candidate.connected)throw Error("FM1 disconnected during connection.");
+    dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");
+  }catch(e){candidate.close();throw e;}
+},"Connecting FM1");
 $("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;snapshot=null;offlineWorkspace=false;invalidate();clearStaging();status("Disconnected.");});
-$("backup-capture").onclick=()=>run(async()=>{invalidate();snapshot=null;const f=await captureFullDevice(dev.request,dev.name,progress);acceptSnapshot(f,"mashina-full-fm1-backup.json");status("Backup downloaded. Choose that file using Verify saved complete backup.","ok");},"Backing up FM1");
-fileInput("backup-verify",file=>{verified=null;const f=validateFullDevice(file);if(!pending||JSON.stringify(f)!==pending)throw Error("Select the exact newly downloaded complete backup.");verified=f;status("Backup verified. USER, LIBRARY, PROJECTS and BACKUP operations are available where safe.","ok");});
-function apply(fn,name,title){return run(async()=>{if(!dev||!writable||!verified)throw Error("Verify a fresh complete backup first.");const before=verified;invalidate();try{const result=await fn(before);acceptSnapshot(result.after,name);status("SUCCESS · Full state verified. Save and verify the newly downloaded backup before another write.","ok");}catch(e){snapshot=null;if(e.readback){download("mashina-fm1-failed-restore-readback.json",e.readback);status(e.message+" Exact failed read-back downloaded. Keep both JSON files; no further write authorized.","error");}else throw Error((e.message.startsWith("STOP")?"":"STOP — ")+e.message+" Keep your original backup. Reinspect before any further write.");}},title);}
+$("backup-capture").onclick=()=>run(async()=>{
+  const connection=dev;invalidate();snapshot=null;
+  const f=await captureFullDevice(connection.request,connection.name,progress);
+  if(dev!==connection||!connection.connected)throw Error("FM1 disconnected during backup. Reconnect before continuing.");
+  acceptSnapshot(f,"mashina-full-fm1-backup.json");
+  status("Backup downloaded. Choose that file using Verify saved complete backup.","ok");
+},"Backing up FM1");
+fileInput("backup-verify",file=>{
+  verified=null;
+  const f=validateFullDevice(file);
+  if(!dev?.connected||!pending||JSON.stringify(f)!==pending)throw Error("Select the exact newly downloaded complete backup.");
+  verified=f;pending=null;
+  status("Backup verified. USER, LIBRARY, PROJECTS and BACKUP operations are available where safe.","ok");
+});
+function apply(fn,name,title){return run(async()=>{if(!dev||!writable||!verified)throw Error("Verify a fresh complete backup first.");const before=verified,connection=dev;invalidate();try{
+    const result=await fn(before);
+    if(dev!==connection||!connection.connected)throw Error("FM1 disconnected during transfer. Reconnect and inspect before another write.");
+    acceptSnapshot(result.after,name,{checked:true});
+    status("SUCCESS · Full state verified. Updated backup downloaded. You can continue with other changes.","ok");
+  }catch(e){invalidate();snapshot=null;if(e.readback){download("mashina-fm1-failed-restore-readback.json",e.readback);status(e.message+" Exact failed read-back downloaded. Keep both JSON files; no further write authorized.","error");}else throw Error((e.message.startsWith("STOP")?"":"STOP — ")+e.message+" Keep your original backup. Reinspect before any further write.");}},title);}
 for(const bank of ["user","library"]){
   fileInput(bank+"-import",file=>{
     if(file?.format==="mashina-full-device")file=validateFullDevice(file);
