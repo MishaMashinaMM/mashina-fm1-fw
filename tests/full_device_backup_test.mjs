@@ -374,3 +374,43 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
     /post-write full-state verification failed/);
   console.log("PASS: selected-slot physical protocol mock — reference, stale backup, format capability, no-op, put, reset, collateral damage checks");
 }
+
+
+// Bulk: a blocked final destination must prevent even the first PUT;
+// unchanged entries are skipped; interrupted batches are explicitly partial.
+{
+  const before=await captureFullDevice(mock,"BATCH");
+  const freshSlot=7,another=8,counts=[sets,erasures];
+  const record2=Array.from(encodeRecord({engine:0,name:"BATCH TWO",params:Array(127).fill(45)}));
+  await assert.rejects(applyVerifiedLibraryChanges(mock,before,[
+    {slot:freshSlot,recordBytes:preset},{slot:1,recordBytes:record2}]),/referenced/);
+  assert.deepEqual([sets,erasures],counts);
+  await assert.rejects(applyVerifiedLibraryChanges(mock,before,[
+    {slot:freshSlot,recordBytes:preset},{slot:freshSlot,recordBytes:record2}]),/Duplicate/);
+  assert.deepEqual([sets,erasures],counts);
+  const batch=await applyVerifiedLibraryChanges(mock,before,[
+    {slot:0,recordBytes:before.libraryPresets[0]},
+    {slot:freshSlot,recordBytes:preset},{slot:another,recordBytes:record2}]);
+  assert.equal(batch.changed,2);
+  assert.deepEqual(batch.after.libraryPresets[freshSlot],preset);
+  assert.deepEqual(batch.after.libraryPresets[another],record2);
+  assert.equal(sets,counts[0]+2);
+  const failSecond=async(cmd,args,opts)=>{
+    if(cmd===92&&args[0]===10)return [10,4];
+    return mock(cmd,args,opts);
+  };
+  const c=sets;
+  await assert.rejects(applyVerifiedLibraryChanges(failSecond,batch.after,[
+    {slot:9,recordBytes:preset},{slot:10,recordBytes:record2},{slot:11,recordBytes:preset}]),
+    /LIBRARY 43 failed after 1 of 3 verified changes/);
+  assert.equal(sets,c+1);
+  assert.equal(mockLib.has(11),false);
+  const badLive=structuredClone(before);
+  const live=encodeProject({section:0,refs:[31,255,255,255,255,255],name:"MISSING",settingsBytes:[1]});
+  badLive.currentPerformance=live;badLive.archive.objects[0]={id:0,...raw(pad(live))};
+  assert.throws(()=>validateFullDevice(badLive),/missing USER preset/);
+  const legacy=structuredClone(before);
+  legacy.archive.objects[8]={id:8,...raw(Uint8Array.of(1))};
+  assert.throws(()=>validateFullDevice(legacy),/legacy FM6 migration/);
+  console.log("PASS: bulk preflight, unchanged slots, two writes, partial-failure stop, missing live USER and legacy restore refusal");
+}

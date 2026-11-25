@@ -31,3 +31,6 @@ assert.match(general,/wholeBackup=false;backedUp=false;pendingLibraryBackup=null
 const generalScript=general.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
 const generalSyntax=spawnSync(process.execPath,["--input-type=module","--check"],{input:generalScript,encoding:"utf8"});
 assert.equal(generalSyntax.status,0,generalSyntax.stderr);
+
+assert.match(general,/const baseline=verifiedFullFile,plan=planLibraryChanges\(baseline,bulkEntries\(\)\)/);
+assert.match(general,/BATCH BLOCKED/);

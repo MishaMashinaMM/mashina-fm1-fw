@@ -152,6 +152,10 @@ export function validateFullDevice(file) {
   validateUserArchive(bundle.userPresets,archive);
   const sections=archiveSections(archive),current=archiveCurrent(archive);
   const selectedProject=archiveProjectAliases(archive);
+  // Full MPR1 restores must not include legacy migration records or missing live USER dependencies.
+  insist(archive.objects.find(x=>x.id===8)?.size===0,"MPR1 backup contains a legacy FM6 migration object");
+  insist(decodeProject(current).refs.every(ref=>ref>=32||bundle.userPresets[ref]!==null),
+    "Current performance references a missing USER preset");
   insist(sections.every((r,i)=>JSON.stringify(r)===JSON.stringify(bundle.projects[i])),
          "Project JSON and device archive disagree: restoration refused");
   insist(JSON.stringify(current)===JSON.stringify(file.currentPerformance),
@@ -468,12 +472,14 @@ export async function applyVerifiedLibraryChanges(request,verifiedFile,changes,p
   for(const {slot,recordBytes} of plan)expected.libraryPresets[slot]=recordBytes;
   for(let i=0;i<plan.length;i++){
     const entry=plan[i],slot=entry.slot;
+    try {
     if(entry.recordBytes===null){
       const reply=Uint8Array.from(await request(LIB_CMD.erase,[slot],{timeout:6000,retries:0}));
       insist(reply.length===2&&reply[0]===slot&&reply[1]===0,"LIBRARY reset rejected at "+(slot+33));
       const got=Uint8Array.from(await request(LIB_CMD.get,[slot]));
       insist(got.length===2&&got[0]===slot&&got[1]===3,"LIBRARY factory fallback verification failed at "+(slot+33));
     }else await uploadPrepared(request,libcap,[entry]);
+    }catch(e){throw Error("LIBRARY "+(slot+33)+" failed after "+i+" of "+plan.length+" verified changes: "+e.message+". The failed slot may have changed; do not retry.");}
     progress("LIBRARY WRITE",i+1,plan.length);
   }
   const after=await captureFullDevice(request,baseline.firmware,progress);

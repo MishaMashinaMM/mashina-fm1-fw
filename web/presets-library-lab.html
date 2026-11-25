@@ -133,11 +133,12 @@ tr:nth-child(2n){background:#161616}
  <button id="capture-user" type="button" disabled>Capture 32 USER slots</button>
  <button id="backup-device" type="button" disabled>Back up device LIBRARY to JSON</button>
  <label class="file">Verify saved LIBRARY backup <input id="verify-library-backup" type="file" accept=".json,application/json"/></label>
- <button id="upload-device" type="button" disabled>Bulk upload (locked during single-slot validation)</button>
+ <button id="upload-device" type="button" disabled>Upload prepared LIBRARY slots</button>
+ <p id="bulk-impact" class="stats">Prepare a pack and verify a complete FM1 backup to preview the batch.</p>
  <div class="catalog-shell">
  <h2>DEVICE LIBRARY · SELECTED SLOT</h2>
  <p>Choose any LIBRARY destination (033–064). Use a prepared sound or restore the built-in factory fallback. Saved project and current performance references block changes. Capture and verify a fresh complete FM1 backup first; do not touch FM1 controls during the operation.</p>
- <label>Prepared source <select id="physical-source" class="catalog-select"></select></label>
+ <label>Prepared source <select id="physical-source" class="catalog-select"></select></label><p class="subtle">Use Capture 32 USER slots, Import prepared records or Prepare 32-slot upload pack to populate the source selector. Verifying a backup does not change the prepared pack.</p>
  <label>Destination <select id="physical-target" class="catalog-select"></select></label>
  <button id="physical-put" type="button" disabled>Write selected LIBRARY slot</button>
  <button id="physical-reset" type="button" disabled>Reset selected slot to factory</button>
@@ -168,7 +169,7 @@ tr:nth-child(2n){background:#161616}
  </div>
  <p id="flash-compare-status" class="stats" role="status">Choose two complete diagnostics to compare. Both original files are kept intact.</p>
 </details>
-<p class="foot"><strong>Physical write scope:</strong> Selected-slot LIBRARY writes are enabled only on initialized, format-disabled firmware with a fresh verified full backup. Referenced slots are blocked. Bulk uploads, USER uploads and project/full-device restoration remain locked. Offline composition, backup and read-only inspection remain available.</p>
+<p class="foot"><strong>Physical write scope:</strong> Selected-slot and bulk LIBRARY writes require initialized, format-disabled firmware and a fresh verified full backup. Referenced changes are blocked, including current performance. A bulk upload changes only prepared nonempty slots; unchanged slots are skipped and a blocked change refuses the whole batch before writing. USB interruption can leave a partially applied batch; never retry without a fresh inspection. USER uploads and project/full-device restoration remain locked. Offline composition, backup and read-only inspection remain available.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
 <table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Used in projects</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
@@ -198,9 +199,8 @@ import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulato
 import {inspectProjectReferences as inspectUsage} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
-/* This prototype is for offline composition, read-only backup and diagnostics.
- * Physical USER/LIBRARY/project writes are NOT approved. This client-side lock
- * is defense-in-depth; firmware write gates remain authoritative. */
+/* USER and archive/project restore remain locked. Selected and bulk LIBRARY
+ * operations use the same independently verified complete-backup gate. */
 const PHYSICAL_WRITES_APPROVED=false;
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 // Authorization requires re-importing the exact JSON saved to disk, not just
@@ -415,8 +415,10 @@ function physicalControls(){
   source.replaceChildren();
   for(const item of prepared()){
     const opt=document.createElement("option");opt.value=String(item.slot);
-    opt.textContent=String(item.slot+33).padStart(3,"0")+" · "+item.name;source.append(opt);
+    const user=preparedOrigin==="Captured USER slots";
+    opt.textContent=(user?"USER ":"PACK ")+String(item.slot+(user?1:33)).padStart(3,"0")+" · "+item.name;source.append(opt);
   }
+  if(!source.options.length){const opt=document.createElement("option");opt.value="";opt.textContent="No prepared sounds — capture USER or import a pack";source.append(opt);}
   if([...source.options].some(o=>o.value===old))source.value=old;
   if(!target.options.length)for(let i=0;i<32;i++){
     const opt=document.createElement("option");opt.value=String(i);target.append(opt);
@@ -447,13 +449,14 @@ function physicalControls(){
   source.disabled=!!busy;target.disabled=!!busy;
   $("physical-put").disabled=!ready||!available||source.value===""||catalogNeedsPrepare;
   $("physical-reset").disabled=!ready||!available||!verifiedFullFile?.libraryPresets[i];
+  updateBulkImpact(ready);
 }
 function connectionStatus(){
   $("conn").textContent=device?`Connected: ${device.name}. LIB32 v${cap.version}, ${cap.slots} slots (${cap.writable?"write-enabled":"read-only"}); MPR1 projects: ${projectCap?(projectCap.writable?"write-enabled":"read-only"):"unsupported"}.`:"Not connected. No device write can occur.";
   $("connect").disabled=busy;
   $("capture-user").disabled=busy||!device;
   $("backup-device").disabled=busy||!device;
-  $("upload-device").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!cap?.writable||!backedUp||catalogNeedsPrepare;
+  // Bulk authorization is derived in physicalControls from the full snapshot.
   $("probe-flash").disabled=busy||!device;
   $("backup-legacy").disabled=busy||!device;
   $("backup-projects").disabled=busy||!device||!projectCap;
@@ -581,14 +584,15 @@ $("verify-library-backup").addEventListener("change",async e=>{
 $("verify-full-backup").addEventListener("change",async e=>{
   const file=e.target.files?.[0];e.target.value="";if(!file)return;
   await action(async()=>{
-    if(!device||!pendingFullBackup)throw Error("Capture a fresh complete FM1 backup from this connection first");
+    if(!device||!pendingFullBackup)throw Error("After connecting or restarting FM1, click Backup complete FM1, then select that newly downloaded JSON here");
     const imported=JSON.parse(await file.text());
+    wholeBackup=false;backedUp=false;verifiedFullFile=null;
     validateFullDevice(imported);
     if(JSON.stringify(imported)!==pendingFullBackup)
       throw Error("Saved complete FM1 JSON does not exactly match the latest device backup");
     verifiedFullFile=validateFullDevice(imported);
     wholeBackup=true;backedUp=true;
-    $("status").textContent="Saved complete FM1 backup verified. Selected-slot LIBRARY changes require explicit confirmation.";
+    $("status").textContent="Saved complete FM1 backup verified. Selected-slot and bulk LIBRARY changes require explicit confirmation.";
   });
 });
 for(const id of ["physical-source","physical-target"])$(id).addEventListener("change",physicalControls);
@@ -618,19 +622,49 @@ async function physicalChange(reset){
 }
 $("physical-put").addEventListener("click",()=>action(()=>physicalChange(false)));
 $("physical-reset").addEventListener("click",()=>action(()=>physicalChange(true)));
+function bulkEntries(){
+  return prepared().map(item=>({slot:item.slot,recordBytes:item.recordBytes}));
+}
+function updateBulkImpact(ready){
+  const button=$("upload-device");
+  button.disabled=true;
+  let message="Prepare a pack and verify a complete FM1 backup to preview the batch.";
+  if(catalogNeedsPrepare)message="Factory selection changed — prepare the upload pack first.";
+  else if(verifiedFullFile){
+    try{
+      const entries=bulkEntries();
+      if(!entries.length)message="No prepared sounds. Capture USER or import a pack first.";
+      else{
+        const plan=planLibraryChanges(verifiedFullFile,entries);
+        const labels=plan.map(x=>String(x.slot+33).padStart(3,"0"));
+        message=plan.length?
+          plan.length+" changed slot(s): "+labels.join(", ")+" · "+(entries.length-plan.length)+" already identical · all other slots unchanged.":
+          "All prepared sounds already match the device; no writes needed.";
+        button.disabled=!ready||!plan.length;
+      }
+    }catch(e){message="BATCH BLOCKED — "+e.message+". Remove protected destinations from the prepared pack; no slots will be written.";}
+  }
+  $("bulk-impact").textContent=message;
+}
 $("upload-device").addEventListener("click",()=>action(async()=>{
-  if(!PHYSICAL_WRITES_APPROVED)throw new Error("Physical flash writes are locked in this experimental Web Library.");
-  if(!device||!cap?.writable||!backedUp)throw new Error("Writable device and prior LIBRARY backup required.");
-  const entries=prepared();
-  if(catalogNeedsPrepare)throw new Error("Factory selection has changed: click Prepare 32-slot upload pack first.");
-  if(!entries.length)throw new Error("Import or capture some sounds first.");
-  if(!confirm(`Upload ${entries.length} sound records from: ${preparedOrigin}? Only occupied destination slots are replaced; unselected slots remain unchanged. Existing USER slots are untouched. Keep your offline JSON backups before proceeding.`))return;
-  // Invalidate the pre-write snapshot before the first possible flash change.
-  // A failed/interrupted transfer must not silently authorize another write.
-  backedUp=false;wholeBackup=false;
-  pendingLibraryBackup=null;pendingFullBackup=null;
-  const n=await uploadPrepared(device.request,cap,entries,(i,total)=>$("status").textContent=`Writing and verifying ${i}/${total} LIBRARY slots...`);
-  $("status").textContent=`Verified ${n} complete LIBRARY presets on FM1. Keep your JSON backup for firmware updates.`;
+  if(!device||!cap?.writable||!projectCap?.writable||projectCap.canInitialize||!wholeBackup||!verifiedFullFile)
+    throw Error("Initialized update firmware and verified complete FM1 backup required");
+  if(catalogNeedsPrepare)throw Error("Prepare the updated factory selection first");
+  const baseline=verifiedFullFile,plan=planLibraryChanges(baseline,bulkEntries());
+  if(!plan.length){$("status").textContent="All prepared slots already match. No writes sent.";return;}
+  const labels=plan.map(x=>String(x.slot+33).padStart(3,"0")+" · "+decodeRecord(x.recordBytes).name);
+  if(!confirm("Upload "+plan.length+" changed LIBRARY slots?\n"+labels.join("\n")+
+    "\nNo other slot will change. Each slot is committed separately. A disconnect may leave a partial batch. Keep the original backup and do not touch FM1 controls until verification completes."))return;
+  wholeBackup=false;backedUp=false;pendingLibraryBackup=null;pendingFullBackup=null;verifiedFullFile=null;
+  try{
+    const result=await applyVerifiedLibraryChanges(device.request,baseline,plan,
+      (phase,i,n)=>$("status").textContent=phase+" "+i+"/"+n+" — do not touch FM1 controls.");
+    pendingFullBackup=JSON.stringify(result.after);
+    downloadFile("mashina-full-fm1-after-library-batch.json",result.after);
+    $("status").textContent="SUCCESS — "+result.changed+" LIBRARY slots verified; all other full-backup data unchanged. Save and verify the new JSON before further writes.";
+  }catch(e){
+    throw Error("STOP — "+e.message+" A batch can be partial. Keep the original backup; inspect before any further write.");
+  }
 }));
 /* Legacy v0.13 snapshot BEFORE destructive clean-break migration. This
  * uses only the firmware's existing BACKUP LIST/GET read protocol and checks
@@ -1149,6 +1183,7 @@ $("backup-projects").addEventListener("click",()=>action(async()=>{
 }));
 $("backup-full").addEventListener("click",()=>action(async()=>{
   if(!device||!projectCap)throw new Error("MPR1 project protocol unavailable");
+  wholeBackup=false;backedUp=false;verifiedFullFile=null;pendingFullBackup=null;pendingLibraryBackup=null;
   const file=await captureFullDevice(device.request,device.name,
     (phase,i,n)=>$("status").textContent=`${phase}: ${i}/${n}...`);
   downloadFile("mashina-full-fm1-backup.json",file);
