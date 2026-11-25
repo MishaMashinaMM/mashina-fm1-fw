@@ -238,7 +238,7 @@ def build_app():
     for flag in ("FELUCCA_FLASH", "FELUCCA_OTA", "FELUCCA_OTA_DRYRUN", "FELUCCA_OTA_RAMONLY", "FELUCCA_CDC",
                  "FELUCCA_UART", "FELUCCA_UAC", "FELUCCA_UAC_TONE", "FELUCCA_UAC_48K", "FELUCCA_ICONS", "FELUCCA_SLICE", "FELUCCA_FM4",
                  "FELUCCA_CDC_DEFAULT", "FELUCCA_SEQ_PROBE", "FELUCCA_NO_SEQUENCER",
-                 "FELUCCA_FLASH_DIAG", "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
+                 "FELUCCA_FLASH_DIAG", "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE", "FELUCCA_LIB96",
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
                  "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT",
                  "FELUCCA_INITIALIZED_UPDATE", "FELUCCA_PUBLIC_LAYOUT"):
@@ -453,6 +453,9 @@ def main():
     # v0.14 is the first public reference-layout release. Explicitly
     # select the complete, mutually exclusive storage configuration here,
     # rather than silently distributing the old FUN storage build.
+    lib96_compile = os.environ.get("FELUCCA_LIB96", "0") == "1"
+    if lib96_compile != (a.release == "0.14-lib96"):
+        raise SystemExit("LIB96 requires the dedicated 0.14-lib96 compile-only target")
     public_authorized = a.release == "0.14"
     if public_authorized:
         release_flags = {
@@ -507,7 +510,7 @@ def main():
         and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"
     )
     if a.release == "0.13-update" or os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1":
-        if not (a.release == "0.13-update"
+        if not (a.release in ("0.13-update", "0.14-lib96")
                 and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"
                 and all(os.environ.get(k) == "1" for k in (
                     "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
@@ -519,7 +522,9 @@ def main():
     # explicit user-confirmed first-install action and permanent marker lock.
     if public_authorized:
         non_distributable = False
-    if non_distributable:
+    if lib96_compile and os.environ.get("FELUCCA_INITIALIZED_UPDATE") != "1":
+        raise SystemExit("LIB96 requires initialized-layout write gating")
+    if non_distributable or lib96_compile:
         (OUT / name).unlink(missing_ok=True)
         if a.release:
             shutil.rmtree(OUT / f"release-{a.release}", ignore_errors=True)
@@ -539,6 +544,9 @@ def main():
         print("  FAIL ", e)
     if errors:
         raise SystemExit("build: checks failed")
+    if lib96_compile:
+        print(f"LIB96 COMPILE ONLY: {len(img)} application bytes; no installable package.")
+        return 0
     if non_distributable and not trial_authorized:
         print("SAFE BUILD-ONLY: one-time project/clean-layout formatter enabled.")
         print("NO .fwsc / installer / release artifact created for a destructive formatter.")

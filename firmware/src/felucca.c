@@ -87,6 +87,12 @@
 #if FELUCCA_FLASH_DIAG && (!FELUCCA_FLASH || !FELUCCA_LIB32 || FELUCCA_LIB32_WRITE || FELUCCA_PROJECT_REFS || FELUCCA_PROJECT_REFS_WRITE || FELUCCA_PROJECT_REFS_FORMAT || FELUCCA_CLEAN_INSTALL_LAYOUT)
 #error "Read-only flash diagnostic requires LIB32 reads and prohibits all experimental project/preset writes"
 #endif
+#ifndef FELUCCA_LIB96
+#define FELUCCA_LIB96 0
+#endif
+#if FELUCCA_LIB96 && (!FELUCCA_INITIALIZED_UPDATE || !FELUCCA_LIB32 || !FELUCCA_FLASH || !FELUCCA_OTA || FELUCCA_PUBLIC_LAYOUT || FELUCCA_CLEAN_INSTALL_LAYOUT)
+#error "LIB96 is restricted to initialized-layout engineering builds without formatter"
+#endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */
 #endif

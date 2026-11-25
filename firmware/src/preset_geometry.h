@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 /* Shared geometry for the isolated 96-slot host integration.
- * Device builds remain at v0.14 geometry until flash ownership and
+ * Device expansion is compile-only until flash ownership and
  * upgrade/format gates have been audited. */
 #ifndef MASHINA_PRESET_GEOMETRY_H
 #define MASHINA_PRESET_GEOMETRY_H
@@ -10,7 +10,7 @@
 #if defined(MASHINA_EMU_LIB96) && MASHINA_EMU_LIB96 && !defined(FELUCCA_WEB)
 #error "Expanded simulator geometry requires browser build"
 #endif
-#if defined(MASHINA_LIB96_NOR_TEST) || defined(MASHINA_LIB96_HOST_TEST) || (defined(MASHINA_EMU_LIB96) && MASHINA_EMU_LIB96)
+#if defined(MASHINA_LIB96_NOR_TEST) || defined(MASHINA_LIB96_HOST_TEST) || (defined(MASHINA_EMU_LIB96) && MASHINA_EMU_LIB96) || (defined(FELUCCA_LIB96) && FELUCCA_LIB96)
 #define MASHINA_LIBRARY_SLOTS 96u
 #define MASHINA_LIBRARY_END 0xD8000u
 #else

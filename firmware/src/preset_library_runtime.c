@@ -36,7 +36,7 @@ static void library_track_name_set(const track_t *t, const char *name)
 
 /* The PRESETS browser must show the actual stored sound, not the
  * compiled factory fallback. Do NOT access NOR during a screen redraw:
- * keep the 32 short titles/engine IDs in a tiny pool cache.
+ * keep the short titles/engine IDs in a tiny pool cache.
  * kind: 0=empty/factory fallback, 1=valid uploaded override, 2=unreadable.
  */
 static uint8_t library_meta_kind[LIB_SLOTS] __attribute__((section(".pool")));
@@ -69,6 +69,9 @@ static void library_metadata_boot(void)
      * every empty slot would unnecessarily scan the same 8KiB erased
      * sectors eight times and delay startup / starve the watchdog. */
     for (uint32_t bank=0;bank<LIB_BANKS;bank++) {
+#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
+        fm1_wdt_feed();
+#endif
         uint32_t seq=0u;
         int copy=lib_latest(bank,&seq);
         int state=2;  /* unknown/corrupt bank: unavailable */
