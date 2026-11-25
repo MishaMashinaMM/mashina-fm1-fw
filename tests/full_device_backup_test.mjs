@@ -680,3 +680,19 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   mockObjects.set(0,originalLive);
   console.log("PASS: all 32 USER and all 32 LIBRARY replacements including loaded sounds, live reload last, no project/settings writes");
 }
+
+
+{
+  const {groupPlacement}=await import("../web/performance-backup.mjs");
+  const values=["A","B","C","D","E","F","G","H"];
+  const move=(src,dst)=>{
+    const result=values.slice();for(const {slot,value} of groupPlacement(values,src,dst))result[slot]=value;
+    assert.deepEqual(result.slice().sort(),values.slice().sort());return result;
+  };
+  assert.deepEqual(move([0,2],4),["E","B","F","D","A","C","G","H"]);
+  assert.deepEqual(move([1,3,5],3),["A","E","C","B","D","F","G","H"]);
+  assert.deepEqual(move([4,5],4),values);
+  assert.throws(()=>groupPlacement(values,[0,1,2],6),/does not fit/);
+  assert.throws(()=>groupPlacement(values,[1,1],0),/Invalid source/);
+  console.log("PASS: simultaneous group swap preserves every record, including overlapping and noncontiguous selections");
+}

@@ -134,6 +134,11 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 .collection-item{display:flex;gap:5px;align-items:center;padding:3px 5px;border-bottom:1px solid #353535;min-width:0}
 .collection-item:nth-child(even){background:#222}
 .collection-item[draggable=true]{cursor:grab}
+.collection-item,.slot-panel tr[data-slot]{user-select:none}
+.collection-item[data-selected=true]{background:#4a361a!important;box-shadow:inset 3px 0 var(--orange)}
+.slot-panel tr[data-selected=true]{outline:1px solid var(--orange);outline-offset:-1px}
+.slot-panel tr[data-selected=true] td:first-child{background:#60421b;color:#fff}
+.collection-item:focus-visible,.slot-panel tr[data-slot]:focus-visible,.collection-list:focus-visible{outline:2px solid var(--orange);outline-offset:-2px}
 .collection-item .item-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
 .collection-item .item-meta{color:var(--muted);font-size:10px;white-space:nowrap}
 .collection-item button{flex:none;padding:1px 5px;min-height:21px;font-size:11px}
@@ -172,7 +177,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="row collection-tools"><label class="file-label">Import JSON<input id="user-import" type="file" accept=".json" aria-label="Import user JSON"></label><button id="user-collection-save">Save collection</button><button id="user-collection-capture" disabled>Add device sounds</button></div>
 <div class="row collection-filters"><input id="user-search" type="search" placeholder="Search presets" aria-label="Search user collection"><select id="user-engine" aria-label="Filter engine"><option value="">All engines</option></select><select id="user-origin" aria-label="Filter sound source"><option value="all">All sources</option><option value="collection">My collection</option><option value="factory">Factory</option><option value="device">Device</option></select></div>
 <div id="user-collection" class="collection-list" aria-label="user available items"></div>
-<div class="row collection-pager"><button id="user-prev">‹</button><span id="user-page" class="fine"></span><button id="user-next">›</button><span class="fine">Drag items to slots</span></div>
+<div class="row collection-pager"><button id="user-prev">‹</button><span id="user-page" class="fine"></span><button id="user-next">›</button><span id="user-selection-count" class="fine" title="Ctrl-click selects individual items; Shift-click selects a range; Ctrl+A selects all filtered items; Escape clears selection."></span></div>
 <details class="manual-controls" id="user-manual"><summary>Manual selection / fixed-slot import</summary><div class="row"><button id="user-export" disabled>Export device USER sounds</button><button id="user-import-all" disabled>Queue all imported sounds</button></div><label class="field">Source sound<select id="user-source"></select></label><label class="field">Destination<select id="user-target"></select></label><div class="row"><button id="user-add" disabled>Add to USER queue</button><button id="user-reset" disabled>Clear USER slot</button></div></details></div>
 <div class="panel queue-panel"><h3>USER write queue</h3><div class="queue-list" id="user-queue"></div><p id="user-impact" class="fine impact"></p><div class="row queue-actions"><button id="user-apply" class="primary" disabled>Restore queued USER sounds</button><button id="user-clear">Clear queue</button></div></div>
 </div></div></section>
@@ -183,7 +188,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="row collection-tools"><label class="file-label">Import JSON<input id="library-import" type="file" accept=".json" aria-label="Import library JSON"></label><button id="library-collection-save">Save collection</button><button id="library-collection-capture" disabled>Add device sounds</button></div>
 <div class="row collection-filters"><input id="library-search" type="search" placeholder="Search presets" aria-label="Search library collection"><select id="library-engine" aria-label="Filter engine"><option value="">All engines</option></select><select id="library-origin" aria-label="Filter sound source"><option value="all">All sources</option><option value="collection">My collection</option><option value="factory">Factory</option><option value="device">Device</option></select></div>
 <div id="library-collection" class="collection-list" aria-label="library available items"></div>
-<div class="row collection-pager"><button id="library-prev">‹</button><span id="library-page" class="fine"></span><button id="library-next">›</button><span class="fine">Drag items to slots</span></div>
+<div class="row collection-pager"><button id="library-prev">‹</button><span id="library-page" class="fine"></span><button id="library-next">›</button><span id="library-selection-count" class="fine" title="Ctrl-click selects individual items; Shift-click selects a range; Ctrl+A selects all filtered items; Escape clears selection."></span></div>
 <details class="manual-controls" id="library-manual"><summary>Manual selection / fixed-slot import</summary><div class="row"><button id="library-export" disabled>Export device LIBRARY overrides</button><button id="library-import-all" disabled>Queue imported slot mapping</button></div><label class="field">Source sound<select id="library-source"></select></label><label class="field">Destination<select id="library-target"></select></label><div class="row"><button id="library-add" disabled>Add to LIBRARY queue</button><button id="library-reset" disabled>Queue factory reset</button></div></details></div>
 <div class="panel queue-panel"><h3>LIBRARY write queue</h3><p class="fine">Replacing a preset changes its sound in all projects that use it. Currently loaded sounds refresh after applying.</p><div class="queue-list" id="library-queue"></div><p id="library-impact" class="fine impact"></p><div class="row queue-actions"><button id="library-apply" class="primary" disabled>Apply queued LIBRARY changes</button><button id="library-clear">Clear queue</button></div></div>
 </div></div></section>
@@ -193,7 +198,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="row collection-tools"><label class="file-label">Import JSON<input id="projects-import" type="file" accept=".json" aria-label="Import projects JSON"></label><button id="projects-collection-save">Save collection</button><button id="projects-collection-capture" disabled>Add device projects</button></div>
 <div class="row collection-filters"><input id="projects-search" type="search" placeholder="Search projects" aria-label="Search projects collection"></div>
 <div id="projects-collection" class="collection-list" aria-label="projects available items"></div>
-<div class="row collection-pager"><button id="projects-prev">‹</button><span id="projects-page" class="fine"></span><button id="projects-next">›</button><span class="fine">Drag items to slots</span></div>
+<div class="row collection-pager"><button id="projects-prev">‹</button><span id="projects-page" class="fine"></span><button id="projects-next">›</button><span id="projects-selection-count" class="fine" title="Ctrl-click selects individual items; Shift-click selects a range; Ctrl+A selects all filtered items; Escape clears selection."></span></div>
 <div class="row"><button id="projects-export" disabled>Export device projects</button><button id="projects-all" disabled>Select changed sections</button></div></div><div class="panel project-actions"><h3>Restore selection</h3><p id="projects-impact" class="fine impact"></p><div class="row"><button id="projects-apply" class="primary" disabled>Restore selected project sections</button><button id="projects-clear">Clear selection</button></div></div></div>
 </div></section>
 <section id="tab-backup" hidden><div class="section-head"><h2>BACKUP &amp; RESTORE</h2><p>Complete logical device backups. Keep your original JSON files.</p></div><div class="backup-grid">
@@ -222,7 +227,7 @@ import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
 import {decodeRecord,parseImportedLibrary} from "./presets-library-codec.mjs";
 import {decodeProject,encodeProject,projectsBackup,restoreProjectsBackup} from "./projects-library-codec.mjs";
-import {collectionFile,readCollection,mergeCollection,projectCollectionFromSections} from "./performance-backup.mjs";
+import {collectionFile,readCollection,mergeCollection,projectCollectionFromSections,groupPlacement} from "./performance-backup.mjs";
 import {factorySourceRecords} from "./emulator-snapshot-editor.mjs";
 import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,planUserLayout,applyVerifiedUserLayout,planLibraryLayout,applyVerifiedLibraryLayout,composeFullPerformance,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
 const $=id=>document.getElementById(id),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
@@ -231,22 +236,81 @@ let dev=null,writable=false,busy=false,snapshot=null,verified=null,pending=null,
 let factory=[],factoryFallbacks=[],factoryFallbackRecords=[],engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
 let offlineWorkspace=false,collections={user:[],library:[],projects:[]},pages={user:0,library:0,projects:0},dragState=null;
 const PAGE_SIZE=50;
+const banks=["user","library","projects"];
+const selection=Object.fromEntries(banks.map(bank=>[bank,{
+  collection:{keys:new Set(),anchor:null,order:[],items:[]},device:{keys:new Set(),anchor:null,order:[]},side:"collection"
+}]));
+const projectIndex=slot=>Math.floor(slot/4);
+const entryKey=p=>String(p.type==="project"?p.index:p.id);
+const deviceKey=(bank,slot)=>String(bank==="projects"?projectIndex(slot):slot);
+function clearSelection(bank,side=null){
+  for(const name of side?[side]:["collection","device"]){const s=selection[bank][name];s.keys.clear();s.anchor=null;}
+}
+function selectionOrder(bank,side){
+  if(side==="collection")return selection[bank].collection.order;
+  if(!snapshot)return [];
+  return Array.from({length:bank==="projects"?8:32},(_,i)=>i).filter(i=>bank==="projects"?Array.from({length:4},(_,j)=>projectAt(i*4+j)).some(Boolean):!!actualSound(bank,i)).map(String);
+}
+function paintSelection(bank){
+  const s=selection[bank],available=new Set(selectionOrder(bank,"device"));
+  for(const key of s.device.keys)if(!available.has(key))s.device.keys.delete(key);
+  for(const row of $(bank+"-collection").querySelectorAll("[data-entry]")){
+    const on=s.collection.keys.has(row.dataset.entry);
+    row.dataset.selected=String(on);row.setAttribute("aria-selected",String(on));
+  }
+  for(const row of $("tab-"+bank).querySelectorAll("tr[data-slot]")){
+    const on=s.device.keys.has(deviceKey(bank,Number(row.dataset.slot)));
+    row.dataset.selected=String(on);row.setAttribute("aria-selected",String(on));
+  }
+  $(bank+"-selection-count").textContent=s.collection.keys.size+" source · "+s.device.keys.size+" device selected";
+}
+function selectItem(bank,side,key,event){
+  const s=selection[bank][side],order=selectionOrder(bank,side),toggle=event.ctrlKey||event.metaKey;
+  if(!order.includes(key))return;
+  selection[bank].side=side;
+  if(event.shiftKey&&order.includes(s.anchor)){
+    if(!toggle)s.keys.clear();
+    const a=order.indexOf(s.anchor),b=order.indexOf(key);
+    for(const k of order.slice(Math.min(a,b),Math.max(a,b)+1))s.keys.add(k);
+  }else if(toggle){
+    if(s.keys.has(key))s.keys.delete(key);else s.keys.add(key);
+    s.anchor=key;
+  }else{s.keys.clear();s.keys.add(key);s.anchor=key;}
+  paintSelection(bank);
+}
+function dragSelection(bank,side,key){
+  const s=selection[bank][side],order=selectionOrder(bank,side);
+  if(!s.keys.has(key)){s.keys.clear();s.keys.add(key);s.anchor=key;paintSelection(bank);}
+  selection[bank].side=side;
+  return order.filter(k=>s.keys.has(k));
+}
+document.addEventListener("keydown",e=>{
+  if(busy||$("operation").open||$("confirmation").open)return;
+  const bank=banks.find(b=>!$("tab-"+b).hidden);
+  if(!bank)return;
+  if(e.key==="Escape"){clearSelection(bank);paintSelection(bank);return;}
+  if(e.target.closest("input,select,textarea,button,[contenteditable=true]"))return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){
+    e.preventDefault();const side=selection[bank].side,s=selection[bank][side];
+    s.keys=new Set(selectionOrder(bank,side));s.anchor=selectionOrder(bank,side)[0]??null;paintSelection(bank);
+  }
+});
 const entries=q=>[...q].map(([slot,recordBytes])=>({slot,recordBytes}));
 const bankKey=bank=>bank==="user"?"userPresets":"libraryPresets";
 const pendingProjects=()=>[...selected].map(slot=>({slot,recordBytes:projectFile.sections[slot]}));
 const stagedEdits=()=>({user:entries(queues.user),library:entries(queues.library),projects:pendingProjects()});
 const hasEdits=()=>queues.user.size||queues.library.size||selected.size;
-function clearStaging(){for(const q of Object.values(queues))q.clear();selected.clear();projectFile=null;}
+function clearStaging(){for(const q of Object.values(queues))q.clear();selected.clear();projectFile=null;for(const bank of banks)clearSelection(bank); }
 function slotRecord(bank,slot){return queues[bank].has(slot)?queues[bank].get(slot):snapshot?.[bankKey(bank)][slot]??null;}
 function actualSound(bank,slot){const r=slotRecord(bank,slot);return r??(bank==="library"?factoryFallbackRecords[slot]??null:null);}
 function projectAt(slot){return selected.has(slot)&&projectFile?projectFile.sections[slot]:snapshot?.projects[slot]??null;}
-function addCollection(bank,items){collections[bank]=mergeCollection(bank,collections[bank],items);}
-function removeCollection(bank,index){collections[bank].splice(index,1);render();}
+function addCollection(bank,items){clearSelection(bank,"collection");collections[bank]=mergeCollection(bank,collections[bank],items);}
+function removeCollection(bank,index){clearSelection(bank,"collection");collections[bank].splice(index,1);render();}
 function engineName(n){return engineNames.get(n)??"Engine "+n;}
 function dragStart(e,payload){if(busy||$("operation").open||$("confirmation").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
 function dragEnd(){dragState=null;for(const n of document.querySelectorAll(".drop-over"))n.classList.remove("drop-over");}
 function dropTarget(node,accept,handle){
-  node.ondragover=e=>{if(dragState&&accept(dragState)&&!busy){e.preventDefault();e.dataTransfer.dropEffect=dragState.type==="slot"?"move":"copy";node.classList.add("drop-over");}};
+  node.ondragover=e=>{if(dragState&&accept(dragState)&&!busy){e.preventDefault();e.dataTransfer.dropEffect=["slot","slot-group","project-slot","project-slot-group"].includes(dragState.type)?"move":"copy";node.classList.add("drop-over");}};
   node.ondragleave=e=>{if(!node.contains(e.relatedTarget))node.classList.remove("drop-over");};
   node.ondrop=e=>{if(!dragState||!accept(dragState)||busy)return;e.preventDefault();e.stopPropagation();const p=dragState;dragEnd();try{handle(p);}catch(err){status(err.message,"error");}};
 }
@@ -266,34 +330,51 @@ function setPresetChanges(bank,changes){
 }
 function presetDrop(bank,slot,p){
   if(!snapshot)return;
-  if(p.type==="sound"){setPresetChanges(bank,[{slot,recordBytes:p.recordBytes}]);return;}
-  if(p.type!=="slot"||p.bank!==bank||p.slot===slot)return;
-  const a=actualSound(bank,p.slot),b=actualSound(bank,slot);
-  if(!a)throw Error("The dragged slot has no sound record.");
+  if(p.type==="sound"||p.type==="sound-group"){
+    const sounds=p.type==="sound"?[p]:p.items;
+    if(slot+sounds.length>32)throw Error(sounds.length+" selected presets do not fit from slot "+num(slot+(bank==="user"?1:33))+". Nothing staged.");
+    setPresetChanges(bank,sounds.map((x,i)=>({slot:slot+i,recordBytes:x.recordBytes})));return;
+  }
+  if(!["slot","slot-group"].includes(p.type)||p.bank!==bank)return;
+  const source=p.type==="slot"?[p.slot]:p.slots;
+  const values=Array.from({length:32},(_,i)=>actualSound(bank,i));
+  if(source.some(i=>!values[i]))throw Error("A selected slot has no sound record.");
+  const changes=groupPlacement(values,source,slot);
   const canonical=(i,r)=>bank==="library"&&r&&eq(r,factoryFallbackRecords[i])?null:r;
-  if(bank==="library"&&!b)throw Error("Factory fallback record unavailable; cannot swap.");
-  setPresetChanges(bank,[{slot,recordBytes:canonical(slot,a)},{slot:p.slot,recordBytes:canonical(p.slot,b)}]);
+  if(bank==="library"&&changes.some(x=>!x.value))throw Error("Factory fallback record unavailable; cannot swap.");
+  setPresetChanges(bank,changes.map(x=>({slot:x.slot,recordBytes:canonical(x.slot,x.value)})));
+  clearSelection(bank,"device");
+  const s=selection[bank].device;for(let i=0;i<source.length;i++)s.keys.add(String(slot+i));s.anchor=String(slot);paintSelection(bank);
 }
 function projectDrop(slot,p){
   if(!snapshot)return;
   const sections=projectFile?structuredClone(projectFile.sections):structuredClone(snapshot.projects);
   const changes=[];
-  if(p.type==="project"){
-    const dest=Math.floor(slot/4)*4;
-    p.sections.forEach((r,i)=>changes.push({slot:dest+i,recordBytes:r}));
+  const dest=projectIndex(slot);
+  if(p.type==="project"||p.type==="project-group"){
+    const items=p.type==="project"?[p]:p.items;
+    if(dest+items.length>8)throw Error(items.length+" selected projects do not fit from P"+(dest+1)+". Nothing staged.");
+    items.forEach((item,j)=>item.sections.forEach((r,i)=>changes.push({slot:(dest+j)*4+i,recordBytes:r})));
   }else if(p.type==="section"){
     changes.push({slot,recordBytes:p.recordBytes});
-  }else if(p.type==="project-slot"){
-    const src=Math.floor(p.slot/4)*4,dest=Math.floor(slot/4)*4;
-    if(src===dest)return;
-    for(let i=0;i<4;i++)changes.push({slot:dest+i,recordBytes:projectAt(src+i)},{slot:src+i,recordBytes:projectAt(dest+i)});
+  }else if(p.type==="project-slot"||p.type==="project-slot-group"){
+    const source=p.type==="project-slot"?[projectIndex(p.slot)]:p.slots;
+    const values=Array.from({length:8},(_,i)=>Array.from({length:4},(_,j)=>projectAt(i*4+j)));
+    for(const x of groupPlacement(values,source,dest))x.value.forEach((r,i)=>changes.push({slot:x.slot*4+i,recordBytes:r}));
   }else return;
+  const nextSelected=new Set(selected);
   for(const x of changes){
     const r=x.recordBytes===null?null:encodeProject({...decodeProject(x.recordBytes),section:x.slot%4});
     sections[x.slot]=r;
-    if(eq(r,snapshot.projects[x.slot]))selected.delete(x.slot);else selected.add(x.slot);
+    if(eq(r,snapshot.projects[x.slot]))nextSelected.delete(x.slot);else nextSelected.add(x.slot);
   }
-  projectFile=projectsBackup(sections);render();
+  const nextFile=projectsBackup(sections);
+  projectFile=nextFile;selected=nextSelected;render();
+  if(p.type==="project-slot"||p.type==="project-slot-group"){
+    clearSelection("projects","device");
+    const s=selection.projects.device,n=p.type==="project-slot"?1:p.slots.length;
+    for(let i=0;i<n;i++)s.keys.add(String(dest+i));s.anchor=String(dest);paintSelection("projects");
+  }
 }
 function bindSlotRow(row,bank,slot){
   row.dataset.slot=String(slot);row.dataset.bank=bank;
@@ -303,9 +384,17 @@ function bindSlotRow(row,bank,slot){
   const live=!project&&!!references(slot+(bank==="user"?0:32),true);
   row.dataset.live=String(live);
   row.draggable=!!snapshot&&(project?Array.from({length:4},(_,i)=>projectAt(Math.floor(slot/4)*4+i)).some(Boolean):!!record);
-  row.ondragstart=e=>dragStart(e,project?{type:"project-slot",slot}:{type:"slot",bank,slot});
+  row.tabIndex=0;
+  row.onclick=e=>{if(e.target.closest("input,button"))return;row.focus({preventScroll:true});selectItem(bank,"device",deviceKey(bank,slot),e);};
+  row.onfocus=()=>{selection[bank].side="device";};
+  row.onkeydown=e=>{if(e.target===row&&(e.key===" "||e.key==="Enter")){e.preventDefault();selectItem(bank,"device",deviceKey(bank,slot),e);}};
+  row.ondragstart=e=>{
+    const slots=dragSelection(bank,"device",deviceKey(bank,slot)).map(Number);
+    if(!slots.length){e.preventDefault();return;}
+    dragStart(e,project?{type:"project-slot-group",slots}:{type:"slot-group",bank,slots});
+  };
   row.ondragend=dragEnd;
-  if(snapshot)dropTarget(row,p=>project?["project","section","project-slot"].includes(p.type):p.type==="sound"||p.type==="slot"&&p.bank===bank,p=>project?projectDrop(slot,p):presetDrop(bank,slot,p));
+  if(snapshot)dropTarget(row,p=>project?["project","project-group","section","project-slot","project-slot-group"].includes(p.type):["sound","sound-group"].includes(p.type)||["slot","slot-group"].includes(p.type)&&p.bank===bank,p=>project?projectDrop(slot,p):presetDrop(bank,slot,p));
 }
 function collectionFromDevice(bank){
   if(!snapshot)return;
@@ -325,6 +414,11 @@ function renderCollection(bank){
       .filter(p=>(origin==="all"||origin===p.origin)&&(engine.value===""||Number(engine.value)===p.engine));
   }
   list=list.filter(p=>(p.name+" "+p.meta).toLowerCase().includes(search));
+  const state=selection[bank].collection;
+  state.items=list;state.order=list.map(entryKey);
+  const visibleKeys=new Set(state.order);
+  for(const k of state.keys)if(!visibleKeys.has(k))state.keys.delete(k);
+  if(!visibleKeys.has(state.anchor))state.anchor=null;
   const n=list.length,maxPage=Math.max(0,Math.ceil(n/PAGE_SIZE)-1);pages[bank]=Math.min(pages[bank],maxPage);
   const page=pages[bank],start=page*PAGE_SIZE;
   host.replaceChildren();
@@ -333,7 +427,16 @@ function renderCollection(bank){
     row.dataset.entry=project?String(p.index):p.id;row.title=p.name+" · "+p.meta;
     const name=document.createElement("span");name.className="item-name";name.textContent=p.name;
     const meta=document.createElement("span");meta.className="item-meta";meta.textContent=p.meta;
-    row.append(name,meta);row.ondragstart=e=>dragStart(e,p);row.ondragend=dragEnd;
+    row.append(name,meta);row.tabIndex=0;row.setAttribute("role","option");
+    row.onclick=e=>{if(e.target.closest("button"))return;row.focus({preventScroll:true});selectItem(bank,"collection",entryKey(p),e);};
+    row.onfocus=()=>{selection[bank].side="collection";};
+    row.onkeydown=e=>{if(e.target===row&&(e.key===" "||e.key==="Enter")){e.preventDefault();selectItem(bank,"collection",entryKey(p),e);}};
+    row.ondragstart=e=>{
+      const keys=new Set(dragSelection(bank,"collection",entryKey(p)));
+      const items=state.items.filter(x=>keys.has(entryKey(x)));
+      dragStart(e,{type:project?"project-group":"sound-group",items});
+    };
+    row.ondragend=dragEnd;
     if(project){
       for(let i=0;i<4;i++)if(p.sections[i]){
         const chip=document.createElement("button");chip.textContent="ABCD"[i];chip.title="Drag section "+"ABCD"[i];chip.draggable=true;
@@ -345,7 +448,7 @@ function renderCollection(bank){
       const action=document.createElement("button");action.textContent=stored>=0?"−":"+";action.title=stored>=0?"Remove from offline collection":"Add to offline collection";
       action.onclick=()=>{if(stored>=0){removeCollection(bank,stored);if(p.id.startsWith("I")){packs[bank]=packs[bank].filter(x=>!eq(x.recordBytes,p.recordBytes));render();}}else{addCollection(bank,[p]);render();}};
       row.append(action);
-      row.onclick=e=>{if(e.target===action)return;$(bank+"-source").value=p.id;$(bank+"-manual").open=true;sourceControls(bank);};
+      row.addEventListener("dblclick",e=>{if(e.target.closest("button"))return;$(bank+"-source").value=p.id;$(bank+"-manual").open=true;sourceControls(bank);});
     }
     if(project){const remove=document.createElement("button");remove.textContent="−";remove.title="Remove from collection";remove.onclick=()=>removeCollection(bank,p.index);row.append(remove);}
     host.append(row);
@@ -356,14 +459,18 @@ function renderCollection(bank){
   $(bank+"-prev").disabled=page===0;$(bank+"-next").disabled=page===maxPage;
   $(bank+"-collection-capture").disabled=!snapshot||busy;
   $(bank+"-collection-save").disabled=!collections[bank].length||busy;
-  dropTarget(host,p=>project?p.type==="project-slot":p.type==="slot"&&p.bank===bank,p=>{
-    if(project){const i=Math.floor(p.slot/4)*4;addCollection(bank,[{sections:Array.from({length:4},(_,j)=>projectAt(i+j))}]);}
-    else{const r=actualSound(bank,p.slot);if(r)addCollection(bank,[r]);}
-    render();status("Added to offline collection. Save collection to keep it.","ok");
+  host.tabIndex=0;host.setAttribute("role","listbox");host.setAttribute("aria-multiselectable","true");
+  host.onfocus=()=>{selection[bank].side="collection";};
+  dropTarget(host,p=>project?["project-slot","project-slot-group"].includes(p.type):["slot","slot-group"].includes(p.type)&&p.bank===bank,p=>{
+    const slots=p.type==="project-slot"?[projectIndex(p.slot)]:p.type==="slot"?[p.slot]:p.slots;
+    if(project)addCollection(bank,slots.map(i=>({sections:Array.from({length:4},(_,j)=>projectAt(i*4+j))})));
+    else addCollection(bank,slots.map(i=>actualSound(bank,i)).filter(Boolean));
+    render();status("Added "+slots.length+" selected item(s) to offline collection. Save collection to keep it.","ok");
   });
+  paintSelection(bank);
 }
 for(const bank of ["user","library","projects"]){
-  for(const suffix of ["search",...(bank==="projects"?[]:["origin","engine"])])$(bank+"-"+suffix).oninput=()=>{pages[bank]=0;renderCollection(bank);};
+  for(const suffix of ["search",...(bank==="projects"?[]:["origin","engine"])])$(bank+"-"+suffix).oninput=()=>{clearSelection(bank,"collection");pages[bank]=0;renderCollection(bank);};
   $(bank+"-prev").onclick=()=>{pages[bank]--;renderCollection(bank);};
   $(bank+"-next").onclick=()=>{pages[bank]++;renderCollection(bank);};
   $(bank+"-collection-save").onclick=()=>download("mashina-"+bank+"-collection.json",collectionFile(bank,collections[bank]));
@@ -466,6 +573,7 @@ function acceptSnapshot(file,name,{checked=false}={}){
   const next=validateFullDevice(file);
   download(name,next);
   snapshot=next;
+  for(const bank of banks)clearSelection(bank);
   verified=checked?next:null;
   pending=checked?null:JSON.stringify(next);
 }

@@ -228,6 +228,33 @@ try{
     assert.match(await page.locator("#write-state").textContent(),/Writes unlocked/);
     assert.equal(await page.evaluate(()=>window.mockWrites),0);
   };
+  // Ctrl/Shift selection, filtered Ctrl+A, overflow rejection, and multi-drop.
+  await page.locator("#user-collection [data-entry=I0]").click();
+  await page.locator("#user-collection [data-entry=F1]").click({modifiers:["Control"]});
+  assert.match(await page.locator("#user-selection-count").textContent(),/2 source/);
+  await page.locator("#user-collection [data-entry=F1]").dragTo(page.locator("#user-slots-second tr[data-slot='31']"));
+  assert.equal(await page.locator("#tab-user tr[data-pending=true]").count(),0);
+  assert.match(await page.locator("#status").textContent(),/do not fit/);
+  await page.locator("#user-collection [data-entry=I0]").dragTo(page.locator("#user-slots tr[data-slot='2']"));
+  assert.equal(await page.locator("#tab-user tr[data-pending=true]").count(),2);
+  assert.match(await page.locator("#user-slots tr[data-slot='2']").textContent(),/UI TEST/);
+  await page.locator("#user-slots tr[data-slot='2']").click();
+  await page.locator("#user-slots tr[data-slot='3']").click({modifiers:["Shift"]});
+  assert.match(await page.locator("#user-selection-count").textContent(),/2 device selected/);
+  await page.locator("#user-slots tr[data-slot='2']").dragTo(page.locator("#user-slots tr[data-slot='4']"));
+  assert.equal(await page.locator("#user-slots tr[data-slot='4']").getAttribute("data-pending"),"true");
+  assert.equal(await page.locator("#user-slots tr[data-slot='5']").getAttribute("data-pending"),"true");
+  assert.equal(await page.locator("#user-slots tr[data-slot='2']").getAttribute("data-pending"),"false");
+  await page.locator("#user-clear").click();
+  await page.keyboard.press("Escape");
+  await page.locator("#user-origin").selectOption("collection");
+  await page.locator("#user-collection").focus();
+  await page.keyboard.press("Control+a");
+  assert.match(await page.locator("#user-selection-count").textContent(),/1 source/);
+  await page.keyboard.press("Escape");
+  assert.match(await page.locator("#user-selection-count").textContent(),/0 source/);
+  await page.locator("#user-origin").selectOption("all");
+  assert.equal(await page.evaluate(()=>window.mockWrites),0);
   // Loaded USER 001 must accept a drag without writing; warning appears
   // on confirmation. Cancel and restore the previous staging for later tests.
   await page.locator("#user-collection [data-entry=I0]").dragTo(page.locator("#user-slots tr[data-slot='0']"));
@@ -276,6 +303,16 @@ try{
   await page.locator("#projects-all").click();
   await pressCancel("#projects-apply");
   assert.equal(await page.locator("#projects-collection .collection-item").count(),8);
+  // Group project staging is bounded to the eight device positions.
+  await page.locator("#projects-collection [data-entry='0']").click();
+  await page.locator("#projects-collection [data-entry='1']").click({modifiers:["Control"]});
+  assert.match(await page.locator("#projects-selection-count").textContent(),/2 source/);
+  const projectCount=await page.locator("#tab-projects tr[data-pending=true]").count();
+  await page.locator("#projects-collection [data-entry='0']").dragTo(page.locator("#project-rows-second tr[data-slot='28']"));
+  assert.equal(await page.locator("#tab-projects tr[data-pending=true]").count(),projectCount);
+  await page.locator("#projects-collection [data-entry='0']").dragTo(page.locator("#project-rows-second tr[data-slot='20']"));
+  assert.equal(await page.locator("#project-rows-second tr[data-slot='24']").getAttribute("data-pending"),"true");
+  await page.keyboard.press("Escape");
   // Whole-project drag copies all A–D; use a different project so the
   // fixture has genuine section changes without altering source records.
   await page.locator("#projects-collection [data-entry='0']").dragTo(page.locator("#project-rows-second tr[data-slot='20']"));

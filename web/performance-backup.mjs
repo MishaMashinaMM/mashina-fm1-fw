@@ -133,3 +133,18 @@ export function readCollection(kind,file){
   check(Array.isArray(file?.patches),"Expected a sound collection or sound pack");
   return mergeCollection(kind,file.patches.map(p=>({recordBytes:Array.from(encodeRecord(p))})));
 }
+
+
+/* Group placement is an atomic, non-wrapping permutation of fixed slots.
+ * Source order is ascending slot number. For overlapping drops, displaced
+ * destination-only records fill the vacated source-only slots in order.
+ * This preserves every record, even for a noncontiguous selection. */
+export function groupPlacement(values,sourceSlots,start){
+  check(Array.isArray(values)&&Array.isArray(sourceSlots)&&sourceSlots.length>0,"Select at least one item");
+  const src=[...sourceSlots].sort((a,b)=>a-b),n=values.length;
+  check(new Set(src).size===src.length&&src.every(i=>Number.isInteger(i)&&i>=0&&i<n),"Invalid source selection");
+  check(Number.isInteger(start)&&start>=0&&start+src.length<=n,"Selection does not fit from this destination");
+  const dst=src.map((_,i)=>start+i),sourceSet=new Set(src),destSet=new Set(dst);
+  const displaced=dst.filter(i=>!sourceSet.has(i)),vacated=src.filter(i=>!destSet.has(i));
+  return [...dst.map((slot,i)=>({slot,value:values[src[i]]})),...vacated.map((slot,i)=>({slot,value:values[displaced[i]]}))];
+}
