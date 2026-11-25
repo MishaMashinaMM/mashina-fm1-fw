@@ -5,6 +5,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#if defined(MASHINA_LIB96_NOR_TEST)
+#define TEST_LIB_END 0xD8000u
+#else
+#define TEST_LIB_END 0xC8000u
+#endif
 static uint8_t nor[0x100000];
 static int fail_after = -1, tear_after = -1, erase_torn = -1, wrong_region;
 static uint32_t writes;
@@ -16,7 +21,7 @@ static int lib_flash_read(uint32_t off, void *p, uint32_t n)
 }
 static int lib_flash_erase(uint32_t off)
 {
-    if (off < 0xC0000u || off + 4096u > 0xC8000u || off % 4096u) { wrong_region++; return -1; }
+    if (off < 0xC0000u || off + 4096u > TEST_LIB_END || off % 4096u) { wrong_region++; return -1; }
     if (fail_after == 0) return -1;
     if (fail_after > 0) fail_after--;
     if (erase_torn == 0) {
@@ -31,7 +36,7 @@ static int lib_flash_erase(uint32_t off)
 static int lib_flash_prog(uint32_t off,const void *p,uint32_t n)
 {
     const uint8_t *b=p;
-    if (off < 0xC0000u || off + n > 0xC8000u || (off & 255u) + n > 256u) {
+    if (off < 0xC0000u || off + n > TEST_LIB_END || (off & 255u) + n > 256u) {
         wrong_region++; return -1;
     }
     if (fail_after == 0) return -1;
@@ -67,12 +72,12 @@ int main(void)
         make(r[i],i,11);
         if (lib_slot_write(i,r[i])) all=0;
     }
-    bad+=check("all 32 full 304-byte records written atomically",all);
+    bad+=check("all full 304-byte records written atomically",all);
     for(uint32_t i=0;i<LIB_SLOTS;i++) {
         if (lib_slot_read(i,got) || memcmp(got,r[i],LIB_ENTRY)) all=0;
     }
-    bad+=check("all 32 independent complete sound+kit records read back",all);
-    bad+=check("all writes limited to eight intended USR sectors",!wrong_region);
+    bad+=check("all independent complete sound+kit records read back",all);
+    bad+=check("all writes limited to intended LIBRARY sectors",!wrong_region);
     /* Update an occupied slot; no adjacent sound or previous slot may change. */
     make(newer,17,90);
     bad+=check("replace LIB 18 only",!lib_slot_write(17,newer));
@@ -81,7 +86,7 @@ int main(void)
     for(uint32_t i=0;i<LIB_SLOTS;i++) if(i!=17) {
         if (lib_slot_read(i,got)||memcmp(got,r[i],LIB_ENTRY)) all=0;
     }
-    bad+=check("other 31 full records never changed",all);
+    bad+=check("all other full records never changed",all);
     bad+=check("erase one slot",!lib_slot_write(17,zero));
     bad+=check("empty slot persists",!lib_slot_read(17,got)&&!memcmp(got,zero,LIB_ENTRY));
     /* Save a known valid value then force interruption at successive write stages. */
@@ -188,6 +193,21 @@ int main(void)
         bad+=check("fully erased paired sectors can initialize normally",
                    lib_slot_write(24u,r[24u])==0 &&
                    lib_slot_read(24u,got)==0 && !memcmp(got,r[24u],LIB_ENTRY));
+    }
+    /* Confirm the last bank has the same safety behavior, and preserve all
+     * bytes outside the approved region. */
+    {
+        uint32_t last=LIB_SLOTS-1u, bank=last/LIB_PER_BANK;
+        uint32_t before=writes;
+        bad+=check("final slot maps to final A/B bank",lib_base(bank,1u)+LIB_SECTOR==TEST_LIB_END);
+        bad+=check("last slot independent",!lib_slot_read(last,got)&&!memcmp(got,r[last],LIB_ENTRY));
+        tear_after=4;
+        (void)lib_slot_write(last,newer);
+        tear_after=-1;
+        bad+=check("last bank torn write preserves old record",!lib_slot_read(last,got)&&!memcmp(got,r[last],LIB_ENTRY)&&writes>before);
+        int intact=1;
+        for(uint32_t i=0;i<sizeof nor;i++)if((i<LIB_BASE||i>=TEST_LIB_END)&&nor[i]!=0xFFu){intact=0;break;}
+        bad+=check("all bytes outside library remain erased",intact);
     }
     bad+=check("bad slots rejected",lib_slot_write(LIB_SLOTS,r[0])==1&&lib_slot_read(LIB_SLOTS,got)==1);
     bad+=check("no flash operation escaped dedicated region",!wrong_region);

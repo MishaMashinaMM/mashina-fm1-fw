@@ -1,0 +1,16 @@
+name: LIB96 isolated NOR geometry
+on:
+  push:
+    branches: [presets-library-96]
+  workflow_dispatch:
+jobs:
+  nor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Existing 32-slot and proposed 96-slot storage tests
+        run: |
+          gcc -std=gnu11 -O2 tests/preset_library_storage_test.c -o /tmp/lib32
+          /tmp/lib32
+          gcc -std=gnu11 -O2 -DMASHINA_LIB96_NOR_TEST tests/preset_library_storage_test.c -o /tmp/lib96
+          /tmp/lib96
