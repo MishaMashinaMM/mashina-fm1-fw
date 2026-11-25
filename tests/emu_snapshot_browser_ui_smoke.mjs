@@ -45,7 +45,7 @@ try{
   assert(live,"Web Library HTTP server did not start");
   browser=await chromium.launch({executablePath:exe,headless:true,
     args:["--no-sandbox","--disable-dev-shm-usage"]});
-  const page=await browser.newPage({acceptDownloads:true});
+  const page=await browser.newPage({acceptDownloads:true,viewport:{width:1536,height:864}});
   const errors=[];
   page.on("pageerror",e=>errors.push(e.message));
   await page.goto("http://127.0.0.1:8765/",{waitUntil:"networkidle"});
@@ -64,6 +64,68 @@ try{
     await page.locator("[data-tab="+tab+"]").click();
     assert.equal(await page.locator("#tab-"+tab).isVisible(),true);
   }
+  // A 1536x864 physical screen can have a smaller usable Chrome viewport.
+  // Check both the requested viewport and a browser-chrome-sized viewport.
+  for(const height of [864,728]){
+    await page.setViewportSize({width:1536,height});
+    for(const tab of ["user","library","projects","backup"]){
+      await page.locator("[data-tab="+tab+"]").click();
+      const layout=await page.evaluate(tab=>{
+        const s=document.querySelector("#tab-"+tab);
+        const panel=s.querySelector(".side");
+        return {pageHeight:document.documentElement.scrollHeight,viewport:innerHeight,
+          pageWidth:document.documentElement.scrollWidth,width:innerWidth,
+          rows:[...s.querySelectorAll("tbody")].map(b=>b.rows.length),
+          clippedTables:[...s.querySelectorAll(".scroll")].some(b=>b.scrollHeight>b.clientHeight+1),
+          clippedSide:panel?panel.scrollHeight>panel.clientHeight+1:false,
+          bottom:s.getBoundingClientRect().bottom};
+      },tab);
+      assert(layout.pageHeight<=height+1 && layout.pageWidth<=1536+1,tab+" page overflow: "+JSON.stringify(layout));
+      assert(layout.bottom<=height+1,tab+" content below viewport");
+      if(tab!=="backup"){
+        assert.deepEqual(layout.rows,[16,16],tab+" must show all slots");
+        assert(!layout.clippedTables,tab+" unnecessarily scrolls slot tables");
+        assert(!layout.clippedSide,tab+" action controls do not fit: "+JSON.stringify(layout));
+      }
+    }
+  }
+  // Test real modal top-layer locking with a pending WebMIDI permission
+  // request. No hardware or writes are involved. A successful mock connect
+  // is followed by a deliberately rejected backup manifest.
+  await page.evaluate(()=>{
+    const input={name:"FM1 UI mock",manufacturer:"Test",state:"connected",onmidimessage:null};
+    const output={name:input.name,manufacturer:input.manufacturer,state:"connected",
+      send(msg){const cmd=msg[4],reply=cmd===89?[1,32,1]:cmd===95?[1,32,1,0]:[1,2,0];
+        setTimeout(()=>input.onmidimessage?.({data:[240,125,70,76,cmd,...reply,247]}),150);}};
+    Object.defineProperty(navigator,"requestMIDIAccess",{configurable:true,value:()=>new Promise(resolve=>{
+      window.releaseMidi=()=>resolve({inputs:new Map([[1,input]]),outputs:new Map([[1,output]])});
+    })});
+  });
+  await page.locator("#connect").click();
+  await page.waitForFunction(()=>typeof window.releaseMidi==="function");
+  assert.equal(await page.locator("#operation").evaluate(d=>d.matches(":modal")),true);
+  assert.equal(await page.locator("#op-close").isDisabled(),true);
+  const rect=await page.locator("#operation").boundingBox();
+  assert(Math.abs(rect.x+rect.width/2-1536/2)<2 && Math.abs(rect.y+rect.height/2-728/2)<2,"operation not centered");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator("#operation").evaluate(d=>d.open),true);
+  const blocked=await page.locator("[data-tab=user]").click({trial:true,timeout:250}).then(()=>false,()=>true);
+  assert(blocked,"background navigation must be blocked by active modal");
+  await page.evaluate(()=>window.releaseMidi());
+  await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+  assert.match(await page.locator("#op-title").textContent(),/complete/);
+  await page.locator("#op-close").click();
+  assert.equal(await page.locator("#tab-backup").isVisible(),true);
+  await page.locator("#backup-capture").click();
+  assert.equal(await page.locator("#operation").evaluate(d=>d.matches(":modal")),true);
+  assert.equal(await page.locator("#op-close").isDisabled(),true);
+  await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+  assert.equal(await page.locator("#operation").getAttribute("data-state"),"error");
+  assert.equal(await page.locator("#op-title").textContent(),"Operation stopped");
+  await page.locator("#op-close").click();
+  assert.equal(await page.locator("#full-apply").isDisabled(),true);
+  await page.locator("#disconnect").click();
+  console.log("PASS: compact desktop layout, all 32 slots per tab, native centered operation lock, success/error acknowledgement");
   assert.deepEqual(errors,[],"New manager startup errors");
   await page.goto("http://127.0.0.1:8765/advanced.html",{waitUntil:"networkidle"});
   await page.waitForFunction(()=>document.querySelectorAll("#emu-source-select option").length===107);
