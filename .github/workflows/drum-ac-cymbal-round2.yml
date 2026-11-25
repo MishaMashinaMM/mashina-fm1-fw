@@ -1,0 +1,22 @@
+name: DRUM-AC cymbal audition round 2
+on:
+  push:
+    branches: [drum-ac-cymbal-samples]
+    paths:
+      - tools/build_cymbal_round2.py
+      - .github/workflows/drum-ac-cymbal-round2.yml
+  workflow_dispatch:
+jobs:
+  audition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install audio converter
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Screen and encode new cymbal strikes
+        run: python3 tools/build_cymbal_round2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-cymbal-listening-pack-round2
+          path: build/cymbal-round2/
+          if-no-files-found: error
