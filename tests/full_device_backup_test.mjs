@@ -4,7 +4,7 @@ import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
 import {captureUser} from "../web/presets-library-sync.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore,planUserLayout,applyVerifiedUserLayout,composeFullPerformance} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -594,4 +594,41 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   });
   assert.deepEqual(calls,[0]);
   console.log("PASS: acknowledged live restore mismatch preserves strict failure and exact diagnostic readback");
+}
+
+
+{
+  const before=await captureFullDevice(mock,"LAYOUT");
+  const occupied=before.userPresets.map((r,i)=>r?i:-1).filter(i=>i>=0&&!decodeProject(before.currentPerformance).refs.includes(i));
+  const a=occupied.find(i=>before.userPresets[i][2]===19),b=occupied.find(i=>before.userPresets[i][2]===0);
+  assert.notEqual(a,undefined);assert.notEqual(b,undefined);
+  const changes=[{slot:a,recordBytes:before.userPresets[b]},{slot:b,recordBytes:before.userPresets[a]}];
+  const plan=planUserLayout(before,changes);
+  assert.deepEqual(plan.expected.userPresets[a],before.userPresets[b]);
+  assert.deepEqual(plan.expected.userPresets[b],before.userPresets[a]);
+  assert.deepEqual(plan.expected.projects,before.projects);
+  assert.deepEqual(plan.expected.currentPerformance,before.currentPerformance);
+  const swapped=await applyVerifiedUserLayout(mock,before,changes);
+  assert.deepEqual(swapped.after.userPresets,plan.expected.userPresets);
+  const newProject=encodeProject({section:0,refs:[a,b,32,255,255,255],name:"COMPOSED",settingsBytes:[17,44]});
+  const composed=composeFullPerformance(swapped.after,{user:[{slot:a,recordBytes:before.userPresets[a]},{slot:b,recordBytes:before.userPresets[b]}],
+    library:[{slot:31,recordBytes:preset}],projects:[{slot:31,recordBytes:newProject}]});
+  assert.equal(decodeProject(composed.projects[31]).section,3);
+  assert.deepEqual(composed.userPresets,before.userPresets);
+  assert.deepEqual(composed.libraryPresets[31],preset);
+  assert.deepEqual(composed.archive.objects.find(x=>x.id===1),before.archive.objects.find(x=>x.id===1));
+  assert.deepEqual(composed.currentPerformance,before.currentPerformance);
+  assert.deepEqual(validateFullDevice(composed),composed);
+  assert.deepEqual(swapped.after.projects,before.projects);
+  assert.throws(()=>composeFullPerformance(before,{user:[{slot:a,recordBytes:null}],projects:[{slot:31,recordBytes:newProject}]}),/missing USER/);
+  const {collectionFile,readCollection,projectCollectionFromSections}=await import("../web/performance-backup.mjs");
+  const many=Array.from({length:2200},(_,i)=>({recordBytes:Array.from(encodeRecord({engine:0,name:"S"+i,params:Array(127).fill(i%120)}))}));
+  const saved=collectionFile("user",many);
+  assert.equal(readCollection("user",JSON.parse(JSON.stringify(saved))).length,2200);
+  assert.equal(readCollection("user",{...saved,entries:[...saved.entries,many[0]]}).length,2200);
+  assert.throws(()=>readCollection("library",saved),/does not match/);
+  const projects=Array.from({length:1200},(_,i)=>({name:"Project "+i,sections:[encodeProject({section:0,refs:[32,255,255,255,255,255],name:"P"+i,settingsBytes:[i&255,i>>8]}),null,null,null]}));
+  assert.equal(readCollection("projects",collectionFile("projects",projects)).length,1200);
+  assert.ok(projectCollectionFromSections(composed.projects).some(p=>p.sections[3]&&decodeProject(p.sections[3]).name==="COMPOSED"));
+  console.log("PASS: USER layout swap with drum companions, full offline performance composition, 2200-sound and 1200-project collection round trips");
 }

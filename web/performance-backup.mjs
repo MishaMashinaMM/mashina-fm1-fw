@@ -3,8 +3,8 @@
  * project sections (8 projects x A-D). No device writes. Not yet a complete
  * FM1 backup: global device settings and real project WebMIDI are pending.
  */
-import {decodeRecord} from "./presets-library-codec.mjs";
-import {decodeProject,SECTION_COUNT,PROJECT_COUNT} from "./projects-library-codec.mjs";
+import {decodeRecord,encodeRecord} from "./presets-library-codec.mjs";
+import {decodeProject,restoreProjectsBackup,SECTION_COUNT,PROJECT_COUNT} from "./projects-library-codec.mjs";
 const TOTAL=PROJECT_COUNT*SECTION_COUNT;
 const check=(ok,msg)=>{if(!ok)throw new Error(msg);};
 function presetPositions(input,bank) {
@@ -77,4 +77,59 @@ export function planPerformanceRestore(bundle) {
     // No automatic erasure/USB activity; caller implements staged restore
     // and explicit confirmation after project transport is available.
   };
+}
+
+
+/* Offline collections have no device-slot limit. Entries are complete
+ * records, independent of the 32-position device JSON formats. Projects
+ * are grouped into four A-D sections, with fixed slot references intact.
+ * Exact duplicate entries are merged; same-name variants are retained. */
+export function mergeCollection(kind,...lists){
+  check(["user","library","projects"].includes(kind),"Unknown collection type");
+  const result=[],seen=new Set();
+  for(const list of lists){
+    check(Array.isArray(list),"Invalid collection entries");
+    for(const item of list){
+      let entry,key;
+      if(kind==="projects"){
+        check(Array.isArray(item?.sections)&&item.sections.length===4,"Project collection entry needs four A–D sections");
+        const sections=item.sections.map((r,i)=>{
+          if(r===null)return null;
+          const p=decodeProject(r);check(p.section===i,"Project collection section mismatch");return p.recordBytes;
+        });
+        if(!sections.some(Boolean))continue;
+        const name=String(item.name||sections.map(r=>r&&decodeProject(r).name).find(Boolean)||"Unnamed project").slice(0,120);
+        entry={name,sections};key=JSON.stringify(sections);
+      }else{
+        const p=decodeRecord(item.recordBytes??item);
+        entry={recordBytes:p.recordBytes};key=JSON.stringify(p.recordBytes);
+      }
+      if(!seen.has(key)){seen.add(key);result.push(entry);}
+    }
+  }
+  return result;
+}
+export function collectionFile(kind,entries){
+  return {format:"mashina-offline-collection",version:1,kind,entries:mergeCollection(kind,entries)};
+}
+export function projectCollectionFromSections(sections){
+  check(Array.isArray(sections)&&sections.length===32,"Expected 8 × A–D sections");
+  return mergeCollection("projects",Array.from({length:8},(_,i)=>({sections:sections.slice(4*i,4*i+4)})));
+}
+export function readCollection(kind,file){
+  if(file?.format==="mashina-offline-collection"){
+    check(file.version===1&&file.kind===kind,"Collection type/version does not match this tab");
+    return mergeCollection(kind,file.entries);
+  }
+  if(kind==="projects"){
+    const sections=file?.format==="mashina-full-device"?file.projects:restoreProjectsBackup(file);
+    return projectCollectionFromSections(sections);
+  }
+  if(file?.format==="mashina-full-device"){
+    const entries=file[kind==="user"?"userPresets":"libraryPresets"];
+    check(Array.isArray(entries)&&entries.length===32,"Invalid full backup preset bank");
+    return mergeCollection(kind,entries.filter(Boolean));
+  }
+  check(Array.isArray(file?.patches),"Expected a sound collection or sound pack");
+  return mergeCollection(kind,file.patches.map(p=>({recordBytes:Array.from(encodeRecord(p))})));
 }

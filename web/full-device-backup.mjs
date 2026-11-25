@@ -775,3 +775,76 @@ export function proposeUserImport(verified,patches,queued=[]){
   }
   return {changes,skipped};
 }
+
+
+/* A layout edit is built from the final slot map, rather than a sequence of
+ * destructive moves. Swaps, moves and replacement preserve full companions.
+ * The older empty-only import APIs remain unchanged for the diagnostic lab. */
+function stageUserLayout(full,changes){
+  insist(Array.isArray(changes)&&changes.length<=32,"Invalid USER layout");
+  const seen=new Set(),raw=id=>Array.from(dataBytes(full.archive.objects.find(x=>x.id===id)));
+  const set32=(a,o,v)=>{for(let i=0;i<4;i++)a[o+i]=(v>>>(8*i))&255;};
+  const banks=[raw(6),raw(7)],originalSide=raw(9);
+  const side=originalSide.length?originalSide.slice():Array(3728).fill(0);
+  if(!originalSide.length){set32(side,0,0x36465055);side[4]=1;side[6]=32;}
+  const touched=new Set();let sideNeeded=!!originalSide.length;
+  for(const {slot,recordBytes} of changes){
+    insist(Number.isInteger(slot)&&slot>=0&&slot<32&&!seen.has(slot),"Duplicate or invalid USER destination");
+    seen.add(slot);
+    const record=recordBytes===null?null:decodeRecord(recordBytes).recordBytes;
+    if(equalJson(full.userPresets[slot],record))continue;
+    if(record){
+      insist((record[1]===4||record[1]===5)&&record[3]===127&&record[159]===0x47,"Use a complete current-format MASHINA sound record");
+      insist(SIDE_ENGINE.has(record[2])||record.slice(192).every(x=>x===0),"Unexpected companion bytes for non-companion engine");
+    }
+    const i=Math.floor(slot/16),pos=8+(slot%16)*192;
+    if(!banks[i].length){banks[i]=Array(3080).fill(0);set32(banks[i],0,0x31425055);banks[i][4]=192;banks[i][6]=16;}
+    if(full.userPresets[slot]===null)insist(banks[i].slice(pos,pos+192).every(v=>v===0),"Empty USER destination contains unknown nonzero raw bytes");
+    banks[i].splice(pos,192,...(record?record.slice(0,192):Array(192).fill(0)));
+    const off=16+slot*116,mask=u32le(side,8);
+    if(record&&SIDE_ENGINE.has(record[2])){
+      sideNeeded=true;set32(side,off,soundTag(record));side.splice(off+4,112,...record.slice(192));set32(side,8,(mask|(1<<slot))>>>0);
+    }else{
+      side.fill(0,off,off+116);set32(side,8,(mask&~(1<<slot))>>>0);
+    }
+    full.userPresets[slot]=record;touched.add(i);
+  }
+  for(const i of touched)setArchiveObject(full,6+i,banks[i]);
+  if(sideNeeded&&!byteEq(originalSide,side))setArchiveObject(full,9,side);
+}
+export function planUserLayout(verified,changes){
+  const baseline=validateFullDevice(verified),expected=structuredClone(baseline);
+  stageUserLayout(expected,changes);
+  const refs=decodeProject(baseline.currentPerformance).refs;
+  for(const ref of refs)if(ref<32)insist(equalJson(baseline.userPresets[ref],expected.userPresets[ref]),"USER "+String(ref+1).padStart(3,"0")+" is currently loaded on FM1");
+  const checked=validateFullDevice(expected);
+  return {expected:checked,library:[],objectIds:[9,6,7].filter(id=>objectDiff(baseline,checked,id))};
+}
+export async function applyVerifiedUserLayout(request,verified,changes,progress=()=>{}){
+  return transferRestorePlan(request,verified,planUserLayout(verified,changes),progress);
+}
+/* Compose an independent complete performance file, with all queued bank
+ * and project edits, retaining the base's global settings and live state.
+ * Validate dependencies only after all edits; never issue USB requests.
+ * The existing full restore plans actual device differences on import. */
+export function composeFullPerformance(base,{user=[],library=[],projects=[]}={}){
+  const full=structuredClone(validateFullDevice(base));
+  stageUserLayout(full,user);
+  for(const [bank,edits] of [["library",library],["projects",projects]]){
+    insist(Array.isArray(edits)&&edits.length<=32,"Invalid "+bank+" layout");
+    const seen=new Set();
+    for(const {slot,recordBytes} of edits){
+      insist(Number.isInteger(slot)&&slot>=0&&slot<32&&!seen.has(slot),"Duplicate or invalid "+bank+" destination");seen.add(slot);
+      if(bank==="library")full.libraryPresets[slot]=recordBytes===null?null:decodeRecord(recordBytes).recordBytes;
+      else{
+        const record=recordBytes===null?null:encodeProject({...decodeProject(recordBytes),section:slot%4});
+        full.projects[slot]=record;
+        const bytes=paddedProject(record);
+        setArchiveObject(full,40+slot,bytes);
+        if(Math.floor(slot/4)===full.selectedProject-1)setArchiveObject(full,2+slot%4,bytes);
+      }
+    }
+  }
+  full.created=new Date().toISOString();
+  return validateFullDevice(full);
+}
