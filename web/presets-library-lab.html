@@ -40,6 +40,7 @@ tr:nth-child(2n){background:#161616}
 </head>
 <body>
 <h1>MASHINA</h1><h2>FM1 PERFORMANCE FW · PRESETS &amp; PROJECTS LIBRARY</h2>
+<p>For a 96-slot physical device use the Web Library manager; this legacy lab keeps its physical transfer tools restricted to the original 32-slot layout. The offline emulator tools support both layouts.</p>
 <p>This local preview models the <strong>32 USER + 32 LIBRARY</strong> layout. USER presets (001–032) remain editable on the FM1. LIBRARY positions (033–064) can be prepared from JSON, including exact 304-byte exported records.</p>
 <div class="warning"><strong>Experimental firmware required.</strong> USB library transfers work only when the FM1 reports LIB32 support. The standard firmware does not accept them. Updates may erase the 32 library slots; save an offline JSON backup before uploading or upgrading. Projects reference the same 64 shared sounds; replacing a sound changes every project that uses it. The USB feature is write-locked unless explicitly enabled in the firmware build.</div>
 <section class="catalog-shell" aria-label="Factory master catalog selector">
@@ -71,7 +72,7 @@ tr:nth-child(2n){background:#161616}
 </section>
 <section class="catalog-shell" aria-label="Inspect offline emulator backup" id="emu-inspection">
  <h2>EMULATOR SNAPSHOT · OFFLINE INSPECTION</h2>
- <p>Open a JSON exported by the MASHINA emulator. Inspect the exact saved USER 001–032, LIBRARY 033–064, and 8 projects with sections A–D. This is read-only and does not replace any prepared Web Library presets or browser saves.</p>
+ <p>Open a JSON exported by the MASHINA emulator. Inspect the exact saved USER 001–032, LIBRARY 033–064 or 033–128, and 8 projects with sections A–D. This is read-only and does not replace any prepared Web Library presets or browser saves.</p>
  <div class="toolbar">
   <label class="file">Inspect emulator snapshot (.json) <input id="inspect-emu" type="file" accept=".json,application/json"/></label>
   <button id="export-emu-projects" type="button" disabled>Export inspected projects JSON</button>
@@ -81,7 +82,7 @@ tr:nth-child(2n){background:#161616}
  <p id="emu-summary" class="stats">No emulator snapshot loaded.</p>
  <div class="catalog-shell" id="emu-editor" aria-label="Selective offline LIBRARY patching">
   <h2>SELECTIVE USER &amp; LIBRARY RESTORE · OFFLINE JSON ONLY</h2>
-  <p>Build a new complete emulator backup with selected USER 001–032 and/or LIBRARY 033–064 sounds. The source can be a validated factory preset, a saved LIBRARY override, or a complete USER sound (including matching FM6/drum companion) from this or a second emulator JSON. Unselected USER and LIBRARY records, project references/settings, and unrelated flash sectors remain byte-identical. The current browser saves and FM1 are never changed.</p>
+  <p>Build a new complete emulator backup with selected USER 001–032 and/or LIBRARY sounds through 064 or 128. The source can be a validated factory preset, a saved LIBRARY override, or a complete USER sound (including matching FM6/drum companion) from this or a second emulator JSON. Unselected USER and LIBRARY records, project references/settings, and unrelated flash sectors remain byte-identical. The current browser saves and FM1 are never changed.</p>
   <div class="toolbar">
    <label class="file">Optional: Load source emulator JSON <input id="emu-source-file" type="file" accept=".json,application/json"/></label>
    <span class="subtle" id="emu-source-info">No second snapshot selected.</span>
@@ -91,7 +92,7 @@ tr:nth-child(2n){background:#161616}
    <select id="emu-source-type" class="catalog-select"><option value="factory">Factory 107-preset catalog</option><option value="snapshot">Saved LIBRARY overrides from source JSON</option><option value="user">Saved USER presets from source JSON (complete records only)</option></select>
    <select id="emu-source-select" class="catalog-select" aria-label="Source sound"></select>
    <label for="emu-target-type">Destination</label>
-   <select id="emu-target-type" class="catalog-select"><option value="library">LIBRARY 033–064</option><option value="user">USER 001–032</option></select>
+   <select id="emu-target-type" class="catalog-select"><option value="library">LIBRARY</option><option value="user">USER 001–032</option></select>
    <select id="emu-target-select" class="catalog-select" aria-label="Destination sound slot"></select>
    <button id="emu-stage" type="button" disabled>Queue replacement</button>
    <button id="emu-clear-target" type="button" disabled>Queue factory fallback</button>
@@ -548,6 +549,7 @@ $("connect").addEventListener("click",()=>action(async()=>{
   const d=await connectLibraryMidi();
   try{
     const c=await capability(d.request);
+    if(c.slots!==32)throw Error("This legacy lab supports physical transfers only for 32 LIBRARY slots. Use the Web Library manager for LIB96.");
     let pc=null;
     try{pc=await projectCapability(d.request)}catch(_){/* LIB32-only firmware */}
     device=d;cap=c;projectCap=pc;
@@ -972,7 +974,7 @@ $("emu-stage").addEventListener("click",()=>{
   const source=items.find(x=>x.id===$("emu-source-select").value);
   const slot=Number($("emu-target-select").value);
   const kind=$("emu-target-type").value;
-  const low=kind==="user"?1:33,high=kind==="user"?32:64;
+  const low=kind==="user"?1:33,high=kind==="user"?32:32+emuInspection.library.length;
   if(!source?.available||!Number.isInteger(slot)||slot<low||slot>high)return;
   const ref=emuRefLabel(slot);
   emuPending.set(kind+slot,{kind,slot,recordBytes:source.recordBytes.slice(),name:source.name});
@@ -985,7 +987,7 @@ $("emu-clear-target").addEventListener("click",()=>{
   if(!emuInspection||!emuOriginalFlash)return;
   const slot=Number($("emu-target-select").value);
   const kind=$("emu-target-type").value;
-  const low=kind==="user"?1:33,high=kind==="user"?32:64;
+  const low=kind==="user"?1:33,high=kind==="user"?32:32+emuInspection.library.length;
   if(!Number.isInteger(slot)||slot<low||slot>high)return;
   emuPending.set(kind+slot,{kind,slot,recordBytes:null,
     name:kind==="user"?"Empty":"Factory default"});
@@ -1008,7 +1010,7 @@ $("emu-export-patched").addEventListener("click",()=>{
     if(library.length)current=editEmulatorLibrarySnapshot(current,library).snapshot;
     if(users.length)current=editEmulatorUserSnapshot(current,users).snapshot;
     if(emuPendingRefs.size)current=editEmulatorProjectReferences(current,[...emuPendingRefs.values()]).snapshot;
-    // Last full pass confirms all 64 slots and 32 project sections remain parseable.
+    // Last full pass confirms all preset slots and 32 project sections remain parseable.
     inspectEmulatorFlash(current);
     const out=typeof current==="string"?JSON.parse(current):current;
     downloadFile("mashina-emulator-selective-restore.json",out);
@@ -1060,7 +1062,7 @@ function emuRefreshProjectControls(){
   }
   if([...position.options].some(o=>o.value===oldPosition))position.value=oldPosition;
   const ref=$("emu-project-ref"),prior=ref.value;ref.replaceChildren();
-  for(let value=255;value<320;value++){
+  for(let value=255;value<256+32+(emuInspection?.library.length??32);value++){
     const n=value===255?255:value-256;
     const option=document.createElement("option");
     option.value=String(n);option.textContent=emuProjectRefLabel(n);
@@ -1115,7 +1117,7 @@ $("emu-project-stage").addEventListener("click",()=>{
   const reference=Number($("emu-project-ref").value);
   if(!Number.isInteger(pos)||pos<0||pos>=32||!emuInspection.projects.sections[pos]||
      !Number.isInteger(track)||track<1||track>6||
-     !Number.isInteger(reference)||(reference!==255&&(reference<0||reference>=64)))return;
+     !Number.isInteger(reference)||(reference!==255&&(reference<0||reference>=32+emuInspection.library.length)))return;
   const change={project:Math.floor(pos/4)+1,section:"ABCD"[pos%4],track,reference};
   emuPendingRefs.set(pos+":"+track,change);
   emuUpdateEditor();
@@ -1166,8 +1168,8 @@ function showEmulatorSnapshot(snapshot,filename){
   const nuser=snapshot.users.filter(x=>x.status==="saved").length;
   const nlib=snapshot.library.filter(x=>x.status==="overridden").length;
   const np=view.sections.filter(x=>!x.empty).length;
-  $("emu-summary").textContent=filename+" · "+nuser+"/32 USER saved · "+nlib+"/32 LIBRARY overrides ("+
-    (32-nlib)+" factory defaults) · "+np+"/32 project sections · "+snapshot.sectorCount+" flash sectors";
+  $("emu-summary").textContent=filename+" · "+nuser+"/32 USER saved · "+nlib+"/"+snapshot.library.length+" LIBRARY overrides ("+
+    (snapshot.library.length-nlib)+" factory defaults) · "+np+"/32 project sections · "+snapshot.sectorCount+" flash sectors";
 }
 $("inspect-emu").addEventListener("change",async e=>{
   const file=e.target.files?.[0];
