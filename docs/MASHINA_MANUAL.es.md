@@ -381,9 +381,15 @@ Mantené pulsado **REC** para entrar. Luego tocá **FX / SEL / ENV / LFO** para 
 
 
 
+## 7. Gestión de presets y biblioteca web
+
 ### 64 posiciones fijas de presets
 
-**USER 001–032** (Program Change 0–31): sonidos editables que se guardan en FM1. **LIBRARY 033–064** (PC 32–63): 32 sonidos de fábrica reemplazables desde la biblioteca web; se pueden restablecer. Abrí **SAVE → PRESETS**; K4 elige BANK: ALL / USER / LIB, K1 y el encoder PRESETS recorren posiciones, K2 filtra motores y K3 favoritos. Las posiciones USER vacías conservan su número. Guardá cualquier sonido editado primero en USER. El catálogo offline incluye 107 sonidos completos, también kits y voces FM6.
+**USER 001–032** (Program Change 0–31): sonidos editables que se guardan en FM1. **LIBRARY 033–064** (PC 32–63): 32 sonidos de fábrica reemplazables desde la biblioteca web; se pueden restablecer. Abrí **SAVE → PRESETS**; K4 elige BANK: ALL / USER / LIB, K1 y el encoder PRESETS recorren posiciones, K2 selecciona el motor; K3 marca o desmarca el favorito. Las posiciones USER vacías conservan su número. Guardá cualquier sonido editado primero en USER. El catálogo offline incluye 107 sonidos completos, también kits y voces FM6.
+
+### Guardar un preset editado en FM1
+
+Elegí una pista y editá el sonido. Abrí **SAVE → USER** (SOUND). K1 elige 001–032, K2 LOAD carga, K3 ERASE borra con confirmación y K4 SAVE guarda el sonido. Elegí la acción y pulsá OCT+; introducí el nombre y confirmá. Una posición ocupada pide confirmar la sustitución. Guardar asigna USER a la pista. **T1: ASSIGN PRESET** pide cargar un preset numerado; **T1: SAVE PRESET** pide guardar primero el sonido editado. El número identifica la pista.
 
 ### Ocho proyectos con secciones A–D
 
@@ -401,7 +407,7 @@ En PROJECTS arrastrá proyectos A–D completos o una sección por su chip. Las 
 
 v0.14 usa un formato nuevo. No migra presets, proyectos ni ajustes anteriores; guardá lo que quieras conservar antes de instalar. Después del [instalador](../webapp/installer/), usá [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) sólo si el dispositivo lo solicita. Confirmá el borrado único, reiniciá y abrí Web Library. Las actualizaciones compatibles conservan los datos 32+32. No inicialices un dispositivo ya inicializado. Si el protocolo de actualización no es compatible, volvé primero al V15 oficial.
 
-## 7. Ejemplos para tocar en vivo
+## 8. Ejemplos para tocar en vivo
 
 **Capas:** T1 y T2 con RX 1 y zonas superpuestas, sonidos distintos y panorama separado.
 

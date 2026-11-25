@@ -326,6 +326,8 @@ Use **SAVE** for edited sounds, project slots and the library. A project stores 
 
 
 
+## 7. Preset management and Web Library
+
 ### 64 fixed preset positions
 
 | Bank | Positions | MIDI Program Change (0-based) | Storage |
@@ -333,7 +335,11 @@ Use **SAVE** for edited sounds, project slots and the library. A project stores 
 | USER | 001–032 | 0–31 | Edit and save sounds on FM1; replace, move or export them in Web Library |
 | LIBRARY | 033–064 | 32–63 | 32 factory-backed sounds; replace or restore factory defaults in Web Library |
 
-Open **SAVE → PRESETS**. K4 selects **BANK: ALL / USER / LIB**; K1 and the PRESETS encoder navigate positions; K2 filters engines, K3 favorites. USER positions stay numbered even when empty. LIBRARY sounds are loaded and played like USER sounds, but saving an edited sound requires a USER slot. The offline factory catalog contains 107 sounds, including complete FM6 voices and all four drum-kit types; choose any of them for a device slot. To keep edits to a sound, save the sound to USER first.
+Open **SAVE → PRESETS**. K4 selects **BANK: ALL / USER / LIB**; K1 and the PRESETS encoder navigate positions; K2 selects an engine; K3 marks or unmarks the current favorite. USER positions stay numbered even when empty. LIBRARY sounds are loaded and played like USER sounds, but saving an edited sound requires a USER slot. The offline factory catalog contains 107 sounds, including complete FM6 voices and all four drum-kit types; choose any of them for a device slot. To keep edits to a sound, save the sound to USER first.
+
+### Saving an edited preset on FM1
+
+Select a track and edit its sound. Open **SAVE → USER** (SOUND group). K1 selects slot 001–032, K2 LOAD loads it, K3 ERASE clears it after confirmation, K4 SAVE stores the selected track's sound. Select the action with its knob and press OCT+ to execute; enter a name and confirm. Occupied slots require overwrite confirmation. Saving assigns the USER slot to the track. **T1: ASSIGN PRESET** means load a numbered preset; **T1: SAVE PRESET** means save the modified sound first. The number identifies the affected track.
 
 ### Eight projects, four sections each (A–D)
 
@@ -355,7 +361,7 @@ See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-
 
 MASHINA v0.14 uses a new storage layout. Previous firmware's presets, projects and settings are not migrated; back up anything you want to keep before flashing. Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/), then [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) only if the device reports that first installation is required. Confirm the one-time erase, reboot, then open Web Library. Already initialized 32+32 devices must not be initialized again; compatible updates retain their data. The installer may require official V15 as an intermediate step when the current firmware's update protocol is not supported.
 
-## 7. Example live configurations
+## 8. Example live configurations
 
 **Two synths in unison:** T1 and T2 on RX 1, overlapping full-note zones; put a different engine on each. Adjust volume/pan on MIXER and use FINE to detune one layer.
 
