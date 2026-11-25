@@ -2664,7 +2664,7 @@ static void draw_mixer_table(void)
         cv_text(4, CAP_IN(S, 14), &AF_S, "TRK", T_TEXT);
         cv_text(28, CAP_IN(S, 14), &AF_S, "VOICE", T_TEXT);
         if (zones) {
-            static const char *const labels[] = {"MIN", "MAX", "VMN", "MMX"};
+            static const char *const labels[] = {"MIN", "MAX", "VMN", "VMX"};
             for (uint32_t k = 0; k < 4u; k++)
                 cv_text_in(zx[k], CAP_IN(S, 14), 0, &AF_S, labels[k], T_TEXT, T_BG);
         } else if (tuning) {
@@ -2785,7 +2785,7 @@ static void draw_mixer_table(void)
         cv_begin(240, 24, T_BG);
         if (zones) {
             cv_text(4, CAP_IN(S, 14), &AF_S, "K1 MIN  K2 MAX", T_DIM);
-            cv_text(127, CAP_IN(S, 14), &AF_S, "K3 VMN K4 MMX", T_DIM);
+            cv_text(127, CAP_IN(S, 14), &AF_S, "K3 VMN K4 VMX", T_DIM);
         } else {
             cv_text(4, CAP_IN(S, 14), &AF_S, "K1 TRN", T_DIM);
             cv_text(86, CAP_IN(S, 14), &AF_S, "K2 FINE", T_DIM);
