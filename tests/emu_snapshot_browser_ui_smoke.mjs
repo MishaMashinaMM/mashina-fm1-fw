@@ -82,6 +82,7 @@ try{
           pageWidth:document.documentElement.scrollWidth,width:innerWidth,
           rows:[...s.querySelectorAll("tbody")].map(b=>b.rows.length),
           clippedTables:[...s.querySelectorAll(".scroll")].some(b=>b.scrollHeight>b.clientHeight+1),
+          wideTables:[...s.querySelectorAll(".scroll")].some(b=>b.scrollWidth>b.clientWidth+1),
           clippedSide:panel?panel.scrollHeight>panel.clientHeight+1:false,
           bottom:s.getBoundingClientRect().bottom};
       },tab);
@@ -90,6 +91,7 @@ try{
       if(tab!=="backup"){
         assert.deepEqual(layout.rows,[16,16],tab+" must show all slots");
         assert(!layout.clippedTables,tab+" unnecessarily scrolls slot tables");
+        if(tab==="projects")assert(!layout.wideTables,"PROJECTS tables must fit horizontally: "+JSON.stringify(layout));
         assert(!layout.clippedSide,tab+" action controls do not fit: "+JSON.stringify(layout));
       }
     }
@@ -168,12 +170,24 @@ try{
     assert.equal(await page.locator("#tab-"+tab+" tbody tr").count(),32);
     const metrics=await page.locator("#tab-"+tab).evaluate(s=>({
       tables:[...s.querySelectorAll(".scroll")].map(x=>x.scrollHeight-x.clientHeight),
+      widths:[...s.querySelectorAll(".scroll")].map(x=>x.scrollWidth-x.clientWidth),
       page:document.documentElement.scrollHeight-innerHeight
     }));
     assert(metrics.page<=1&&metrics.tables.every(x=>x<=1),tab+" populated layout overflow "+JSON.stringify(metrics));
+    if(tab==="projects")assert(metrics.widths.every(x=>x<=1),"Populated PROJECTS tables must fit horizontally "+JSON.stringify(metrics));
   }
   await page.locator("[data-tab=projects]").click();
   assert.match(await page.locator("#project-rows-second tr").last().textContent(),/P8:D.*PROJECT 32/);
+  // Windows display/browser scaling can reduce the CSS viewport even on a
+  // 1536-pixel display. All column headers and checkboxes must still fit.
+  await page.setViewportSize({width:1228,height:690});
+  const projectWidths=await page.locator("#tab-projects .scroll").evaluateAll(nodes=>nodes.map(x=>({
+    overflow:x.scrollWidth-x.clientWidth,
+    right:x.querySelector("th:last-child").getBoundingClientRect().right,
+    boundary:x.getBoundingClientRect().right
+  })));
+  assert(projectWidths.every(x=>x.overflow<=1&&x.right<=x.boundary+1),"Scaled PROJECTS horizontal overflow: "+JSON.stringify(projectWidths));
+  await page.setViewportSize({width:1536,height:728});
   await page.locator("[data-tab=user]").click();
   assert.match(await page.locator("#user-slots tr").first().textContent(),/TWELVE CHARS/);
   assert.match(await page.locator("#user-slots tr").first().locator("td").last().locator("span").getAttribute("title"),/P8:D\/T1/);
