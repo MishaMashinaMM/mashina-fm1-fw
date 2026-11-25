@@ -117,30 +117,89 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 }
 @media(max-width:850px){.workspace,.backup-grid{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.slot-panel{order:1}.side{order:0}.queue-list{max-height:180px}}
 @media(max-width:560px){.dual-tables,.side{grid-template-columns:1fr}.backup-grid .advanced{grid-column:auto}.section-head{gap:4px}.status{max-height:90px}.scroll{max-height:none}}
+
+/* The offline collection is a real, paged list. Device positions are fixed
+ * drop targets. No transfer is sent until the verified Apply action. */
+.collection-panel{display:flex;flex-direction:column;gap:5px;min-height:0}
+.collection-head{display:flex;justify-content:space-between;gap:4px;align-items:baseline}
+.collection-head h3{margin:0}
+.collection-tools{gap:4px;flex-wrap:wrap}
+.file-label{display:inline-flex!important;position:relative;align-items:center;justify-content:center;min-height:27px;padding:4px 6px;background:#272727;border:1px solid #555;border-radius:4px;cursor:pointer;color:#eee!important;flex:0 0 auto}
+.file-label input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.collection-tools button,.collection-pager button{font-size:11px;min-height:24px;padding:3px 6px}
+.collection-filters{flex-wrap:nowrap;gap:4px}
+.collection-filters input,.collection-filters select{min-width:0;max-width:100%;padding:4px 5px;font-size:11px;min-height:27px;border:1px solid #555;border-radius:4px;background:#171717;color:#eee}
+.collection-filters input{flex:1;width:85px}.collection-filters select{flex:0 1 auto;width:auto}
+.collection-list{flex:1 1 120px;min-height:80px;overflow:auto;background:#161616;border:1px solid #393939;border-radius:4px;overscroll-behavior:contain}
+.collection-item{display:flex;gap:5px;align-items:center;padding:3px 5px;border-bottom:1px solid #353535;min-width:0}
+.collection-item:nth-child(even){background:#222}
+.collection-item[draggable=true]{cursor:grab}
+.collection-item .item-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.collection-item .item-meta{color:var(--muted);font-size:10px;white-space:nowrap}
+.collection-item button{flex:none;padding:1px 5px;min-height:21px;font-size:11px}
+.collection-pager{justify-content:space-between;flex-wrap:nowrap}
+.collection-pager span:last-child{margin-left:auto}
+.manual-controls{font-size:11px;color:var(--muted);max-height:180px;overflow:auto}
+.manual-controls summary{cursor:pointer;color:var(--orange);padding:3px 0}
+.manual-controls[open]{flex:none}
+.slot-panel tr[data-slot][draggable=true]{cursor:grab}
+.slot-panel tr[data-pending=true]{background:#382a17!important}
+.slot-panel tr[data-pending=true] td:nth-child(2){color:var(--orange)}
+.slot-panel tr.drop-over,.collection-list.drop-over{outline:2px solid var(--orange);outline-offset:-2px;background:#342619!important}
+.slot-panel tr[data-locked=true] td:first-child{color:#aaa}
+#tab-user .side,#tab-library .side,#tab-projects .side{grid-template-rows:minmax(0,1fr) auto;align-content:stretch}
+.queue-panel{flex:none;min-height:100px}
+.queue-list{max-height:100px;min-height:24px}
+.project-actions{flex:none}
+@media(min-width:1180px) and (min-height:660px){
+ .collection-panel{overflow:hidden}
+ .side .queue-panel{max-height:220px}
+ .side .queue-list{flex:0 1 auto;max-height:70px}
+ .side .impact{max-height:54px}
+ .workspace{grid-template-columns:minmax(0,1fr) minmax(350px,382px)}
+}
+@media(max-width:1179px){.collection-list{max-height:280px}.manual-controls{max-height:none}}
+@media(max-width:560px){.collection-filters{flex-wrap:wrap}}
 </style></head><body><main>
 <header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><span id="connection" class="muted">Disconnected</span><span id="write-state" class="muted" aria-live="polite">No verified backup</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
 <div id="status" class="status" role="status">Connect your initialized FM1, then create and verify a complete backup in BACKUP. Offline sound packs can be imported without connecting.</div>
 <nav aria-label="Library sections"><button data-tab="user" aria-selected="true">USER</button><button data-tab="library" aria-selected="false">LIBRARY</button><button data-tab="projects" aria-selected="false">PROJECTS</button><button data-tab="backup" aria-selected="false">BACKUP</button></nav>
-<section id="tab-user"><div class="section-head"><h2>USER <span class="muted">001–032</span></h2><p>Restore complete sounds into empty USER slots.</p></div>
+<section id="tab-user"><div class="section-head"><h2>USER <span class="muted">001–032</span></h2><p>Drag sounds to numbered slots; drag slots to move or swap. Changes are staged until applied.</p></div>
 <div class="workspace">
-<div class="panel slot-panel"><h3>Device USER presets <span class="fine">32 slots · hover or focus for full text</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots-second"></tbody></table></div></div></div>
+<div class="panel slot-panel"><h3>FM1 USER slots <span class="fine">Drag to arrange · orange = pending</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots-second"></tbody></table></div></div></div>
 <div class="side">
-<div class="panel source-panel" id="user-source-panel"><h3>Sound source</h3><label class="field">Import sound pack (.json)<input id="user-import" type="file" accept=".json"></label><div class="row"><button id="user-export" disabled>Export device USER sounds</button><button id="user-import-all" disabled>Queue all imported sounds</button></div><label class="field">Source sound<select id="user-source"></select></label><label class="field">Destination<select id="user-target"></select></label><button id="user-add" disabled>Add to USER queue</button></div>
+<div class="panel source-panel collection-panel" id="user-source-panel"><div class="collection-head"><h3>Available presets</h3><span id="user-collection-count" class="fine"></span></div>
+<div class="row collection-tools"><label class="file-label">Import JSON<input id="user-import" type="file" accept=".json" aria-label="Import user JSON"></label><button id="user-collection-save">Save collection</button><button id="user-collection-capture" disabled>Add device sounds</button></div>
+<div class="row collection-filters"><input id="user-search" type="search" placeholder="Search presets" aria-label="Search user collection"><select id="user-engine" aria-label="Filter engine"><option value="">All engines</option></select><select id="user-origin" aria-label="Filter sound source"><option value="all">All sources</option><option value="collection">My collection</option><option value="factory">Factory</option><option value="device">Device</option></select></div>
+<div id="user-collection" class="collection-list" aria-label="user available items"></div>
+<div class="row collection-pager"><button id="user-prev">‹</button><span id="user-page" class="fine"></span><button id="user-next">›</button><span class="fine">Drag items to slots</span></div>
+<details class="manual-controls" id="user-manual"><summary>Manual selection / fixed-slot import</summary><div class="row"><button id="user-export" disabled>Export device USER sounds</button><button id="user-import-all" disabled>Queue all imported sounds</button></div><label class="field">Source sound<select id="user-source"></select></label><label class="field">Destination<select id="user-target"></select></label><div class="row"><button id="user-add" disabled>Add to USER queue</button><button id="user-reset" disabled>Clear USER slot</button></div></details></div>
 <div class="panel queue-panel"><h3>USER write queue</h3><div class="queue-list" id="user-queue"></div><p id="user-impact" class="fine impact"></p><div class="row queue-actions"><button id="user-apply" class="primary" disabled>Restore queued USER sounds</button><button id="user-clear">Clear queue</button></div></div>
 </div></div></section>
-<section id="tab-library" hidden><div class="section-head"><h2>LIBRARY <span class="muted">033–064</span></h2><p>Replace or reset factory sounds. Current live references are protected.</p></div>
+<section id="tab-library" hidden><div class="section-head"><h2>LIBRARY <span class="muted">033–064</span></h2><p>Drag sounds to numbered slots; drag slots to swap. Current live references are protected.</p></div>
 <div class="workspace">
-<div class="panel slot-panel"><h3>Device LIBRARY <span class="fine">32 slots · hover or focus for full text</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots-second"></tbody></table></div></div></div>
-<div class="side"><div class="panel source-panel"><h3>Sound source</h3><label class="field">Import sound pack (.json)<input id="library-import" type="file" accept=".json"></label><div class="row"><button id="library-export" disabled>Export device LIBRARY overrides</button><button id="library-import-all" disabled>Queue imported slot mapping</button></div><label class="field">Source sound<select id="library-source"></select></label><label class="field">Destination<select id="library-target"></select></label><div class="row"><button id="library-add" disabled>Add to LIBRARY queue</button><button id="library-reset" disabled>Queue factory reset</button></div></div>
+<div class="panel slot-panel"><h3>FM1 LIBRARY slots <span class="fine">Drag to arrange · orange = pending</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots-second"></tbody></table></div></div></div>
+<div class="side"><div class="panel source-panel collection-panel" id="library-source-panel"><div class="collection-head"><h3>Available presets</h3><span id="library-collection-count" class="fine"></span></div>
+<div class="row collection-tools"><label class="file-label">Import JSON<input id="library-import" type="file" accept=".json" aria-label="Import library JSON"></label><button id="library-collection-save">Save collection</button><button id="library-collection-capture" disabled>Add device sounds</button></div>
+<div class="row collection-filters"><input id="library-search" type="search" placeholder="Search presets" aria-label="Search library collection"><select id="library-engine" aria-label="Filter engine"><option value="">All engines</option></select><select id="library-origin" aria-label="Filter sound source"><option value="all">All sources</option><option value="collection">My collection</option><option value="factory">Factory</option><option value="device">Device</option></select></div>
+<div id="library-collection" class="collection-list" aria-label="library available items"></div>
+<div class="row collection-pager"><button id="library-prev">‹</button><span id="library-page" class="fine"></span><button id="library-next">›</button><span class="fine">Drag items to slots</span></div>
+<details class="manual-controls" id="library-manual"><summary>Manual selection / fixed-slot import</summary><div class="row"><button id="library-export" disabled>Export device LIBRARY overrides</button><button id="library-import-all" disabled>Queue imported slot mapping</button></div><label class="field">Source sound<select id="library-source"></select></label><label class="field">Destination<select id="library-target"></select></label><div class="row"><button id="library-add" disabled>Add to LIBRARY queue</button><button id="library-reset" disabled>Queue factory reset</button></div></details></div>
 <div class="panel queue-panel"><h3>LIBRARY write queue</h3><p class="fine">Replacing a preset changes its sound in all projects that use it. Presets currently loaded on FM1 cannot be replaced.</p><div class="queue-list" id="library-queue"></div><p id="library-impact" class="fine impact"></p><div class="row queue-actions"><button id="library-apply" class="primary" disabled>Apply queued LIBRARY changes</button><button id="library-clear">Clear queue</button></div></div>
 </div></div></section>
 <section id="tab-projects" hidden><div class="section-head"><h2>PROJECTS <span class="muted">8 × A–D</span></h2><p>Restore section settings and shared preset references, not sound records.</p></div>
 <div class="workspace"><div class="panel slot-panel"><h3>Project sections <span class="fine">32 sections · hover or focus for full text</span></h3><div class="dual-tables"><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Restore?</th></tr></thead><tbody id="project-rows"></tbody></table></div><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Restore?</th></tr></thead><tbody id="project-rows-second"></tbody></table></div></div></div>
-<div class="side"><div class="panel source-panel"><h3>Project files</h3><label class="field">Import projects JSON<input id="projects-import" type="file" accept=".json"></label><div class="row"><button id="projects-export" disabled>Export all projects</button><button id="projects-all" disabled>Select changed sections</button></div></div><div class="panel"><h3>Restore selection</h3><p id="projects-impact" class="fine impact"></p><button id="projects-apply" class="primary" disabled>Restore selected project sections</button></div></div>
+<div class="side"><div class="panel source-panel collection-panel"><div class="collection-head"><h3>Offline projects</h3><span id="projects-collection-count" class="fine"></span></div>
+<div class="row collection-tools"><label class="file-label">Import JSON<input id="projects-import" type="file" accept=".json" aria-label="Import projects JSON"></label><button id="projects-collection-save">Save collection</button><button id="projects-collection-capture" disabled>Add device projects</button></div>
+<div class="row collection-filters"><input id="projects-search" type="search" placeholder="Search projects" aria-label="Search projects collection"></div>
+<div id="projects-collection" class="collection-list" aria-label="projects available items"></div>
+<div class="row collection-pager"><button id="projects-prev">‹</button><span id="projects-page" class="fine"></span><button id="projects-next">›</button><span class="fine">Drag items to slots</span></div>
+<div class="row"><button id="projects-export" disabled>Export device projects</button><button id="projects-all" disabled>Select changed sections</button></div></div><div class="panel project-actions"><h3>Restore selection</h3><p id="projects-impact" class="fine impact"></p><div class="row"><button id="projects-apply" class="primary" disabled>Restore selected project sections</button><button id="projects-clear">Clear selection</button></div></div></div>
 </div></section>
 <section id="tab-backup" hidden><div class="section-head"><h2>BACKUP &amp; RESTORE</h2><p>Complete logical device backups. Keep your original JSON files.</p></div><div class="backup-grid">
 <div class="panel"><h3>1 · Current device backup</h3><p>32 USER, 32 LIBRARY, 32 sections, current performance and settings. Verify the downloaded file to unlock writes; reconnecting or performing a write invalidates authorization.</p><button id="backup-capture" class="primary" disabled>Backup complete FM1</button><label class="field">Verify saved complete backup<input id="backup-verify" type="file" accept=".json" disabled></label><p id="backup-summary">No device snapshot.</p></div>
 <div class="panel"><h3>2 · Restore a complete backup</h3><p class="warn">Only changed records are restored. An interrupted transfer may leave partial state. Preserve the target backup and never retry automatically.</p><label class="field">Choose source complete backup (.json)<input id="full-import" type="file" accept=".json"></label><p id="full-impact" class="impact">No source selected.</p><button id="full-apply" class="primary" disabled>Restore complete FM1</button></div>
+<div class="panel"><h3>3 · Performance file</h3><p>Save all USER, LIBRARY, project sections, current performance and device settings as one restorable file, including staged changes. Or open a saved file offline and arrange it without connecting FM1.</p><div class="row"><button id="performance-save" class="primary" disabled>Save complete performance</button><button id="performance-open" disabled>Open source offline</button><button id="performance-close" disabled>Close offline workspace</button></div><p id="performance-status" class="fine"></p></div>
 <div class="panel advanced"><h3>Advanced / offline tools</h3><p>Legacy sound extraction, emulator snapshots, factory catalog selection and flash diagnostics. Disconnect first.</p><a href="./advanced.html" id="advanced-link">Open experimental lab</a></div></div></section>
 <footer><span>Initialized-device manager · No firmware installation or formatting · Keep all original sound packs and complete backups.</span><a href="./guide.html" id="library-guide" target="_blank" rel="noopener">Web Library guide</a></footer>
 <dialog id="operation" aria-labelledby="op-title" aria-describedby="op-warning">
@@ -162,13 +221,155 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
 import {decodeRecord,parseImportedLibrary} from "./presets-library-codec.mjs";
-import {decodeProject,projectsBackup,restoreProjectsBackup} from "./projects-library-codec.mjs";
+import {decodeProject,encodeProject,projectsBackup,restoreProjectsBackup} from "./projects-library-codec.mjs";
+import {collectionFile,readCollection,mergeCollection,projectCollectionFromSections} from "./performance-backup.mjs";
 import {factorySourceRecords} from "./emulator-snapshot-editor.mjs";
-import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
+import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,planUserLayout,applyVerifiedUserLayout,composeFullPerformance,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
 const $=id=>document.getElementById(id),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const num=n=>String(n).padStart(3,"0"),pLabel=i=>"P"+(Math.floor(i/4)+1)+":"+("ABCD"[i%4]);
 let dev=null,writable=false,busy=false,snapshot=null,verified=null,pending=null,projectFile=null,fullSource=null;
-let factory=[],factoryFallbacks=[],packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
+let factory=[],factoryFallbacks=[],factoryFallbackRecords=[],engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
+let offlineWorkspace=false,collections={user:[],library:[],projects:[]},pages={user:0,library:0,projects:0},dragState=null;
+const PAGE_SIZE=50;
+const entries=q=>[...q].map(([slot,recordBytes])=>({slot,recordBytes}));
+const bankKey=bank=>bank==="user"?"userPresets":"libraryPresets";
+const pendingProjects=()=>[...selected].map(slot=>({slot,recordBytes:projectFile.sections[slot]}));
+const stagedEdits=()=>({user:entries(queues.user),library:entries(queues.library),projects:pendingProjects()});
+const hasEdits=()=>queues.user.size||queues.library.size||selected.size;
+function clearStaging(){for(const q of Object.values(queues))q.clear();selected.clear();projectFile=null;}
+function slotRecord(bank,slot){return queues[bank].has(slot)?queues[bank].get(slot):snapshot?.[bankKey(bank)][slot]??null;}
+function actualSound(bank,slot){const r=slotRecord(bank,slot);return r??(bank==="library"?factoryFallbackRecords[slot]??null:null);}
+function projectAt(slot){return selected.has(slot)&&projectFile?projectFile.sections[slot]:snapshot?.projects[slot]??null;}
+function addCollection(bank,items){collections[bank]=mergeCollection(bank,collections[bank],items);}
+function removeCollection(bank,index){collections[bank].splice(index,1);render();}
+function engineName(n){return engineNames.get(n)??"Engine "+n;}
+function dragStart(e,payload){if(busy||$("operation").open||$("confirmation").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
+function dragEnd(){dragState=null;for(const n of document.querySelectorAll(".drop-over"))n.classList.remove("drop-over");}
+function dropTarget(node,accept,handle){
+  node.ondragover=e=>{if(dragState&&accept(dragState)&&!busy){e.preventDefault();e.dataTransfer.dropEffect=dragState.type==="slot"?"move":"copy";node.classList.add("drop-over");}};
+  node.ondragleave=e=>{if(!node.contains(e.relatedTarget))node.classList.remove("drop-over");};
+  node.ondrop=e=>{if(!dragState||!accept(dragState)||busy)return;e.preventDefault();e.stopPropagation();const p=dragState;dragEnd();try{handle(p);}catch(err){status(err.message,"error");}};
+}
+function setPresetChanges(bank,changes){
+  if(!snapshot)throw Error("Capture a device backup or open a performance file offline first.");
+  const q=new Map(queues[bank]);
+  for(const {slot,recordBytes} of changes){
+    if(!offlineWorkspace&&references(slot+(bank==="user"?0:32),true))throw Error("Preset "+num(slot+(bank==="user"?1:33))+" is currently loaded on FM1.");
+    if(eq(snapshot[bankKey(bank)][slot],recordBytes))q.delete(slot);else q.set(slot,recordBytes);
+  }
+  // Validate selective writes before staging. Offline compositions may be
+  // incomplete until their dependent project sections are also arranged.
+  if(!offlineWorkspace&&q.size){
+    if(bank==="user")planUserLayout(snapshot,entries(q));
+    else planLibraryChanges(snapshot,entries(q),libOptions());
+  }
+  queues[bank]=q;render();
+}
+function presetDrop(bank,slot,p){
+  if(!snapshot)return;
+  if(p.type==="sound"){setPresetChanges(bank,[{slot,recordBytes:p.recordBytes}]);return;}
+  if(p.type!=="slot"||p.bank!==bank||p.slot===slot)return;
+  const a=actualSound(bank,p.slot),b=actualSound(bank,slot);
+  if(!a)throw Error("The dragged slot has no sound record.");
+  const canonical=(i,r)=>bank==="library"&&r&&eq(r,factoryFallbackRecords[i])?null:r;
+  if(bank==="library"&&!b)throw Error("Factory fallback record unavailable; cannot swap.");
+  setPresetChanges(bank,[{slot,recordBytes:canonical(slot,a)},{slot:p.slot,recordBytes:canonical(p.slot,b)}]);
+}
+function projectDrop(slot,p){
+  if(!snapshot)return;
+  const sections=projectFile?structuredClone(projectFile.sections):structuredClone(snapshot.projects);
+  const changes=[];
+  if(p.type==="project"){
+    const dest=Math.floor(slot/4)*4;
+    p.sections.forEach((r,i)=>changes.push({slot:dest+i,recordBytes:r}));
+  }else if(p.type==="section"){
+    changes.push({slot,recordBytes:p.recordBytes});
+  }else if(p.type==="project-slot"){
+    const src=Math.floor(p.slot/4)*4,dest=Math.floor(slot/4)*4;
+    if(src===dest)return;
+    for(let i=0;i<4;i++)changes.push({slot:dest+i,recordBytes:projectAt(src+i)},{slot:src+i,recordBytes:projectAt(dest+i)});
+  }else return;
+  for(const x of changes){
+    const r=x.recordBytes===null?null:encodeProject({...decodeProject(x.recordBytes),section:x.slot%4});
+    sections[x.slot]=r;
+    if(eq(r,snapshot.projects[x.slot]))selected.delete(x.slot);else selected.add(x.slot);
+  }
+  projectFile=projectsBackup(sections);render();
+}
+function bindSlotRow(row,bank,slot){
+  row.dataset.slot=String(slot);row.dataset.bank=bank;
+  const project=bank==="projects",record=project?projectAt(slot):actualSound(bank,slot);
+  const pending=project?selected.has(slot):queues[bank].has(slot);
+  row.dataset.pending=String(pending);
+  const locked=!project&&!offlineWorkspace&&!!references(slot+(bank==="user"?0:32),true);
+  row.dataset.locked=String(locked);
+  row.draggable=!!snapshot&&(project?Array.from({length:4},(_,i)=>projectAt(Math.floor(slot/4)*4+i)).some(Boolean):!!record);
+  row.ondragstart=e=>dragStart(e,project?{type:"project-slot",slot}:{type:"slot",bank,slot});
+  row.ondragend=dragEnd;
+  if(snapshot)dropTarget(row,p=>project?["project","section","project-slot"].includes(p.type):p.type==="sound"||p.type==="slot"&&p.bank===bank,p=>project?projectDrop(slot,p):presetDrop(bank,slot,p));
+}
+function collectionFromDevice(bank){
+  if(!snapshot)return;
+  if(bank==="projects")addCollection(bank,projectCollectionFromSections(Array.from({length:32},(_,i)=>projectAt(i))));
+  else addCollection(bank,Array.from({length:32},(_,i)=>bank==="user"?slotRecord(bank,i):actualSound(bank,i)).filter(Boolean));
+  render();status("Added complete "+bank.toUpperCase()+" records to offline collection. Save the collection to keep them.","ok");
+}
+function renderCollection(bank){
+  const host=$(bank+"-collection"),search=$(bank+"-search").value.trim().toLowerCase(),project=bank==="projects";
+  let list;
+  if(project){
+    list=collections.projects.map((p,index)=>({type:"project",...p,index,name:p.name,meta:p.sections.map((r,i)=>r?"ABCD"[i]:"").join("")}));
+  }else{
+    const origin=$(bank+"-origin").value,engine=$(bank+"-engine"),old=engine.value;
+    if(engine.options.length===1&&engineNames.size){for(const [n,name] of engineNames)opt(engine,String(n),name);engine.value=old;}
+    list=sources(bank).map(p=>({...p,type:"sound",engine:p.recordBytes[2],meta:engineName(p.recordBytes[2]),origin:p.id.startsWith("F")?"factory":p.id.startsWith("I")||p.id.startsWith("C")?"collection":"device"}))
+      .filter(p=>(origin==="all"||origin===p.origin)&&(engine.value===""||Number(engine.value)===p.engine));
+  }
+  list=list.filter(p=>(p.name+" "+p.meta).toLowerCase().includes(search));
+  const n=list.length,maxPage=Math.max(0,Math.ceil(n/PAGE_SIZE)-1);pages[bank]=Math.min(pages[bank],maxPage);
+  const page=pages[bank],start=page*PAGE_SIZE;
+  host.replaceChildren();
+  for(const p of list.slice(start,start+PAGE_SIZE)){
+    const row=document.createElement("div");row.className="collection-item";row.draggable=true;
+    row.dataset.entry=project?String(p.index):p.id;row.title=p.name+" · "+p.meta;
+    const name=document.createElement("span");name.className="item-name";name.textContent=p.name;
+    const meta=document.createElement("span");meta.className="item-meta";meta.textContent=p.meta;
+    row.append(name,meta);row.ondragstart=e=>dragStart(e,p);row.ondragend=dragEnd;
+    if(project){
+      for(let i=0;i<4;i++)if(p.sections[i]){
+        const chip=document.createElement("button");chip.textContent="ABCD"[i];chip.title="Drag section "+"ABCD"[i];chip.draggable=true;
+        chip.ondragstart=e=>{e.stopPropagation();dragStart(e,{type:"section",recordBytes:p.sections[i]});};chip.ondragend=dragEnd;
+        row.append(chip);
+      }
+    }else{
+      const stored=collections[bank].findIndex(x=>eq(x.recordBytes,p.recordBytes));
+      const action=document.createElement("button");action.textContent=stored>=0?"−":"+";action.title=stored>=0?"Remove from offline collection":"Add to offline collection";
+      action.onclick=()=>{if(stored>=0){removeCollection(bank,stored);if(p.id.startsWith("I")){packs[bank]=packs[bank].filter(x=>!eq(x.recordBytes,p.recordBytes));render();}}else{addCollection(bank,[p]);render();}};
+      row.append(action);
+      row.onclick=e=>{if(e.target===action)return;$(bank+"-source").value=p.id;$(bank+"-manual").open=true;sourceControls(bank);};
+    }
+    if(project){const remove=document.createElement("button");remove.textContent="−";remove.title="Remove from collection";remove.onclick=()=>removeCollection(bank,p.index);row.append(remove);}
+    host.append(row);
+  }
+  if(!n)host.textContent="No matching items. Import JSON or drag device records here.";
+  $(bank+"-collection-count").textContent=collections[bank].length+" saved offline";
+  $(bank+"-page").textContent=n?(start+1)+"–"+Math.min(start+PAGE_SIZE,n)+" / "+n:"0 items";
+  $(bank+"-prev").disabled=page===0;$(bank+"-next").disabled=page===maxPage;
+  $(bank+"-collection-capture").disabled=!snapshot||busy;
+  $(bank+"-collection-save").disabled=!collections[bank].length||busy;
+  dropTarget(host,p=>project?p.type==="project-slot":p.type==="slot"&&p.bank===bank,p=>{
+    if(project){const i=Math.floor(p.slot/4)*4;addCollection(bank,[{sections:Array.from({length:4},(_,j)=>projectAt(i+j))}]);}
+    else{const r=actualSound(bank,p.slot);if(r)addCollection(bank,[r]);}
+    render();status("Added to offline collection. Save collection to keep it.","ok");
+  });
+}
+for(const bank of ["user","library","projects"]){
+  for(const suffix of ["search",...(bank==="projects"?[]:["origin","engine"])])$(bank+"-"+suffix).oninput=()=>{pages[bank]=0;renderCollection(bank);};
+  $(bank+"-prev").onclick=()=>{pages[bank]--;renderCollection(bank);};
+  $(bank+"-next").onclick=()=>{pages[bank]++;renderCollection(bank);};
+  $(bank+"-collection-save").onclick=()=>download("mashina-"+bank+"-collection.json",collectionFile(bank,collections[bank]));
+  $(bank+"-collection-capture").onclick=()=>collectionFromDevice(bank);
+}
 function status(text,state=""){
   $("status").textContent=text;$("status").dataset.state=state;
   if($("operation").open&&busy)$("op-message").textContent=text;
@@ -229,7 +430,7 @@ $("confirm-accept").onclick=()=>answerConfirmation(true);
 $("confirmation").addEventListener("cancel",e=>{e.preventDefault();answerConfirmation(false);});
 $("confirmation").addEventListener("close",()=>{
   // Unexpected programmatic dismissal is cancellation, never approval.
-  if(confirmationResolve){const p=confirmationResolve;confirmationResolve=null;p.resolve(p.choices?null:false);}
+  if(!$("confirmation").open&&confirmationResolve){const p=confirmationResolve;confirmationResolve=null;p.resolve(p.choices?null:false);}
 });
 function download(name,obj){const u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function label(r){return r?decodeRecord(r).name:"Empty";}
@@ -247,6 +448,8 @@ function rows(id,data){
       tr.append(td);
     }
     (second&&index>=16?second:first).append(tr);
+    const bank=id==="project-rows"?"projects":id.startsWith("user-")?"user":id.startsWith("library-")?"library":null;
+    if(bank)bindSlotRow(tr,bank,index);
   }
 }
 function progress(phase,i,n){
@@ -262,6 +465,8 @@ function acceptSnapshot(file,name){snapshot=validateFullDevice(file);pending=JSO
 function ready(){return !!(dev&&writable&&verified&&!busy);}
 function sources(bank){
   const a=packs[bank].map((p,i)=>({id:"I"+i,name:"Imported · "+p.name,recordBytes:p.recordBytes}));
+  const imported=new Set(a.map(p=>JSON.stringify(p.recordBytes)));
+  collections[bank].forEach((p,i)=>{if(!imported.has(JSON.stringify(p.recordBytes)))a.push({id:"C"+i,name:"Collection · "+label(p.recordBytes),recordBytes:p.recordBytes});});
   if(snapshot){for(const [key,offset] of [["userPresets",1],["libraryPresets",33]])snapshot[key].forEach((r,i)=>{if(r)a.push({id:key+i,name:(offset===1?"USER ":"LIBRARY ")+num(i+offset)+" · "+label(r),recordBytes:r});});}
   return a.concat(factory.filter(x=>x.available).map(x=>({...x,name:"Factory · "+x.name})));
 }
@@ -286,28 +491,28 @@ function sourceControls(bank){
   }
   if([...target.options].some(o=>o.value===oldTarget))target.value=oldTarget;
   const slot=target.value===""?null:Number(target.value),r=slot===null?null:snapshot?.[bank==="user"?"userPresets":"libraryPresets"][slot];
-  const blocked=slot===null||!snapshot||references(slot+(bank==="user"?0:32),bank==="library")||(bank==="user"&&r);
+  const blocked=slot===null||!snapshot||(!offlineWorkspace&&references(slot+(bank==="user"?0:32),true));
   $(bank+"-add").disabled=busy||!!blocked||!src.value;
-  if(bank==="library")$("library-reset").disabled=busy||!!blocked||!r;
+  $(bank+"-reset").disabled=busy||!!blocked||!slotRecord(bank,slot);
   $(bank+"-export").disabled=busy||!snapshot;$(bank+"-import-all").disabled=busy||!snapshot||!packs[bank].length;$(bank+"-clear").disabled=busy;src.disabled=busy;target.disabled=busy;
   const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes}));
   const body=$(bank+"-queue");body.replaceChildren();
   if(!items.length)body.textContent="No changes queued.";
-  for(const {slot,recordBytes} of items){const row=document.createElement("div");row.className="row";const text=document.createElement("span");text.textContent=num(slot+(bank==="user"?1:33))+" ← "+(recordBytes?label(recordBytes):"Factory reset");const remove=document.createElement("button");remove.textContent="Remove";remove.disabled=busy;remove.onclick=()=>{q.delete(slot);render();};row.append(text,remove);body.append(row);}
+  for(const {slot,recordBytes} of items){const row=document.createElement("div");row.className="row";const text=document.createElement("span");text.textContent=num(slot+(bank==="user"?1:33))+" ← "+(recordBytes?label(recordBytes):bank==="user"?"Empty slot":"Factory reset");const remove=document.createElement("button");remove.textContent="Remove";remove.disabled=busy;remove.onclick=()=>{q.delete(slot);render();};row.append(text,remove);body.append(row);}
   let msg="Create and verify a complete backup to enable writes.",ok=false;
   if(items.length&&snapshot)try{
-    const plan=bank==="user"?planUserBatch(snapshot,items):planLibraryChanges(snapshot,items,libOptions());
+    const plan=bank==="user"?planUserLayout(snapshot,items):planLibraryChanges(snapshot,items,libOptions());
     ok=bank==="user"?plan.objectIds.length>0:plan.length>0;
     msg=ok?items.length+" queued destination(s). "+(verified?"Backup verified.":"Verify current backup before applying."):"No actual changes.";
-    if(bank==="library"&&ok){const uses=plan.flatMap(x=>references(x.slot+32)?[num(x.slot+33)+": "+references(x.slot+32)]:[]);if(uses.length)msg+=" Affected projects: "+uses.join("; ")+". ";}
+    if(ok){const offset=bank==="user"?0:32;const uses=items.flatMap(x=>references(x.slot+offset)?[num(x.slot+offset+1)+": "+references(x.slot+offset)]:[]);if(uses.length)msg+=" Affected projects: "+uses.join("; ")+". ";}
   }catch(e){msg="Blocked: "+e.message;}
   $(bank+"-impact").textContent=msg;$(bank+"-apply").disabled=!ready()||!ok;
-  rows(bank+"-slots",Array.from({length:32},(_,i)=>{const ref=i+(bank==="user"?0:32),r=snapshot?.[bank==="user"?"userPresets":"libraryPresets"][i];return [num(ref+1),!snapshot?"Not inspected":r?label(r):bank==="user"?"Empty":fallback(i),references(ref)||"—"];}));
+  rows(bank+"-slots",Array.from({length:32},(_,i)=>{const ref=i+(bank==="user"?0:32),r=snapshot?.[bank==="user"?"userPresets":"libraryPresets"][i];const pending=queues[bank].has(i),next=slotRecord(bank,i);return [num(ref+1),!snapshot?"Not inspected":pending?"→ "+(next?label(next):bank==="user"?"Empty":fallback(i)):r?label(r):bank==="user"?"Empty":fallback(i),references(ref)||"—"];}));
 }
 function projectName(p){return p?(decodeProject(p).name||"Saved section")+" · "+decodeProject(p).refs.filter(r=>r!==255).map(r=>num(r+1)).join(", "):"Empty";}
 function render(){
-  $("connection").textContent=dev?dev.name+(writable?" · Writable":" · Read-only"):"Disconnected";
-  $("write-state").textContent=busy?"Operation in progress":!dev?"No verified backup":!writable?"Read-only firmware":verified?"Backup verified · Writes unlocked":pending?"Verify downloaded backup · Writes locked":"Capture backup · Writes locked";
+  $("connection").textContent=dev?dev.name+(writable?" · Writable":" · Read-only"):offlineWorkspace?"OFFLINE PERFORMANCE":"Disconnected";
+  $("write-state").textContent=busy?"Operation in progress":offlineWorkspace?"Offline editing · No USB writes":!dev?"No verified backup":!writable?"Read-only firmware":verified?"Backup verified · Writes unlocked":pending?"Verify downloaded backup · Writes locked":"Capture backup · Writes locked";
   $("write-state").dataset.ready=String(ready());
   $("connect").disabled=busy||!!dev;$("disconnect").disabled=busy||!dev;
   $("backup-capture").disabled=busy||!dev;$("backup-verify").disabled=busy||!pending;
@@ -322,6 +527,11 @@ function render(){
   if(snapshot&&fullSource)try{const p=planFullRestore(snapshot,fullSource);fullOk=!!(p.objectIds.length+p.library.length);fullMsg=p.users.length+" USER changes · "+p.library.length+" LIBRARY changes · "+p.sections.length+" section changes · "+p.objectIds.length+" archive objects. "+(p.objectIds.includes(0)?"Current live performance will also be restored. ":"Current live performance will not be written. ")+(p.detached?" Live performance will be restored as unsaved (same musical settings).":"")+(fullOk?"":" Already identical; no writes necessary.");}catch(e){fullMsg="Blocked: "+e.message;}
   $("full-impact").textContent=fullMsg+(fullOk&&!ready()?" Verify the newly downloaded complete backup in BACKUP before restoring.":"");$("full-apply").disabled=!ready()||!fullOk;
   for(const id of ["user-import","library-import","projects-import","full-import"])$(id).disabled=busy;
+  for(const bank of ["user","library","projects"])renderCollection(bank);
+  $("performance-open").disabled=busy||!!dev||!fullSource;
+  $("performance-close").disabled=busy||!offlineWorkspace;
+  $("performance-save").disabled=busy||!snapshot;
+  $("performance-status").textContent=snapshot?(offlineWorkspace?"Offline base loaded. ":"Device snapshot loaded. ")+queues.user.size+" USER · "+queues.library.size+" LIBRARY · "+selected.size+" section edits staged.":"Capture FM1 or select a complete source backup and open it offline.";
 }
 function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
 for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
@@ -332,13 +542,18 @@ async function run(fn,operation=null){
   finally{busy=false;try{render();}finally{if(operation)finishOperation();}}
 }
 function fileInput(id,fn){$(id).onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)run(async()=>fn(JSON.parse(await f.text()),f.name));};}
-$("connect").onclick=()=>run(async()=>{invalidate();snapshot=null;const candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial})});try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");}catch(e){candidate.close();throw e;}},"Connecting FM1");
-$("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;snapshot=null;invalidate();for(const q of Object.values(queues))q.clear();selected.clear();status("Disconnected.");});
+$("connect").onclick=()=>run(async()=>{if(offlineWorkspace&&hasEdits())throw Error("Save the complete performance, then close the offline workspace before connecting.");offlineWorkspace=false;clearStaging();invalidate();snapshot=null;const candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial})});try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");}catch(e){candidate.close();throw e;}},"Connecting FM1");
+$("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;snapshot=null;offlineWorkspace=false;invalidate();clearStaging();status("Disconnected.");});
 $("backup-capture").onclick=()=>run(async()=>{invalidate();snapshot=null;const f=await captureFullDevice(dev.request,dev.name,progress);acceptSnapshot(f,"mashina-full-fm1-backup.json");status("Backup downloaded. Choose that file using Verify saved complete backup.","ok");},"Backing up FM1");
 fileInput("backup-verify",file=>{verified=null;const f=validateFullDevice(file);if(!pending||JSON.stringify(f)!==pending)throw Error("Select the exact newly downloaded complete backup.");verified=f;status("Backup verified. USER, LIBRARY, PROJECTS and BACKUP operations are available where safe.","ok");});
 function apply(fn,name,title){return run(async()=>{if(!dev||!writable||!verified)throw Error("Verify a fresh complete backup first.");const before=verified;invalidate();try{const result=await fn(before);acceptSnapshot(result.after,name);status("SUCCESS · Full state verified. Save and verify the newly downloaded backup before another write.","ok");}catch(e){snapshot=null;if(e.readback){download("mashina-fm1-failed-restore-readback.json",e.readback);status(e.message+" Exact failed read-back downloaded. Keep both JSON files; no further write authorized.","error");}else throw Error((e.message.startsWith("STOP")?"":"STOP — ")+e.message+" Keep your original backup. Reinspect before any further write.");}},title);}
 for(const bank of ["user","library"]){
-  fileInput(bank+"-import",file=>{const parsed=parseImportedLibrary(file);packs[bank]=parsed.map(x=>({slot:x.slot,...decodeRecord(x.record)}));$(bank+"-source").value="";status("Imported "+parsed.length+" complete sounds into "+bank.toUpperCase()+" source selector.");});
+  fileInput(bank+"-import",file=>{
+    if(file?.format==="mashina-full-device")file=validateFullDevice(file);
+    const imported=readCollection(bank,file);addCollection(bank,imported);
+    packs[bank]=Array.isArray(file.patches)&&file.patches.length<=32?parseImportedLibrary(file).map(x=>({slot:x.slot,...decodeRecord(x.record)})):[];
+    pages[bank]=0;$(bank+"-source").value="";status("Imported "+imported.length+" complete sounds. Offline collection: "+collections[bank].length+". Save collection to keep it.");
+  });
   $(bank+"-source").onchange=render;$(bank+"-target").onchange=render;
   $(bank+"-import-all").onclick=()=>run(async()=>{
     const q=queues[bank];
@@ -357,22 +572,44 @@ for(const bank of ["user","library"]){
     }
   });
   $(bank+"-export").onclick=()=>{const offset=bank==="user"?1:33,key=bank==="user"?"userPresets":"libraryPresets";download("mashina-"+bank+"-sounds.json",libraryBackupFile(snapshot[key].flatMap((r,slot)=>r?[{slot,...decodeRecord(r)}]:[]),bank));};
-  $(bank+"-add").onclick=()=>{const p=sources(bank).find(x=>x.id===$(bank+"-source").value),slot=Number($(bank+"-target").value);if(p)queues[bank].set(slot,p.recordBytes);render();};
+  $(bank+"-add").onclick=()=>{const p=sources(bank).find(x=>x.id===$(bank+"-source").value),slot=Number($(bank+"-target").value);try{if(p)setPresetChanges(bank,[{slot,recordBytes:p.recordBytes}]);}catch(e){status(e.message,"error");}};
+  $(bank+"-reset").onclick=()=>{try{setPresetChanges(bank,[{slot:Number($(bank+"-target").value),recordBytes:null}]);}catch(e){status(e.message,"error");}};
   $(bank+"-clear").onclick=()=>{queues[bank].clear();render();};
   $(bank+"-apply").onclick=async()=>{const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes})),options=libOptions();
-    const affected=bank==="library"?items.flatMap(x=>references(x.slot+32)?[num(x.slot+33)+": "+references(x.slot+32)]:[]):[];
+    const offset=bank==="user"?0:32;const affected=items.flatMap(x=>references(x.slot+offset)?[num(x.slot+offset+1)+": "+references(x.slot+offset)]:[]);
     if(!await askConfirmation({title:bank==="user"?"Restore USER sounds":"Apply LIBRARY changes",message:"Apply "+items.length+" queued "+bank.toUpperCase()+" change(s)? Keep the backup and do not disconnect.",summary:affected.length?"These project sections will use the new sound the next time they are loaded:\n"+affected.join("\n"):"",action:bank==="user"?"RESTORE":"APPLY"}))return;
-    apply(async before=>{const f=bank==="user"?applyVerifiedUserBatch:applyVerifiedLibraryChanges;const result=await f(dev.request,before,items,progress,options);q.clear();return result;},"mashina-full-fm1-after-"+bank+".json",bank==="user"?"Restoring USER sounds":"Updating LIBRARY sounds");};
+    apply(async before=>{const f=bank==="user"?applyVerifiedUserLayout:applyVerifiedLibraryChanges;const result=await f(dev.request,before,items,progress,options);q.clear();return result;},"mashina-full-fm1-after-"+bank+".json",bank==="user"?"Restoring USER sounds":"Updating LIBRARY sounds");};
 }
-$("library-reset").onclick=()=>{queues.library.set(Number($("library-target").value),null);render();};
 $("projects-export").onclick=()=>download("mashina-projects-8x4.json",projectsBackup(snapshot.projects));
-fileInput("projects-import",file=>{projectFile=projectsBackup(restoreProjectsBackup(file));selected.clear();status("Project file loaded. Select individual sections or all changed sections.");});
+fileInput("projects-import",file=>{
+  if(file?.format==="mashina-full-device")file=validateFullDevice(file);
+  const list=readCollection("projects",file);addCollection("projects",list);
+  if(file.format==="mashina-projects-mpr1"||file.format==="mashina-full-device"){
+    projectFile=projectsBackup(file.format==="mashina-full-device"?file.projects:restoreProjectsBackup(file));selected.clear();
+  }
+  pages.projects=0;status("Imported "+list.length+" projects into the offline collection. Drag projects or sections to destination slots.");
+});
+$("projects-clear").onclick=()=>{selected.clear();projectFile=null;render();};
 $("projects-all").onclick=()=>{if(snapshot&&projectFile)selected=new Set(projectFile.sections.flatMap((r,i)=>eq(r,snapshot.projects[i])?[]:[i]));render();};
 $("projects-apply").onclick=async()=>{const list=[...selected];if(!await askConfirmation({title:"Restore project sections",message:"Restore the selected project sections? Existing preset sounds are not changed.",summary:list.map(pLabel).join(", "),action:"RESTORE"}))return;apply(async before=>{const result=await applyVerifiedProjectRestore(dev.request,before,projectFile,list,progress);selected.clear();return result;},"mashina-full-fm1-after-projects.json","Restoring project sections");};
 fileInput("full-import",file=>{fullSource=validateFullDevice(file);status("Source complete backup loaded. Review the change counts before restoring.");});
+$("performance-save").onclick=()=>{try{
+  const f=composeFullPerformance(snapshot,stagedEdits());
+  download("mashina-complete-performance.json",f);status("Complete performance saved, including staged changes and settings. No device writes.","ok");
+}catch(e){status("Cannot save performance: "+e.message,"error");}};
+$("performance-open").onclick=async()=>{
+  if(dev||!fullSource)return;
+  if(offlineWorkspace&&hasEdits()&&!await askConfirmation({title:"Open another performance",message:"This discards the current staged arrangement. Save it first if needed.",action:"OPEN"}))return;
+  clearStaging();invalidate();snapshot=validateFullDevice(structuredClone(fullSource));offlineWorkspace=true;render();tab("user");status("Offline performance loaded. Arrange slots and save the complete performance. No FM1 connection.");
+};
+$("performance-close").onclick=async()=>{
+  if(!offlineWorkspace)return;
+  if(hasEdits()&&!await askConfirmation({title:"Close offline performance",message:"Close the workspace? Unsaved staged changes will be discarded.",action:"CLOSE"}))return;
+  clearStaging();snapshot=null;offlineWorkspace=false;render();status("Offline workspace closed. Collections remain available.");
+};
 $("full-apply").onclick=async()=>{if(!await askConfirmation({title:"Restore complete FM1",message:"This may replace USER sounds, LIBRARY overrides, projects and settings. Keep the current backup. Click RESTORE to confirm.",action:"RESTORE"}))return;apply(before=>applyVerifiedFullRestore(dev.request,before,fullSource,progress),"mashina-full-fm1-after-full-restore.json","Restoring complete FM1");};
 $("advanced-link").onclick=e=>{if(dev||busy){e.preventDefault();status("Disconnect FM1 before opening the experimental lab.","error");}};
 window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else dev?.close();});
 render();
-(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets)if(p.initialLibrarySlot>=33&&p.initialLibrarySlot<=64)factoryFallbacks[p.initialLibrarySlot-33]=p.name;render();}catch(e){console.warn(e.message);}})();
+(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets){engineNames.set(p.engine,p.engineName);if(p.initialLibrarySlot>=33&&p.initialLibrarySlot<=64){const i=p.initialLibrarySlot-33;factoryFallbacks[i]=p.name;factoryFallbackRecords[i]=factory.find(x=>x.id==="F"+p.factoryIndex&&x.available)?.recordBytes??null;}}render();}catch(e){console.warn(e.message);}})();
 </script></main></body></html>
