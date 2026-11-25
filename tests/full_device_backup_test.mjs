@@ -566,3 +566,32 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   assert.deepEqual(livePlan.expected.currentPerformance,before.currentPerformance);
   console.log("PASS: exact expected live metadata normalization on real firmware's detached restore");
 }
+
+
+// Reproduce an acknowledged ID0 commit with the previous live performance
+// still present. A strict failure must carry the actual validated readback,
+// not invite an automatic retry or incorrectly claim a complete restore.
+{
+  const before=await captureFullDevice(mock,"LIVE MISMATCH");
+  const source=structuredClone(before);
+  const live=decodeProject(before.currentPerformance);
+  const refs=live.refs.slice();refs[0]=refs[0]===32?33:32;
+  source.currentPerformance=encodeProject({...live,refs,section:0});
+  Object.assign(source.archive.objects.find(x=>x.id===0),raw(pad(source.currentPerformance)));
+  const orig=mockObjects.get(0).slice(),calls=[];
+  const ignoredLive=async(cmd,args=[],opts={})=>{
+    const reply=await mock(cmd,args,opts);
+    if(cmd===67&&args[0]===2){calls.push(args[1]);if(args[1]===0)mockObjects.set(0,orig.slice());}
+    return reply;
+  };
+  const expected=planFullRestore(before,source);
+  assert.deepEqual(expected.objectIds,[0]);
+  await assert.rejects(applyVerifiedFullRestore(ignoredLive,before,source),e=>{
+    assert.match(e.message,/Saved presets, projects and settings match.*Live performance does not match/);
+    assert.deepEqual(e.readback.currentPerformance,before.currentPerformance);
+    assert.deepEqual(e.readback.userPresets,before.userPresets);
+    return true;
+  });
+  assert.deepEqual(calls,[0]);
+  console.log("PASS: acknowledged live restore mismatch preserves strict failure and exact diagnostic readback");
+}

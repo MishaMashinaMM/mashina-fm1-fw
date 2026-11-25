@@ -354,6 +354,62 @@ int main(void)
                 restored && captured && ED_BK_RAW[5]==0u && same);
         }
     }
+    /* Real USB BACKUP PUT of a DIFFERENT live performance, not the
+     * previously tested no-op restore of identical references. Exercise
+     * wire chunking, actual USER/LIBRARY loading, section detachment and
+     * immediate readback after ordinary background project work. */
+    {
+        uint8_t original[MPR_MAX_RECORD],target[MPR_MAX_RECORD];
+        uint8_t args[320];
+        int ok=mpr_capture_unsaved(0u);
+        memcpy(original,ED_BK_RAW,sizeof original);
+        ok=ok && !project_reference_load(0,32u) && !project_reference_load(1,0u);
+        trk[0].p[P_LEVEL]=57;
+        ok=ok && mpr_capture_unsaved(0u);
+        memcpy(target,ED_BK_RAW,sizeof target);
+        project_load(1u); /* start from stored B, whose references differ */
+        bad+=check("distinct live restore setup differs from saved section B",
+                   ok && target[8]==32u && target[9]==0u &&
+                   trk[0].user==1u && trk[1].user==33u);
+        for(uint32_t pass=0;pass<2u;pass++){
+            const uint8_t *source=pass?original:target;
+            uint32_t oldErases=erases,oldWrites=writes;
+            uint32_t crc=st_crc32(source,MPR_MAX_RECORD);
+            args[0]=0;args[1]=0;
+            for(uint32_t j=0;j<5u;j++){
+                args[2+j]=(uint8_t)((MPR_MAX_RECORD>>(7u*j))&127u);
+                args[7+j]=(uint8_t)((crc>>(7u*j))&127u);
+            }
+            ed_rep_n=0;ed_backup_handle(ED_BACKUP_PUT,args,12u);
+            ok=ed_rep_n==3u && ed_rep[0]==0u && ed_rep[1]==0u && ed_rep[2]==0u;
+            for(uint32_t off=0;ok && off<MPR_MAX_RECORD;off+=256u){
+                uint32_t n=MPR_MAX_RECORD-off;if(n>256u)n=256u;
+                args[0]=1;args[1]=0;
+                for(uint32_t j=0;j<5u;j++)args[2+j]=(uint8_t)((off>>(7u*j))&127u);
+                ed_rep_n=0;ed_bk_pack(source+off,n);
+                uint32_t packed=ed_rep_n;
+                memcpy(args+7,ed_rep,packed);
+                ed_rep_n=0;ed_backup_handle(ED_BACKUP_PUT,args,7u+packed);
+                ok=ed_rep_n==3u && ed_rep[0]==1u && ed_rep[1]==0u && ed_rep[2]==0u;
+            }
+            args[0]=2;args[1]=0;ed_rep_n=0;
+            ed_backup_handle(ED_BACKUP_PUT,args,2u);
+            ok=ok && ed_rep_n==3u && ed_rep[0]==2u && ed_rep[1]==0u && ed_rep[2]==0u;
+            bad+=check(pass?"wire restores original live performance":"wire restores DIFFERENT USER/LIBRARY references",
+                       ok && proj_cur==PROJ_NO_SLOT &&
+                       trk[0].user==source[8]+1u && trk[1].user==source[9]+1u);
+            {
+                char title[PROJ_NAME_LEN+1u];
+                (void)lib_scan((song_cur+1u)%NSONG,title);
+            }
+            ed_rep_n=0;ed_backup_handle(ED_BACKUP_LIST,0,0);
+            bad+=check("live wire commit followed by exact LIST snapshot",
+                       ed_rep_n>=14u && ed_rep[1]==0u &&
+                       !memcmp(ED_BK_RAW,source,MPR_MAX_RECORD));
+            bad+=check("live-only wire PUT never erases or writes NOR",
+                       erases==oldErases && writes==oldWrites);
+        }
+    }
     /* RESTORE LAST must use the same six preset references as a manual
      * project save, never reintroduce the legacy embedded-sound snapshot.
      * The host NOR sim uses the real autosave storage sector pair. */

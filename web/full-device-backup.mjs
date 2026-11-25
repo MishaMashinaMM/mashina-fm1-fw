@@ -639,7 +639,7 @@ async function transferArchiveObject(request,object){
 async function transferRestorePlan(request,verified,plan,progress){
   const {libcap}=await verifiedTarget(request,verified,progress);
   const archive=readBackup(plan.expected.archive),total=plan.library.length+plan.objectIds.length;
-  let done=0,label="";
+  let done=0,label="",observed=null;
   try{
     for(const {slot,recordBytes} of plan.library){
       label="LIBRARY "+(slot+33);
@@ -657,12 +657,26 @@ async function transferRestorePlan(request,verified,plan,progress){
       progress("RESTORE",++done,total);
     }
     label="full-state read-back";
-    const after=await captureFullDevice(request,verified.firmware,progress);
-    sameFullPayload(plan.expected,after);
-    return {changed:done,after};
+    observed=await captureFullDevice(request,verified.firmware,progress);
+    sameFullPayload(plan.expected,observed);
+    return {changed:done,after:observed};
   }catch(e){
-    throw Error("STOP — "+label+" failed after "+done+"/"+total+
+    const error=Error("STOP — "+label+" failed after "+done+"/"+total+
       " acknowledged operations: "+e.message+". State may be partial. Keep the original backup; no automatic retry.");
+    if(observed){
+      error.readback=observed;
+      const storedKeys=["userPresets","libraryPresets","projects","selectedProject"];
+      const storedEqual=storedKeys.every(k=>equalJson(plan.expected[k],observed[k]))&&
+        readBackup(plan.expected.archive).objects.filter(o=>o.id!==0).every(o=>
+          byteEq(o.bytes,dataBytes(observed.archive.objects.find(x=>x.id===o.id))));
+      if(storedEqual&&!equalJson(plan.expected.currentPerformance,observed.currentPerformance)){
+        const wanted=decodeProject(plan.expected.currentPerformance),actual=decodeProject(observed.currentPerformance);
+        const display=refs=>refs.map(x=>x===255?"—":String(x+1).padStart(3,"0")).join(", ");
+        error.message="STOP — Saved presets, projects and settings match the requested backup. Live performance does not match. Expected T1–T6: "+display(wanted.refs)+
+          "; read back: "+display(actual.refs)+". No automatic retry. Exact read-back will be saved for diagnosis.";
+      }
+    }
+    throw error;
   }
 }
 export function planUserBatch(verified,changes){
@@ -705,7 +719,7 @@ export async function applyVerifiedProjectRestore(request,verified,file,selected
   return transferRestorePlan(request,verified,planProjectRestore(verified,file,selected),progress);
 }
 export function planFullRestore(verified,file){
-  const baseline=validateFullDevice(verified),expected=validateFullDevice(file);
+  const baseline=validateFullDevice(verified),expected=validateFullDevice(structuredClone(file));
   // This is a same-layout logical restore, not a legacy format migrator.
   for(const id of [1,10]){
     const a=dataBytes(baseline.archive.objects.find(o=>o.id===id));
