@@ -547,3 +547,22 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   assert.equal(before.userPresets[q.changes[0].slot],null);
   console.log("PASS: intentional saved reference changes, live protection, automatic safe USER import queue");
 }
+
+
+{
+  const before=await captureFullDevice(mock,"DETACH POLICY");
+  const detached=structuredClone(before);
+  const old=decodeProject(before.currentPerformance);
+  detached.currentPerformance=encodeProject({...old,section:1});
+  Object.assign(detached.archive.objects.find(o=>o.id===0),raw(pad(detached.currentPerformance)));
+  const active=(detached.selectedProject-1)*4+1;
+  const sections=structuredClone(detached.projects);sections[active]=null;
+  const file={format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,sections};
+  const plan=planProjectRestore(detached,file,[active]);
+  assert.equal(plan.detached,true);
+  assert.deepEqual(plan.expected.currentPerformance,before.currentPerformance);
+  const livePlan=planFullRestore(before,detached);
+  assert.equal(livePlan.detached,true);assert.ok(livePlan.objectIds.includes(0));
+  assert.deepEqual(livePlan.expected.currentPerformance,before.currentPerformance);
+  console.log("PASS: exact expected live metadata normalization on real firmware's detached restore");
+}

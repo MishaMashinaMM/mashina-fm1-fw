@@ -336,6 +336,23 @@ int main(void)
         ed_bk_id=0u;
         bad+=check("restore live unsaved MPR1 state without changing a saved slot",
                    ed_bk_commit()==0u && project_used(1));
+        /* Browser full restore expects the live section tag to normalize to
+         * 0 after ID0 restore detaches the performance. Check REAL capture
+         * and restore, including all musical settings, names and references. */
+        {
+            uint8_t source[MPR_MAX_RECORD];
+            bad+=check("capture live section B for restore roundtrip",mpr_capture_unsaved(1u));
+            memcpy(source,ED_BK_RAW,sizeof source);
+            ed_bk_id=0u;ed_bk_len=MPR_MAX_RECORD;
+            ed_bk_pos=ed_bk_len;ed_bk_crc=st_crc32(ED_BK_RAW,ed_bk_len);
+            int restored=ed_bk_commit()==0u && proj_cur==PROJ_NO_SLOT;
+            int captured=mpr_capture_unsaved(0u);
+            int same=1;
+            for(uint32_t k=0;k<MPR_MAX_RECORD;k++)
+                if(k!=5u && !(k>=28u&&k<32u) && source[k]!=ED_BK_RAW[k])same=0;
+            bad+=check("live restore detaches section tag but preserves musical bytes",
+                restored && captured && ED_BK_RAW[5]==0u && same);
+        }
     }
     /* RESTORE LAST must use the same six preset references as a manual
      * project save, never reintroduce the legacy embedded-sound snapshot.

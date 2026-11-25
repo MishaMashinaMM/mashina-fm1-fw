@@ -7,7 +7,7 @@
 import {BACKUP_CMD,bkU32,bkCrc,bkPack,captureBackup,readBackup,restoreBackup} from "./fm1backup.js";
 import {LIB_CMD,decodeRecord} from "./presets-library-codec.mjs";
 import {captureUser,readLibrary,capability,uploadPrepared} from "./presets-library-sync.mjs";
-import {decodeProject,restoreProjectsBackup,projectsBackup,MAX_RECORD} from "./projects-library-codec.mjs";
+import {decodeProject,encodeProject,restoreProjectsBackup,projectsBackup,MAX_RECORD} from "./projects-library-codec.mjs";
 import {makePerformanceBundle,parsePerformanceBundle} from "./performance-backup.mjs";
 const insist=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const archiveRequest=request=>([cmd,args],options={})=>request(cmd,args,options);
@@ -423,8 +423,8 @@ export function compareFlashFingerprints(before,after){
 
 
 /* Initialized-device physical LIBRARY management. No USER, project, global
- * or archive PUT commands. Refuse a change to ANY referenced slot, including
- * the current unsaved performance. A fresh complete snapshot must equal the
+ * or archive PUT commands. Live references always block replacement; saved
+ * references are protected by default and may be explicitly permitted. A fresh complete snapshot must equal the
  * verified offline backup before writing; all unselected logical bytes must
  * still match after the write. No automatic retry or rollback. */
 function sameFullPayload(a,b) {
@@ -594,6 +594,17 @@ function setArchiveObject(full,id,bytes){
   insist(o,"Missing archive object "+id);
   o.size=bytes.length;o.crc=bkCrc(bytes);o.data=btoa(String.fromCharCode(...bytes));
 }
+/* The real firmware's mpr_restore_unsaved() intentionally sets proj_cur to
+ * PROJ_NO_SLOT. BACKUP LIST then captures the live header as section A (0).
+ * The section tag is metadata, not a musical setting. Recompute its CRC
+ * exactly as the firmware will; compare ALL settings and refs unchanged. */
+function detachCurrent(full){
+  const live=decodeProject(full.currentPerformance);
+  if(live.section===0)return false;
+  full.currentPerformance=encodeProject({...live,section:0});
+  setArchiveObject(full,0,paddedProject(full.currentPerformance));
+  return true;
+}
 function objectDiff(a,b,id){
   const x=a.archive.objects.find(o=>o.id===id),y=b.archive.objects.find(o=>o.id===id);
   return !byteEq(dataBytes(x),dataBytes(y));
@@ -686,7 +697,9 @@ export function planProjectRestore(verified,file,selected=null){
     if(Math.floor(i/4)===baseline.selectedProject-1)setArchiveObject(expected,2+i%4,bytes);
     objectIds.push(40+i);sections.push(i);
   }
-  return {expected:validateFullDevice(expected),library:[],objectIds,sections};
+  const active=decodeProject(baseline.currentPerformance).section;
+  const detached=sections.includes((baseline.selectedProject-1)*4+active)&&detachCurrent(expected);
+  return {expected:validateFullDevice(expected),library:[],objectIds,sections,detached};
 }
 export async function applyVerifiedProjectRestore(request,verified,file,selected,progress=()=>{}){
   return transferRestorePlan(request,verified,planProjectRestore(verified,file,selected),progress);
@@ -712,9 +725,12 @@ export function planFullRestore(verified,file){
   const liveChanged=decodeProject(expected.currentPerformance).refs.some(ref=>ref<64&&
     !equalJson(ref<32?baseline.userPresets[ref]:baseline.libraryPresets[ref-32],
                ref<32?expected.userPresets[ref]:expected.libraryPresets[ref-32]));
-  if(liveChanged||objectDiff(baseline,expected,0)||objectIds.includes(1)||objectIds.includes(10))
+  const active=decodeProject(baseline.currentPerformance).section;
+  if(liveChanged||objectDiff(baseline,expected,0)||objectIds.includes(1)||objectIds.includes(10)||
+     objectIds.includes(40+(baseline.selectedProject-1)*4+active))
     objectIds.push(0);
-  return {expected,library,objectIds,
+  const detached=objectIds.includes(0)&&detachCurrent(expected);
+  return {expected:validateFullDevice(expected),library,objectIds,detached,
     users:expected.userPresets.map((r,i)=>equalJson(r,baseline.userPresets[i])?null:i).filter(i=>i!==null),
     sections:expected.projects.map((r,i)=>equalJson(r,baseline.projects[i])?null:i).filter(i=>i!==null)};
 }
