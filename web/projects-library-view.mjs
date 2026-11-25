@@ -2,11 +2,11 @@
  * Read-only 8-project × A-D reference inspection for the Web Library.
  * Consumes a validated projects-only backup; no WebMIDI writes or mutation.
  */
-import {decodeProject,restoreProjectsBackup} from "./projects-library-codec.mjs";
+import {decodeProject,restoreProjectsBackup,PRESET_COUNT} from "./projects-library-codec.mjs";
 const pad=n=>String(n).padStart(3,"0");
 export function inspectProjectReferences(file) {
   const positions=restoreProjectsBackup(file);
-  const usage=Array.from({length:64},()=>[]);
+  const usage=Array.from({length:PRESET_COUNT},()=>[]);
   const sections=positions.map((raw,index)=>{
     const project=Math.floor(index/4)+1;
     const section="ABCD"[index%4];

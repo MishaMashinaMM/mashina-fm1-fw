@@ -12,10 +12,10 @@ import {makePerformanceBundle,parsePerformanceBundle} from "./performance-backup
 const insist=(ok,msg)=>{if(!ok)throw new Error(msg);};
 const archiveRequest=request=>([cmd,args],options={})=>request(cmd,args,options);
 const dataBytes=object=>object?.bytes??Uint8Array.from(atob(object?.data??""),c=>c.charCodeAt(0));
-const records=list=>{
-  const arr=Array(32).fill(null);
+const records=(list,slots=32)=>{
+  const arr=Array(slots).fill(null);
   for(const entry of list){
-    insist(Number.isInteger(entry.slot)&&entry.slot>=0&&entry.slot<32&&!arr[entry.slot],
+    insist(Number.isInteger(entry.slot)&&entry.slot>=0&&entry.slot<slots&&!arr[entry.slot],
            "Duplicate or invalid preset slot");
     arr[entry.slot]=decodeRecord(entry.recordBytes).recordBytes;
   }
@@ -128,7 +128,7 @@ export async function probeFlash(request) {
   const projects=Uint8Array.from(await request(97,[]));
   const library=Uint8Array.from(await request(98,[]));
   insist(projects.length===17&&projects[0]===16 &&
-         library.length===5&&library[0]===4 &&
+         [4,12].includes(library[0])&&library.length===1+library[0] &&
          projects.slice(1).every(x=>x<=4) &&
          library.slice(1).every(x=>x<=4),
          "FM1 does not report compatible read-only flash diagnostics");
@@ -154,7 +154,7 @@ export function validateFullDevice(file) {
   const selectedProject=archiveProjectAliases(archive);
   // Full MPR1 restores must not include legacy migration records or missing live USER dependencies.
   insist(archive.objects.find(x=>x.id===8)?.size===0,"MPR1 backup contains a legacy FM6 migration object");
-  insist(decodeProject(current).refs.every(ref=>ref>=32||bundle.userPresets[ref]!==null),
+  insist(decodeProject(current).refs.every(ref=>ref===255||(ref>=32?ref<32+bundle.libraryPresets.length:bundle.userPresets[ref]!==null)),
     "Current performance references a missing USER preset");
   insist(sections.every((r,i)=>JSON.stringify(r)===JSON.stringify(bundle.projects[i])),
          "Project JSON and device archive disagree: restoration refused");
@@ -176,11 +176,11 @@ export function validateFullDevice(file) {
 export async function captureFullDevice(request,firmware="",progress=()=>{}) {
   const libcap=await capability(request);
   const projectcap=await projectCapability(request);
-  insist(libcap.slots===32&&projectcap.sections===32,"Unexpected MASHINA storage geometry");
+  insist(projectcap.sections===32,"Unexpected MASHINA storage geometry");
   const archive=await captureBackup(archiveRequest(request),firmware,
       (done,total)=>progress("device archive",done,total));
   const user=records(await captureUser(request,(done,total)=>progress("USER",done,total)));
-  const library=records(await readLibrary(request,(done,total)=>progress("LIBRARY",done,total)));
+  const library=records(await readLibrary(request,(done,total)=>progress("LIBRARY",done,total),libcap.slots),libcap.slots);
   const projects=archiveSections(readBackup(archive));
   const currentPerformance=archiveCurrent(readBackup(archive));
   return validateFullDevice({format:"mashina-full-device",version:1,
@@ -231,17 +231,13 @@ export async function restoreProjectsOnly(request,file,progress=()=>{}) {
   const cap=await projectCapability(request);
   insist(cap.writable,"FM1 project storage is read-only");
   const user=records(await captureUser(request));
+  const usesLibrary=projects.some(raw=>raw!==null&&decodeProject(raw).refs.some(ref=>ref>=32&&ref!==255));
+  const libcap=usesLibrary?await capability(request):{slots:32};
   const check=makePerformanceBundle({userPresets:user,
-    libraryPresets:Array(32).fill(null),projects});
+    libraryPresets:Array(libcap.slots).fill(null),projects});
   insist(check.projects.length===32,"Invalid project library");
-  // Projects may reference any LIBRARY 033–064 slot. Check the actual device
-  // records before the first write: CRC-damaged or malformed occupied slots
-  // must never be mistaken for empty positions with factory fallbacks.
-  if(projects.some(raw=>raw!==null&&decodeProject(raw).refs.some(ref=>ref>=32&&ref<64))) {
-    const libcap=await capability(request);
-    insist(libcap.slots===32,"Project restore needs compatible LIB32 storage");
-    await readLibrary(request);
-  }
+  // Validate all dependencies and occupied flash before any PUT.
+  if(usesLibrary)await readLibrary(request,()=>{},libcap.slots);
   for(let i=0;i<32;i++){
     await writeProjectObject(request,40+i,projects[i]);
     progress("PROJECTS",i+1,32);
@@ -270,16 +266,17 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
   const libcap=await capability(request),prcap=await projectCapability(request);
   insist(libcap.writable && prcap.writable,
          "Connected firmware does not allow both LIBRARY and PROJECT writes");
+  insist(libcap.slots===full.libraryPresets.length,"Backup and target LIBRARY geometry mismatch");
   // All records/CRC/reference dependencies were validated above. Capture a
   // separate offline backup of the target before calling this function.
   const entries=full.libraryPresets.flatMap((record,slot)=>
     record===null?[]:[{slot,recordBytes:record}]);
-  for(let slot=0;slot<32;slot++){
+  for(let slot=0;slot<libcap.slots;slot++){
     if(full.libraryPresets[slot]!==null)continue;
     const reply=Uint8Array.from(await request(LIB_CMD.erase,[slot],{timeout:6000}));
     insist(reply.length===2 && reply[0]===slot && reply[1]===0,
            "Could not erase stale LIBRARY slot "+(slot+33));
-    progress("LIBRARY erase",slot+1,32);
+    progress("LIBRARY erase",slot+1,libcap.slots);
   }
   await uploadPrepared(request,libcap,entries,
        (done,total)=>progress("LIBRARY upload",done,total));
@@ -288,7 +285,7 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
        {strict:true,skipProjectAliases:true});
   // Read-back checks independently verify the 32 LIBRARY positions and the
   // saved projects. A failed verification requests a retry from offline JSON.
-  const after=records(await readLibrary(request));
+  const after=records(await readLibrary(request,()=>{},libcap.slots),libcap.slots);
   insist(JSON.stringify(after)===JSON.stringify(full.libraryPresets),
          "LIBRARY verification failed after restore");
   const usersAfter=records(await captureUser(request));
@@ -310,7 +307,7 @@ export async function restoreFullDevice(request,file,progress=()=>{}) {
            (id===1?"Global settings":"Selected project index")+
            " verification failed after restore");
   }
-  return {restoredProjects:32,librarySlots:32,userSlots:32,settingsRestored:true};
+  return {restoredProjects:32,librarySlots:libcap.slots,userSlots:32,settingsRestored:true};
 }
 
 /* Optional diagnostic-image-only command 99. Every batch returns:
@@ -436,10 +433,10 @@ function sameFullPayload(a,b) {
 }
 export function planLibraryChanges(file,changes,{allowSavedReferences=false}={}) {
   const full=validateFullDevice(file);
-  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=32,"Select LIBRARY changes");
+  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=full.libraryPresets.length,"Select LIBRARY changes");
   const seen=new Set(),planned=[];
   for(const {slot,recordBytes} of changes) {
-    insist(Number.isInteger(slot)&&slot>=0&&slot<32&&!seen.has(slot),"Duplicate or invalid LIBRARY slot");
+    insist(Number.isInteger(slot)&&slot>=0&&slot<full.libraryPresets.length&&!seen.has(slot),"Duplicate or invalid LIBRARY slot");
     seen.add(slot);
     const record=recordBytes===null?null:decodeRecord(recordBytes).recordBytes;
     if(JSON.stringify(record)===JSON.stringify(full.libraryPresets[slot]))continue;
@@ -720,6 +717,7 @@ export async function applyVerifiedProjectRestore(request,verified,file,selected
 }
 export function planFullRestore(verified,file){
   const baseline=validateFullDevice(verified),expected=validateFullDevice(structuredClone(file));
+  insist(baseline.libraryPresets.length===expected.libraryPresets.length,"Backup and target LIBRARY geometry mismatch");
   // This is a same-layout logical restore, not a legacy format migrator.
   for(const id of [1,10]){
     const a=dataBytes(baseline.archive.objects.find(o=>o.id===id));
@@ -736,7 +734,7 @@ export function planFullRestore(verified,file){
     "Source has no compatible companion bank; use a complete current firmware backup");
   // Reload live performance last, even when its reference bytes are
   // identical but a referenced sound changed, so runtime sound caches match.
-  const liveChanged=decodeProject(expected.currentPerformance).refs.some(ref=>ref<64&&
+  const liveChanged=decodeProject(expected.currentPerformance).refs.some(ref=>ref<32+expected.libraryPresets.length&&
     !equalJson(ref<32?baseline.userPresets[ref]:baseline.libraryPresets[ref-32],
                ref<32?expected.userPresets[ref]:expected.libraryPresets[ref-32]));
   const active=decodeProject(baseline.currentPerformance).section;
@@ -825,7 +823,7 @@ export async function applyVerifiedUserLayout(request,verified,changes,progress=
 }
 export function planLibraryLayout(verified,changes){
   const baseline=validateFullDevice(verified);
-  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=32,"Select 1–32 LIBRARY changes");
+  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=baseline.libraryPresets.length,"Select LIBRARY changes");
   return planFullRestore(baseline,composeFullPerformance(baseline,{library:changes}));
 }
 export async function applyVerifiedLibraryLayout(request,verified,changes,progress=()=>{}){
@@ -839,10 +837,11 @@ export function composeFullPerformance(base,{user=[],library=[],projects=[]}={})
   const full=structuredClone(validateFullDevice(base));
   stageUserLayout(full,user);
   for(const [bank,edits] of [["library",library],["projects",projects]]){
-    insist(Array.isArray(edits)&&edits.length<=32,"Invalid "+bank+" layout");
+    const count=bank==="library"?full.libraryPresets.length:32;
+    insist(Array.isArray(edits)&&edits.length<=count,"Invalid "+bank+" layout");
     const seen=new Set();
     for(const {slot,recordBytes} of edits){
-      insist(Number.isInteger(slot)&&slot>=0&&slot<32&&!seen.has(slot),"Duplicate or invalid "+bank+" destination");seen.add(slot);
+      insist(Number.isInteger(slot)&&slot>=0&&slot<count&&!seen.has(slot),"Duplicate or invalid "+bank+" destination");seen.add(slot);
       if(bank==="library")full.libraryPresets[slot]=recordBytes===null?null:decodeRecord(recordBytes).recordBytes;
       else{
         const record=recordBytes===null?null:encodeProject({...decodeProject(recordBytes),section:slot%4});

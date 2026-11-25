@@ -3,12 +3,12 @@
  * project sections (8 projects x A-D). No device writes. Not yet a complete
  * FM1 backup: global device settings and real project WebMIDI are pending.
  */
-import {decodeRecord,encodeRecord} from "./presets-library-codec.mjs";
+import {decodeRecord,encodeRecord,validLibrarySize} from "./presets-library-codec.mjs";
 import {decodeProject,restoreProjectsBackup,SECTION_COUNT,PROJECT_COUNT} from "./projects-library-codec.mjs";
 const TOTAL=PROJECT_COUNT*SECTION_COUNT;
 const check=(ok,msg)=>{if(!ok)throw new Error(msg);};
 function presetPositions(input,bank) {
-  check(Array.isArray(input)&&input.length===32,bank+" requires 32 fixed positions");
+  check(Array.isArray(input)&&(bank==="LIBRARY"?validLibrarySize(input.length):input.length===32),bank+" has invalid fixed positions");
   return input.map((item,index)=>{
     if(item===null)return null; // empty USER, or LIBRARY compiled factory
     const bytes=Array.isArray(item)?item:item?.recordBytes;
@@ -48,6 +48,8 @@ export function makePerformanceBundle({userPresets,libraryPresets,projects}) {
   const user=presetPositions(userPresets,"USER");
   const lib=presetPositions(libraryPresets,"LIBRARY");
   const sections=projectPositions(projects);
+  for(const raw of sections)if(raw!==null)
+    check(decodeProject(raw).refs.every(ref=>ref===255||ref<32+lib.length), "Project reference exceeds LIBRARY geometry");
   const issues=analyzeProjectReferences(sections,user);
   check(issues.missingUserPresets.length===0,
         "backup contains project references to missing USER presets; cannot form self-contained performance bundle");
@@ -127,7 +129,7 @@ export function readCollection(kind,file){
   }
   if(file?.format==="mashina-full-device"){
     const entries=file[kind==="user"?"userPresets":"libraryPresets"];
-    check(Array.isArray(entries)&&entries.length===32,"Invalid full backup preset bank");
+    check(Array.isArray(entries)&&(kind==="library"?validLibrarySize(entries.length):entries.length===32),"Invalid full backup preset bank");
     return mergeCollection(kind,entries.filter(Boolean));
   }
   check(Array.isArray(file?.patches),"Expected a sound collection or sound pack");

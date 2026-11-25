@@ -4,7 +4,7 @@
  * sound references into embedded sounds. The firmware's new settings map
  * and WebMIDI commands still have to be implemented.
  */
-export const PROJECT_COUNT=8, SECTION_COUNT=4, TRACKS=6, PRESET_COUNT=64;
+export const PROJECT_COUNT=8, SECTION_COUNT=4, TRACKS=6, PRESET_COUNT=128;
 export const MPR_HEADER=32, MAX_SETTINGS=1792, MAX_RECORD=MPR_HEADER+MAX_SETTINGS;
 export const EMPTY_REFERENCE=255;
 const MAGIC=[0x4d,0x50,0x52,0x31];

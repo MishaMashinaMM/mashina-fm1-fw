@@ -3,7 +3,8 @@
  * Safe for use in a browser, but NOT connected to a physical FM1 yet.
  * A JSON file with full binary records round-trips without losing FM6/kit data.
  */
-export const LIBRARY_SLOTS=32, ENTRY_BYTES=304, PACKED_BYTES=348;
+export const USER_SLOTS=32, LIBRARY_SLOTS=32, MAX_LIBRARY_SLOTS=96, ENTRY_BYTES=304, PACKED_BYTES=348;
+export const validLibrarySize=n=>n===LIBRARY_SLOTS||n===MAX_LIBRARY_SLOTS;
 export const LIB_CMD=Object.freeze({cap:89,list:90,get:91,put:92,erase:93,captureUser:94});
 const KIT=new Set([10,15,19,20]);
 function required(ok,msg){if(!ok)throw new Error(msg);}
@@ -100,14 +101,19 @@ export function unpack7(input,size=ENTRY_BYTES){
   return out;
 }
 export function putRequest(slot,patch){
-  required(Number.isInteger(slot)&&slot>=0&&slot<LIBRARY_SLOTS,"slot must be 0..31");
+  required(Number.isInteger(slot)&&slot>=0&&slot<MAX_LIBRARY_SLOTS,"slot must be 0..95");
   const payload=pack7(encodeRecord(patch));
   required(payload.length===PACKED_BYTES,"bad PUT payload size");
   return Uint8Array.from([0xF0,0x7D,0x46,0x4C,LIB_CMD.put,slot,...payload,0xF7]);
 }
 export function parseImportedLibrary(obj){
   required(obj&&Array.isArray(obj.patches),"library JSON must include patches array");
-  required(obj.patches.length<=32,"maximum 32 patches");
-  return obj.patches.map((p,i)=>({slot:Number.isInteger(p.slot)?p.slot:i,
-    record:encodeRecord(p)}));
+  required(obj.patches.length<=MAX_LIBRARY_SLOTS,"maximum 96 patches");
+  const seen=new Set();
+  return obj.patches.map((p,i)=>{
+    const slot=Number.isInteger(p.slot)?p.slot:i;
+    required(slot>=0&&slot<MAX_LIBRARY_SLOTS&&!seen.has(slot),"Invalid or duplicate preset slot");
+    seen.add(slot);
+    return {slot,record:encodeRecord(p)};
+  });
 }

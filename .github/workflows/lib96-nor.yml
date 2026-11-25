@@ -29,3 +29,10 @@ jobs:
             cc -std=gnu11 -O2 $FLAGS tests/project_refs_test.c -o /tmp/librefs
             /tmp/librefs
           done
+      - name: Web Library geometry and backup protocol regressions
+        run: |
+          node tests/presets_library_codec_test.mjs
+          node tests/presets_library_sync_test.mjs
+          node tests/projects_library_codec_test.mjs
+          node tests/performance_backup_test.mjs
+          node tests/full_device_backup_test.mjs

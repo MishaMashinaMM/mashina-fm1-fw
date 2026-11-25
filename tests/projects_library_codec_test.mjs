@@ -21,7 +21,7 @@ assert.deepEqual(parsed.settingsBytes,settingsBytes);
 assert.throws(()=>decodeProject(recordBytes.slice(0,-1)),/payload size/);
 const damaged=recordBytes.slice();damaged[75]^=1;
 assert.throws(()=>decodeProject(damaged),/checksum/);
-assert.throws(()=>encodeProject({section:1,refs:[64,1,2,3,4,5]}),/references/);
+assert.throws(()=>encodeProject({section:1,refs:[128,1,2,3,4,5]}),/references/);
 const slots=Array(32).fill(null);
 slots[1]={recordBytes};
 slots[7]={section:3,refs:[0,1,2,32,63,255],name:"SET 2"};

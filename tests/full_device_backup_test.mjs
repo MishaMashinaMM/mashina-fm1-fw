@@ -95,8 +95,9 @@ await assert.rejects(restoreFullDevice(async(cmd)=>cmd===89?[1,32,1]:cmd===95?[1
 const mockObjects=new Map(objects.map(x=>[x.id,Uint8Array.from(Buffer.from(x.data,"base64"))]));
 const mockLib=new Map([[0,Uint8Array.from(preset)]]);
 let staged=null,sets=0,erasures=0,archiveGets=0;
+let mockLibrarySlots=32;
 async function mock(cmd,args=[],opts={}){
-  if(cmd===89)return [1,32,1];
+  if(cmd===89)return [1,mockLibrarySlots,1];
   if(cmd===95)return [1,32,1,0];
   if(cmd===94){
     const slot=args[0], bank=mockObjects.get(6+Math.floor(slot/16));
@@ -696,3 +697,27 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   assert.throws(()=>groupPlacement(values,[1,1],0),/Invalid source/);
   console.log("PASS: simultaneous group swap preserves every record, including overlapping and noncontiguous selections");
 }
+
+/* Expanded geometry round trip and mismatch rejection before any PUT. */
+mockLibrarySlots=96;
+mockLib.set(95,Uint8Array.from(preset));
+const expanded=await captureFullDevice(mock,"LIB96 SIMULATOR");
+assert.equal(expanded.libraryPresets.length,96);
+assert.deepEqual(expanded.libraryPresets[95],preset);
+assert.equal(expanded.userPresets.length,32);
+assert.equal(expanded.projects.length,32);
+const changed=structuredClone(expanded);
+changed.libraryPresets[95]=null;
+const delta=planFullRestore(expanded,changed);
+assert.deepEqual(delta.library,[{slot:95,recordBytes:null}]);
+assert.throws(()=>planFullRestore(expanded,{...expanded,libraryPresets:expanded.libraryPresets.slice(0,32)}),/geometry mismatch/);
+await restoreFullDevice(mock,expanded);
+assert.deepEqual(Array.from(mockLib.get(95)),preset);
+mockLibrarySlots=32;
+let forbiddenWrites=0;
+await assert.rejects(restoreFullDevice(async(cmd,args,opts)=>{
+  if(cmd===92||cmd===93||cmd===67)forbiddenWrites++;
+  return mock(cmd,args,opts);
+},expanded),/geometry mismatch/);
+assert.equal(forbiddenWrites,0);
+console.log("PASS: expanded LIBRARY 128 capture, restore, delta and geometry guard");
