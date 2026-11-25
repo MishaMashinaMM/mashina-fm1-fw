@@ -198,6 +198,9 @@ int main(void)
      * bytes outside the approved region. */
     {
         uint32_t last=LIB_SLOTS-1u, bank=last/LIB_PER_BANK;
+        /* Earlier foreign-sector test deliberately resets bank 3 (the last
+         * bank in the 32-slot configuration). Establish a known record. */
+        bad+=check("establish final slot",!lib_slot_write(last,r[last]));
         uint32_t before=writes;
         bad+=check("final slot maps to final A/B bank",lib_base(bank,1u)+LIB_SECTOR==TEST_LIB_END);
         bad+=check("last slot independent",!lib_slot_read(last,got)&&!memcmp(got,r[last],LIB_ENTRY));
