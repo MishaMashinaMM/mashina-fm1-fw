@@ -1680,7 +1680,8 @@ static void select_engine(uint32_t e)
  * 32 curated built-in entries. Factory entries are chosen round-robin
  * across shown engines so every engine contributes before extras.
  * This does not yet implement an uploaded/replaceable bank. */
-#define LIB_FACTORY_SLOTS 32u
+#include "preset_geometry.h"
+#define LIB_FACTORY_SLOTS MASHINA_LIBRARY_SLOTS
 #if FELUCCA_LIB32
 static int library_sound_load(uint32_t slot); /* implemented after USER storage in felucca.c */
 #if FELUCCA_FLASH_DIAG
@@ -1950,28 +1951,14 @@ static void midi_pc_poll(void)
     }
     for (i = 0; i < NTRK; i++)
         if (midi_pc_req[i]) {
-            uint32_t n = midi_pc_req[i] - 1u, all, k, e;
+            uint32_t n = midi_pc_req[i] - 1u;
             midi_pc_req[i] = 0;
             song.sel = (uint8_t)i;
-            preset_all_pos(&all);
-            if (n < all) {
-                e = preset_all_at(n, &k);
-                if (e == NENGINES) {
-                    up_load(k);
-                } else {
-#if FELUCCA_LIB32
-                    if (n >= UP_SLOTS) {
-                        (void)library_slot_apply(n - UP_SLOTS);
-                    } else
-#endif
-                    {
-                        if (e != TSEL->eng_req)
-                            set_engine(e);
-                        apply_preset(k);
-                    }
-                }
-                ui.force = 1;
-            }
+            /* Physical addressing, including PC127 / LIBRARY 128.
+             * Do not dispatch by the engine returned by a factory lookup:
+             * uploaded slots and unavailable fallbacks are not USER slots. */
+            if (n < UP_SLOTS + LIB_FACTORY_SLOTS)
+                preset_go(n);
             song.sel = (uint8_t)sel;
         }
 }

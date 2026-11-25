@@ -11,13 +11,13 @@ static uint8_t lib_sim_nor[0x100000];
 static uint32_t lib_sim_outside;
 static int lib_host_read(uint32_t off, void *out, uint32_t n)
 {
-    if (off < 0xC0000u || off + n > 0xC8000u) return 1;
+    if (off < 0xC0000u || off + n > MASHINA_LIBRARY_END) return 1;
     memcpy(out,lib_sim_nor+off,n);
     return 0;
 }
 static int lib_host_erase(uint32_t off)
 {
-    if (off < 0xC0000u || off + 4096u > 0xC8000u || (off & 4095u)) {
+    if (off < 0xC0000u || off + 4096u > MASHINA_LIBRARY_END || (off & 4095u)) {
         lib_sim_outside++;return 1;
     }
     memset(lib_sim_nor+off,0xFF,4096);
@@ -26,7 +26,7 @@ static int lib_host_erase(uint32_t off)
 static int lib_host_prog(uint32_t off,const void *p,uint32_t n)
 {
     const uint8_t *src=p;
-    if (off < 0xC0000u || off + n > 0xC8000u || (off&255u)+n>256u) {
+    if (off < 0xC0000u || off + n > MASHINA_LIBRARY_END || (off&255u)+n>256u) {
         lib_sim_outside++;return 1;
     }
     for(uint32_t i=0;i<n;i++)lib_sim_nor[off+i]&=src[i];
@@ -138,7 +138,7 @@ int main(void)
                    project_reference_load(4,31u)==1 && song.sel==chosen);
         bad+=check("out-of-range reference and track are refused",
                    project_reference_load(NTRK,0u)==1 &&
-                   project_reference_load(0,64u)==1);
+                   project_reference_load(0,MASHINA_PRESET_SLOTS)==1);
         bad+=check("reference recall never mutates stored USER data",
                    !memcmp(sound_before,up_rec(0),sizeof sound_before));
         /* Whole-section preflight refuses a missing USER sound BEFORE any
@@ -194,6 +194,31 @@ int main(void)
                    !strncmp(name,ENGINES[engine]->presets[preset].name,12u) &&
                    name[12]==0);
     }
+#if defined(MASHINA_LIB96_HOST_TEST)
+    {
+        uint32_t last=LIB_SLOTS-1u, chosen=song.sel;
+        uint32_t factory=0;
+        bad+=check("expanded geometry has 128 absolute positions",
+                   LIB_SLOTS==96u && browse_length()==128u);
+        bad+=check("last expanded factory slot has a real fallback",
+                   library_factory_at(last,&factory)<NENGINES);
+        bad+=check("write final LIBRARY record without touching USER",
+                   !lib_slot_write(last,savedAnalog));
+        library_metadata_boot();
+        {
+            char title[13]; uint32_t engine;
+            bad+=check("final slot metadata is cached at boot",
+                       library_metadata(last,title,&engine)==1u && !strcmp(title,"LIB ONE"));
+        }
+        midi_pc_req[1]=128u;
+        midi_pc_poll();
+        bad+=check("PC127 loads absolute LIBRARY 128 on track 2",
+                   trk[1].user==128u && trk[1].p[P_ATK]==49 && song.sel==chosen);
+        bad+=check("final slot reference resolves without changing selection",
+                   !project_reference_load(5,127u) && trk[5].user==128u && song.sel==chosen);
+        bad+=check("expanded writes stay inside reservation",lib_sim_outside==0);
+    }
+#endif
     printf("LIB SOUND INTEGRATION: %s\n",bad?"FAIL":"ALL TESTS PASSED");
     return !!bad;
 }

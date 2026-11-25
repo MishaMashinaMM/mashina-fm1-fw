@@ -57,7 +57,7 @@ static void mpr_capture_source(const track_t *t)
 {
     uint32_t k=(uint32_t)(t-trk);
     if(k>=NTRK)return;
-    mpr_origin_valid[k]=t->user>=1u && t->user<=64u;
+    mpr_origin_valid[k]=t->user>=1u && t->user<=MPR_PRESETS;
     mpr_origin_hash[k]=mpr_origin_valid[k]?mpr_current_sound_hash(t):0u;
 }
 static int mpr_source_modified(const track_t *t)
@@ -137,7 +137,7 @@ static int mpr_capture_unsaved(uint32_t section)
     if(section>=4u || transport_busy())return 0;
     for(uint32_t k=0;k<NTRK;k++){
         uint32_t u=trk[k].user;
-        refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        refs[k]=(uint8_t)(u>=1u && u<=MPR_PRESETS?u-1u:MPR_EMPTY);
         /* Only muted/inactive tracks may be unassigned. An audible track
          * without a preset reference has a live sound that MPR1 cannot
          * represent; refuse a misleading backup instead of losing it. */
@@ -160,7 +160,7 @@ static int mpr_live_save(uint32_t section,const char *rename)
     if(section>=4u || transport_busy())return 2;
     for(uint32_t k=0;k<NTRK;k++){
         uint32_t u=trk[k].user;
-        refs[k]=(uint8_t)(u>=1u && u<=64u?u-1u:MPR_EMPTY);
+        refs[k]=(uint8_t)(u>=1u && u<=MPR_PRESETS?u-1u:MPR_EMPTY);
         if(refs[k]==MPR_EMPTY && k<trk_live && !trk[k].p[P_MUTE]){
             char msg[] = "T1: ASSIGN PRESET";
             msg[1] = (char)('1' + k);

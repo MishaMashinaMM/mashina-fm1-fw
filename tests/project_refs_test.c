@@ -33,7 +33,7 @@ int main(void)
         record[100]=saved;rejected;
     }));
     bad+=ck("reject invalid preset references",({
-        uint8_t saved=refs[1];refs[1]=64;
+        uint8_t saved=refs[1];refs[1]=MPR_PRESETS;
         int rejected=!mpr_encode(record,1,refs,name,settings,20);
         refs[1]=saved;rejected;
     }));

@@ -6,10 +6,11 @@
  * until each existing per-project field has an explicit new-format mapping.
  */
 #include <stdint.h>
+#include "preset_geometry.h"
 /* Embedded AC79 build uses firmware/src/libc.c; host tests provide libc. */
 
 enum {
-    MPR_TRACKS = 6, MPR_PRESETS = 64, MPR_EMPTY = 255,
+    MPR_TRACKS = 6, MPR_PRESETS = MASHINA_PRESET_SLOTS, MPR_EMPTY = 255,
     MPR_NAME = 12, MPR_HEADER = 32, MPR_MAX_SETTINGS = 1792,
     MPR_MAX_RECORD = MPR_HEADER + MPR_MAX_SETTINGS
 };

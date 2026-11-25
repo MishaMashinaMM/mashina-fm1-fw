@@ -15,13 +15,9 @@
  */
 #include <stdint.h>
 
-#if defined(MASHINA_LIB96_NOR_TEST)
-#define LIB_STORE_SLOTS 96
-#define LIB_STORE_END 0xD8000u
-#else
-#define LIB_STORE_SLOTS 32
-#define LIB_STORE_END 0xC8000u
-#endif
+#include "preset_geometry.h"
+#define LIB_STORE_SLOTS MASHINA_LIBRARY_SLOTS
+#define LIB_STORE_END MASHINA_LIBRARY_END
 /* Expanded geometry is host-only until all device write gates are reviewed. */
 enum { LIB_SLOTS = LIB_STORE_SLOTS, LIB_PER_BANK = 8, LIB_BANKS = LIB_STORE_SLOTS / 8, LIB_ENTRY = 304,
        LIB_SECTOR = 4096, LIB_PAYLOAD_OFF = 256, LIB_BANK_BYTES = LIB_PER_BANK * LIB_ENTRY };
