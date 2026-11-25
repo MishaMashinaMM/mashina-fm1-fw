@@ -49,6 +49,23 @@ try{
   const errors=[];
   page.on("pageerror",e=>errors.push(e.message));
   await page.goto("http://127.0.0.1:8765/",{waitUntil:"networkidle"});
+  // New default manager: all controls start locked; imported source data
+  // must never cause device writes or unlock restoration offline.
+  await page.waitForFunction(()=>document.querySelectorAll("#user-source option").length>100);
+  assert.equal(await page.locator("#user-apply").isDisabled(),true);
+  assert.equal(await page.locator("#library-apply").isDisabled(),true);
+  assert.equal(await page.locator("#projects-apply").isDisabled(),true);
+  assert.equal(await page.locator("#full-apply").isDisabled(),true);
+  const rec=Array.from(encodeRecord({name:"UI TEST",engine:0,params:Array(127).fill(2)}));
+  await page.locator("#user-import").setInputFiles({name:"test.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify({patches:[{slot:0,recordBytes:rec}]}))});
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll("#user-source option")).some(x=>x.textContent==="Imported · UI TEST"));
+  assert.equal(await page.locator("#user-apply").isDisabled(),true);
+  for(const tab of ["library","projects","backup","user"]){
+    await page.locator("[data-tab="+tab+"]").click();
+    assert.equal(await page.locator("#tab-"+tab).isVisible(),true);
+  }
+  assert.deepEqual(errors,[],"New manager startup errors");
+  await page.goto("http://127.0.0.1:8765/advanced.html",{waitUntil:"networkidle"});
   await page.waitForFunction(()=>document.querySelectorAll("#emu-source-select option").length===107);
   assert.deepEqual(errors,[],"Web Library startup JavaScript errors");
   assert.equal(await page.locator("#backup-legacy").isDisabled(),true);

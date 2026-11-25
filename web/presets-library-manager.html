@@ -61,7 +61,7 @@ function sourceControls(bank){
   const blocked=slot===null||!snapshot||references(slot+(bank==="user"?0:32))||(bank==="user"&&r);
   $(bank+"-add").disabled=busy||!!blocked||!src.value;
   if(bank==="library")$("library-reset").disabled=busy||!!blocked||!r;
-  $(bank+"-export").disabled=busy||!snapshot;
+  $(bank+"-export").disabled=busy||!snapshot;$(bank+"-clear").disabled=busy;src.disabled=busy;target.disabled=busy;
   const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes}));
   const body=$(bank+"-queue");body.replaceChildren();
   if(!items.length)body.textContent="No changes queued.";
@@ -102,7 +102,7 @@ $("backup-capture").onclick=()=>run(async()=>{invalidate();snapshot=null;const f
 fileInput("backup-verify",file=>{verified=null;const f=validateFullDevice(file);if(!pending||JSON.stringify(f)!==pending)throw Error("Select the exact newly downloaded complete backup.");verified=f;status("Backup verified. USER, LIBRARY, PROJECTS and BACKUP operations are available where safe.","ok");});
 function apply(fn,name){return run(async()=>{if(!dev||!writable||!verified)throw Error("Verify a fresh complete backup first.");const before=verified;invalidate();try{const result=await fn(before);acceptSnapshot(result.after,name);status("SUCCESS · Full state verified. Save and verify the newly downloaded backup before another write.","ok");}catch(e){snapshot=null;throw Error("STOP — "+e.message+" Keep your original backup. Reinspect before any further write.");}});}
 for(const bank of ["user","library"]){
-  fileInput(bank+"-import",file=>{const parsed=parseImportedLibrary(file);packs[bank]=parsed.map(x=>decodeRecord(x.record));status("Imported "+parsed.length+" complete sounds into "+bank.toUpperCase()+" source selector.");});
+  fileInput(bank+"-import",file=>{const parsed=parseImportedLibrary(file);packs[bank]=parsed.map(x=>decodeRecord(x.record));$(bank+"-source").value="";status("Imported "+parsed.length+" complete sounds into "+bank.toUpperCase()+" source selector.");});
   $(bank+"-source").onchange=render;$(bank+"-target").onchange=render;
   $(bank+"-export").onclick=()=>{const offset=bank==="user"?1:33,key=bank==="user"?"userPresets":"libraryPresets";download("mashina-"+bank+"-sounds.json",libraryBackupFile(snapshot[key].flatMap((r,slot)=>r?[{slot,...decodeRecord(r)}]:[]),bank));};
   $(bank+"-add").onclick=()=>{const p=sources(bank).find(x=>x.id===$(bank+"-source").value),slot=Number($(bank+"-target").value);if(p)queues[bank].set(slot,p.recordBytes);render();};

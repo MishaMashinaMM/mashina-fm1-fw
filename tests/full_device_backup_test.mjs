@@ -4,7 +4,7 @@ import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
 import {captureUser} from "../web/presets-library-sync.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore,planUserBatch,applyVerifiedUserBatch,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -457,4 +457,72 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   assert.deepEqual(interrupted.userPresets,b.after.userPresets);
   assert.deepEqual(interrupted.libraryPresets,b.after.libraryPresets);
   console.log("PASS: selective empty USER restores, exact 304-byte records, both banks, companion-first interruption and unselected data preservation");
+}
+
+
+// Exercise the new manager's delta transactions on a mock that mirrors
+// firmware-selected project aliases, including an actual mixed restore.
+{
+  const commitIds=[];
+  async function managerMock(cmd,args=[],opts={}){
+    const reply=await mock(cmd,args,opts);
+    if(cmd===67&&args[0]===2&&reply[2]===0){
+      const id=args[1];commitIds.push(id);
+      const selected=mockObjects.get(10)[5];
+      if(id===10||id>=40&&id<72){
+        for(let i=0;i<4;i++)mockObjects.set(2+i,mockObjects.get(40+selected*4+i).slice());
+      }
+    }
+    return reply;
+  }
+  const baseline=await captureFullDevice(managerMock,"MANAGER");
+  const free=baseline.userPresets.flatMap((r,i)=>r===null?[i]:[]).filter(i=>i!==30);
+  const a=free.find(i=>i<16),b=free.find(i=>i>=16);
+  assert.notEqual(a,undefined);assert.notEqual(b,undefined);
+  const drum=baseline.userPresets.find(r=>r&&r[2]===19);
+  const analog=Array.from(encodeRecord({engine:0,name:"MANAGER ONE",params:Array(127).fill(13)}));
+  const edits=[{slot:a,recordBytes:analog},{slot:b,recordBytes:drum}];
+  assert.throws(()=>planUserBatch(baseline,[edits[0],edits[0]]),/Duplicate/);
+  const ub=await applyVerifiedUserBatch(managerMock,baseline,edits);
+  assert.deepEqual(commitIds,[9,6,7]);
+  assert.deepEqual(ub.after.userPresets[a],analog);
+  assert.deepEqual(ub.after.userPresets[b],drum);
+  assert.deepEqual(ub.after.projects,baseline.projects);
+  // Select one changed section, leave another imported change untouched.
+  const target=structuredClone(ub.after.projects);
+  target[3]=encodeProject({section:3,refs:[a,b,32,255,255,255],name:"NEW D",settingsBytes:[1,2,3]});
+  target[4]=encodeProject({section:0,refs:[b,255,255,255,255,255],name:"NEW A",settingsBytes:[4]});
+  const file={format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,sections:target};
+  const plan=planProjectRestore(ub.after,file,[3]);
+  assert.deepEqual(plan.objectIds,[43]);
+  commitIds.length=0;
+  const pr=await applyVerifiedProjectRestore(managerMock,ub.after,file,[3]);
+  assert.deepEqual(commitIds,[43]);
+  assert.deepEqual(pr.after.projects[3],target[3]);
+  assert.deepEqual(pr.after.projects[4],ub.after.projects[4]);
+  assert.deepEqual(pr.after.currentPerformance,ub.after.currentPerformance);
+  // Restore target back to previous full snapshot (USER changes + project
+  // deletion + a LIBRARY override removal). No unchanged banks written.
+  const spare=20;
+  const beforeFull=await applyVerifiedLibraryChanges(managerMock,pr.after,[{slot:spare,recordBytes:analog}]);
+  const fullPlan=planFullRestore(beforeFull.after,baseline);
+  assert.deepEqual(fullPlan.library.map(x=>x.slot),[spare]);
+  assert.deepEqual(fullPlan.objectIds,[9,6,7,43]);
+  commitIds.length=0;const eraseBefore=erasures;
+  const result=await applyVerifiedFullRestore(managerMock,beforeFull.after,baseline);
+  assert.deepEqual(commitIds,[9,6,7,43]);assert.equal(erasures,eraseBefore+1);
+  assert.deepEqual(result.after.userPresets,baseline.userPresets);
+  assert.deepEqual(result.after.libraryPresets,baseline.libraryPresets);
+  assert.deepEqual(result.after.projects,baseline.projects);
+  assert.deepEqual(result.after.archive.objects,baseline.archive.objects);
+  commitIds.length=0;
+  const noop=await applyVerifiedFullRestore(managerMock,result.after,baseline);
+  assert.equal(noop.changed,0);assert.deepEqual(commitIds,[]);
+  const stale=structuredClone(baseline);stale.libraryPresets[spare]=analog;
+  await assert.rejects(applyVerifiedFullRestore(managerMock,stale,baseline),/Device changed/);
+  assert.deepEqual(commitIds,[]);
+  const missing=structuredClone(file);
+  missing.sections[3]=encodeProject({section:3,refs:[a,255,255,255,255,255],name:"MISSING",settingsBytes:[1]});
+  assert.throws(()=>planProjectRestore(baseline,missing,[3]),/empty USER slot/);
+  console.log("PASS: manager multi-USER batch, selective project writes, aliases, delta full restore, no-op and stale backup refusal");
 }
