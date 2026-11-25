@@ -24,3 +24,10 @@ assert.equal(scripts.length,1);
 const syntax=spawnSync(process.execPath,["--input-type=module","--check"],{input:scripts[0][1],encoding:"utf8"});
 assert.equal(syntax.status,0,syntax.stderr);
 console.log("Single-slot LIBRARY 064 gate: PASS (one destination, one record, backup, reference safety, read-back, JS syntax).");
+
+assert.match(general,/applyVerifiedLibraryChanges\(device\.request,baseline,plan/);
+assert.match(general,/projectCap\.canInitialize/);
+assert.match(general,/wholeBackup=false;backedUp=false;pendingLibraryBackup=null;pendingFullBackup=null;verifiedFullFile=null;/);
+const generalScript=general.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
+const generalSyntax=spawnSync(process.execPath,["--input-type=module","--check"],{input:generalScript,encoding:"utf8"});
+assert.equal(generalSyntax.status,0,generalSyntax.stderr);

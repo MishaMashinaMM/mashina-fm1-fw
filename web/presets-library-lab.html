@@ -133,7 +133,16 @@ tr:nth-child(2n){background:#161616}
  <button id="capture-user" type="button" disabled>Capture 32 USER slots</button>
  <button id="backup-device" type="button" disabled>Back up device LIBRARY to JSON</button>
  <label class="file">Verify saved LIBRARY backup <input id="verify-library-backup" type="file" accept=".json,application/json"/></label>
- <button id="upload-device" type="button" disabled>Upload prepared LIBRARY slots</button>
+ <button id="upload-device" type="button" disabled>Bulk upload (locked during single-slot validation)</button>
+ <div class="catalog-shell">
+ <h2>DEVICE LIBRARY · SELECTED SLOT</h2>
+ <p>Choose any LIBRARY destination (033–064). Use a prepared sound or restore the built-in factory fallback. Saved project and current performance references block changes. Capture and verify a fresh complete FM1 backup first; do not touch FM1 controls during the operation.</p>
+ <label>Prepared source <select id="physical-source" class="catalog-select"></select></label>
+ <label>Destination <select id="physical-target" class="catalog-select"></select></label>
+ <button id="physical-put" type="button" disabled>Write selected LIBRARY slot</button>
+ <button id="physical-reset" type="button" disabled>Reset selected slot to factory</button>
+ <p id="physical-impact" class="stats">Verify a complete backup to inspect destination usage.</p>
+ </div>
 </div>
 <div class="toolbar">
  <button id="probe-flash" type="button" disabled>Inspect flash (read-only)</button>
@@ -159,7 +168,7 @@ tr:nth-child(2n){background:#161616}
  </div>
  <p id="flash-compare-status" class="stats" role="status">Choose two complete diagnostics to compare. Both original files are kept intact.</p>
 </details>
-<p class="foot"><strong>Physical write lock:</strong> USER/LIBRARY uploads and all project/full-device restore actions are disabled in this prototype until a separately approved physical-device testing build exists. Offline JSON composition, device backup and read-only flash diagnostics remain available. Future restores require explicit authorization, a compatible write-enabled firmware, and a fresh verified backup; multi-bank restores are not atomic.</p>
+<p class="foot"><strong>Physical write scope:</strong> Selected-slot LIBRARY writes are enabled only on initialized, format-disabled firmware with a fresh verified full backup. Referenced slots are blocked. Bulk uploads, USER uploads and project/full-device restoration remain locked. Offline composition, backup and read-only inspection remain available.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
 <table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Used in projects</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
@@ -179,7 +188,7 @@ import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {captureBackup,readBackup} from "./fm1backup.js";
 import {extractLegacyUserPresets,freshMpr1EmulatorFromLegacy} from "./legacy-user-extract.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
-import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints} from "./full-device-backup.mjs";
+import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints,planLibraryChanges,applyVerifiedLibraryChanges} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
 import {analyzeFlashFingerprints} from "./flash-fingerprint-analysis.mjs";
 import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
@@ -196,7 +205,7 @@ const PHYSICAL_WRITES_APPROVED=false;
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 // Authorization requires re-importing the exact JSON saved to disk, not just
 // clicking a download link. Evidence is invalidated on connection or writes.
-let pendingLibraryBackup=null,pendingFullBackup=null;
+let pendingLibraryBackup=null,pendingFullBackup=null,verifiedFullFile=null;
 let pendingLegacyBackup=null,verifiedLegacyBackup=false;
 let inspectedProjects=null;
 let sourceCatalog=null,sourceSelection=Array(32).fill(null),sourceKitRecords=null;
@@ -400,6 +409,45 @@ function showProjects(file){
     " empty · "+view.usage.filter(x=>x.length).length+" different preset slots referenced";
   render();
 }
+function physicalControls(){
+  const source=$("physical-source"),target=$("physical-target");
+  const old=source.value,oldTarget=target.value;
+  source.replaceChildren();
+  for(const item of prepared()){
+    const opt=document.createElement("option");opt.value=String(item.slot);
+    opt.textContent=String(item.slot+33).padStart(3,"0")+" · "+item.name;source.append(opt);
+  }
+  if([...source.options].some(o=>o.value===old))source.value=old;
+  if(!target.options.length)for(let i=0;i<32;i++){
+    const opt=document.createElement("option");opt.value=String(i);target.append(opt);
+  }
+  if(oldTarget!=="")target.value=oldTarget;
+  for(const opt of target.options){
+    const i=Number(opt.value),rec=verifiedFullFile?.libraryPresets[i];
+    opt.textContent=String(i+33).padStart(3,"0")+" · "+
+      (verifiedFullFile?(rec?decodeRecord(rec).name:"Factory fallback"):"Not inspected");
+  }
+  const ready=!busy&&device&&cap?.writable&&projectCap?.writable&&!projectCap.canInitialize&&wholeBackup&&verifiedFullFile;
+  const i=Number(target.value);
+  let available=false,reason="Verify a complete backup to inspect destination usage.";
+  if(verifiedFullFile){
+    // Use a hypothetical different record (or null) only to inspect impact.
+    const refs=[];
+    for(let k=0;k<32;k++)if(verifiedFullFile.projects[k])
+      decodeProject(verifiedFullFile.projects[k]).refs.forEach((r,t)=>{
+        if(r===i+32)refs.push("P"+(Math.floor(k/4)+1)+":"+"ABCD"[k%4]+"/T"+(t+1));
+      });
+    decodeProject(verifiedFullFile.currentPerformance).refs.forEach((r,t)=>{
+      if(r===i+32)refs.push("Current performance/T"+(t+1));
+    });
+    available=!refs.length;
+    reason=refs.length?"BLOCKED — "+refs.join(", "):"No saved or current performance references.";
+  }
+  $("physical-impact").textContent=reason;
+  source.disabled=!!busy;target.disabled=!!busy;
+  $("physical-put").disabled=!ready||!available||source.value===""||catalogNeedsPrepare;
+  $("physical-reset").disabled=!ready||!available||!verifiedFullFile?.libraryPresets[i];
+}
 function connectionStatus(){
   $("conn").textContent=device?`Connected: ${device.name}. LIB32 v${cap.version}, ${cap.slots} slots (${cap.writable?"write-enabled":"read-only"}); MPR1 projects: ${projectCap?(projectCap.writable?"write-enabled":"read-only"):"unsupported"}.`:"Not connected. No device write can occur.";
   $("connect").disabled=busy;
@@ -413,6 +461,7 @@ function connectionStatus(){
   $("backup-full").disabled=busy||!device||!projectCap;
   $("restore-projects").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!projectCap?.writable||!wholeBackup;
   $("restore-full").disabled=!PHYSICAL_WRITES_APPROVED||busy||!device||!projectCap?.writable||!cap?.writable||!wholeBackup;
+  physicalControls();
 }
 async function action(fn){
   if(busy)return;busy=true;connectionStatus();
@@ -449,6 +498,7 @@ function render(){
     row.append(action);body.append(row);
   }
   $("stats").textContent=`${used} prepared · ${LIBRARY_SLOTS-used} empty · PC 32–63`;
+  physicalControls();
 }
 $("import").addEventListener("change",async e=>{
   const file=e.target.files?.[0];if(!file)return;
@@ -482,7 +532,7 @@ $("export").addEventListener("click",()=>{
 });
 $("connect").addEventListener("click",()=>action(async()=>{
   device?.close();device=null;cap=null;projectCap=null;backedUp=false;wholeBackup=false;
-  pendingLibraryBackup=null;pendingFullBackup=null;
+  pendingLibraryBackup=null;pendingFullBackup=null;verifiedFullFile=null;
   pendingLegacyBackup=null;verifiedLegacyBackup=false;
   const d=await connectLibraryMidi();
   try{
@@ -536,10 +586,38 @@ $("verify-full-backup").addEventListener("change",async e=>{
     validateFullDevice(imported);
     if(JSON.stringify(imported)!==pendingFullBackup)
       throw Error("Saved complete FM1 JSON does not exactly match the latest device backup");
+    verifiedFullFile=validateFullDevice(imported);
     wholeBackup=true;backedUp=true;
-    $("status").textContent="Saved complete FM1 backup verified. Project and full restores now require explicit confirmation.";
+    $("status").textContent="Saved complete FM1 backup verified. Selected-slot LIBRARY changes require explicit confirmation.";
   });
 });
+for(const id of ["physical-source","physical-target"])$(id).addEventListener("change",physicalControls);
+async function physicalChange(reset){
+  if(!device||!cap?.writable||!projectCap?.writable||projectCap.canInitialize||!wholeBackup||!verifiedFullFile)
+    throw Error("Initialized update firmware and verified complete FM1 backup required");
+  const slot=Number($("physical-target").value);
+  const src=slots[Number($("physical-source").value)];
+  if(!reset&&($("physical-source").value===""||!src||catalogNeedsPrepare))
+    throw Error("Prepare a complete source sound first");
+  const change={slot,recordBytes:reset?null:decodeRecord(src).recordBytes};
+  const baseline=verifiedFullFile,plan=planLibraryChanges(baseline,[change]);
+  if(!plan.length){$("status").textContent="Destination already matches. No writes sent.";return;}
+  const label="LIBRARY "+String(slot+33).padStart(3,"0");
+  if(!confirm((reset?"Restore factory fallback in ":"Write "+decodeRecord(src).name+" to ")+label+
+    "? Only this slot may change. Keep the verified complete backup; do not touch the FM1 until verification finishes."))return;
+  wholeBackup=false;backedUp=false;pendingLibraryBackup=null;pendingFullBackup=null;verifiedFullFile=null;
+  try{
+    const result=await applyVerifiedLibraryChanges(device.request,baseline,plan,
+      (phase,i,n)=>$("status").textContent=phase+" "+i+"/"+n+" — do not touch FM1 controls.");
+    pendingFullBackup=JSON.stringify(result.after);
+    downloadFile("mashina-full-fm1-after-library-change.json",result.after);
+    $("status").textContent="SUCCESS — "+label+" verified; all other full-backup data unchanged. Save the new JSON and verify it before any further write.";
+  }catch(e){
+    throw Error("STOP — "+e.message+" Keep the original backup; inspect before any further write.");
+  }
+}
+$("physical-put").addEventListener("click",()=>action(()=>physicalChange(false)));
+$("physical-reset").addEventListener("click",()=>action(()=>physicalChange(true)));
 $("upload-device").addEventListener("click",()=>action(async()=>{
   if(!PHYSICAL_WRITES_APPROVED)throw new Error("Physical flash writes are locked in this experimental Web Library.");
   if(!device||!cap?.writable||!backedUp)throw new Error("Writable device and prior LIBRARY backup required.");

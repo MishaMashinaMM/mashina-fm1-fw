@@ -4,7 +4,7 @@ import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
 import {captureUser} from "../web/presets-library-sync.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -333,3 +333,44 @@ assert.equal(corruptSettingsOnCommit,false);
   console.log("PASS: nine complete custom-style drum USERs -> 43-object MPR1 full-device backup -> blank destination -> restore -> archive+sound+project readback and corruption refusal");
 }
 console.log("PASS: full-device MPR1 validation, strict archive equality, 32-section chunked project restore and write gates");
+
+
+/* Exercise the real selected-slot path against the same complete mock.
+ * Saved and live references are both hard barriers; stale backups and
+ * unexpected collateral changes cannot produce a false success. */
+{
+  const baseline=await captureFullDevice(mock,"INITIALIZED UPDATE");
+  const counts=[sets,erasures];
+  assert.throws(()=>planLibraryChanges(baseline,[{slot:0,recordBytes:null}]),/referenced/);
+  assert.throws(()=>planLibraryChanges(baseline,[{slot:1,recordBytes:preset}]),/referenced/);
+  const liveOnly=structuredClone(baseline);
+  const live=encodeProject({section:0,refs:[37,255,255,255,255,255],name:"LIVE",settingsBytes:[1]});
+  liveOnly.currentPerformance=live;liveOnly.archive.objects[0]={id:0,...raw(pad(live))};
+  assert.throws(()=>planLibraryChanges(liveOnly,[{slot:5,recordBytes:preset}]),/Current performance/);
+  assert.deepEqual([sets,erasures],counts);
+  const stale=structuredClone(baseline);
+  stale.libraryPresets[6]=preset;
+  await assert.rejects(applyVerifiedLibraryChanges(mock,stale,[{slot:5,recordBytes:preset}]),/Device changed/);
+  assert.deepEqual([sets,erasures],counts);
+  await assert.rejects(applyVerifiedLibraryChanges(async(cmd,args,opts)=>cmd===95?[1,32,1,1]:mock(cmd,args,opts),
+    baseline,[{slot:5,recordBytes:preset}]),/formatting disabled/);
+  assert.deepEqual([sets,erasures],counts);
+  const result=await applyVerifiedLibraryChanges(mock,baseline,[{slot:5,recordBytes:preset}]);
+  assert.equal(result.changed,1);
+  assert.deepEqual(result.after.libraryPresets[5],preset);
+  assert.deepEqual([sets,erasures],[counts[0]+1,counts[1]]);
+  const noop=await applyVerifiedLibraryChanges(mock,result.after,[{slot:5,recordBytes:preset}]);
+  assert.equal(noop.changed,0);
+  const reset=await applyVerifiedLibraryChanges(mock,result.after,[{slot:5,recordBytes:null}]);
+  assert.equal(reset.after.libraryPresets[5],null);
+  assert.deepEqual(reset.after.libraryPresets,baseline.libraryPresets);
+  assert.deepEqual([sets,erasures],[counts[0]+1,counts[1]+1]);
+  const collateral=async(cmd,args,opts)=>{
+    const reply=await mock(cmd,args,opts);
+    if(cmd===92)mockObjects.get(1)[0]^=1;
+    return reply;
+  };
+  await assert.rejects(applyVerifiedLibraryChanges(collateral,reset.after,[{slot:5,recordBytes:preset}]),
+    /post-write full-state verification failed/);
+  console.log("PASS: selected-slot physical protocol mock — reference, stale backup, format capability, no-op, put, reset, collateral damage checks");
+}

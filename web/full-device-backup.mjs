@@ -416,3 +416,69 @@ export function compareFlashFingerprints(before,after){
   return {same:changes.length===0,changed:changes,
     note:"CRC32 comparisons do not prove bootloader ownership or guarantee collision-free integrity."};
 }
+
+
+/* Initialized-device physical LIBRARY management. No USER, project, global
+ * or archive PUT commands. Refuse a change to ANY referenced slot, including
+ * the current unsaved performance. A fresh complete snapshot must equal the
+ * verified offline backup before writing; all unselected logical bytes must
+ * still match after the write. No automatic retry or rollback. */
+function sameFullPayload(a,b) {
+  for(const key of ["userPresets","libraryPresets","projects","currentPerformance","selectedProject"])
+    insist(JSON.stringify(a[key])===JSON.stringify(b[key]),key+" changed");
+  const ao=readBackup(a.archive).objects,bo=readBackup(b.archive).objects;
+  insist(ao.length===bo.length && ao.every((o,i)=>o.id===bo[i].id &&
+    byteEq(o.bytes,bo[i].bytes)),"Archive payload changed");
+}
+export function planLibraryChanges(file,changes) {
+  const full=validateFullDevice(file);
+  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=32,"Select LIBRARY changes");
+  const seen=new Set(),planned=[];
+  for(const {slot,recordBytes} of changes) {
+    insist(Number.isInteger(slot)&&slot>=0&&slot<32&&!seen.has(slot),"Duplicate or invalid LIBRARY slot");
+    seen.add(slot);
+    const record=recordBytes===null?null:decodeRecord(recordBytes).recordBytes;
+    if(JSON.stringify(record)===JSON.stringify(full.libraryPresets[slot]))continue;
+    const ref=slot+32,uses=[];
+    for(let i=0;i<32;i++)if(full.projects[i]!==null) {
+      decodeProject(full.projects[i]).refs.forEach((r,t)=>{
+        if(r===ref)uses.push("P"+(Math.floor(i/4)+1)+":"+"ABCD"[i%4]+"/T"+(t+1));
+      });
+    }
+    decodeProject(full.currentPerformance).refs.forEach((r,t)=>{
+      if(r===ref)uses.push("Current performance/T"+(t+1));
+    });
+    insist(!uses.length,"LIBRARY "+String(slot+33).padStart(3,"0")+" is referenced by "+uses.join(", ")+" — change blocked");
+    planned.push({slot,recordBytes:record});
+  }
+  return planned;
+}
+export async function applyVerifiedLibraryChanges(request,verifiedFile,changes,progress=()=>{}) {
+  const baseline=validateFullDevice(verifiedFile);
+  const plan=planLibraryChanges(baseline,changes);
+  const libcap=await capability(request),prcap=await projectCapability(request);
+  insist(libcap.writable&&prcap.writable&&!prcap.canInitialize,
+    "Use the initialized update firmware with formatting disabled");
+  const fresh=await captureFullDevice(request,baseline.firmware,progress);
+  try{sameFullPayload(baseline,fresh);}catch(e){
+    throw Error("Device changed since verified backup: "+e.message+". Capture and verify a new complete backup. No writes sent.");
+  }
+  if(!plan.length)return {changed:0,after:fresh};
+  const expected=structuredClone(fresh);
+  for(const {slot,recordBytes} of plan)expected.libraryPresets[slot]=recordBytes;
+  for(let i=0;i<plan.length;i++){
+    const entry=plan[i],slot=entry.slot;
+    if(entry.recordBytes===null){
+      const reply=Uint8Array.from(await request(LIB_CMD.erase,[slot],{timeout:6000,retries:0}));
+      insist(reply.length===2&&reply[0]===slot&&reply[1]===0,"LIBRARY reset rejected at "+(slot+33));
+      const got=Uint8Array.from(await request(LIB_CMD.get,[slot]));
+      insist(got.length===2&&got[0]===slot&&got[1]===3,"LIBRARY factory fallback verification failed at "+(slot+33));
+    }else await uploadPrepared(request,libcap,[entry]);
+    progress("LIBRARY WRITE",i+1,plan.length);
+  }
+  const after=await captureFullDevice(request,baseline.firmware,progress);
+  try{sameFullPayload(expected,after);}catch(e){
+    throw Error("STOP — post-write full-state verification failed: "+e.message+". Keep the backup; do not retry.");
+  }
+  return {changed:plan.length,after};
+}
