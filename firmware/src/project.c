@@ -3341,8 +3341,12 @@ static uint32_t lib_scan(uint32_t n, char *b)
     if (!flash_ok || n >= NSONG)
         return 0;
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
+    /* The background SAVE browser scan must not overwrite proj_wire_u:
+     * a chunked WebMIDI backup/restore can own that buffer between requests.
+     * st_buf is the existing main-loop flash read scratch; MPR1 reads fit. */
+    _Static_assert(sizeof st_buf >= MPR_MAX_RECORD, "MPR1 scan scratch size");
     for(k=0;k<4u;k++){
-        uint8_t *record=proj_wire_u.raw;
+        uint8_t *record=st_buf;
         uint32_t len;
         if(mprs_load(n*4u+k,record))continue;
         if(mpr_get32(record)!=MPR_MAGIC || record[4]!=MPR_VERSION ||

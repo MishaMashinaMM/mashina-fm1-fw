@@ -277,6 +277,44 @@ int main(void)
                    ed_bk_capture()==0 &&
                    ed_bk_object(0,&length)==ED_BK_RAW &&
                    length==MPR_MAX_RECORD);
+        /* A background SAVE > project-library scan used to reuse the
+         * captured runtime buffer without advancing its generation. Exercise
+         * the real LIST/GET protocol with scans between every GET chunk. */
+        {
+            uint8_t received[MPR_MAX_RECORD];
+            uint8_t original[MPR_MAX_RECORD];
+            char scan_name[PROJ_NAME_LEN+1u];
+            uint32_t expected_crc=0;
+            uint32_t old_erases=erases,old_writes=writes;
+            int ok=1;
+            ed_rep_n=0;
+            ed_backup_handle(ED_BACKUP_LIST,0,0);
+            ok=ed_rep_n>=14u && ed_rep[1]==0u && ed_rep[3]==0u &&
+               ed_bk_r32(ed_rep+4)==MPR_MAX_RECORD;
+            if(ok)expected_crc=ed_bk_r32(ed_rep+9);
+            memcpy(original,ED_BK_RAW,MPR_MAX_RECORD);
+            for(uint32_t off=0;ok && off<MPR_MAX_RECORD;off+=256u){
+                uint32_t count=MPR_MAX_RECORD-off;
+                if(count>256u)count=256u;
+                uint8_t args[8]={0};
+                for(uint32_t j=0;j<5u;j++)
+                    args[1u+j]=(uint8_t)((off>>(7u*j))&127u);
+                args[6]=(uint8_t)(count&127u);
+                args[7]=(uint8_t)(count>>7);
+                (void)lib_scan((song_cur+1u)%NSONG,scan_name);
+                ed_rep_n=0;
+                ed_backup_handle(ED_BACKUP_GET,args,sizeof args);
+                ok=ed_rep_n>=9u && ed_rep[0]==0u && ed_rep[1]==0u &&
+                   ed_bk_r32(ed_rep+2)==off &&
+                   ((uint32_t)ed_rep[7]|((uint32_t)ed_rep[8]<<7))==count &&
+                   ed_unpack7(ed_rep+9,ed_rep_n-9,received+off,count)==count;
+            }
+            bad+=check("background project scans preserve LIST/GET backup CRC and bytes",
+                       ok && st_crc32(received,sizeof received)==expected_crc &&
+                       !memcmp(received,original,sizeof received));
+            bad+=check("interleaved backup and browser scans never write NOR",
+                       erases==old_erases && writes==old_writes);
+        }
         body=ed_bk_object(41u,&length);
         bad+=check("backup ID 41 exports project 1 section B MPR1 record",
                    body && length==MPR_MAX_RECORD &&
