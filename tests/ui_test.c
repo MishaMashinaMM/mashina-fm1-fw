@@ -12143,7 +12143,7 @@ static int test_lz_env(void)
     return bad;
 }
 
-/* LFO (0.9.2, ui_lzpage.c): MOD . LFO (LFO, LFO DEST) . MSEQ (MSEQ, MSEQ 2) one chain; it opens on LFO; KNOB 1 the slot on
+/* LFO (0.9.2, ui_lzpage.c): MOD . LFO (LFO, LFO DEST) . MSEQ (MSEQ, MSEQ 2) one chain; it opens on MOD; KNOB 1 the slot on
  * MOD, the step on MSEQ (PRESETS: a sound; it was the slot, the track, the step); MOD's net stays static */
 static int test_lz_mod(void)
 {
@@ -12151,8 +12151,10 @@ static int test_lz_mod(void)
     uint32_t pr;
     ui_power_on(); frame();
     press(B_LFO); frame();
-    ok = pd_on() && lz_fam() == LZ_MOD && pd_level() == 1u && str_eq(cur_page()->title, "LFO") && lz_tab_lit(1) &&
-         lz_crumb_is("LFO \xB7 LFO \xB7 LFO") && lz_count_is("2/6");
+    ok = pd_on() && lz_fam() == LZ_MOD && pd_level() == 0u && str_eq(cur_page()->title, "MOD") && lz_tab_lit(0) &&
+         lz_crumb_is("LFO \xB7 MOD \xB7 MOD") && lz_count_is("1/6");
+    turn(EN_SELECT, 1); frame();
+    ok &= pd_level() == 1u && str_eq(cur_page()->title, "LFO") && lz_count_is("2/6");
     turn(EN_SELECT, 1); frame();
     ok &= str_eq(cur_page()->title, "LFO 2") && lz_crumb_is("LFO \xB7 LFO \xB7 LFO 2");   /* (0.9.18: PHASE) */
     turn(EN_SELECT, 1); frame();
@@ -12163,7 +12165,7 @@ static int test_lz_mod(void)
     ok &= str_eq(cur_page()->title, "MSEQ 2") && lz_crumb_is("LFO \xB7 MSEQ \xB7 MSEQ 2") && lz_count_is("6/6");
     frames(320); press(B_LFO); frame();
     ok &= pd_level() == 0u && str_eq(cur_page()->title, "MOD") && lz_tab_lit(0) && lz_crumb_is("LFO \xB7 MOD \xB7 MOD");
-    bad += check("0.9.2 LFO: opens on LFO; MOD . LFO (LFO, LFO 2, LFO DEST) . MSEQ (MSEQ, MSEQ 2) by SELECT; an LFO tap round to MOD", ok);
+    bad += check("LFO: opens on MOD; MOD . LFO (LFO, LFO 2, LFO DEST) . MSEQ (MSEQ, MSEQ 2) by SELECT; an LFO tap round to MOD", ok);
     mod_ui_slot = 0;
     TSEL->p[P_M1SRC] = 1; TSEL->p[P_M1DST] = 2; TSEL->p[P_M1AMT] = 40;
     turn(EN_K1, 1); frame();
@@ -12245,7 +12247,7 @@ static int test_lz_key(void)
 }
 
 /* v0.6 GLO: MIX (MIXER, SENDS, EQ) -> GLOBAL -> SYSTEM.
- * No obsolete LIVE pages. Opening GLO from another section always shows MIXER. */
+ * No obsolete LIVE pages. GLO remembers its last page until power-on. */
 static int test_lz_glo(void)
 {
     int bad = 0, ok;
@@ -12286,10 +12288,10 @@ static int test_lz_glo(void)
     ok &= pd_level() == 2u && str_eq(cur_page()->title, "SYSTEM");
     open_family(FAM_ENV); frame();
     press(B_GLO); frame();
-    if (!str_eq(cur_page()->title,"MIXER")) printf("  GLO NAV REENTRY => %s\n",cur_page()->title);
-    ok &= str_eq(cur_page()->title, "MIXER") && lz_tab_lit(0) &&
-          lz_crumb_is("GLO \xB7 MIX \xB7 MIXER");
-    bad += check("v0.6 GLO navigation: MIXER first, no LIVE, three groups, reopen resets MIXER", ok);
+    if (!str_eq(cur_page()->title,"SYSTEM")) printf("  GLO NAV REENTRY => %s\n",cur_page()->title);
+    ok &= str_eq(cur_page()->title, "SYSTEM") && lz_tab_lit(2) &&
+          lz_crumb_is("GLO \xB7 SYSTEM \xB7 SYSTEM");
+    bad += check("GLO navigation: MIXER first, no LIVE, three groups, reopen remembers SYSTEM", ok);
     ui_power_on();
     return bad;
 }

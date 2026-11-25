@@ -101,9 +101,9 @@ static const ch_t CHAINS[NAV_KEYS] = {CH(CE_HOME, CG_HOME), CH(CE_SYN, CG_SYN), 
                                       CH(CE_GLO, CG_GLO), CH(CE_ENV, CG_ENV), CH(CE_LFO, CG_LFO), CH(CE_SCL, CG_SCL),
                                       CH(CE_ARP, CG_ARP), CH(CE_SAVE, CG_SAVE), CH(CE_FM6, CG_FM6), CH(CE_DRM, CG_DRM),
                                       CH(CE_DIG, CG_DIG)};
-/* Default chain entries at power-on. GLO starts at MIXER (entry 0);
- * ui.nmem holds current entry XOR its default. */
-static const uint8_t NAV_DEF[NAV_KEYS] = {0, 0, 5, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0};
+/* Default chain entries at power-on. GLO starts at MIXER and LFO at MOD.
+ * ui.nmem holds current entry XOR its default; page memory is session-only. */
+static const uint8_t NAV_DEF[NAV_KEYS] = {0, 0, 5, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0};
 static uint32_t nav_key(uint32_t sec) { uint32_t k = sec == SEC_EDIT ? edit_kind() : 0u; return k ? SEC_N - 1u + k : sec; }
 static const ch_t *nav_ch(uint32_t sec) { return &CHAINS[nav_key(sec)]; }
 static uint32_t nav_mem(uint32_t key) { return (uint32_t)(ui.nmem[key] ^ NAV_DEF[key]); }
@@ -279,9 +279,8 @@ static void nav_button(uint32_t sec)
     const ch_t *c = nav_ch(sec);
     uint32_t e, g, j, k;
     if (nav_sec() != sec || (sec != SEC_HOME && ui.home)) {
-        /* GLO always reopens on MIXER, even when its previous page was
-         * GLOBAL or SYSTEM. The next GLO tap still cycles groups. */
-        nav_go(sec, sec == SEC_GLO ? 0u : nav_mem(nav_key(sec)), 1);
+        /* All sections return to their last visited page during the session. */
+        nav_go(sec, nav_mem(nav_key(sec)), 1);
         return;
     }
     e = nav_cur();

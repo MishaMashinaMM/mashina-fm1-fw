@@ -42,6 +42,32 @@ int main(void)
     int bad=0;
     memset(lib_sim_nor,0xFF,sizeof lib_sim_nor);
     ui_power_on();
+    {
+        uint8_t pages[16];
+        bad+=check("fresh boot navigation defaults to GLO 1/7 and LFO 1/6",
+                   nav_mem(nav_key(SEC_GLO))==0u && nav_list(SEC_GLO,pages)==7u &&
+                   nav_mem(nav_key(SEC_LFO))==0u && nav_list(SEC_LFO,pages)==6u);
+        nav_button(SEC_GLO);
+        bad+=check("first GLO entry is MIXER",nav_sec()==SEC_GLO && nav_cur()==0u);
+        for(uint32_t i=0;i<7u;i++) {
+            nav_go(SEC_GLO,i,0);
+            nav_button(SEC_FX);
+            nav_button(SEC_GLO);
+            bad+=check("GLO remembers visited page across section changes",nav_cur()==i);
+        }
+        nav_button(SEC_LFO);
+        bad+=check("first LFO entry is MOD",nav_sec()==SEC_LFO && nav_cur()==0u);
+        nav_select(3);
+        nav_button(SEC_FX);
+        nav_button(SEC_LFO);
+        bad+=check("LFO continues remembering page 4/6",nav_cur()==3u);
+        ui_power_on();
+        nav_button(SEC_GLO);
+        bad+=check("GLO resets to MIXER after restart",nav_cur()==0u);
+        nav_button(SEC_LFO);
+        bad+=check("LFO resets to MOD after restart",nav_cur()==0u);
+        ui_power_on();
+    }
     song.sel=0;
     set_engine_of(TSEL,0u);
     TSEL->p[P_ATK]=49;
