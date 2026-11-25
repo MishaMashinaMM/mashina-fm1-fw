@@ -79,7 +79,20 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 @media(min-width:1180px) and (min-height:660px){
  main{height:100dvh;min-height:0}
  .dual-tables{flex:1}
- .side{overflow:auto;overscroll-behavior:contain}
+ .side{overflow:auto;overscroll-behavior:contain;display:grid;grid-template-rows:auto minmax(0,1fr);align-items:stretch}
+ .workspace{grid-template-columns:minmax(0,1fr) minmax(350px,382px)}
+ .source-panel{padding:8px}
+ .source-panel h3{margin-bottom:5px}
+ .source-panel .field{margin:0 0 4px;gap:2px}
+ .source-panel .row{gap:4px;margin-bottom:4px}
+ .source-panel button,.source-panel select{font-size:12px;min-height:27px;padding:4px 6px}
+ .queue-panel{padding:8px;gap:4px;overflow:hidden}
+ .queue-panel>p{margin:0}
+ .queue-list{min-height:24px;max-height:none;flex:1 1 24px}
+ .queue-actions{flex:none}
+ .queue-actions button{font-size:12px;padding:4px 6px;min-height:28px}
+ .impact{flex:0 1 auto;min-height:0;max-height:64px}
+ #tab-projects .side{grid-template-rows:auto auto;align-content:start}
  .slot-panel{overflow:hidden}
  .dual-tables>.scroll{max-height:100%}
 }
