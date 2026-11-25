@@ -581,3 +581,141 @@ export async function applyVerifiedUserRestore(request,verifiedFile,slot,recordB
   }
   return {slot,after,objectIds:plan.objectIds};
 }
+
+
+/* New manager restore operations. The old lab helpers are retained for
+ * compatibility with existing offline tests; physical controls only call
+ * these guarded, delta-based operations. */
+const equalJson=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function setArchiveObject(full,id,bytes){
+  const o=full.archive.objects.find(x=>x.id===id);
+  insist(o,"Missing archive object "+id);
+  o.size=bytes.length;o.crc=bkCrc(bytes);o.data=btoa(String.fromCharCode(...bytes));
+}
+function objectDiff(a,b,id){
+  const x=a.archive.objects.find(o=>o.id===id),y=b.archive.objects.find(o=>o.id===id);
+  return !byteEq(dataBytes(x),dataBytes(y));
+}
+async function verifiedTarget(request,verified,progress){
+  const baseline=validateFullDevice(verified);
+  const libcap=await capability(request),prcap=await projectCapability(request);
+  insist(libcap.writable&&prcap.writable&&!prcap.canInitialize,
+    "Initialized write-capable firmware with formatting disabled required");
+  const fresh=await captureFullDevice(request,baseline.firmware,progress);
+  try{sameFullPayload(baseline,fresh);}catch(e){
+    throw Error("Device changed since verified backup: "+e.message+". No writes sent.");
+  }
+  return {fresh,libcap};
+}
+async function transferArchiveObject(request,object){
+  const id=object.id;
+  insist(id===0||id===1||[6,7,9,10].includes(id)||(id>=40&&id<72),
+    "Forbidden archive object "+id);
+  const call=async args=>{
+    const r=Uint8Array.from(await request(BACKUP_CMD.PUT,args,{timeout:30000,retries:0}));
+    insist(r.length===3&&r[0]===args[0]&&r[1]===id&&r[2]===0,
+      "Archive object "+id+" rejected or mismatched (phase "+args[0]+", reply "+Array.from(r)+")");
+  };
+  await call([0,id,...bkU32(object.size),...bkU32(object.crc)]);
+  try{
+    for(let off=0;off<object.size;off+=256)
+      await call([1,id,...bkU32(off),...bkPack(object.bytes.subarray(off,off+256))]);
+    await call([2,id]);
+  }catch(e){await call([3,id]).catch(()=>{});throw e;}
+}
+async function transferRestorePlan(request,verified,plan,progress){
+  const {libcap}=await verifiedTarget(request,verified,progress);
+  const archive=readBackup(plan.expected.archive),total=plan.library.length+plan.objectIds.length;
+  let done=0,label="";
+  try{
+    for(const {slot,recordBytes} of plan.library){
+      label="LIBRARY "+(slot+33);
+      if(recordBytes===null){
+        const r=Uint8Array.from(await request(LIB_CMD.erase,[slot],{timeout:6000,retries:0}));
+        insist(r.length===2&&r[0]===slot&&r[1]===0,"Reset rejected");
+        const got=Uint8Array.from(await request(LIB_CMD.get,[slot]));
+        insist(got.length===2&&got[0]===slot&&got[1]===3,"Reset verification failed");
+      }else await uploadPrepared(request,libcap,[{slot,recordBytes}]);
+      progress("RESTORE",++done,total);
+    }
+    for(const id of plan.objectIds){
+      label="archive object "+id;
+      await transferArchiveObject(request,archive.objects.find(o=>o.id===id));
+      progress("RESTORE",++done,total);
+    }
+    label="full-state read-back";
+    const after=await captureFullDevice(request,verified.firmware,progress);
+    sameFullPayload(plan.expected,after);
+    return {changed:done,after};
+  }catch(e){
+    throw Error("STOP — "+label+" failed after "+done+"/"+total+
+      " acknowledged operations: "+e.message+". State may be partial. Keep the original backup; no automatic retry.");
+  }
+}
+export function planUserBatch(verified,changes){
+  insist(Array.isArray(changes)&&changes.length>0&&changes.length<=32,"Select 1–32 USER sounds");
+  let expected=validateFullDevice(verified);
+  const seen=new Set(),ids=new Set();
+  for(const {slot,recordBytes} of changes){
+    insist(!seen.has(slot),"Duplicate USER destination");seen.add(slot);
+    const plan=planUserRestore(expected,slot,recordBytes);
+    expected=plan.expected;plan.objectIds.forEach(id=>ids.add(id));
+  }
+  return {expected,library:[],objectIds:[9,6,7].filter(id=>ids.has(id)),userSlots:[...seen]};
+}
+export async function applyVerifiedUserBatch(request,verified,changes,progress=()=>{}){
+  return transferRestorePlan(request,verified,planUserBatch(verified,changes),progress);
+}
+export function planProjectRestore(verified,file,selected=null){
+  const baseline=validateFullDevice(verified),source=restoreProjectsBackup(file);
+  const indexes=selected===null?Array.from({length:32},(_,i)=>i):selected;
+  insist(Array.isArray(indexes)&&indexes.length>0&&indexes.length<=32&&
+    new Set(indexes).size===indexes.length&&indexes.every(i=>Number.isInteger(i)&&i>=0&&i<32),
+    "Select valid project sections");
+  const expected=structuredClone(baseline),objectIds=[],sections=[];
+  for(const i of indexes){
+    const record=source[i];
+    if(equalJson(record,baseline.projects[i]))continue;
+    if(record)insist(decodeProject(record).refs.every(ref=>ref>=32||baseline.userPresets[ref]!==null),
+      "P"+(Math.floor(i/4)+1)+":"+("ABCD"[i%4])+" references an empty USER slot");
+    expected.projects[i]=record;
+    const bytes=paddedProject(record);
+    setArchiveObject(expected,40+i,bytes);
+    if(Math.floor(i/4)===baseline.selectedProject-1)setArchiveObject(expected,2+i%4,bytes);
+    objectIds.push(40+i);sections.push(i);
+  }
+  return {expected:validateFullDevice(expected),library:[],objectIds,sections};
+}
+export async function applyVerifiedProjectRestore(request,verified,file,selected,progress=()=>{}){
+  return transferRestorePlan(request,verified,planProjectRestore(verified,file,selected),progress);
+}
+export function planFullRestore(verified,file){
+  const baseline=validateFullDevice(verified),expected=validateFullDevice(file);
+  // This is a same-layout logical restore, not a legacy format migrator.
+  for(const id of [1,10]){
+    const a=dataBytes(baseline.archive.objects.find(o=>o.id===id));
+    const b=dataBytes(expected.archive.objects.find(o=>o.id===id));
+    insist(a.length===b.length&&byteEq(a.slice(0,4),b.slice(0,4)),
+      "Incompatible device settings/project index layout (object "+id+")");
+  }
+  const library=expected.libraryPresets.flatMap((recordBytes,slot)=>
+    equalJson(recordBytes,baseline.libraryPresets[slot])?[]:[{slot,recordBytes}]);
+  const objectIds=[9,6,7,10,...Array.from({length:32},(_,i)=>40+i),1].filter(id=>objectDiff(baseline,expected,id));
+  // Firmware always captures a valid companion header after upf_empty().
+  // A zero-length source cannot round-trip byte-for-byte on that firmware.
+  if(objectIds.includes(9))insist(expected.archive.objects.find(o=>o.id===9).size===3728,
+    "Source has no compatible companion bank; use a complete current firmware backup");
+  // Reload live performance last, even when its reference bytes are
+  // identical but a referenced sound changed, so runtime sound caches match.
+  const liveChanged=decodeProject(expected.currentPerformance).refs.some(ref=>ref<64&&
+    !equalJson(ref<32?baseline.userPresets[ref]:baseline.libraryPresets[ref-32],
+               ref<32?expected.userPresets[ref]:expected.libraryPresets[ref-32]));
+  if(liveChanged||objectDiff(baseline,expected,0)||objectIds.includes(1)||objectIds.includes(10))
+    objectIds.push(0);
+  return {expected,library,objectIds,
+    users:expected.userPresets.map((r,i)=>equalJson(r,baseline.userPresets[i])?null:i).filter(i=>i!==null),
+    sections:expected.projects.map((r,i)=>equalJson(r,baseline.projects[i])?null:i).filter(i=>i!==null)};
+}
+export async function applyVerifiedFullRestore(request,verified,file,progress=()=>{}){
+  return transferRestorePlan(request,verified,planFullRestore(verified,file),progress);
+}

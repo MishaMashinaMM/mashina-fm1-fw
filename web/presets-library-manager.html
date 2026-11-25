@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MASHINA · Web Library</title>
+<style>
+:root{color-scheme:dark;--bg:#121212;--panel:#1c1c1c;--line:#393939;--muted:#b6b6b6;--orange:#ff9900}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#eee;font:15px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:28px 20px 64px}header{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}h1{font-size:30px;line-height:1.05;letter-spacing:.04em;margin:0;color:var(--orange)}header small{display:block;color:#ddd;letter-spacing:.16em;font-weight:600;font-size:11px;margin-top:6px}h2{font-size:23px;margin:0 0 8px}h3{font-size:16px;margin:0 0 12px}p{margin:6px 0 14px;color:var(--muted)}a{color:var(--orange)}nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:22px 0 18px}button,select,input{font:inherit}button,select{color:#eee;background:#272727;border:1px solid #555;border-radius:5px;padding:9px 13px}button:not(:disabled){cursor:pointer}button:disabled{opacity:.42}button.primary{background:var(--orange);color:#171717;border-color:var(--orange);font-weight:700}nav button{flex:1;border:none;background:none;border-bottom:3px solid transparent;border-radius:0;letter-spacing:.06em;font-weight:700}nav button[aria-selected=true]{color:var(--orange);border-bottom-color:var(--orange)}.panel{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:18px;margin:14px 0}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row label{display:flex;gap:5px;flex-direction:column;color:var(--muted);font-size:13px}.status{position:sticky;top:0;z-index:2;background:#202020;border:1px solid #444;padding:12px;border-radius:6px;margin-top:18px;white-space:pre-wrap;overflow-wrap:anywhere}.status[data-state=error]{border-color:#df694d;color:#ffb49e}.status[data-state=ok]{border-color:#999}.muted{color:var(--muted)}.accent{color:var(--orange)}.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.split>.panel{margin:0}.scroll{overflow:auto;max-height:430px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);position:sticky;top:0;background:#202020}td:first-child{font-variant-numeric:tabular-nums;color:var(--orange)}tr:nth-child(even){background:#222}select{max-width:100%}input[type=file]{max-width:100%;font-size:13px}input[type=checkbox]{accent-color:var(--orange)}[hidden]{display:none!important}.fine{font-size:12px;color:var(--muted)}.warn{color:#ffba79}footer{margin-top:28px;color:var(--muted);font-size:12px}@media(max-width:760px){.split{grid-template-columns:1fr}main{padding:16px 12px}th,td{padding:6px}}
+</style></head><body><main>
+<header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><span id="connection" class="muted">Disconnected</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
+<div id="status" class="status" role="status">Connect your initialized FM1, then create and verify a complete backup in BACKUP. Offline sound packs can be imported without connecting.</div>
+<nav aria-label="Library sections"><button data-tab="user" aria-selected="true">USER</button><button data-tab="library" aria-selected="false">LIBRARY</button><button data-tab="projects" aria-selected="false">PROJECTS</button><button data-tab="backup" aria-selected="false">BACKUP</button></nav>
+<section id="tab-user"><h2>USER presets <span class="muted">001–032</span></h2><p>Import a sound pack, copy a saved sound or choose factory sounds. Queue one or more empty destinations, then apply the queue.</p>
+<div class="panel" id="user-source-panel"><h3>Sound source</h3><div class="row"><label>Import sound pack (.json)<input id="user-import" type="file" accept=".json"></label><button id="user-export" disabled>Export device USER sounds</button></div><div class="row"><label>Source sound<select id="user-source"></select></label><label>Destination<select id="user-target"></select></label><button id="user-add" disabled>Add to USER queue</button></div></div>
+<div class="split"><div class="panel"><h3>Device USER presets</h3><div class="scroll"><table><thead><tr><th>Slot</th><th>Sound</th><th>References</th></tr></thead><tbody id="user-slots"></tbody></table></div></div><div class="panel"><h3>USER write queue</h3><div id="user-queue"></div><p id="user-impact" class="fine"></p><div class="row"><button id="user-apply" class="primary" disabled>Restore queued USER sounds</button><button id="user-clear">Clear queue</button></div></div></div></section>
+<section id="tab-library" hidden><h2>LIBRARY presets <span class="muted">033–064</span></h2><p>Replace factory sounds with complete sound records or reset an override to its factory sound. Existing project references are protected in this trial.</p>
+<div class="panel"><h3>Sound source</h3><div class="row"><label>Import sound pack (.json)<input id="library-import" type="file" accept=".json"></label><button id="library-export" disabled>Export device LIBRARY overrides</button></div><div class="row"><label>Source sound<select id="library-source"></select></label><label>Destination<select id="library-target"></select></label><button id="library-add" disabled>Add to LIBRARY queue</button><button id="library-reset" disabled>Queue factory reset</button></div></div>
+<div class="split"><div class="panel"><h3>Device LIBRARY</h3><div class="scroll"><table><thead><tr><th>Slot</th><th>Sound</th><th>References</th></tr></thead><tbody id="library-slots"></tbody></table></div></div><div class="panel"><h3>LIBRARY write queue</h3><div id="library-queue"></div><p id="library-impact" class="fine"></p><div class="row"><button id="library-apply" class="primary" disabled>Apply queued LIBRARY changes</button><button id="library-clear">Clear queue</button></div></div></div></section>
+<section id="tab-projects" hidden><h2>Projects <span class="muted">8 × A–D</span></h2><p>Projects reference shared preset slots, not embedded sounds. Importing sections does not import the sounds they reference.</p><div class="panel"><div class="row"><button id="projects-export" disabled>Export all projects</button><label>Import projects JSON<input id="projects-import" type="file" accept=".json"></label><button id="projects-all" disabled>Select changed sections</button></div><div class="scroll"><table><thead><tr><th>Section</th><th>Device</th><th>Imported</th><th>Restore?</th></tr></thead><tbody id="project-rows"></tbody></table></div><p id="projects-impact" class="fine"></p><button id="projects-apply" class="primary" disabled>Restore selected project sections</button></div></section>
+<section id="tab-backup" hidden><h2>Backup & restore</h2><div class="panel"><h3>1 · Current device backup</h3><p>Complete logical backup: 32 USER, 32 LIBRARY, 32 sections, current performance and settings. Save the JSON permanently. Verify the downloaded file to unlock writes; reconnecting or performing a write invalidates that authorization.</p><div class="row"><button id="backup-capture" class="primary" disabled>Backup complete FM1</button><label>Verify saved complete backup<input id="backup-verify" type="file" accept=".json" disabled></label></div><p id="backup-summary">No device snapshot.</p></div>
+<div class="panel"><h3>2 · Restore a complete backup</h3><p class="warn">Experimental: restores only changed records. USB interruption can leave partial state. Never retry automatically; preserve the current-device backup before continuing.</p><label>Choose source complete backup (.json)<input id="full-import" type="file" accept=".json"></label><p id="full-impact">No source selected.</p><button id="full-apply" class="primary" disabled>Restore complete FM1</button></div>
+<div class="panel"><h3>Advanced / offline tools</h3><p>Legacy sound extraction, emulator snapshots, factory catalog selection and flash diagnostics remain available in the separate lab. Disconnect here first.</p><a href="./advanced.html" id="advanced-link">Open experimental lab</a></div></section>
+<footer>Experimental initialized-device manager · No firmware installer or formatting controls. Keep all original sound packs and complete backups.</footer>
+<script type="module">
+import {connectLibraryMidi} from "./presets-library-midi.mjs";
+import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
+import {decodeRecord,parseImportedLibrary} from "./presets-library-codec.mjs";
+import {decodeProject,projectsBackup,restoreProjectsBackup} from "./projects-library-codec.mjs";
+import {factorySourceRecords} from "./emulator-snapshot-editor.mjs";
+import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
+const $=id=>document.getElementById(id),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const num=n=>String(n).padStart(3,"0"),pLabel=i=>"P"+(Math.floor(i/4)+1)+":"+("ABCD"[i%4]);
+let dev=null,writable=false,busy=false,snapshot=null,verified=null,pending=null,projectFile=null,fullSource=null;
+let factory=[],packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
+function status(text,state=""){ $("status").textContent=text;$("status").dataset.state=state; }
+function download(name,obj){const u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+function label(r){return r?decodeRecord(r).name:"Empty";}
+function references(ref){if(!snapshot)return "";const list=[];snapshot.projects.forEach((p,i)=>{if(p)decodeProject(p).refs.forEach((x,t)=>{if(x===ref)list.push(pLabel(i)+"/T"+(t+1));});});decodeProject(snapshot.currentPerformance).refs.forEach((x,t)=>{if(x===ref)list.push("Live/T"+(t+1));});return list.join(", ");}
+function opt(select,value,text){const o=document.createElement("option");o.value=value;o.textContent=text;select.append(o);}
+function rows(id,data){const body=$(id);body.replaceChildren();for(const values of data){const tr=document.createElement("tr");for(const value of values){const td=document.createElement("td");if(value instanceof Node)td.append(value);else td.textContent=value;tr.append(td);}body.append(tr);}}
+function progress(phase,i,n){status(phase+" "+i+"/"+n+" · Keep FM1 connected and do not touch its controls.");}
+function invalidate(){verified=null;pending=null;}
+function acceptSnapshot(file,name){snapshot=validateFullDevice(file);pending=JSON.stringify(snapshot);verified=null;download(name,snapshot);}
+function ready(){return !!(dev&&writable&&verified&&!busy);}
+function sources(bank){
+  const a=packs[bank].map((p,i)=>({id:"I"+i,name:"Imported · "+p.name,recordBytes:p.recordBytes}));
+  if(snapshot){for(const [key,offset] of [["userPresets",1],["libraryPresets",33]])snapshot[key].forEach((r,i)=>{if(r)a.push({id:key+i,name:(offset===1?"USER ":"LIBRARY ")+num(i+offset)+" · "+label(r),recordBytes:r});});}
+  return a.concat(factory.filter(x=>x.available).map(x=>({...x,name:"Factory · "+x.name})));
+}
+function sourceControls(bank){
+  const src=$(bank+"-source"),target=$(bank+"-target"),old=src.value,oldTarget=target.value;
+  src.replaceChildren();opt(src,"","Choose source sound");
+  for(const p of sources(bank))opt(src,p.id,p.name);
+  if([...src.options].some(o=>o.value===old))src.value=old;
+  target.replaceChildren();opt(target,"","Choose destination");
+  if(snapshot)for(let i=0;i<32;i++){
+    const r=snapshot[bank==="user"?"userPresets":"libraryPresets"][i];
+    const ref=i+(bank==="user"?0:32);
+    opt(target,String(i),num(ref+1)+" · "+(r?label(r):bank==="user"?"Empty":"Factory fallback")+(references(ref)?" · Referenced":""));
+  }
+  if([...target.options].some(o=>o.value===oldTarget))target.value=oldTarget;
+  const slot=target.value===""?null:Number(target.value),r=slot===null?null:snapshot?.[bank==="user"?"userPresets":"libraryPresets"][slot];
+  const blocked=slot===null||!snapshot||references(slot+(bank==="user"?0:32))||(bank==="user"&&r);
+  $(bank+"-add").disabled=busy||!!blocked||!src.value;
+  if(bank==="library")$("library-reset").disabled=busy||!!blocked||!r;
+  $(bank+"-export").disabled=busy||!snapshot;
+  const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes}));
+  const body=$(bank+"-queue");body.replaceChildren();
+  if(!items.length)body.textContent="No changes queued.";
+  for(const {slot,recordBytes} of items){const row=document.createElement("div");row.className="row";const text=document.createElement("span");text.textContent=num(slot+(bank==="user"?1:33))+" ← "+(recordBytes?label(recordBytes):"Factory reset");const remove=document.createElement("button");remove.textContent="Remove";remove.disabled=busy;remove.onclick=()=>{q.delete(slot);render();};row.append(text,remove);body.append(row);}
+  let msg="Create and verify a complete backup to enable writes.",ok=false;
+  if(items.length&&snapshot)try{
+    const plan=bank==="user"?planUserBatch(snapshot,items):planLibraryChanges(snapshot,items);
+    ok=bank==="user"?plan.objectIds.length>0:plan.length>0;
+    msg=ok?items.length+" queued destination(s). "+(verified?"Backup verified.":"Verify current backup before applying."):"No actual changes.";
+  }catch(e){msg="Blocked: "+e.message;}
+  $(bank+"-impact").textContent=msg;$(bank+"-apply").disabled=!ready()||!ok;
+  rows(bank+"-slots",Array.from({length:32},(_,i)=>{const ref=i+(bank==="user"?0:32),r=snapshot?.[bank==="user"?"userPresets":"libraryPresets"][i];return [num(ref+1),!snapshot?"Not inspected":r?label(r):bank==="user"?"Empty":"Factory fallback",references(ref)||"—"];}));
+}
+function projectName(p){return p?(decodeProject(p).name||"Saved section")+" · "+decodeProject(p).refs.filter(r=>r!==255).map(r=>num(r+1)).join(", "):"Empty";}
+function render(){
+  $("connection").textContent=dev?dev.name+(writable?" · Writable":" · Read-only"):"Disconnected";
+  $("connect").disabled=busy||!!dev;$("disconnect").disabled=busy||!dev;
+  $("backup-capture").disabled=busy||!dev;$("backup-verify").disabled=busy||!pending;
+  $("backup-summary").textContent=snapshot? snapshot.userPresets.filter(Boolean).length+" USER · "+snapshot.libraryPresets.filter(Boolean).length+" LIBRARY overrides · "+snapshot.projects.filter(Boolean).length+" saved sections · "+(verified?"Backup verified":"Backup not verified"):"No device snapshot.";
+  for(const bank of ["user","library"])sourceControls(bank);
+  $("projects-export").disabled=busy||!snapshot;$("projects-all").disabled=busy||!projectFile;
+  rows("project-rows",Array.from({length:32},(_,i)=>{const c=document.createElement("input");c.type="checkbox";c.checked=selected.has(i);c.disabled=busy||!snapshot||!projectFile||eq(snapshot.projects[i],projectFile.sections[i]);c.onchange=()=>{c.checked?selected.add(i):selected.delete(i);render();};return [pLabel(i),snapshot?projectName(snapshot.projects[i]):"Not inspected",projectFile?projectName(projectFile.sections[i]):"—",c];}));
+  let projectOk=false,projectMsg="Choose a projects JSON and select changed sections.";
+  if(snapshot&&projectFile&&selected.size)try{const p=planProjectRestore(snapshot,projectFile,[...selected]);projectOk=!!p.objectIds.length;projectMsg=p.sections.map(pLabel).join(", ")+" · Presets unchanged."; }catch(e){projectMsg="Blocked: "+e.message;}
+  $("projects-impact").textContent=projectMsg;$("projects-apply").disabled=!ready()||!projectOk;
+  let fullOk=false,fullMsg=fullSource?"Capture a complete target backup first.":"No source selected.";
+  if(snapshot&&fullSource)try{const p=planFullRestore(snapshot,fullSource);fullOk=!!(p.objectIds.length+p.library.length);fullMsg=p.users.length+" USER changes · "+p.library.length+" LIBRARY changes · "+p.sections.length+" section changes · "+p.objectIds.length+" archive objects (including settings/current performance when needed)."+(fullOk?"":" Already identical; no writes necessary.");}catch(e){fullMsg="Blocked: "+e.message;}
+  $("full-impact").textContent=fullMsg;$("full-apply").disabled=!ready()||!fullOk;
+  for(const id of ["user-import","library-import","projects-import","full-import"])$(id).disabled=busy;
+}
+function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
+for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
+async function run(fn){if(busy)return;busy=true;render();try{await fn();}catch(e){status(e.message,"error");}finally{busy=false;render();}}
+function fileInput(id,fn){$(id).onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)run(async()=>fn(JSON.parse(await f.text()),f.name));};}
+$("connect").onclick=()=>run(async()=>{invalidate();snapshot=null;const candidate=await connectLibraryMidi();try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");}catch(e){candidate.close();throw e;}});
+$("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;snapshot=null;invalidate();for(const q of Object.values(queues))q.clear();selected.clear();status("Disconnected.");});
+$("backup-capture").onclick=()=>run(async()=>{invalidate();snapshot=null;const f=await captureFullDevice(dev.request,dev.name,progress);acceptSnapshot(f,"mashina-full-fm1-backup.json");status("Backup downloaded. Choose that file using Verify saved complete backup.");});
+fileInput("backup-verify",file=>{verified=null;const f=validateFullDevice(file);if(!pending||JSON.stringify(f)!==pending)throw Error("Select the exact newly downloaded complete backup.");verified=f;status("Backup verified. USER, LIBRARY, PROJECTS and BACKUP operations are available where safe.","ok");});
+function apply(fn,name){return run(async()=>{if(!dev||!writable||!verified)throw Error("Verify a fresh complete backup first.");const before=verified;invalidate();try{const result=await fn(before);acceptSnapshot(result.after,name);status("SUCCESS · Full state verified. Save and verify the newly downloaded backup before another write.","ok");}catch(e){snapshot=null;throw Error("STOP — "+e.message+" Keep your original backup. Reinspect before any further write.");}});}
+for(const bank of ["user","library"]){
+  fileInput(bank+"-import",file=>{const parsed=parseImportedLibrary(file);packs[bank]=parsed.map(x=>decodeRecord(x.record));status("Imported "+parsed.length+" complete sounds into "+bank.toUpperCase()+" source selector.");});
+  $(bank+"-source").onchange=render;$(bank+"-target").onchange=render;
+  $(bank+"-export").onclick=()=>{const offset=bank==="user"?1:33,key=bank==="user"?"userPresets":"libraryPresets";download("mashina-"+bank+"-sounds.json",libraryBackupFile(snapshot[key].flatMap((r,slot)=>r?[{slot,...decodeRecord(r)}]:[]),bank));};
+  $(bank+"-add").onclick=()=>{const p=sources(bank).find(x=>x.id===$(bank+"-source").value),slot=Number($(bank+"-target").value);if(p)queues[bank].set(slot,p.recordBytes);render();};
+  $(bank+"-clear").onclick=()=>{queues[bank].clear();render();};
+  $(bank+"-apply").onclick=()=>{const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes}));if(!confirm("Apply "+items.length+" queued "+bank.toUpperCase()+" change(s)? Keep the backup and do not disconnect."))return;apply(async before=>{const f=bank==="user"?applyVerifiedUserBatch:applyVerifiedLibraryChanges;const result=await f(dev.request,before,items,progress);q.clear();return result;},"mashina-full-fm1-after-"+bank+".json");};
+}
+$("library-reset").onclick=()=>{queues.library.set(Number($("library-target").value),null);render();};
+$("projects-export").onclick=()=>download("mashina-projects-8x4.json",projectsBackup(snapshot.projects));
+fileInput("projects-import",file=>{projectFile=projectsBackup(restoreProjectsBackup(file));selected.clear();status("Project file loaded. Select individual sections or all changed sections.");});
+$("projects-all").onclick=()=>{if(snapshot&&projectFile)selected=new Set(projectFile.sections.flatMap((r,i)=>eq(r,snapshot.projects[i])?[]:[i]));render();};
+$("projects-apply").onclick=()=>{const list=[...selected];if(!confirm("Restore "+list.map(pLabel).join(", ")+"? Existing preset sounds are not changed."))return;apply(async before=>{const result=await applyVerifiedProjectRestore(dev.request,before,projectFile,list,progress);selected.clear();return result;},"mashina-full-fm1-after-projects.json");};
+fileInput("full-import",file=>{fullSource=validateFullDevice(file);status("Source complete backup loaded. Review the change counts before restoring.");});
+$("full-apply").onclick=()=>{if(prompt("This may replace USER sounds, LIBRARY overrides, projects and settings. Keep the current backup. Type RESTORE to confirm.")!=="RESTORE")return;apply(before=>applyVerifiedFullRestore(dev.request,before,fullSource,progress),"mashina-full-fm1-after-full-restore.json");};
+$("advanced-link").onclick=e=>{if(dev||busy){e.preventDefault();status("Disconnect FM1 before opening the experimental lab.","error");}};
+window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else dev?.close();});
+render();
+(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");factory=factorySourceRecords(await a.json(),await b.json());render();}catch(e){console.warn(e.message);}})();
+</script></main></body></html>
