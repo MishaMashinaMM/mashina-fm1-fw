@@ -137,7 +137,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.13
+### Sonidos de fábrica en v0.14
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -344,11 +344,10 @@ Abrí **GLO → MIX → EQ**. El ecualizador global, antes de efectos, tiene **L
 
 En **SAVE** guardá sonidos y proyectos. Un proyecto conserva pistas, canales MIDI, zonas, afinación, macros y efectos. **SAVE → LIBRARY → TOOLS** ofrece: **K1 INIT SOUND**, **K2 CLEAR SLOT** (borra permanentemente después de confirmar), **K3 NEW PROJECT** y **K4 CPU TEST**.
 
-Para **Live Recall**, mantené presionado **REC**. Después tocá **FX, SEL, ENV o LFO** para cargar los proyectos **1, 2, 3 o 4**. Mantené REC otra vez para salir.
+Para **Live Recall**, mantené presionado **REC**. Después tocá **FX, SEL, ENV o LFO** para cargar los proyectos **A, B, C o D**. Mantené REC otra vez para salir.
 
 Para detener inmediatamente las notas y los efectos (**PANIC**), mantené **GLO** y presioná **OCT−**. No borra el proyecto.
 
-Antes de instalar otra versión, guardá una copia completa de proyectos, presets y configuración desde el [editor MASHINA](../webapp/editor/). La [página del instalador](../webapp/installer/) es independiente.
 
 ### EQ global: bandas exactas
 
@@ -374,13 +373,33 @@ El proyecto incluye asignaciones MIDI, zonas, afinación, macros, sonidos selecc
 
 ### Live Recall
 
-Mantené pulsado **REC** para entrar. Luego tocá **FX / SEL / ENV / LFO** para cargar slots **1 / 2 / 3 / 4**. Mantené REC otra vez para salir. Las notas anteriores se detienen al cambiar de proyecto, aunque las colas de delay/reverb pueden terminar naturalmente.
+Mantené pulsado **REC** para entrar. Luego tocá **FX / SEL / ENV / LFO** para cargar slots **A / B / C / D**. Mantené REC otra vez para salir. Las notas anteriores se detienen al cambiar de proyecto, aunque las colas de delay/reverb pueden terminar naturalmente.
 
 ### PANIC y respaldo
 
 **Mantené GLO y pulsá OCT−** para detener todas las voces, los efectos, las notas retenidas y sustain. La pantalla indica PANIC MODE mientras sostenés GLO. **No borra el proyecto**.
 
-Antes de cambiar o retroceder la versión, guardá una **copia completa de proyectos, presets de usuario y ajustes**. Exportar un solo preset **no equivale a un respaldo completo del dispositivo**. Usá el [editor MASHINA](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) para copias y el [instalador MASHINA](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) para instalar.
+
+
+### 64 posiciones fijas de presets
+
+**USER 001–032** (Program Change 0–31): sonidos editables que se guardan en FM1. **LIBRARY 033–064** (PC 32–63): 32 sonidos de fábrica reemplazables desde la biblioteca web; se pueden restablecer. Abrí **SAVE → PRESETS**; K4 elige BANK: ALL / USER / LIB, K1 y el encoder PRESETS recorren posiciones, K2 filtra motores y K3 favoritos. Las posiciones USER vacías conservan su número. Guardá cualquier sonido editado primero en USER. El catálogo offline incluye 107 sonidos completos, también kits y voces FM6.
+
+### Ocho proyectos con secciones A–D
+
+Cada proyecto tiene cuatro secciones, hasta seis referencias a presets numerados y ajustes independientes (MIDI, zonas, afinación, retardos, mezcla, efectos, macros). Los sonidos no se duplican en los proyectos: reemplazar un preset modifica todos los proyectos que lo referencian. Para conservar variantes, guardalas en posiciones USER distintas. No se guardan cambios de sonido sin guardar primero el preset. **REC (mantener) + FX / SEL / ENV / LFO** llama A / B / C / D del proyecto elegido. No se permite borrar USER si deja una referencia sin sonido.
+
+### Biblioteca web y copias completas
+
+Abrí la [biblioteca web MASHINA](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) en Chrome o Edge de escritorio. Conectá por USB MIDI y detené la ejecución durante las transferencias. En BACKUP, descargá **Backup complete FM1** y seleccioná el mismo JSON en **Verify saved complete backup**. Basta una verificación por sesión: las escrituras correctas descargan automáticamente el nuevo respaldo verificado; una falla, cambio inesperado o desconexión vuelve a bloquear escrituras.
+
+En USER/LIBRARY importá JSON, buscá y filtrá fuentes o elegí sonidos de fábrica/del dispositivo. Arrastrá a una posición para reemplazarla o entre posiciones para mover/intercambiar. Ctrl-clic selecciona elementos, Shift-clic un rango, Ctrl+A todos los resultados del filtro (también otras páginas) o posiciones ocupadas, Escape limpia la selección. Arrastrá un grupo a posiciones consecutivas: si no entra entero, no se prepara ningún cambio. Los elementos desplazados van a las posiciones liberadas. Arrastrá elementos del dispositivo a la colección derecha y usá **Save collection** para guardar miles de sonidos o proyectos en JSON. Revisá la cola y referencias antes de Apply/Restore; los sonidos activos se recargan al reemplazarlos.
+
+En PROJECTS arrastrá proyectos A–D completos o una sección por su chip. Las referencias siguen siendo numéricas; instalá los sonidos necesarios. En BACKUP, **Save complete performance** guarda USER, LIBRARY, ocho proyectos, estado actual y ajustes, incluso cambios pendientes; se puede abrir y ordenar offline y restaurar después en FM1 con **Restore complete FM1**. Sólo Apply/Restore escribe. Una colección de presets o proyectos no es una copia completa. Consultá la [guía](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html). El puerto USB se llama **MASHINA**; volvé a seleccionarlo en el DAW si es necesario.
+
+### Instalación inicial
+
+v0.14 usa un formato nuevo. No migra presets, proyectos ni ajustes anteriores; guardá lo que quieras conservar antes de instalar. Después del [instalador](../webapp/installer/), usá [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) sólo si el dispositivo lo solicita. Confirmá el borrado único, reiniciá y abrí Web Library. Las actualizaciones compatibles conservan los datos 32+32. No inicialices un dispositivo ya inicializado. Si el protocolo de actualización no es compatible, volvé primero al V15 oficial.
 
 ## 7. Ejemplos para tocar en vivo
 
@@ -396,4 +415,4 @@ Antes de cambiar o retroceder la versión, guardá una **copia completa de proye
 
 ---
 
-MASHINA v0.13 · M-VAVE FM1
+MASHINA v0.14 · M-VAVE FM1

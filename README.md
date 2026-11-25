@@ -1,4 +1,4 @@
-# MASHINA — FM1 Performance Firmware v0.13
+# MASHINA — FM1 Performance Firmware v0.14
 
 **MASHINA** turns the **M-VAVE FM1** into a six-track sound module designed for **external MIDI keyboards, pad controllers and live performance**. Play multiple sounds together, split a keyboard into zones, shape sounds while performing and recall projects quickly.
 
@@ -8,7 +8,7 @@ Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan 
 
 ### MASHINA online
 
-[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [User manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)
+[Project homepage](https://mishamashinamm.github.io/mashina-fm1-fw/) · [Play in emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/) · [FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) · [Web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/) · [Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) · [User manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/)
 
 ## MASHINA offers:
 
@@ -27,9 +27,11 @@ MASHINA is a **live-performance instrument** for the FM1: six independently conf
 | **Live drum performance controls** | Per-pad **PAN**, **PITCH ±24 semitones**, velocity curve and response, choke groups, and overlap/restart retrigger behavior on all four drum engines. |
 | **Hands-on MIDI control** | **32 project-specific CC macros** alongside MIDI Learn; assign controller knobs, pads and pedals to sound parameters. Dedicated MIDI CC commands provide sound randomization/reset and live channel switching for T1–T3. |
 | **Sound shaping and effects** | Engine-specific EDIT controls, envelopes, LFO and modulation, track FX/sends, a **shared three-band EQ before effects**, and a master DJ Filter on the mixer. |
-| **Projects and instant recall** | Save complete live setups, including track sounds, routing, zones, timing, mixer settings and macros. Recall four saved sections rapidly via **REC + FX / SEL / ENV / LFO**, with dedicated project and preset management. |
+| **64 replaceable presets** | **32 USER (001–032)**, editable on the FM1, and **32 LIBRARY (033–064)** factory-backed sounds, replaceable without reflashing. Full 107-sound catalog in Web Library, including FM6 and all drum kits. MIDI PC 0–63. |
+| **8 projects × 4 sections (A–D)** | Each section references up to six preset slots and stores independent routing, zones, tuning, timing, mixer, effects and macros. Replace a preset once and every referencing project uses the new sound. Instant recall via **REC + FX / SEL / ENV / LFO**. |
 | **Streamlined performance UI** | High-contrast orange-and-gray interface, clear track activity indicators, dedicated **SEQ** and **PLAY** drum pages, and a **GLO + OCT− panic shortcut** for immediate silence. No song sequencer or decorative UI animations. |
-| **Browser tools and backups** | Web emulator to test without flashing, WebMIDI installer, web editor, and project/user-preset backup and restore tools. |
+| **Web Library and complete performances** | Drag, multi-select, swap and replace presets and whole projects; save unlimited offline JSON collections or one complete performance file, arrange it offline, and restore it to FM1. Verified backups and read-back after writes. |
+| **USB identity** | Appears as **MASHINA** in MIDI devices and DAWs. |
 
 MASHINA **inherits selected sound and drum synthesis engines from JIANT**, built on Felucca, while combining them with its own engines, MIDI performance controls, drum features, project workflow and redesigned interface. The result is a substantially different firmware rather than a collection of additions to JIANT.
 
@@ -53,9 +55,13 @@ Adjust **GLO → MIX → TUNING → K3 DLY** to delay the selected track's note 
 
 For **DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND**, select an individual pad in **SEQ → MIDI MAP**, then adjust **K4 DLY** for an additional **0–50 ms**. The track and pad values are **additive**: a 12 ms track delay plus a 7 ms pad delay triggers that pad **19 ms** late. Both default to **0 ms** and are saved with projects. Existing drum MIDI note, pan and pitch controls are unchanged.
 
-## Factory sound library — v0.13
+## Preset banks and Web Library
 
-The melodic banks contain 20 ANALOG presets (including CICERO and PLUTARCH), 12 INDUSTRIAL, 5 BRASS and 8 ATMOS, alongside custom PHASE, WHEEL, NOISE, VOICE, LOFI and FM6 sounds. The four drum engines retain their synthesis and have renamed factory kits: **BUTTLER-1–9** (DRUM-X), **ZIZEK-1–3** (DRUM-LAB), **KRIPKE-1–3** (DRUM-AC) and **BADIOU-1–3** (DRUM-IND).
+**USER** stores 32 editable sounds; **LIBRARY** stores 32 factory-backed positions, all replaceable through the browser. **SAVE → PRESETS → BANK** selects ALL, USER or LIB. Projects store slot references; save edited sounds to USER before saving projects.
+
+The [Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) provides four workspaces: USER, LIBRARY, PROJECTS and BACKUP. Connect and verify a complete backup once, drag individual or Ctrl/Shift-selected groups to numbered destinations, review the changes and Apply. Successful writes automatically verify the resulting state and download an updated backup. Create independent collections of thousands of presets or projects, or save a single full performance containing all sound slots, project sections, live state and settings. See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html).
+
+The offline melodic catalog contains 20 ANALOG presets (including CICERO and PLUTARCH), 12 INDUSTRIAL, 5 BRASS and 8 ATMOS, alongside custom PHASE, WHEEL, NOISE, VOICE, LOFI and FM6 sounds. The four drum engines retain their synthesis and have renamed factory kits: **BUTTLER-1–9** (DRUM-X), **ZIZEK-1–3** (DRUM-LAB), **KRIPKE-1–3** (DRUM-AC) and **BADIOU-1–3** (DRUM-IND).
 
 Many factory presets are named after philosophers and thinkers from different periods of history.
 
@@ -67,11 +73,11 @@ Many factory presets are named after philosophers and thinkers from different pe
 
 ## Install or try in a browser
 
-Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** to install MASHINA with a compatible desktop browser, or **[try the emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** without flashing your device. The **[web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** supports device management and backup/restore.
+Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** to install MASHINA with a compatible desktop browser, or **[try the emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** without flashing your device. The **[web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** supports live sound editing; use Web Library for complete device backups and preset/project management.
 
-**Before flashing:** back up projects, user presets and settings, and keep a known-working recovery firmware available. Projects saved with newer firmware may not be compatible with older versions.
+**First installation:** v0.14 is a new storage layout, not a migration from another firmware. Back up any old data you want to keep using its own tools. After flashing, use [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) only if requested; explicitly confirm the one-time erase, then reboot. Already initialized 32+32 devices retain their data on compatible updates. If direct updating is unsupported by your old firmware, use the official V15 recovery path first.
 
-**Current version:** v0.13.
+**Current version:** v0.14.
 
 ## Credits and licensing
 
