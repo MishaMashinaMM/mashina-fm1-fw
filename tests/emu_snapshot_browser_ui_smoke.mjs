@@ -195,7 +195,7 @@ try{
   await pressCancel("#user-apply");
   assert.match(await page.locator("#user-queue").textContent(),/002/);
   await page.locator("[data-tab=library]").click();
-  await page.locator("#library-source").selectOption("F0");
+  await page.locator("#library-source").selectOption("F1");
   await page.locator("#library-target").selectOption("31");
   await page.locator("#library-add").click();
   await pressCancel("#library-apply");
