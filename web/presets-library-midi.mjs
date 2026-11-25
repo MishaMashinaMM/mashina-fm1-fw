@@ -2,7 +2,7 @@
  * Browser USB WebMIDI adapter for the experimental LIB32 page.
  * Never sends a command unless the user explicitly clicks Connect or Upload.
  */
-export async function connectLibraryMidi(){
+export async function connectLibraryMidi({choosePort=null}={}){
   if(!navigator.requestMIDIAccess)throw new Error("WebMIDI is unavailable; use Chrome or Edge over HTTPS.");
   const access=await navigator.requestMIDIAccess({sysex:true});
   const outputs=[...access.outputs.values()],inputs=[...access.inputs.values()];
@@ -17,11 +17,14 @@ export async function connectLibraryMidi(){
   let pick=ranked.find(x=>x.hit)?.i??(matches.length===1?0:-1);
   if(matches.length>1){
     const message=matches.map((x,i)=>`${i+1}. ${x.name} / input: ${x.input.name}`).join("\n");
-    const choice=prompt("Choose the FM1 MIDI port pair:\n"+message, pick>=0?String(pick+1):"");
+    // The main manager supplies its themed modal; legacy diagnostic pages
+    // keep their existing chooser unless explicitly upgraded.
+    const choice=choosePort?await choosePort(matches.map(x=>x.name+" / input: "+x.input.name),pick):
+      prompt("Choose the FM1 MIDI port pair:\n"+message,pick>=0?String(pick+1):"");
     if(choice===null)throw new Error("Connection cancelled.");
-    const n=Number(choice);
-    if(!Number.isInteger(n)||n<1||n>matches.length)throw new Error("Invalid MIDI port selection.");
-    pick=n-1;
+    const n=choosePort?Number(choice):Number(choice)-1;
+    if(!Number.isInteger(n)||n<0||n>=matches.length)throw new Error("Invalid MIDI port selection.");
+    pick=n;
   }
   if(pick<0)throw new Error("Select a MIDI port pair first.");
   const {out,input}=matches[pick];

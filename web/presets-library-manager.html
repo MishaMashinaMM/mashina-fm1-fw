@@ -74,7 +74,12 @@ dialog h2{font-size:21px;margin:0 0 14px;color:var(--orange)}
 .op-progress{width:100%;height:10px;accent-color:var(--orange);display:block;margin:10px 0}
 .op-detail{color:var(--muted);font-size:12px}
 .op-warning{border-top:1px solid #444;margin-top:16px;padding-top:12px;color:#ffba79;font-size:13px}
-.op-actions{display:flex;justify-content:flex-end;margin-top:16px}
+.op-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#confirmation{border-color:#96631f}
+#confirm-choice{width:100%;margin-top:10px;color:#eee;background:#151515;border:1px solid #666;border-radius:4px;min-height:36px;padding:7px 10px;font:inherit}
+#confirm-summary{font-size:12px;color:#ccc;white-space:pre-wrap;overflow-wrap:anywhere;max-height:28dvh;overflow:auto;padding:8px;background:#171717;border:1px solid #393939;border-radius:4px}
+#confirm-message{white-space:pre-wrap;overflow-wrap:anywhere}
+#confirm-accept,#confirm-cancel{min-width:92px;font-weight:700}
 dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:#ffb49e}
 @media(min-width:1180px) and (min-height:660px){
  main{height:100dvh;min-height:0}
@@ -139,6 +144,13 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div id="op-warning" class="op-warning">Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.</div>
 <div class="op-actions"><button id="op-close" class="primary" disabled>Close</button></div>
 </dialog>
+<dialog id="confirmation" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+<h2 id="confirm-title">Confirm</h2>
+<p id="confirm-message" class="op-message"></p>
+<div id="confirm-summary" hidden></div>
+<label id="confirm-choice-field" class="field" hidden>MIDI port pair<select id="confirm-choice"></select></label>
+<div class="op-actions"><button id="confirm-cancel" type="button">CANCEL</button><button id="confirm-accept" type="button" class="primary">RESTORE</button></div>
+</dialog>
 <script type="module">
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
@@ -172,6 +184,46 @@ function finishOperation(){
 }
 $("operation").addEventListener("cancel",e=>{if(busy)e.preventDefault();});
 $("op-close").onclick=()=>{if(!busy)$("operation").close();};
+let confirmationResolve=null;
+function askConfirmation({title,message,summary="",action="RESTORE",choices=null,initial=-1}){
+  const dialog=$("confirmation");
+  if(dialog.open||confirmationResolve)return Promise.resolve(choices?null:false);
+  $("confirm-title").textContent=title;
+  $("confirm-message").textContent=message;
+  $("confirm-summary").textContent=summary;
+  $("confirm-summary").hidden=!summary;
+  $("confirm-choice-field").hidden=!choices;
+  const select=$("confirm-choice");select.replaceChildren();
+  if(choices){
+    opt(select,"","Choose MIDI port pair");
+    choices.forEach((x,i)=>opt(select,String(i),x));
+    select.value=initial>=0?String(initial):"";
+  }
+  $("confirm-accept").textContent=action;
+  $("confirm-accept").disabled=!!choices&&select.value==="";
+  select.onchange=()=>{$("confirm-accept").disabled=select.value==="";};
+  return new Promise(resolve=>{
+    confirmationResolve={resolve,choices:!!choices};
+    dialog.showModal();
+    $("confirm-cancel").focus(); // Safe initial focus: Enter does not start a write.
+  });
+}
+function answerConfirmation(accept){
+  const pending=confirmationResolve;
+  if(!pending)return;
+  if(accept&&$("confirm-accept").disabled)return;
+  const value=pending.choices?(accept?Number($("confirm-choice").value):null):accept;
+  confirmationResolve=null;
+  $("confirmation").close();
+  pending.resolve(value);
+}
+$("confirm-cancel").onclick=()=>answerConfirmation(false);
+$("confirm-accept").onclick=()=>answerConfirmation(true);
+$("confirmation").addEventListener("cancel",e=>{e.preventDefault();answerConfirmation(false);});
+$("confirmation").addEventListener("close",()=>{
+  // Unexpected programmatic dismissal is cancellation, never approval.
+  if(confirmationResolve){const p=confirmationResolve;confirmationResolve=null;p.resolve(p.choices?null:false);}
+});
 function download(name,obj){const u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function label(r){return r?decodeRecord(r).name:"Empty";}
 function references(ref,liveOnly=false){if(!snapshot)return "";const list=[];if(!liveOnly)snapshot.projects.forEach((p,i)=>{if(p)decodeProject(p).refs.forEach((x,t)=>{if(x===ref)list.push(pLabel(i)+"/T"+(t+1));});});decodeProject(snapshot.currentPerformance).refs.forEach((x,t)=>{if(x===ref)list.push("Live/T"+(t+1));});return list.join(", ");}
@@ -266,13 +318,13 @@ function render(){
 function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
 for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
 async function run(fn,operation=null){
-  if(busy||$("operation").open)return;
+  if(busy||$("operation").open||$("confirmation").open)return;
   busy=true;if(operation)beginOperation(operation);
   try{render();await fn();}catch(e){status(e.message,"error");}
   finally{busy=false;try{render();}finally{if(operation)finishOperation();}}
 }
 function fileInput(id,fn){$(id).onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)run(async()=>fn(JSON.parse(await f.text()),f.name));};}
-$("connect").onclick=()=>run(async()=>{invalidate();snapshot=null;const candidate=await connectLibraryMidi();try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");}catch(e){candidate.close();throw e;}},"Connecting FM1");
+$("connect").onclick=()=>run(async()=>{invalidate();snapshot=null;const candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial})});try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);dev=candidate;writable=l.writable&&p.writable&&!p.canInitialize;status("Connected. Go to BACKUP and create a complete device backup.");tab("backup");}catch(e){candidate.close();throw e;}},"Connecting FM1");
 $("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;snapshot=null;invalidate();for(const q of Object.values(queues))q.clear();selected.clear();status("Disconnected.");});
 $("backup-capture").onclick=()=>run(async()=>{invalidate();snapshot=null;const f=await captureFullDevice(dev.request,dev.name,progress);acceptSnapshot(f,"mashina-full-fm1-backup.json");status("Backup downloaded. Choose that file using Verify saved complete backup.","ok");},"Backing up FM1");
 fileInput("backup-verify",file=>{verified=null;const f=validateFullDevice(file);if(!pending||JSON.stringify(f)!==pending)throw Error("Select the exact newly downloaded complete backup.");verified=f;status("Backup verified. USER, LIBRARY, PROJECTS and BACKUP operations are available where safe.","ok");});
@@ -299,9 +351,9 @@ for(const bank of ["user","library"]){
   $(bank+"-export").onclick=()=>{const offset=bank==="user"?1:33,key=bank==="user"?"userPresets":"libraryPresets";download("mashina-"+bank+"-sounds.json",libraryBackupFile(snapshot[key].flatMap((r,slot)=>r?[{slot,...decodeRecord(r)}]:[]),bank));};
   $(bank+"-add").onclick=()=>{const p=sources(bank).find(x=>x.id===$(bank+"-source").value),slot=Number($(bank+"-target").value);if(p)queues[bank].set(slot,p.recordBytes);render();};
   $(bank+"-clear").onclick=()=>{queues[bank].clear();render();};
-  $(bank+"-apply").onclick=()=>{const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes})),options=libOptions();
+  $(bank+"-apply").onclick=async()=>{const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes})),options=libOptions();
     const affected=bank==="library"?items.flatMap(x=>references(x.slot+32)?[num(x.slot+33)+": "+references(x.slot+32)]:[]):[];
-    if(!confirm("Apply "+items.length+" queued "+bank.toUpperCase()+" change(s)? "+(affected.length?"Saved project references will use the replacement on recall:\n"+affected.join("\n")+"\n":"")+"Keep the backup and do not disconnect."))return;
+    if(!await askConfirmation({title:bank==="user"?"Restore USER sounds":"Apply LIBRARY changes",message:"Apply "+items.length+" queued "+bank.toUpperCase()+" change(s)? Keep the backup and do not disconnect.",summary:affected.length?"Saved project references will use the replacement on recall:\n"+affected.join("\n"):"",action:bank==="user"?"RESTORE":"APPLY"}))return;
     apply(async before=>{const f=bank==="user"?applyVerifiedUserBatch:applyVerifiedLibraryChanges;const result=await f(dev.request,before,items,progress,options);q.clear();return result;},"mashina-full-fm1-after-"+bank+".json",bank==="user"?"Restoring USER sounds":"Updating LIBRARY sounds");};
 }
 $("library-allow-saved").onchange=render;
@@ -309,9 +361,9 @@ $("library-reset").onclick=()=>{queues.library.set(Number($("library-target").va
 $("projects-export").onclick=()=>download("mashina-projects-8x4.json",projectsBackup(snapshot.projects));
 fileInput("projects-import",file=>{projectFile=projectsBackup(restoreProjectsBackup(file));selected.clear();status("Project file loaded. Select individual sections or all changed sections.");});
 $("projects-all").onclick=()=>{if(snapshot&&projectFile)selected=new Set(projectFile.sections.flatMap((r,i)=>eq(r,snapshot.projects[i])?[]:[i]));render();};
-$("projects-apply").onclick=()=>{const list=[...selected];if(!confirm("Restore "+list.map(pLabel).join(", ")+"? Existing preset sounds are not changed."))return;apply(async before=>{const result=await applyVerifiedProjectRestore(dev.request,before,projectFile,list,progress);selected.clear();return result;},"mashina-full-fm1-after-projects.json","Restoring project sections");};
+$("projects-apply").onclick=async()=>{const list=[...selected];if(!await askConfirmation({title:"Restore project sections",message:"Restore the selected project sections? Existing preset sounds are not changed.",summary:list.map(pLabel).join(", "),action:"RESTORE"}))return;apply(async before=>{const result=await applyVerifiedProjectRestore(dev.request,before,projectFile,list,progress);selected.clear();return result;},"mashina-full-fm1-after-projects.json","Restoring project sections");};
 fileInput("full-import",file=>{fullSource=validateFullDevice(file);status("Source complete backup loaded. Review the change counts before restoring.");});
-$("full-apply").onclick=()=>{if(prompt("This may replace USER sounds, LIBRARY overrides, projects and settings. Keep the current backup. Type RESTORE to confirm.")!=="RESTORE")return;apply(before=>applyVerifiedFullRestore(dev.request,before,fullSource,progress),"mashina-full-fm1-after-full-restore.json","Restoring complete FM1");};
+$("full-apply").onclick=async()=>{if(!await askConfirmation({title:"Restore complete FM1",message:"This may replace USER sounds, LIBRARY overrides, projects and settings. Keep the current backup. Click RESTORE to confirm.",action:"RESTORE"}))return;apply(before=>applyVerifiedFullRestore(dev.request,before,fullSource,progress),"mashina-full-fm1-after-full-restore.json","Restoring complete FM1");};
 $("advanced-link").onclick=e=>{if(dev||busy){e.preventDefault();status("Disconnect FM1 before opening the experimental lab.","error");}};
 window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else dev?.close();});
 render();

@@ -177,7 +177,59 @@ try{
   await page.locator("[data-tab=user]").click();
   assert.match(await page.locator("#user-slots tr").first().textContent(),/TWELVE CHARS/);
   assert.match(await page.locator("#user-slots tr").first().locator("td").last().locator("span").getAttribute("title"),/P8:D\/T1/);
+  // Confirm all four write actions use the themed dialog; cancellation must
+  // preserve the verified backup, the queue and zero USB writes.
+  const pressCancel=async id=>{
+    await page.locator(id).click();
+    assert.equal(await page.locator("#confirmation").evaluate(d=>d.matches(":modal")),true);
+    assert.equal(await page.locator("#confirm-cancel").textContent(),"CANCEL");
+    assert.equal(await page.locator("#confirmation input").count(),0,"Confirmation must not require typing");
+    await page.locator("#confirm-cancel").click();
+    assert.equal(await page.locator("#confirmation").evaluate(d=>d.open),false);
+    assert.match(await page.locator("#write-state").textContent(),/Writes unlocked/);
+    assert.equal(await page.evaluate(()=>window.mockWrites),0);
+  };
+  await page.locator("#user-source").selectOption("I0");
+  await page.locator("#user-target").selectOption("1");
+  await page.locator("#user-add").click();
+  await pressCancel("#user-apply");
+  assert.match(await page.locator("#user-queue").textContent(),/002/);
+  await page.locator("[data-tab=library]").click();
+  await page.locator("#library-source").selectOption("F0");
+  await page.locator("#library-target").selectOption("31");
+  await page.locator("#library-add").click();
+  await pressCancel("#library-apply");
+  assert.match(await page.locator("#library-queue").textContent(),/064/);
+  const baseBackup=JSON.parse(fs.readFileSync(await captured.path(),"utf8"));
+  const sections=structuredClone(baseBackup.projects);sections[31]=null;
+  await page.locator("[data-tab=projects]").click();
+  await page.locator("#projects-import").setInputFiles({name:"changed-projects.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify({format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,sections}))});
+  await page.locator("#projects-all").click();
+  await pressCancel("#projects-apply");
+  const source=structuredClone(baseBackup);
+  const old=decodeProject(source.currentPerformance);
+  source.currentPerformance=encodeProject({...old,name:"OTHER LIVE",settingsBytes:old.settingsBytes});
+  const live=new Uint8Array(1824);live.set(source.currentPerformance);
+  Object.assign(source.archive.objects.find(o=>o.id===0),{size:live.length,crc:bkCrc(live),data:Buffer.from(live).toString("base64")});
   await page.locator("[data-tab=backup]").click();
+  await page.locator("#full-import").setInputFiles({name:"changed-live.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify(source))});
+  await pressCancel("#full-apply");
+  await page.locator("#full-apply").click();
+  assert.equal(await page.locator("#confirm-accept").textContent(),"RESTORE");
+  assert.equal(await page.locator("#confirm-accept").isEnabled(),true);
+  assert.equal(await page.locator("#confirm-message").textContent(),"This may replace USER sounds, LIBRARY overrides, projects and settings. Keep the current backup. Click RESTORE to confirm.");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator("#confirmation").evaluate(d=>d.open),false);
+  assert.equal(await page.evaluate(()=>window.mockWrites),0);
+  // Prove direct RESTORE starts the protected transfer without typing.
+  // Reject the first write on the mock, then verify the error modal.
+  await page.locator("#full-apply").click();
+  await page.locator("#confirm-accept").click();
+  await page.waitForFunction(()=>document.querySelector("#operation").open);
+  await page.waitForFunction(()=>!document.querySelector("#op-close").disabled);
+  assert.equal(await page.locator("#operation").getAttribute("data-state"),"error");
+  assert.equal(await page.evaluate(()=>window.mockWrites),1);
+  await page.locator("#op-close").click();
   await page.evaluate(()=>window.failMockBackup=true);
   await page.locator("#backup-capture").click();
   assert.equal(await page.locator("#operation").evaluate(d=>d.matches(":modal")),true);
@@ -188,7 +240,8 @@ try{
   await page.locator("#op-close").click();
   assert.equal(await page.locator("#full-apply").isDisabled(),true);
   await page.locator("#disconnect").click();
-  assert.equal(await page.evaluate(()=>window.mockWrites),0);
+  assert.equal(await page.evaluate(()=>window.mockWrites),1);
+  console.log("PASS: themed write confirmations, cancel/Escape preserve state, RESTORE starts protected transfer without typing");
   console.log("PASS: compact desktop layout, all 32 slots per tab, native centered operation lock, success/error acknowledgement");
   assert.deepEqual(errors,[],"New manager startup errors");
   await page.goto("http://127.0.0.1:8765/advanced.html",{waitUntil:"networkidle"});
