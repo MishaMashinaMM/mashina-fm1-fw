@@ -1,0 +1,22 @@
+name: DRUM-AC cymbal audition
+on:
+  push:
+    branches: [drum-ac-cymbal-samples]
+    paths:
+      - tools/build_cymbal_auditions.py
+      - .github/workflows/drum-ac-cymbal-audition.yml
+  workflow_dispatch:
+jobs:
+  audition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install audio converter
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Fetch pinned CC0 originals and encode audition variants
+        run: python3 tools/build_cymbal_auditions.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-cymbal-listening-pack
+          path: build/cymbal-auditions/
+          if-no-files-found: error
