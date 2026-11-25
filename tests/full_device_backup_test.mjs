@@ -4,7 +4,7 @@ import {bkCrc,bkPack,bkUnpack,bkU32,bkR32} from "../web/fm1backup.js";
 import {encodeProject,decodeProject,MAX_RECORD} from "../web/projects-library-codec.mjs";
 import {encodeRecord,pack7,unpack7} from "../web/presets-library-codec.mjs";
 import {captureUser} from "../web/presets-library-sync.mjs";
-import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges} from "../web/full-device-backup.mjs";
+import {validateFullDevice,projectCapability,restoreProjectsOnly,restoreFullDevice,probeFlash,captureFullDevice,captureProjectsOnly,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore} from "../web/full-device-backup.mjs";
 const preset=Array.from(encodeRecord({engine:0,name:"SOUND 1",
   params:Array.from({length:127},(_,i)=>i%70)}));
 const current=encodeProject({section:0,refs:[32,33,255,255,255,255],
@@ -413,4 +413,48 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   legacy.archive.objects[8]={id:8,...raw(Uint8Array.of(1))};
   assert.throws(()=>validateFullDevice(legacy),/legacy FM6 migration/);
   console.log("PASS: bulk preflight, unchanged slots, two writes, partial-failure stop, missing live USER and legacy restore refusal");
+}
+
+
+// Selective USER trial: preserve occupied records, use the exact same
+// 304-byte USER source, exercise both base banks and tagged companion data.
+{
+  const baseline=await captureFullDevice(mock,"USER RESTORE TRIAL");
+  const occupied=baseline.userPresets.findIndex(Boolean);
+  const analog=Array.from(encodeRecord({engine:0,name:"USER TEST",params:Array(127).fill(17)}));
+  assert.throws(()=>planUserRestore(baseline,occupied,analog),/occupied/);
+  const writes=[];
+  const counted=async(cmd,args,opts)=>{
+    if(cmd===67&&args[0]===2)writes.push(args[1]);
+    return mock(cmd,args,opts);
+  };
+  const stale=structuredClone(baseline);
+  stale.libraryPresets[15]=analog;
+  await assert.rejects(applyVerifiedUserRestore(counted,stale,15,analog),/Device changed/);
+  assert.deepEqual(writes,[]);
+  await assert.rejects(applyVerifiedUserRestore(async(cmd,args,opts)=>cmd===95?[1,32,1,1]:counted(cmd,args,opts),baseline,15,analog),/formatting disabled/);
+  assert.deepEqual(writes,[]);
+  const a=await applyVerifiedUserRestore(counted,baseline,15,analog);
+  assert.deepEqual(a.after.userPresets[15],analog);
+  assert.deepEqual(writes,[6]);
+  const drum=baseline.userPresets.find(p=>p&&p[2]===19);
+  assert.ok(drum);
+  const b=await applyVerifiedUserRestore(counted,a.after,31,drum);
+  assert.deepEqual(b.after.userPresets[31],drum);
+  assert.deepEqual(writes,[6,9,7]);
+  assert.deepEqual(b.after.projects,baseline.projects);
+  assert.deepEqual(b.after.libraryPresets,baseline.libraryPresets);
+  assert.deepEqual(b.after.currentPerformance,baseline.currentPerformance);
+  for(let i=0;i<32;i++)if(i!==15&&i!==31)
+    assert.deepEqual(b.after.userPresets[i],baseline.userPresets[i]);
+  const failBase=async(cmd,args,opts)=>{
+    if(cmd===67&&args[0]===0&&args[1]===7)return [0,7,4];
+    return counted(cmd,args,opts);
+  };
+  await assert.rejects(applyVerifiedUserRestore(failBase,b.after,30,drum),/stopped on object 7 after 1 acknowledged/);
+  const interrupted=await captureFullDevice(mock,"INTERRUPTED");
+  assert.equal(interrupted.userPresets[30],null);
+  assert.deepEqual(interrupted.userPresets,b.after.userPresets);
+  assert.deepEqual(interrupted.libraryPresets,b.after.libraryPresets);
+  console.log("PASS: selective empty USER restores, exact 304-byte records, both banks, companion-first interruption and unselected data preservation");
 }

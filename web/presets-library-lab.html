@@ -144,6 +144,13 @@ tr:nth-child(2n){background:#161616}
  <button id="physical-reset" type="button" disabled>Reset selected slot to factory</button>
  <p id="physical-impact" class="stats">Verify a complete backup to inspect destination usage.</p>
  </div>
+ <div class="catalog-shell">
+ <h2>DEVICE USER · SELECTIVE RESTORE TRIAL</h2>
+ <p>Restore one complete prepared sound into an empty USER slot. Existing USER sounds, LIBRARY, projects and settings stay unchanged. Use the Prepared source selector above. Drum kits and FM6 require matching companion data; a USB interruption can leave a partial operation.</p>
+ <label>USER destination <select id="user-target" class="catalog-select"></select></label>
+ <button id="user-restore" type="button" disabled>Restore selected sound to USER</button>
+ <p id="user-impact" class="stats">Verify a complete FM1 backup and prepare a sound first.</p>
+ </div>
 </div>
 <div class="toolbar">
  <button id="probe-flash" type="button" disabled>Inspect flash (read-only)</button>
@@ -169,7 +176,7 @@ tr:nth-child(2n){background:#161616}
  </div>
  <p id="flash-compare-status" class="stats" role="status">Choose two complete diagnostics to compare. Both original files are kept intact.</p>
 </details>
-<p class="foot"><strong>Physical write scope:</strong> Selected-slot and bulk LIBRARY writes require initialized, format-disabled firmware and a fresh verified full backup. Referenced changes are blocked, including current performance. A bulk upload changes only prepared nonempty slots; unchanged slots are skipped and a blocked change refuses the whole batch before writing. USB interruption can leave a partially applied batch; never retry without a fresh inspection. USER uploads and project/full-device restoration remain locked. Offline composition, backup and read-only inspection remain available.</p>
+<p class="foot"><strong>Physical write scope:</strong> Selected-slot and bulk LIBRARY writes require initialized, format-disabled firmware and a fresh verified full backup. Referenced changes are blocked, including current performance. A bulk upload changes only prepared nonempty slots; unchanged slots are skipped and a blocked change refuses the whole batch before writing. USB interruption can leave a partially applied batch; never retry without a fresh inspection. Selective USER restoration is limited to one empty slot at a time. Occupied USER slots and project/full-device restoration remain locked. Offline composition, backup and read-only inspection remain available.</p>
 <div class="stats" id="conn">Not connected. No device write can occur.</div>
 <div class="stats" id="stats">0 prepared · 32 empty · PC 32–63</div>
 <table aria-label="Library slots"><thead><tr><th>Slot</th><th>MIDI PC</th><th>Name</th><th>Engine</th><th>Binary size</th><th>Used in projects</th><th>Action</th></tr></thead><tbody id="slots"></tbody></table>
@@ -189,7 +196,7 @@ import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {captureBackup,readBackup} from "./fm1backup.js";
 import {extractLegacyUserPresets,freshMpr1EmulatorFromLegacy} from "./legacy-user-extract.mjs";
 import {capability,readLibrary,captureUser,uploadPrepared,libraryBackupFile} from "./presets-library-sync.mjs";
-import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints,planLibraryChanges,applyVerifiedLibraryChanges} from "./full-device-backup.mjs";
+import {captureProjectsOnly,captureFullDevice,restoreProjectsOnly,restoreFullDevice,projectCapability,validateFullDevice,probeFlash,captureFlashFingerprints,captureCleanLayoutPreflight,compareFlashFingerprints,planLibraryChanges,applyVerifiedLibraryChanges,planUserRestore,applyVerifiedUserRestore} from "./full-device-backup.mjs";
 import {auditFlashProbe} from "./flash-readiness.mjs";
 import {analyzeFlashFingerprints} from "./flash-fingerprint-analysis.mjs";
 import {restoreProjectsBackup,projectsBackup,decodeProject} from "./projects-library-codec.mjs";
@@ -199,8 +206,8 @@ import {snapshotSourceRecords,userSourceRecords,factorySourceRecords,editEmulato
 import {inspectProjectReferences as inspectUsage} from "./projects-library-view.mjs";
 const $=id=>document.getElementById(id);
 let slots=Array.from({length:LIBRARY_SLOTS},()=>null);
-/* USER and archive/project restore remain locked. Selected and bulk LIBRARY
- * operations use the same independently verified complete-backup gate. */
+/* Archive/project restore remains locked. LIBRARY and selective empty USER
+ * operations use the independently verified complete-backup gate. */
 const PHYSICAL_WRITES_APPROVED=false;
 let device=null,cap=null,projectCap=null,backedUp=false,wholeBackup=false,busy=false;
 // Authorization requires re-importing the exact JSON saved to disk, not just
@@ -450,6 +457,7 @@ function physicalControls(){
   $("physical-put").disabled=!ready||!available||source.value===""||catalogNeedsPrepare;
   $("physical-reset").disabled=!ready||!available||!verifiedFullFile?.libraryPresets[i];
   updateBulkImpact(ready);
+  updateUserImpact(ready);
 }
 function connectionStatus(){
   $("conn").textContent=device?`Connected: ${device.name}. LIB32 v${cap.version}, ${cap.slots} slots (${cap.writable?"write-enabled":"read-only"}); MPR1 projects: ${projectCap?(projectCap.writable?"write-enabled":"read-only"):"unsupported"}.`:"Not connected. No device write can occur.";
@@ -595,7 +603,56 @@ $("verify-full-backup").addEventListener("change",async e=>{
     $("status").textContent="Saved complete FM1 backup verified. Selected-slot and bulk LIBRARY changes require explicit confirmation.";
   });
 });
-for(const id of ["physical-source","physical-target"])$(id).addEventListener("change",physicalControls);
+for(const id of ["physical-source","physical-target","user-target"])$(id).addEventListener("change",physicalControls);
+function selectedUserRestore(){
+  const slot=Number($("user-target").value);
+  const source=$("physical-source").value;
+  if(source===""||catalogNeedsPrepare||!slots[Number(source)])throw Error("Prepare and select a complete source sound");
+  const recordBytes=decodeRecord(slots[Number(source)]).recordBytes;
+  return {slot,recordBytes};
+}
+function updateUserImpact(ready){
+  const select=$("user-target"),old=select.value;
+  if(!select.options.length)for(let i=0;i<32;i++){
+    const o=document.createElement("option");o.value=String(i);select.append(o);
+  }
+  if(old!=="")select.value=old;
+  for(const o of select.options){
+    const i=Number(o.value),r=verifiedFullFile?.userPresets[i];
+    o.textContent=String(i+1).padStart(3,"0")+" · "+
+      (verifiedFullFile?(r?decodeRecord(r).name+" (occupied)":"Empty"):"Not inspected");
+  }
+  select.disabled=busy;
+  const button=$("user-restore");button.disabled=true;
+  let msg="Verify a complete FM1 backup and prepare a sound first.";
+  if(verifiedFullFile)try{
+    const {slot,recordBytes}=selectedUserRestore();
+    const plan=planUserRestore(verifiedFullFile,slot,recordBytes);
+    msg="Ready: "+decodeRecord(recordBytes).name+" → USER "+String(slot+1).padStart(3,"0")+
+      " · "+plan.objectIds.length+" storage object(s) · existing sounds unchanged.";
+    button.disabled=!ready;
+  }catch(e){msg="BLOCKED — "+e.message;}
+  $("user-impact").textContent=msg;
+}
+$("user-restore").addEventListener("click",()=>action(async()=>{
+  if(!device||!cap?.writable||!projectCap?.writable||projectCap.canInitialize||!wholeBackup||!verifiedFullFile)
+    throw Error("Initialized update firmware and verified complete backup required");
+  const {slot,recordBytes}=selectedUserRestore(),baseline=verifiedFullFile;
+  planUserRestore(baseline,slot,recordBytes);
+  const label="USER "+String(slot+1).padStart(3,"0");
+  if(!confirm("Restore "+decodeRecord(recordBytes).name+" into empty "+label+
+    "? Keep the complete backup. Do not touch the FM1 controls or disconnect during the transfer."))return;
+  wholeBackup=false;backedUp=false;pendingLibraryBackup=null;pendingFullBackup=null;verifiedFullFile=null;
+  try{
+    const result=await applyVerifiedUserRestore(device.request,baseline,slot,recordBytes,
+      (phase,i,n)=>$("status").textContent=phase+" "+i+"/"+n+" — do not touch FM1 controls.");
+    pendingFullBackup=JSON.stringify(result.after);
+    downloadFile("mashina-full-fm1-after-user-restore.json",result.after);
+    $("status").textContent="SUCCESS — "+label+" verified; all unselected sound and project data unchanged. Save and verify the new backup before further writes.";
+  }catch(e){
+    throw Error("STOP — "+e.message+" Keep original backup; inspect before any further write.");
+  }
+}));
 async function physicalChange(reset){
   if(!device||!cap?.writable||!projectCap?.writable||projectCap.canInitialize||!wholeBackup||!verifiedFullFile)
     throw Error("Initialized update firmware and verified complete FM1 backup required");

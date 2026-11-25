@@ -34,3 +34,6 @@ assert.equal(generalSyntax.status,0,generalSyntax.stderr);
 
 assert.match(general,/const baseline=verifiedFullFile,plan=planLibraryChanges\(baseline,bulkEntries\(\)\)/);
 assert.match(general,/BATCH BLOCKED/);
+
+assert.match(general,/applyVerifiedUserRestore\(device\.request,baseline,slot,recordBytes/);
+assert.match(general,/planUserRestore\(baseline,slot,recordBytes\)/);

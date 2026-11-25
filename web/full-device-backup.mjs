@@ -488,3 +488,96 @@ export async function applyVerifiedLibraryChanges(request,verifiedFile,changes,p
   }
   return {changed:plan.length,after};
 }
+
+
+/* Selective USER restore is deliberately one EMPTY slot in this hardware
+ * trial. Build the expected archive first, then transfer only changed
+ * objects 6/7 and 9. Never touch existing USER records or project refs.
+ * Companion first: interruption before the base bank commit leaves the
+ * formerly empty destination empty, with at most an unused tagged sidecar. */
+export function planUserRestore(file,slot,recordBytes) {
+  const full=validateFullDevice(file);
+  insist(Number.isInteger(slot)&&slot>=0&&slot<32,"Invalid USER destination");
+  insist(full.userPresets[slot]===null,"USER destination is occupied — first trial permits empty slots only");
+  const record=decodeRecord(recordBytes).recordBytes;
+  // Current stored record layout; older records may be normalized on PUT.
+  insist((record[1]===4||record[1]===5)&&record[3]===127&&record[159]===0x47,
+    "Use a complete current-format MASHINA sound record");
+  // Non-companion engines are captured with zero sidecar bytes.
+  insist(SIDE_ENGINE.has(record[2])||record.slice(192).every(x=>x===0),
+    "Unexpected companion bytes for non-companion engine");
+  const refUsed=full.projects.some(p=>p&&decodeProject(p).refs.includes(slot))||
+    decodeProject(full.currentPerformance).refs.includes(slot);
+  insist(!refUsed,"USER destination is referenced");
+  const expected=structuredClone(full);
+  const raw=id=>Array.from(dataBytes(readBackup(full.archive).objects.find(x=>x.id===id)));
+  const set32=(a,o,v)=>{for(let i=0;i<4;i++)a[o+i]=(v>>>(8*i))&255;};
+  const writeObject=(id,bytes)=>{
+    const o=expected.archive.objects.find(x=>x.id===id);
+    o.size=bytes.length;o.crc=bkCrc(bytes);o.data=btoa(String.fromCharCode(...bytes));
+  };
+  const id=6+Math.floor(slot/16),base=raw(id);
+  const bank=base.length?base:Array(3080).fill(0);
+  if(!base.length){set32(bank,0,0x31425055);bank[4]=192;bank[6]=16;}
+  const pos=8+(slot%16)*192;
+  // An unknown/inert record must not be silently overwritten.
+  insist(bank.slice(pos,pos+192).every(v=>v===0),
+    "Empty USER destination contains nonzero raw bytes; refusing trial overwrite");
+  bank.splice(pos,192,...record.slice(0,192));
+  writeObject(id,bank);
+  const existing=raw(9),side=existing.length?existing.slice():Array(3728).fill(0);
+  if(!existing.length){set32(side,0,0x36465055);side[4]=1;side[6]=32;}
+  const off=16+slot*116,mask=u32le(side,8);
+  if(SIDE_ENGINE.has(record[2])){
+    set32(side,off,soundTag(record));
+    side.splice(off+4,112,...record.slice(192));
+    set32(side,8,(mask|(1<<slot))>>>0);
+  }else if(existing.length){
+    side.fill(0,off,off+116);
+    set32(side,8,(mask&~(1<<slot))>>>0);
+  }
+  const objectIds=[];
+  if((existing.length||SIDE_ENGINE.has(record[2]))&&!byteEq(existing,side)){
+    writeObject(9,side);objectIds.push(9);
+  }
+  objectIds.push(id);
+  expected.userPresets[slot]=record;
+  return {expected:validateFullDevice(expected),objectIds,slot};
+}
+async function putUserObject(request,object) {
+  insist([6,7,9].includes(object.id),"Forbidden selective USER object");
+  const call=async args=>{
+    const r=Uint8Array.from(await request(BACKUP_CMD.PUT,args,{timeout:30000,retries:0}));
+    insist(r.length===3&&r[0]===args[0]&&r[1]===object.id&&r[2]===0,
+      "USER object "+object.id+" PUT rejected or mismatched (phase "+args[0]+")");
+  };
+  await call([0,object.id,...bkU32(object.size),...bkU32(object.crc)]);
+  try{
+    for(let off=0;off<object.size;off+=256)
+      await call([1,object.id,...bkU32(off),...bkPack(object.bytes.subarray(off,off+256))]);
+    await call([2,object.id]);
+  }catch(e){await call([3,object.id]).catch(()=>{});throw e;}
+}
+export async function applyVerifiedUserRestore(request,verifiedFile,slot,recordBytes,progress=()=>{}) {
+  const baseline=validateFullDevice(verifiedFile);
+  const plan=planUserRestore(baseline,slot,recordBytes);
+  const libcap=await capability(request),prcap=await projectCapability(request);
+  insist(libcap.writable&&prcap.writable&&!prcap.canInitialize,
+    "Use the initialized update firmware with formatting disabled");
+  const fresh=await captureFullDevice(request,baseline.firmware,progress);
+  try{sameFullPayload(baseline,fresh);}catch(e){
+    throw Error("Device changed since verified backup: "+e.message+". No writes sent.");
+  }
+  const archive=readBackup(plan.expected.archive);
+  for(let i=0;i<plan.objectIds.length;i++){
+    const id=plan.objectIds[i];
+    try{await putUserObject(request,archive.objects.find(o=>o.id===id));}
+    catch(e){throw Error("USER restore stopped on object "+id+" after "+i+" acknowledged objects: "+e.message+". Partial state possible; do not retry.");}
+    progress("USER RESTORE",i+1,plan.objectIds.length);
+  }
+  const after=await captureFullDevice(request,baseline.firmware,progress);
+  try{sameFullPayload(plan.expected,after);}catch(e){
+    throw Error("Post-restore full-state verification failed: "+e.message+". Keep backup; do not retry.");
+  }
+  return {slot,after,objectIds:plan.objectIds};
+}
