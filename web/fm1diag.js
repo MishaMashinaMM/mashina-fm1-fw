@@ -132,6 +132,13 @@ export async function runStock(ctx) {
     await up.install(stock.image, stock.product, ui.step);
     return "done";
   }
+  /* MASHINA v0.14 backups must include LIBRARY overrides. Do not label
+   * the legacy archive complete; the user can preserve data in Web Library. */
+  if (/\bv0\.14\b/i.test(fw.version)) {
+    if (!(await ui.confirm("nobackupConfirm", fwName(fw)))) return "cancel";
+    await up.install(stock.image, stock.product, ui.step);
+    return "done";
+  }
   /* JIANT without the complete backup (before 0.3): update JIANT first, its songs then come along */
   if (fw.kind === "jiant" && !fw.backup) throw fail("stockUnsupported", `${fwName(fw)}: no complete backup`, fwName(fw));
   let archive = null;

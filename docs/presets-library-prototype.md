@@ -2,6 +2,8 @@
 
 ## Current acceptance status — 25 November 2026
 
+The v0.14 release candidate integrates the tested 32+32 layout, USB MASHINA identity and public Web Library. First-install is an explicit user-confirmed action over the fixed owned user-data sectors; existing committed MPS1 layouts are not eligible. This is a clean install, not a legacy-format migration. The experimental trial and earlier build history below are retained for engineering reference.
+
 The following is the current branch status; the dated development notes below are historical and do not describe the present physical test boundary.
 
 - One FM1 was deliberately initialized using the separately authorized clean trial, then updated with the initialized-device-only image. The second unit has not been changed.

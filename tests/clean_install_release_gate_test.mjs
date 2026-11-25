@@ -143,3 +143,21 @@ assert(update.includes("build/host/ldr_test"));
 assert(update.includes('test ! -e "$OUT/first-install"'));
 assert(!update.includes("clean-install-trial.html"));
 console.log("PASS: initialized-only update retains boot marker write lock, no formatter, separate artifact");
+
+// Public v0.14 is a distinct configuration, not an unrestricted trial bypass.
+const publicPage=read("web/initialize-library.html");
+assert.match(build,/public_authorized = a.release == "0.14"/);
+assert.match(build,/"FELUCCA_PUBLIC_LAYOUT": "1"/);
+assert.match(build,/elif os.environ.get\("FELUCCA_PUBLIC_LAYOUT", "0"\) != "0"/);
+assert.match(init,/if\(mprs_valid\(0u,0u,&marker\)\|\|mprs_valid\(0u,1u,&marker\)\)return 1;/);
+assert.match(api,/ed_b\(flash_ok && !clean_layout_normal_writes \? 1u : 0u\)/);
+assert.match(publicPage,/lib\[2\]===0&&project.length===4/);
+assert.match(publicPage,/project\[2\]===0&&project\[3\]===1/);
+assert.match(publicPage,/value!=="ERASE THIS FM1"/);
+assert.match(publicPage,/if\(!confirm\(/);
+assert.match(publicPage,/request\(101,\[\],\{timeout:60000,retries:0\}\)/);
+assert.match(publicPage,/request\(102,\[77,65,83,72,73,78,65,51,50,ticket\[1\]\],\{timeout:120000,retries:0\}\)/);
+const publicScript=publicPage.split('<script type="module">')[1].split('</script>')[0];
+const publicSyntax=spawnSync(process.execPath,["--input-type=module","--check"],{input:publicScript,encoding:"utf8"});
+assert.equal(publicSyntax.status,0,publicSyntax.stderr);
+console.log("PASS: public first-install is separately gated, checks uninitialized state and explicit consent; no automatic erase or retry");

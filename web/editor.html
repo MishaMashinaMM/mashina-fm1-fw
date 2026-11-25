@@ -3832,7 +3832,7 @@ function renderBackup() {
   $("library-backup-link").hidden=!referenceLayout;
   $("backup-export").disabled = !(caps & 1);
   $("backup-import").disabled = !(caps & 2);
-  $("backup-help").textContent = t(caps & 1 ? "backupHelp" : "backupOld");
+  $("backup-help").textContent = referenceLayout?"":t(caps & 1 ? "backupHelp" : "backupOld");
 }
 const backupModule = () => import("./fm1backup.js");
 const backupProgress = (done, total) => sayK("backupWorking", `${Math.round(done / Math.max(1, total) * 100)}%`);

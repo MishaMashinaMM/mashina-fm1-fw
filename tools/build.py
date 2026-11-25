@@ -469,6 +469,10 @@ def main():
             os.environ[k] = v
     elif os.environ.get("FELUCCA_PUBLIC_LAYOUT", "0") != "0":
         raise SystemExit("Public layout is reserved for the v0.14 release build")
+    if not a.release:
+        # Unversioned engineering images must not impersonate the v0.14 public layout.
+        PRODUCT = "FM-1_913"
+        VERSION = "v0.13-dev"
     fm1pkg_make.SDK = a.sdk
     for rel, sha in SDK_SHA256.items():          # fail early without the SDK
         if hashlib.sha256(fm1pkg_make.sdk_file(rel)).hexdigest() != sha:

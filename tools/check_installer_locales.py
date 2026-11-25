@@ -38,7 +38,13 @@ for lang in ("es", "ja", "ru", "sr", "hi"):
     rows = re.findall(r"(?m)^\\|[^\\n]+\\|$", content)
     assert len(headings) >= 20, f"{lang}: manual is missing detailed subsections ({len(headings)})"
     assert len(rows) >= 50, f"{lang}: manual needs complete settings/control tables ({len(rows)})"
-    assert len(content) >= len(english_text) * 0.66, f"{lang}: manual is unexpectedly abridged"
+    # Japanese expresses the same instructions in fewer Unicode characters;
+    # enforce both topic parity and structural coverage, not English length.
+    assert len(content) >= len(english_text) * (0.58 if lang == "ja" else 0.66), f"{lang}: manual is unexpectedly abridged"
+    for token in ("001–032", "033–064", "A–D", "Ctrl", "Shift", "Save collection",
+                  "Verify saved complete backup", "Save complete performance", "Restore complete FM1",
+                  "Initialize storage", "web-library/"):
+        assert token in content, f"{lang}: missing v0.14 storage topic {token}"
     for token in ("MIXER", "ROUTE", "ZONES", "TUNING", "ATMOS", "BRASS",
                   "INDUSTRIAL", "DRUM-X", "DRUM-LAB", "STRIKE", "SEQ",
                   "PLAY", "REC", "MIDI Learn", "CC85", "CC86", "CC87",
