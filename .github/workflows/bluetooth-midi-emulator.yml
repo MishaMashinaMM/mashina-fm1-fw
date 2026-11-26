@@ -1,7 +1,7 @@
 name: Bluetooth MIDI simulated emulator
 on:
   push:
-    branches: [bluetooth-midi]
+    branches: [bluetooth-midi-multi]
     paths: ['web/emu/**', 'firmware/src/**', 'tools/**', 'tests/emu_ble_test.mjs', '.github/workflows/bluetooth-midi-emulator.yml']
   workflow_dispatch:
 permissions:

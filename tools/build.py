@@ -463,7 +463,7 @@ def main():
     lib96_compile = a.release == "0.14-lib96"
     lib96_trial = a.release == "0.14-lib96test"
     ble_trial = a.release == "0.15-bletest"
-    if ble_trial and not (os.environ.get("GITHUB_REF") == "refs/heads/bluetooth-midi" and os.environ.get("MASHINA_BLE_TRIAL") == "INITIALIZED-FM1-ONLY" and os.environ.get("MASHINA_BLE_EXPERIMENT") == "1" and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"):
+    if ble_trial and not (os.environ.get("GITHUB_REF") == "refs/heads/bluetooth-midi-multi" and os.environ.get("MASHINA_BLE_TRIAL") == "INITIALIZED-FM1-ONLY" and os.environ.get("MASHINA_BLE_EXPERIMENT") == "1" and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"):
         raise SystemExit("BLE test requires branch-only initialized update authorization")
     if lib96 != (lib96_compile or lib96_trial or public96 or ble_trial):
         raise SystemExit("LIB96 requires the dedicated compile or one-device test target")
