@@ -200,6 +200,10 @@
 #include "ota_hw.c"
 #include "editor.c"              /* web editor SysEx (needs the OTA SysEx plumbing) */
 #endif
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#include "mashina_ble.h"
+#include "mashina_ble.c"
+#endif
 #if FELUCCA_CDC
 #include "console.c"
 #endif

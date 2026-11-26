@@ -361,6 +361,26 @@ static void con_exec(const char *p)
 {
     if (con_word(&p, "help") || con_word(&p, "?"))
         con_puts("status  dbg  inp  crash  params  memr ADDR [LEN]  flr OFF [LEN]  uboot yes\r\n");
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    else if (con_word(&p, "ble")) {
+        if (con_word(&p, "on")) { if (!transport_busy()) mel_ble_set(1); }
+        else if (con_word(&p, "off")) mel_ble_set(0);
+        else if (con_word(&p, "scan")) mel_ble_scan(1);
+        else if (con_word(&p, "stop")) mel_ble_scan(0);
+        else if (con_word(&p, "disconnect")) mel_ble_disconnect();
+        else if (con_word(&p, "connect")) {
+            int ok; uint32_t row = con_num(&p, &ok);
+            if (ok && row && row <= mb.count) mel_ble_connect(row - 1u);
+        } else if (con_word(&p, "list")) {
+            for (uint32_t i = 0; i < mb.count; i++) {
+                con_dec(i + 1u); con_puts(" "); con_puts(mb.found.e[mb.idx[i]].name); con_puts("\r\n");
+            }
+        }
+        con_puts(mel_ble_status()); con_puts("\r\n");
+        uint32_t code = mel_ble_code();
+        if (code != BLE_NO_PASSKEY) { con_puts("PASSKEY "); for (uint32_t d=100000u; d; d/=10u) con_putc('0'+(code/d)%10u); con_puts("\r\n"); }
+    }
+#endif
     else if (con_word(&p, "status"))
         con_status();
     else if (con_word(&p, "dbg"))

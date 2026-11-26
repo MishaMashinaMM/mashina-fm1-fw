@@ -65,6 +65,9 @@ __attribute__((noinline)) void fm1_timer5_irq(void)
     if (owed & 2u)
         uart_midi_poll();
 #endif
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    mel_ble_drain();
+#endif
     owed = 0;
 }
 /* (0.9.14) isr_timer5's body (hal/fm1_isr.S): TIMER5 timed whole, nested in the render or not, for MENU > ABOUT >
@@ -245,7 +248,13 @@ static __attribute__((noinline)) void cpu_clock(void)
 static void fm1_main(void)
 {
     uint32_t ms, said;
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    /* Radio remains OFF until explicitly enabled by the console. */
+#endif
     persist_boot();
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    mel_ble_boot();
+#endif
 #if FELUCCA_OTA
     if (flash_ok)
         ota_boot_cleanup();                             /* staging area left by an update */
@@ -407,6 +416,9 @@ static void fm1_main(void)
         felucca_dbg.home = ui.home;
         felucca_dbg.stage = 1;
         ui_input();
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+        mel_ble_poll();
+#endif
         settings_poll();                              /* queued settings save: only while stopped */
         autosave_poll();                              /* (1.2) the music, stopped and idle: project.c */
         mutate_poll();                                /* (JIANT 0.6.43) MUTATE on the bar: project.c */

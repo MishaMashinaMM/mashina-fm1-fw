@@ -1,0 +1,3 @@
+# Experimental single BLE MIDI controller
+
+Pinned source: https://github.com/keremimo/melodee/tree/165d177a425944f3d30b0b669255a6ed0050c3a5 (GPL-3.0-only; Optimist attribution retained). Compile-only branch; no installer, no flash layout changes. Radio starts only via USB CDC console command `ble on`. First test commands: `ble scan`, `ble list`, `ble connect 1`, `ble` (status/passkey), `ble disconnect`, `ble off`. One link, input only; no BLE firmware update, no persisted pairing yet. Loss/overflow triggers existing all-MIDI panic (including wired notes); must improve before release. Do not flash until memory and IRQ/radio review are complete.

@@ -241,7 +241,7 @@ def build_app():
                  "FELUCCA_FLASH_DIAG", "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE", "FELUCCA_LIB96",
                  "FELUCCA_PROJECT_REFS", "FELUCCA_PROJECT_REFS_WRITE",
                  "FELUCCA_PROJECT_REFS_FORMAT", "FELUCCA_CLEAN_INSTALL_LAYOUT",
-                 "FELUCCA_INITIALIZED_UPDATE", "FELUCCA_PUBLIC_LAYOUT"):
+                 "FELUCCA_INITIALIZED_UPDATE", "FELUCCA_PUBLIC_LAYOUT", "MASHINA_BLE_EXPERIMENT"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/felucca.c
         if v in ("0", "1"):
             flags.append(f"-D{flag}={v}")
