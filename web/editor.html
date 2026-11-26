@@ -3827,7 +3827,7 @@ setInterval(async () => {
 
 /* Complete archives remain on this computer; no project is uploaded to a server. */
 function renderBackup() {
-  const referenceLayout=/\bv0\.14\b/i.test(dev?.info?.version||"");
+  const referenceLayout=/\bv0\.(?:14|15)\b/i.test(dev?.info?.version||"");
   const caps = referenceLayout?0:(dev?.info?.backupCaps || 0);
   $("library-backup-link").hidden=!referenceLayout;
   $("backup-export").disabled = !(caps & 1);
@@ -3838,18 +3838,18 @@ const backupModule = () => import("./fm1backup.js");
 const backupProgress = (done, total) => sayK("backupWorking", `${Math.round(done / Math.max(1, total) * 100)}%`);
 $("backup-export").addEventListener("click", () => op(async () => {
   const d = dev;
-  if (/\bv0\.14\b/i.test(d?.info?.version||"")||!(d?.info?.backupCaps & 1)) return;
+  if (/\bv0\.(?:14|15)\b/i.test(d?.info?.version||"")||!(d?.info?.backupCaps & 1)) return;
   const { captureBackup } = await backupModule();
   assertSession(d);
   const file = await captureBackup((r, o) => sessionRequest(d, r, o), d.info.version, backupProgress);
   assertSession(d);
-  download(`JIANT-backup-${new Date().toISOString().slice(0, 10)}.json`, file);
+  download(`MASHINA-backup-${new Date().toISOString().slice(0, 10)}.json`, file);
   sayK("backupDone");
 }));
 $("backup-import").addEventListener("click", () => { if (dev?.info?.backupCaps & 2) $("backup-file").click(); });
 $("backup-file").addEventListener("change", () => {
   const file = $("backup-file").files[0], d = dev; $("backup-file").value = "";
-  if (/\bv0\.14\b/i.test(d?.info?.version||"")||!file || !(d?.info?.backupCaps & 2)) return;
+  if (/\bv0\.(?:14|15)\b/i.test(d?.info?.version||"")||!file || !(d?.info?.backupCaps & 2)) return;
   op(async () => {
     if (file.size > 600000) throw new Error("Backup file too large");
     const { readBackup, restoreBackup } = await backupModule();

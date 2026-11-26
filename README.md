@@ -33,7 +33,6 @@ MASHINA is a **live-performance instrument** for the FM1: six independently conf
 | **Web Library and complete performances** | Drag, multi-select, swap, rename and replace presets and projects. Build reusable offline sound collections and complete performance files, then write them to FM1. Automatic device reading and verification; save backups only when desired. |
 | **USB identity** | Appears as **MASHINA** in MIDI devices and DAWs. |
 
-MASHINA **inherits selected sound and drum synthesis engines from JIANT**, built on Felucca, while combining them with its own engines, MIDI performance controls, drum features, project workflow and redesigned interface. The result is a substantially different firmware rather than a collection of additions to JIANT.
 
 All six tracks share **eight synthesis voices in total**, not eight per track; **BRASS** also has a four-voice limit. The firmware is designed for real-time playing rather than song sequencing.
 

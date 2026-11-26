@@ -39,6 +39,7 @@ jobs:
           # version placeholders and installs the browser assets.
           MASHINA_EMU_REFS=1 MASHINA_EMU_LIB96=1 EMU_VERSION=v0.15 EMU_PREVIEW=0 sh web/emu/build.sh
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
+          node tests/emu_lib96_test.mjs
       - name: live-drum firmware regressions
         run: bash tests/run_live_drum_tests.sh
       # (JIANT) the installer and the web editor next to the emulator: the package needs JieLi's toolchain (downloaded)
@@ -140,9 +141,7 @@ jobs:
           cp -r web/landing/anim build/pages/anim
           # (0.9.11) old and mistyped links (/installer/, /webapp/, a link with ":1:1" stuck to it) to the page they meant
           cp web/404.html build/pages/404.html
-          mkdir -p build/pages/docs && cp docs/cheatsheet-controls.pdf docs/cheatsheet-sound.pdf docs/cheatsheet-controls.png docs/cheatsheet-sound.png build/pages/docs/
-          # (0.9.2) the navigation map the front page shows (tools/gen_nav_map.py), English and Spanish
-          cp docs/navigation-map.png docs/navigation-map.svg docs/navigation-map.es.png docs/navigation-map.es.svg build/pages/docs/
+          # Only the current MASHINA usage manual is published; old upstream maps and sheets are not current operating guides.
           # (0.9.12) the interactive manual (web/manual: the panel, every command, the map, what's new) at manual/
           python3 web/make_site.py manual build/pages
       - name: Verify all README navigation links exist in the generated site
