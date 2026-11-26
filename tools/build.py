@@ -453,17 +453,22 @@ def main():
     # v0.14 is the first public reference-layout release. Explicitly
     # select the complete, mutually exclusive storage configuration here,
     # rather than silently distributing the old FUN storage build.
+    public96 = a.release == "0.15"
+    if public96:
+        if os.environ.get("FELUCCA_LIB96", "1") != "1":
+            raise SystemExit("v0.15 requires 96 LIBRARY slots")
+        os.environ["FELUCCA_LIB96"] = "1"
     lib96 = os.environ.get("FELUCCA_LIB96", "0") == "1"
     lib96_compile = a.release == "0.14-lib96"
     lib96_trial = a.release == "0.14-lib96test"
-    if lib96 != (lib96_compile or lib96_trial):
+    if lib96 != (lib96_compile or lib96_trial or public96):
         raise SystemExit("LIB96 requires the dedicated compile or one-device test target")
     if lib96_trial and not (
         os.environ.get("GITHUB_REF") == "refs/heads/presets-library-96"
         and os.environ.get("MASHINA_LIB96_TRIAL") == "ONE-FM1-CLEAN-96"
     ):
         raise SystemExit("LIB96 test package requires explicit branch-only authorization")
-    public_authorized = a.release == "0.14"
+    public_authorized = a.release in ("0.14", "0.15")
     if public_authorized or lib96_trial:
         release_flags = {
             "FELUCCA_LIB32": "1", "FELUCCA_LIB32_WRITE": "1",
@@ -478,7 +483,7 @@ def main():
                 raise SystemExit(f"{a.release} release requires {k}={v}")
             os.environ[k] = v
     elif os.environ.get("FELUCCA_PUBLIC_LAYOUT", "0") != "0":
-        raise SystemExit("Public layout is reserved for the v0.14 release build")
+        raise SystemExit("Public layout is reserved for the v0.14/v0.15 release builds")
     if not a.release:
         # Unversioned engineering images must not impersonate the v0.14 public layout.
         PRODUCT = "FM-1_913"
@@ -564,7 +569,7 @@ def main():
         print("DESTRUCTIVE DATA FORMAT is possible via separate confirmed WebMIDI commands 101/102.")
         print("Never install on both FM1 devices; user data will be erased during the later formatter.")
     pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY,
-        fm1pkg_make.LIB96_LAYOUT_TAG if lib96_trial else None), ota, PRODUCT)
+        fm1pkg_make.LIB96_LAYOUT_TAG if (lib96_trial or public96) else None), ota, PRODUCT)
     (OUT / name).write_bytes(pkg)
     print(f"app      {OUT / 'felucca.bin'}  {len(img)} B")
     print(f"loader   {LDR / 'ota.bin'}  {len(ota)} B")

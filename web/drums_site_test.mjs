@@ -16,7 +16,7 @@ for (const [name, text] of [['home', home], ['installer', installer],
   assert.match(text, /MASHINA/i, `${name} must identify MASHINA`);
 }
 for (const href of ['emu/', 'webapp/installer/', 'webapp/editor/', 'web-library/', 'manual/']) {
-  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v014/")}"`), `homepage must link to ${href}`);
+  assert.ok(home.includes(`href="${href}"`) || home.includes(`href="${href.replace("installer/", "installer-orange-v015/")}"`), `homepage must link to ${href}`);
 }
 assert.match(home, /<strong>MASHINA<\/strong><span>FM1 PERFORMANCE FW<\/span>/, 'homepage must have a two-line MASHINA wordmark');
 assert.match(home, /data-i18n="safety"/, 'homepage must retain firmware backup warning');
@@ -30,15 +30,15 @@ assert.doesNotMatch(editor, /<button role="tab" data-tab="sequencer"/, 'MASHINA 
 assert.doesNotMatch(editor, /const TABS = \[[^\n]*"sequencer"/, 'disabled sequencer must not be navigable');
 assert.doesNotMatch(emulator, /id="sample-bank-controls"|id="sample-play"|id="sample-bank"/, 'MASHINA emulator must not offer sample kits');
 assert.doesNotMatch(emulator, /withSampleBank|encodeSampleBank|sampleKit:|factory-voices\.json/, 'MASHINA emulator must not load sample kits');
-assert.match(workflow, /python3 tools\/build\.py --release 0\.14/, 'site must package MASHINA v0.14 firmware');
-assert.match(workflow,/MASHINA_EMU_REFS=1/);
-assert.match(readme,/32 USER.*32 LIBRARY/);
+assert.match(workflow, /python3 tools\/build\.py --release 0\.14/, 'site must package MASHINA v0.15 firmware');
+assert.match(workflow,/MASHINA_EMU_REFS=1 MASHINA_EMU_LIB96=1/);
+assert.match(readme,/32 USER.*96 LIBRARY/);
 assert.match(readme,/8 projects × 4 sections/);
-assert.match(installer,/web-library\/initialize\.html/);
+assert.doesNotMatch(installer,/web-library\/initialize\.html/);
 assert.match(workflow, /(?:sh|bash) web\/emu\/build\.sh/, 'site must build the MASHINA emulator');
 assert.doesNotMatch(workflow, /\bweb\/(?:STABLE|PREVIEW|CLASSIC)\b/, 'site must not publish pinned upstream firmware');
 const translations = read('web/mashina-translations.js');
-assert.match(home, /What MASHINA adds to JIANT/, 'homepage should introduce MASHINA additions without a changelog');
+assert.match(home, /MASHINA performance features/, 'homepage should introduce MASHINA additions without a changelog');
 assert.match(home, /Four 12-sound drum engines/, 'homepage must describe all four drum engines');
 assert.match(home, /data-i18n="projectTitle"/, 'homepage should cover live projects');
 for (const name of ['DRUM-X', 'DRUM-LAB', 'DRUM-AC', 'DRUM-IND']) {

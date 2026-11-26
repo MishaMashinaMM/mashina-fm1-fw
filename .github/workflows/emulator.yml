@@ -4,14 +4,14 @@
 name: emulator
 on:
   push:
-    branches: [main, presets-library]
+    branches: [main, presets-library-96]
   workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
 concurrency:
-  group: mashina-public-v014-${{ github.ref }}
+  group: mashina-public-v015-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   build:
@@ -37,7 +37,7 @@ jobs:
         run: |
           # build.sh already copies the current browser shell, substitutes
           # version placeholders and installs the browser assets.
-          MASHINA_EMU_REFS=1 EMU_VERSION=v0.14 EMU_PREVIEW=0 sh web/emu/build.sh
+          MASHINA_EMU_REFS=1 MASHINA_EMU_LIB96=1 EMU_VERSION=v0.15 EMU_PREVIEW=0 sh web/emu/build.sh
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
       - name: live-drum firmware regressions
         run: bash tests/run_live_drum_tests.sh
@@ -72,24 +72,40 @@ jobs:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
-          python3 tools/build.py --release 0.14
+          python3 tools/build.py --release 0.15
           python3 tools/check_app_flash_headroom.py
           mkdir -p build/host
           cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DMASHINA_HOST_TEST=1 -Ibuild/gen -Ifirmware/src -o build/host/factory_drum_export tests/factory_drum_export.c -lm
           build/host/factory_drum_export > build/host/factory-drum-records.json
           node tests/factory_catalog_complete_test.mjs build/host/factory-drum-records.json
-          python3 web/make_site.py build/felucca-0.14.fwsc "0.14" build/site
-          test -s build/site/web-library/initialize.html
+          python3 web/make_site.py build/felucca-0.15.fwsc "0.15" build/site
+          test ! -e build/site/web-library/initialize.html
+          node tests/factory_catalog_selection_test.mjs
+          node tests/full_device_backup_test.mjs
+          node tests/performance_backup_test.mjs
+          node tests/web_library_manager_test.mjs
+          node tests/lib96_clean_trial_test.mjs
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,'tools')
+          import fm1pkg_make as p
+          p.SDK=Path.home()/'fw-AC79_AIoT_SDK'
+          Path('build/untagged.fwsc').write_bytes(p.ufw(p.flash_image(Path('build/felucca.bin').read_bytes(),p.KEY),Path('build/loader/ota.bin').read_bytes(),'FM-1_915'))
+          PY
+          cc -O2 tests/ldr_test.c -o build/host/ldr_test
+          build/host/ldr_test build/untagged.fwsc build/felucca-0.15.fwsc 584336 clean
+          build/host/ldr_test build/felucca-0.15.fwsc build/felucca-0.15.fwsc 584336
           test -s build/site/web-library/factory-drum-records.json
           printf '%s\n' "$GITHUB_SHA" > build/site/firmware/SOURCE_COMMIT
           (cd build/site/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
-          # Refuse to publish an unidentifiable or potentially cached earlier v0.14 binary.
-          test -s build/site/webapp/installer-orange-v014/index.html
-          grep -q 'v0.14 · MASHINA · BUILD' build/site/webapp/installer-orange-v014/index.html
+          # Refuse to publish an unidentifiable or potentially cached earlier v0.15 binary.
+          test -s build/site/webapp/installer-orange-v015/index.html
+          grep -q 'v0.15 · MASHINA · BUILD' build/site/webapp/installer-orange-v015/index.html
           grep -q 'cache: "no-store"' build/site/webapp/installer/index.html
           grep -q 'release=' build/site/webapp/installer/index.html
           test -s build/site/firmware/RELEASE_SHA256
-          (cd build/site/firmware && sha256sum felucca-0.14.fwsc | cut -d' ' -f1 | cmp - RELEASE_SHA256)
+          (cd build/site/firmware && sha256sum felucca-0.15.fwsc | cut -d' ' -f1 | cmp - RELEASE_SHA256)
           ! grep -q '/\\*BUILD_TAG\\*/' build/site/webapp/installer/index.html
           cp -r build/site/webapp build/site/firmware build/site/web-library build/emu/
       # (JIANT 0.7.9) the stems app's phase-0 probe (android/probe), next to the installer: app/jiant-probe.apk

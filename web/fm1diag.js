@@ -141,7 +141,7 @@ export async function runStock(ctx) {
   }
   /* MASHINA v0.14 backups must include LIBRARY overrides. Do not label
    * the legacy archive complete; the user can preserve data in Web Library. */
-  if (/\bv0\.14\b/i.test(fw.version)) {
+  if (/\bv0\.(?:14|15)\b/i.test(fw.version)) {
     if (!(await ui.confirm("nobackupConfirm", fwName(fw)))) return "cancel";
     await up.install(stock.image, stock.product, ui.step);
     return "done";
@@ -227,7 +227,7 @@ export function stockFileProblem(name, bytes, v15size) {
 export function makeReport({ env, page = "", installer = "", state = {}, scan = null, permission = "", error = null, log = "" }) {
   const fw = state.fw || {};
   const lines = [
-    "JIANT installer report",
+    "MASHINA installer report",
     `date: ${new Date().toISOString()}`,
     `page: ${page}`,
     `installer: ${installer}`,

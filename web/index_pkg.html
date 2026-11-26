@@ -49,7 +49,7 @@
 <main>
   <nav class="lang" id="lang" aria-label="Language"><button data-lang="en" lang="en">English</button><button data-lang="es" lang="es">Español</button><button data-lang="ja" lang="ja">日本語</button><button data-lang="ru" lang="ru">Русский</button><button data-lang="sr" lang="sr-Cyrl">Српски</button><button data-lang="hi" lang="hi">हिन्दी</button></nav>
   <h1 class="jiant-wordmark"><a href="https://github.com/MishaMashinaMM/mashina-fm1-fw" aria-label="MASHINA home" style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.25"><span style="display:block">MASHINA</span><span class="fm" style="display:block;margin:0">FM1 PERFORMANCE FW</span></a><span class="jiant-tool" data-nav-label="installer">INSTALLER</span></h1>
-  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.14 · MASHINA · BUILD /*BUILD_TAG*/</p>
+  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.15 · MASHINA · BUILD /*BUILD_TAG*/</p>
   <p data-t="intro"></p>
   <p data-t="warn"></p>
   <p data-t="samples" style="color:var(--orange)"></p>
@@ -63,7 +63,7 @@
     <p class="small" style="margin:0 0 10px" data-t="firstText"></p>
     <p style="margin:0 0 10px"><button id="first-stock" data-t="firstStock"></button></p>
     <p class="small" style="margin:0" data-t="firstOk"></p>
-    <p class="small"><a href="../../web-library/initialize.html" data-t="initializeStorage">Initialize storage after first installation</a> · <a href="../../web-library/" data-t="webLibrary">Web Library</a></p>
+    <p class="small"><a href="../../web-library/" data-t="webLibrary">Web Library</a></p>
   </div>
   <p class="small"><label><span data-t="verLabel"></span> <select id="ver" style="font:inherit"></select></label></p>
   <p id="edition-info" class="small" hidden></p>
@@ -100,7 +100,7 @@
   <p><span data-t="manual"></span>
     <a href="https://mishamashinamm.github.io/mashina-fm1-fw/manual/" style="color:inherit">MASHINA user manual</a></p>
   
-  <p class="small">MASHINA v0.14 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
+  <p class="small">MASHINA v0.15 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
     Credits: Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT); the song system after SLOOP by isod89.<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1).<br>
     FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
@@ -114,14 +114,13 @@ const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
     warn: "書き込み中は USB を抜かないでください。",
-    samples: "互換性の注意: MASHINA v0.14 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
-    dual: "MASHINA v0.14: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
+    samples: "互換性の注意: MASHINA v0.15 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
+    dual: "MASHINA v0.15: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
     install: "インストール",
-    firstTitle: "別のファームウェアから切り替える場合は、互換性を確認してください",
-    "firstText": "MASHINA v0.14 の初回導入では新しい保存形式を使用します。既存の音色、プロジェクト、設定は移行されません。必要なデータは事前に保存し、導入後に必要な場合だけ初期化してください。互換性のある 32+32 の更新ではデータを保持します。",
-    firstStock: "先に公式V15へ戻す",
-    "firstOk": "直接更新できない場合は公式 V15 に戻してから導入してください。正常に動作している MASHINA 32+32 は初期化しないでください。",
-    "initializeStorage": "初回導入後にストレージを初期化",
+    firstTitle: "インストール前に",
+    "firstText": "別のファームウェアや互換性のない旧版から v0.15 に切り替えると、音色、プロジェクト、設定は自動的に消去されます。必要なデータは事前に保存してください。互換性のある MASHINA の更新ではデータを保持します。",
+    firstStock: "公式 V15 に戻す",
+    "firstOk": "FM1 が起動するまで電源と USB を接続したままにしてください。追加操作は不要です。",
     "webLibrary": "ウェブライブラリ",
     checking: "FM-1 のファームウェアを確認中…",
     oldstock: "この FM-1 には古い公式ファームウェアが入っています。書き込みませんでした。下のボタンで先に公式V15に更新してから（公式ファームウェアではバックアップは不要です）、もう一度インストールしてください。検出: ",
@@ -134,7 +133,7 @@ const TEXT = {
     beta: "インストールやダウングレードの前に、プロジェクト、ユーザープリセット、設定をバックアップしてください。",
     back: "M-VAVEから公式FM-1 V15を取得し、未変更のFM-1.fwscを選んでください。ファイルはこのブラウザ内で検証し、サーバーへ送りません。",
     stockTitle: "公式V15に戻す", stockFile: "公式FM-1.fwsc", stockGo: "バックアップして公式V15へ戻す",
-    "stockBackup": "v0.14 の完全バックアップは Web Library で先に保存してください。旧形式のバックアップには LIBRARY の音色が含まれず、以前のファームウェアからの移行には使用できません。",
+    "stockBackup": "公式 V15 に戻る前に、必要なら Web Library で完全バックアップを保存してください。",
     stockRecovery: "更新中断の再開：全体バックアップはすでにパソコンへ保存済み",
     stockValid: "公式V15を確認しました", stockConfirm: "全体バックアップファイルをパソコンに保存できましたか？ 続けると公式V15へ戻します。JIANT の曲は公式V15では開けません。",
     stockNeedBackup: "書き込みモードからはバックアップできません。保存済みバックアップがある場合だけ、更新中断の再開にチェックしてください。",
@@ -164,14 +163,13 @@ const TEXT = {
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
     warn: "Do not unplug the USB cable while writing.",
-    samples: "Compatibility note: MASHINA v0.14 does not provide Felucca user-sample playback. If changing from Felucca or another firmware, preserve your original WAV files and a complete backup before installation.",
-    dual: "MASHINA v0.14: six-track MIDI routing, note and velocity zones, per-track tuning, ATMOS / BRASS / INDUSTRIAL synthesizers, four 12-sound drum engines (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ and 32 MIDI macros.",
+    samples: "Compatibility note: MASHINA v0.15 does not provide Felucca user-sample playback. If changing from Felucca or another firmware, preserve your original WAV files and a complete backup before installation.",
+    dual: "MASHINA v0.15: six-track MIDI routing, note and velocity zones, per-track tuning, ATMOS / BRASS / INDUSTRIAL synthesizers, four 12-sound drum engines (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ and 32 MIDI macros.",
     install: "Install",
-    firstTitle: "Switching from another firmware? Check compatibility first",
-    "firstText": "Installing MASHINA v0.14 for the first time uses a new storage layout. Existing presets, projects and settings are not migrated; save anything you want to keep before flashing. After flashing, initialize storage once if requested. Compatible 32+32 updates preserve data.",
-    firstStock: "Return to official V15 first",
-    "firstOk": "The installer supports recognized update protocols. If your current firmware cannot be updated directly, return to official V15 first. Do not initialize an already working MASHINA 32+32 device.",
-    "initializeStorage": "Initialize storage after first installation",
+    firstTitle: "Before installing MASHINA",
+    "firstText": "Installing v0.15 from another firmware or an incompatible older MASHINA version automatically clears presets, projects and settings. Save anything you want to keep first. Compatible MASHINA updates retain data.",
+    firstStock: "Return to official V15",
+    "firstOk": "Keep FM1 powered and connected until it starts. No separate initialization is needed.",
     "webLibrary": "Web Library",
     checking: "Checking the FM-1's firmware…",
     oldstock: "This FM-1 runs an older official firmware: nothing was written. Update it to official V15 first with the button below (no backup is needed from an official firmware), then press Install again. Found: ",
@@ -184,7 +182,7 @@ const TEXT = {
     beta: "Back up your projects, user presets and settings before installing or downgrading.",
     back: "Get official FM-1 V15 from M-VAVE and select the unmodified FM-1.fwsc. The browser validates it locally; it is not sent to a server.",
     stockTitle: "Return to official V15", stockFile: "Official FM-1.fwsc", stockGo: "Back up and return to official V15",
-    "stockBackup": "Before returning from v0.14, save a complete performance backup in Web Library. A legacy archive does not contain LIBRARY overrides and is not a v0.14 backup. Older firmware's data requires its own tools.",
+    "stockBackup": "If you want to keep your MASHINA data before returning to official V15, save a complete backup in Web Library.",
     stockRecovery: "Resume an interrupted update: I already saved a complete backup to this computer",
     stockValid: "Official V15 verified", stockConfirm: "Has the complete backup file been saved to this computer? Continue to return to official V15. Official V15 cannot open JIANT music.",
     stockNeedBackup: "An update loader cannot export a backup. Only select resume if you already saved a complete backup.",
@@ -350,14 +348,13 @@ Object.assign(TEXT.ja, {
 TEXT.es = {
   intro: "Conectá el FM-1 por USB. (Funciona en Chrome o Edge en una computadora; en Android con Chrome puede funcionar. En iPhone/iPad no.)",
   warn: "No desconectes el cable USB mientras escribe.",
-  samples: "Compatibilidad: MASHINA v0.14 no reproduce samples de usuario de Felucca. Antes de cambiar de firmware, conservá tus WAV originales y un backup completo.",
-    dual: "MASHINA v0.14: seis pistas MIDI, zonas de notas y velocidad, afinación por pista, sintetizadores ATMOS / BRASS / INDUSTRIAL, cuatro motores de batería de 12 sonidos (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ y 32 macros MIDI.",
+  samples: "Compatibilidad: MASHINA v0.15 no reproduce samples de usuario de Felucca. Antes de cambiar de firmware, conservá tus WAV originales y un backup completo.",
+    dual: "MASHINA v0.15: seis pistas MIDI, zonas de notas y velocidad, afinación por pista, sintetizadores ATMOS / BRASS / INDUSTRIAL, cuatro motores de batería de 12 sonidos (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ y 32 macros MIDI.",
   install: "Instalar",
-  firstTitle: "¿Venís de otro firmware? Primero comprobá la compatibilidad",
-  "firstText": "La primera instalación de MASHINA v0.14 usa un nuevo formato de almacenamiento. No migra presets, proyectos ni ajustes: guardá lo que quieras conservar antes de instalar. Después inicializá el almacenamiento una sola vez si se solicita. Las actualizaciones 32+32 conservan los datos.",
-  firstStock: "Primero volver al V15 oficial",
-  "firstOk": "Si el protocolo de actualización actual no es compatible, volvé primero al V15 oficial. No inicialices un MASHINA 32+32 que ya funciona.",
-  "initializeStorage": "Inicializar almacenamiento tras la primera instalación",
+  firstTitle: "Antes de instalar MASHINA",
+  "firstText": "Al instalar v0.15 desde otro firmware o una versión anterior incompatible, se borran automáticamente los presets, proyectos y ajustes. Guardá primero lo que quieras conservar. Las actualizaciones compatibles de MASHINA conservan los datos.",
+  firstStock: "Volver al V15 oficial",
+  "firstOk": "Mantené el FM1 encendido y conectado hasta que arranque. No hace falta inicializarlo por separado.",
   "webLibrary": "Biblioteca web",
   checking: "Revisando el firmware del FM-1…",
   oldstock: "Este FM-1 tiene un firmware oficial más viejo: no se escribió nada. Primero actualizalo al V15 oficial con el botón de abajo (desde un firmware oficial no hace falta backup) y después apretá Instalar de nuevo. Encontrado: ",
@@ -371,7 +368,7 @@ TEXT.es = {
   back: "Conseguí el FM-1 V15 oficial de M-VAVE y elegí el FM-1.fwsc sin modificar. El navegador lo verifica localmente; no se envía a ningún servidor.",
   stockWhere: "En la página de descargas de M-VAVE buscá el FM-1, bajá el firmware V15, descomprimilo y elegí el archivo FM-1.fwsc (699.956 bytes). Esta página no puede bajarlo por vos: el firmware oficial es de M-VAVE y no podemos redistribuirlo.",
   stockTitle: "Volver al V15 oficial", stockFile: "FM-1.fwsc oficial", stockGo: "Hacer backup y volver al V15 oficial",
-  "stockBackup": "Antes de volver desde v0.14, guardá un respaldo completo en Web Library. Un archivo antiguo no incluye LIBRARY y no es un respaldo v0.14. Los datos de otro firmware requieren sus propias herramientas.",
+  "stockBackup": "Si querés conservar tus datos de MASHINA antes de volver a V15, guardá un respaldo completo en Web Library.",
   stockRecovery: "Retomar una actualización interrumpida: ya guardé un backup completo en esta computadora",
   stockValid: "V15 oficial verificado", stockConfirm: "¿Se guardó el archivo de backup completo en esta computadora? Seguí para volver al V15 oficial. El V15 oficial no puede abrir la música de JIANT.",
   stockNeedBackup: "Desde el modo de actualización no se puede exportar un backup. Marcá «retomar» solo si ya guardaste un backup completo.",
@@ -461,14 +458,13 @@ TEXT.es = {
 TEXT.ru = {
   "intro": "Подключите FM1 к компьютеру по USB (Chrome или Edge).",
   "warn": "Не отсоединяйте USB-кабель во время прошивки.",
-  "samples": "Совместимость: MASHINA v0.14 не воспроизводит пользовательские сэмплы Felucca. При смене прошивки сохраните исходные WAV-файлы и полную резервную копию.",
-  "dual": "MASHINA v0.14: шесть MIDI-дорожек, зоны нот и velocity, настройка высоты по дорожкам, синтезаторы ATMOS / BRASS / INDUSTRIAL, четыре барабанных движка по 12 звуков (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ и 32 MIDI-макроса.",
+  "samples": "Совместимость: MASHINA v0.15 не воспроизводит пользовательские сэмплы Felucca. При смене прошивки сохраните исходные WAV-файлы и полную резервную копию.",
+  "dual": "MASHINA v0.15: шесть MIDI-дорожек, зоны нот и velocity, настройка высоты по дорожкам, синтезаторы ATMOS / BRASS / INDUSTRIAL, четыре барабанных движка по 12 звуков (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ и 32 MIDI-макроса.",
   "install": "Установить",
-  "firstTitle": "Переходите с другой прошивки? Сначала проверьте совместимость",
-  "firstText": "При первой установке MASHINA v0.14 используется новый формат хранения. Пресеты, проекты и настройки не переносятся; сохраните нужные данные заранее. После прошивки выполните однократную инициализацию, если она требуется. Совместимые обновления 32+32 сохраняют данные.",
-  "firstStock": "Сначала вернуться на официальную V15",
-  "firstOk": "Если прямое обновление невозможно, сначала вернитесь к официальной V15. Не инициализируйте уже работающую MASHINA 32+32.",
-  "initializeStorage": "Инициализировать хранилище после первой установки",
+  "firstTitle": "Перед установкой MASHINA",
+  "firstText": "При установке v0.15 поверх другой прошивки или несовместимой старой версии MASHINA пресеты, проекты и настройки автоматически удаляются. Сохраните нужное заранее. Совместимые обновления MASHINA сохраняют данные.",
+  "firstStock": "Вернуться на официальную V15",
+  "firstOk": "Не отключайте питание и USB до запуска FM1. Дополнительная инициализация не нужна.",
   "webLibrary": "Веб-библиотека",
   "checking": "Проверяем прошивку FM1…",
   "oldstock": "Установлена старая официальная прошивка. Ничего не записано. Сначала обновитесь до официальной V15 кнопкой ниже, затем повторите установку. Найдено: ",
@@ -487,7 +483,7 @@ TEXT.ru = {
   "stockTitle": "Возврат к официальной V15",
   "stockFile": "Официальный FM-1.fwsc",
   "stockGo": "Сохранить копию и вернуть V15",
-  "stockBackup": "Перед возвратом с v0.14 сохраните полную копию в Web Library. Старый архив не содержит LIBRARY и не является полной копией v0.14. Для данных другой прошивки используйте её инструменты.",
+  "stockBackup": "Чтобы сохранить данные MASHINA перед возвратом на V15, сохраните полную копию в Web Library.",
   "stockRecovery": "Продолжить прерванное обновление: полная резервная копия уже сохранена",
   "stockValid": "Официальная V15 проверена",
   "stockConfirm": "Полная резервная копия сохранена на компьютере? Продолжить возврат к V15? Официальная V15 не откроет проекты JIANT.",
@@ -590,13 +586,12 @@ TEXT.sr = {
   "intro": "Повежите FM1 са рачунаром преко USB кабла (Chrome или Edge).",
   "warn": "Не искључујте USB кабл током уписивања фирмвера.",
   "samples": "Компатибилност: MASHINA не репродукује корисничке Felucca семплове. Сачувајте оригиналне WAV датотеке и комплетну резервну копију пре промене фирмвера.",
-  "dual": "MASHINA v0.14: шест MIDI трака, зоне нота и јачине удара, транспозиција ±36 полустепена, фино штимовање ±50 центи, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND и 32 MIDI макроа.",
+  "dual": "MASHINA v0.15: шест MIDI трака, зоне нота и јачине удара, транспозиција ±36 полустепена, фино штимовање ±50 центи, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND и 32 MIDI макроа.",
   "install": "Инсталирај",
-  "firstTitle": "Прелазите са другог фирмвера? Прво проверите компатибилност",
-  "firstText": "Прва инсталација MASHINA v0.14 користи нови формат складишта. Постојећи пресети, пројекти и подешавања се не преносе; сачувајте потребне податке пре уписа. Након инсталације једном иницијализујте складиште ако се то тражи. Компатибилне 32+32 надоградње чувају податке.",
-  "firstStock": "Прво се врати на званични V15",
-  "firstOk": "Ако директна надоградња није подржана, прво се вратите на званични V15. Не иницијализујте MASHINA 32+32 која већ ради.",
-  "initializeStorage": "Иницијализација складишта после прве инсталације",
+  "firstTitle": "Пре инсталације MASHINA",
+  "firstText": "Инсталација v0.15 преко другог фирмвера или некомпатибилне старије верзије MASHINA аутоматски брише пресете, пројекте и подешавања. Претходно сачувајте оно што желите да задржите. Компатибилне надоградње чувају податке.",
+  "firstStock": "Врати на званични V15",
+  "firstOk": "Оставите FM1 укључен и повезан док се не покрене. Нема додатне иницијализације.",
   "webLibrary": "Веб библиотека",
   "checking": "Провера фирмвера на FM1…",
   "oldstock": "FM1 има старију званичну верзију. Ништа није уписано. Ажурирајте га на V15 испод, па поновите инсталацију. Пронађено: ",
@@ -615,7 +610,7 @@ TEXT.sr = {
   "stockTitle": "Повратак на званични V15",
   "stockFile": "Званични FM-1.fwsc",
   "stockGo": "Сачувај копију и врати V15",
-  "stockBackup": "Пре враћања са v0.14 сачувајте комплетну копију у Web Library. Стари архив не садржи LIBRARY и није комплетна v0.14 копија. За податке другог фирмвера користите његове алате.",
+  "stockBackup": "Ако желите да задржите MASHINA податке пре повратка на V15, сачувајте комплетну копију у Web Library.",
   "stockRecovery": "Настави прекинуто ажурирање: већ имам комплетну резервну копију",
   "stockValid": "Званични V15 је проверен",
   "stockConfirm": "Да ли је комплетна резервна копија сачувана на рачунару? Наставити повратак на V15? Стари фирмвер не може да отвори пројекте JIANT.",
@@ -718,13 +713,12 @@ TEXT.hi = {
   "intro": "FM1 को USB से कंप्यूटर में जोड़ें (Chrome या Edge का उपयोग करें)।",
   "warn": "फ़र्मवेयर लिखे जाने के दौरान USB केबल न निकालें।",
   "samples": "अनुकूलता: MASHINA Felucca के उपयोगकर्ता सैंपल नहीं चलाता। फ़र्मवेयर बदलने से पहले मूल WAV फ़ाइलें और पूरा बैकअप सुरक्षित रखें।",
-  "dual": "MASHINA v0.14: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND और 32 MIDI मैक्रो।",
+  "dual": "MASHINA v0.15: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND और 32 MIDI मैक्रो।",
   "install": "इंस्टॉल करें",
-  "firstTitle": "दूसरे फ़र्मवेयर से आ रहे हैं? पहले अनुकूलता जाँचें",
-  "firstText": "MASHINA v0.14 की पहली स्थापना नया स्टोरेज प्रारूप इस्तेमाल करती है। पुराने प्रीसेट, प्रोजेक्ट और सेटिंग्स माइग्रेट नहीं होते; आवश्यक डेटा पहले सहेजें। स्थापना के बाद आवश्यकता होने पर एक बार स्टोरेज प्रारंभ करें। संगत 32+32 अपडेट डेटा सुरक्षित रखते हैं।",
-  "firstStock": "पहले आधिकारिक V15 पर लौटें",
-  "firstOk": "यदि सीधा अपडेट समर्थित नहीं है, तो पहले आधिकारिक V15 पर लौटें। पहले से काम कर रहे MASHINA 32+32 को प्रारंभ न करें।",
-  "initializeStorage": "पहली स्थापना के बाद स्टोरेज प्रारंभ करें",
+  "firstTitle": "MASHINA इंस्टॉल करने से पहले",
+  "firstText": "दूसरे फ़र्मवेयर या असंगत पुराने MASHINA से v0.15 इंस्टॉल करने पर प्रीसेट, प्रोजेक्ट और सेटिंग अपने आप मिटते हैं। ज़रूरी डेटा पहले सहेजें। संगत MASHINA अपडेट डेटा रखते हैं।",
+  "firstStock": "आधिकारिक V15 पर लौटें",
+  "firstOk": "FM1 चालू होने तक पावर और USB जुड़े रखें। अलग से प्रारंभ करने की ज़रूरत नहीं है।",
   "webLibrary": "वेब लाइब्रेरी",
   "checking": "FM1 फ़र्मवेयर जाँचा जा रहा है…",
   "oldstock": "इस FM1 में पुराना आधिकारिक फ़र्मवेयर है। कुछ नहीं लिखा गया। पहले नीचे से V15 पर अपडेट करें और फिर इंस्टॉल करें। मिला: ",
@@ -743,7 +737,7 @@ TEXT.hi = {
   "stockTitle": "आधिकारिक V15 पर वापस जाएँ",
   "stockFile": "आधिकारिक FM-1.fwsc",
   "stockGo": "बैकअप लें और V15 पर लौटें",
-  "stockBackup": "v0.14 से वापस जाने से पहले Web Library में पूर्ण प्रदर्शन बैकअप सहेजें। पुराना आर्काइव LIBRARY नहीं रखता और v0.14 का पूरा बैकअप नहीं है। दूसरे फ़र्मवेयर के डेटा के लिए उसके अपने उपकरण उपयोग करें.",
+  "stockBackup": "V15 पर लौटने से पहले MASHINA डेटा रखना चाहें तो Web Library में पूरा बैकअप सहेजें।",
   "stockRecovery": "रुका हुआ अपडेट जारी रखें: पूरा बैकअप पहले से इस कंप्यूटर में है",
   "stockValid": "आधिकारिक V15 सत्यापित",
   "stockConfirm": "क्या पूरा बैकअप कंप्यूटर में सुरक्षित है? आधिकारिक V15 पर लौटें? V15, JIANT प्रोजेक्ट नहीं खोल पाएगा।",
