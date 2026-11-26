@@ -395,7 +395,7 @@ static uint32_t mel_ble_import_cal(const uint8_t copy[BLE_RF_COPY_SIZE])
     memcpy(mb_saved.rf, copy, BLE_RF_COPY_SIZE);
     ble_rf_copy_get(copy, &mb.trims);
     fm1_rf_cal_on = 0;                        /* (the saved one instead of the measurement) */
-    mb.cal = 1; mb_dirty(); mb.generation++;
+    mb.cal = 1; mb_dirty();
     return 0;
 }
 
