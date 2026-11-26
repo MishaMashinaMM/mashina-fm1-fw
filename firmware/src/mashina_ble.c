@@ -200,9 +200,10 @@ static int mel_ble_set(int on)
     if (f != mb_saved.flags) { mb_saved.flags = f; mb_dirty(); }
     mb_lock();
     mb.on = (uint8_t)!!on;
-    if (!on) { mb.scanning = mb.attempt = 0; mb.lost = 1; }
+    if (!on) { mb.scanning = mb.attempt = mb.relink_scan = 0; mb.lost = 1; mb.ready=0; }
     if (mb.started) ble_enable(on);
     mb_unlock(); mb.generation++;
+    if(!on){ble_scan_clear(&mb.found);mb.count=0;}
     mb_relink(on);
     return 1;
 }
@@ -325,9 +326,17 @@ static void mb_relink_poll(void)
     if (t >= MB_RELINK_SCAN_MS) { mb.relink_scan = 0; mb_lock(); ble_ll_scan(0); mb_unlock(); }
 }
 
+static uint8_t mb_start_req;
 static void mel_ble_poll(void)
 {
+    if(mb_start_req){mb_start_req=0;mel_ble_set(1);ui.force=1;}
     if (!mb.started) return;
+    if(mb.connected){
+        mb_lock();
+        if(bll.state==LL_CONN && ble_hw_time_us()-bll.t_rx>(uint32_t)bll.timeout*10000u)
+            ll_close_by(BLE_ERR_CONN_TIMEOUT,BDC_SUPERVISION);
+        mb_unlock();
+    }
     uint8_t pdu[39]; uint16_t rssi; uint32_t n;
     for (uint32_t i = 0; i < BLE_SCAN_RING && (n = ble_ll_scan_take(pdu, &rssi)); i++)
         ble_scan_add(&mb.found, pdu, n, rssi, fm1_ms);
@@ -411,16 +420,19 @@ static int mel_ble_flash_read(void *ctx, uint32_t off, uint8_t *dst, uint32_t n)
 }
 static void mel_ble_radio_start(const struct ble_rf_trims *t)
 {
+    felucca_dbg.stage=0xB0u;
     lcd_sync();
     fm1_wdt_feed();
     uint32_t ie=fm1_icfg(); fm1_irq_off();
 #if FELUCCA_DUAL_CORE
     fm1_mc_park();
 #endif
+    felucca_dbg.stage=0xB1u;
     audio_silence();
     ble_hw_wl82_start(t);
     fm1_wdt_feed();
     fm1_icfg_set(ie);
+    felucca_dbg.stage=0xB2u;
 }
 
 /* GLO > SYSTEM > BLUETOOTH. Explicit radio enable, one MIDI peer.
@@ -429,7 +441,13 @@ static uint8_t mb_pick __attribute__((section(".lowbuf")));
 static void ble_page_knob(uint32_t k,int32_t steps)
 {
     int right=steps>0;
-    if(k==0u){if(!right || !transport_busy())mel_ble_set(right);}
+    if(k==0u){
+        if(!right){mb_start_req=0;mel_ble_set(0);}
+        else if(!transport_busy()){
+            if(!mb.started)mb_start_req=1;
+            else mel_ble_set(1);
+        }
+    }
     else if(k==1u){mel_ble_scan(right);if(right)mb_pick=0;}
     else if(k==2u && mb.count){mb_pick=(uint8_t)clamp((int32_t)mb_pick+(right?1:-1),0,mb.count-1u);}
     else if(k==3u){if(right && mb_pick<mb.count){mel_ble_scan(0);mel_ble_connect(mb_pick);}else if(!right)mel_ble_disconnect();}
@@ -442,7 +460,9 @@ static void ble_page_draw(void)
     static uint32_t prev_head,prev_rows[4],prev_bottom;
     const uint32_t full=ui.force;
     uint32_t code=mel_ble_code();
-    if(mb_pick>=mb.count)mb_pick=mb.count?mb.count-1u:0u;
+    const uint32_t linked=mb.ready;
+    if(linked)mb_pick=0;
+    else if(mb_pick>=mb.count)mb_pick=mb.count?mb.count-1u:0u;
     const char *status=mel_ble_status();
     uint32_t head=mb.on | (uint32_t)mb.scanning<<1 | (uint32_t)mb.ready<<2;
     for(const char *p=status;*p;p++)head=head*31u+(uint8_t)*p;
@@ -470,10 +490,11 @@ static void ble_page_draw(void)
     }
     for(uint32_t i=0;i<4u;i++){
         uint32_t row=mb_pick/4u*4u+i,selected=row==mb_pick && row<mb.count;
-        const struct ble_found *f=row<mb.count?&mb.found.e[mb.idx[row]]:0;
-        const char *name=f?(f->name[0]?f->name:"UNNAMED"):(!i && !mb.count?(mb.on?"NO DEVICES FOUND":"RADIO OFF"):"");
-        uint32_t bars=f?ble_scan_bars(&mb.found,mb.idx[row]):0u;
-        uint32_t sig=1u+row*8u+selected*4u+bars;
+        const struct ble_found *f=linked?(i==0?&mb.target:0):(row<mb.count?&mb.found.e[mb.idx[row]]:0);
+        const char *name=f?(f->name[0]?f->name:"UNNAMED"):(!i && !mb.count&&!linked?(mb.on?"NO DEVICES FOUND":"RADIO OFF"):"");
+        uint32_t bars=f&&!linked?ble_scan_bars(&mb.found,mb.idx[row]):0u;
+        if(linked)selected=i==0;
+        uint32_t sig=1u+row*8u+selected*4u+bars+linked*512u;
         for(const char *p=name;*p;p++)sig=sig*31u+(uint8_t)*p;
         if(!full && sig==prev_rows[i])continue;
         prev_rows[i]=sig;
@@ -483,10 +504,11 @@ static void ble_page_draw(void)
         if(f){
             char num[4];fmt_int(num,row+1u);
             cv_text(4,CAP_IN(M,24),&AF_M,num,ink);
-            for(uint32_t j=0;j<3u;j++)
+            if(linked)cv_text_r(236,CAP_IN(S,24),&AF_S,"LINKED",ink,bg);
+            else for(uint32_t j=0;j<3u;j++)
                 cv_rect(211+j*8u,18-(j+1u)*4u,5,(j+1u)*4u,j<bars?(selected?T_INK:T_VALUE):RGB(70,70,70));
         }
-        cv_free_text(34,CAP_IN(M,24),&AF_M,name,ink,bg,172);
+        cv_free_text(34,CAP_IN(M,24),&AF_M,name,ink,bg,linked?140:172);
         cv_blit(0,92+i*24u);
     }
     uint32_t bottom=code;
