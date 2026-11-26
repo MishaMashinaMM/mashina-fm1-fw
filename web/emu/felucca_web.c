@@ -396,6 +396,10 @@ EXPORT uint32_t web_flash_writes_count(void) { return web_flash_writes; }
  * read-only probes apart from web_mpr_test_save(), which writes only the
  * emulator's in-memory NOR and is never called by the browser page. */
 EXPORT uint32_t web_lib_slots(void) { return LIB_SLOTS; }
+#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
+EXPORT uint32_t web_factory_record(uint32_t slot)
+{ return mashina_factory_decode(slot,library_record)?0u:(uint32_t)(uintptr_t)library_record; }
+#endif
 EXPORT uint32_t web_lib_factory_engine(uint32_t slot)
 { uint32_t k; return library_factory_at(slot,&k); }
 EXPORT uint32_t web_lib_factory_index(uint32_t slot)
