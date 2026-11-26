@@ -66,3 +66,26 @@ assert.equal(collectionFilename("Set.json.json"),"Set.json");
 assert.equal(collectionFilename("Моји звуци"),"Моји звуци.json");
 for(const bad of ["","   ",".json","../escape","C:\\test","NUL","COM1","LPT2.txt","bad?","ending.","a".repeat(176)])assert.throws(()=>collectionFilename(bad));
 console.log("PASS: collection download filenames accept custom names and normalize JSON extension");
+
+/* Existing v1 USER/LIBRARY files are interchangeable, without conversion
+ * or fixed-slot destination assumptions. Keep the original file format. */
+const portableSounds=Array.from({length:107},(_,i)=>Array.from(encodeRecord({
+  engine:0,name:"SOUND "+i,params:params.map((x,j)=>j===0?i:x)
+})));
+for(const from of ["user","library"]){
+  const saved=JSON.parse(JSON.stringify(collectionFile(from,portableSounds)));
+  for(const to of ["user","library"]){
+    const opened=readCollection(to,saved);
+    assert.equal(opened.length,107);
+    assert.deepEqual(opened.map(p=>p.recordBytes),portableSounds);
+    assert.deepEqual(readCollection(from,collectionFile(to,opened)),opened);
+    assert.deepEqual(readCollection(to,collectionFile(from,[])),[]);
+    assert.throws(()=>readCollection(to,{...saved,version:2}),/version/i);
+    assert.throws(()=>readCollection(to,{...saved,kind:"unknown"}),/collections/i);
+  }
+  assert.throws(()=>readCollection("projects",saved),/collections/i);
+}
+const projectCollection=collectionFile("projects",[{sections:[null,projects[5],null,null]}]);
+assert.equal(readCollection("projects",projectCollection).length,1);
+for(const kind of ["user","library"])assert.throws(()=>readCollection(kind,projectCollection),/collections/i);
+console.log("PASS: existing USER/LIBRARY collection files open in either sound tab, 107 records round-trip without changes, projects stay separate");

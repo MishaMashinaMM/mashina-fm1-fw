@@ -139,7 +139,13 @@ export function projectCollectionFromSections(sections){
 }
 export function readCollection(kind,file){
   if(file?.format==="mashina-offline-collection"){
-    check(file.version===1&&file.kind===kind,"Collection type/version does not match this tab");
+    // USER and LIBRARY contain identical portable complete sound records.
+    // The saved kind records the source tab, not a destination restriction.
+    // Project collections still have a distinct schema.
+    const soundKind=k=>k==="user"||k==="library";
+    check(file.version===1,"Unsupported collection version");
+    check((kind==="projects"&&file.kind==="projects")||(soundKind(kind)&&soundKind(file.kind)),
+          "Sound collections open in USER or LIBRARY; project collections open in PROJECTS");
     return mergeCollection(kind,file.entries);
   }
   if(kind==="projects"){
