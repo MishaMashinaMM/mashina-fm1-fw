@@ -342,3 +342,24 @@ static int clean_layout_initialize(void)
     return 2;
 #endif
 }
+
+#if defined(FELUCCA_LIB96) && FELUCCA_LIB96 && FELUCCA_PUBLIC_LAYOUT
+/* First boot before loading settings, projects or USER. A compatible marker
+ * leaves everything untouched; an incompatible layout is deliberately reset.
+ * The only successful completion marker is committed AFTER all owned erases.
+ * On a power cut a later boot resumes the clean initialization from scratch. */
+static int clean_layout_boot(uint8_t *writes)
+{
+    mprs_head_t marker;
+    *writes=0u;
+    if(mprs_valid(0u,0u,&marker)||mprs_valid(0u,1u,&marker)){
+        *writes=1u;return 0;
+    }
+    *writes=1u;
+    int rc=clean_layout_initialize();
+    *writes=0u;
+    if(rc || !(mprs_valid(0u,0u,&marker)||mprs_valid(0u,1u,&marker)))return 2;
+    *writes=1u;
+    return 0;
+}
+#endif

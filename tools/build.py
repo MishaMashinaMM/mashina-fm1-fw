@@ -563,7 +563,8 @@ def main():
         print("ONE DEVICE CLEAN-START TRIAL: explicit manually dispatched branch-only authorization.")
         print("DESTRUCTIVE DATA FORMAT is possible via separate confirmed WebMIDI commands 101/102.")
         print("Never install on both FM1 devices; user data will be erased during the later formatter.")
-    pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY), ota, PRODUCT)
+    pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY,
+        fm1pkg_make.LIB96_LAYOUT_TAG if lib96_trial else None), ota, PRODUCT)
     (OUT / name).write_bytes(pkg)
     print(f"app      {OUT / 'felucca.bin'}  {len(img)} B")
     print(f"loader   {LDR / 'ota.bin'}  {len(ota)} B")

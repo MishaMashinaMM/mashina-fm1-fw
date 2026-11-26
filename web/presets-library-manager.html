@@ -675,7 +675,7 @@ $("connect").onclick=()=>run(async()=>{
   candidate=await connectLibraryMidi({choosePort:async(choices,initial)=>askConfirmation({title:"Choose FM1 MIDI ports",message:"Select the MIDI input/output pair connected to your FM1.",action:"CONNECT",choices,initial}),onDisconnect:()=>disconnected(candidate)});
   try{const l=await capability(candidate.request),p=await projectCapability(candidate.request);
     if(!candidate.connected)throw Error("FM1 disconnected during connection.");
-    dev=candidate;connectedLibraryCount=l.slots;writable=l.writable&&p.writable&&!p.canInitialize;needsInitialization=p.canInitialize&&!p.writable;status(needsInitialization?"First installation required. Disconnect, then open Initialize storage.":"Connected. Go to BACKUP and create a complete device backup.");tab("backup");
+    dev=candidate;connectedLibraryCount=l.slots;writable=l.writable&&p.writable&&!p.canInitialize;needsInitialization=p.canInitialize&&!p.writable;status(needsInitialization?"First installation required. Disconnect, then open Initialize storage.":!writable?"Connected, but storage writes are unavailable. Check the device for a storage error and restart if necessary.":"Connected. Go to BACKUP and create a complete device backup.");tab("backup");
   }catch(e){candidate.close();throw e;}
 },"Connecting FM1");
 $("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;needsInitialization=false;snapshot=null;offlineWorkspace=false;invalidate();clearStaging();status("Disconnected.");});

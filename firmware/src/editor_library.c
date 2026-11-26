@@ -33,7 +33,9 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         ed_b(0u);
 #endif
 #if FELUCCA_PROJECT_REFS_FORMAT
-#if FELUCCA_PUBLIC_LAYOUT
+#if FELUCCA_LIB96 && FELUCCA_PUBLIC_LAYOUT
+        ed_b(0u); /* initialization is automatic, never exposed over MIDI */
+#elif FELUCCA_PUBLIC_LAYOUT
         ed_b(flash_ok && !clean_layout_normal_writes ? 1u : 0u);
 #else
         ed_b(flash_ok?1u:0u);
@@ -143,7 +145,7 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 #endif
     }
     if (cmd == 101u) { /* CLEAN32_PREPARE: read-only, no erases */
-#if FELUCCA_CLEAN_INSTALL_LAYOUT
+#if FELUCCA_CLEAN_INSTALL_LAYOUT && !(FELUCCA_LIB96 && FELUCCA_PUBLIC_LAYOUT)
         if(n || !flash_ok || transport_busy()){
             clean_armed=0u;
             ed_b(2u);
@@ -162,7 +164,7 @@ static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
         return 1;
     }
     if (cmd == 102u) { /* CLEAN32_COMMIT: destructive, build-only */
-#if FELUCCA_CLEAN_INSTALL_LAYOUT
+#if FELUCCA_CLEAN_INSTALL_LAYOUT && !(FELUCCA_LIB96 && FELUCCA_PUBLIC_LAYOUT)
 #if FELUCCA_LIB96
         static const uint8_t phrase[9]={'M','A','S','H','I','N','A','9','6'};
 #else

@@ -9,5 +9,5 @@ for(const text of ["FM-1_015","FM-1_913","FM-1_914","FM-1_701","FM-1_010"]){
 }
 assert.equal(installed,5);
 await assert.rejects(runInstall({up:{},ui,state:{},cleanLib96Trial:true,confirmTrialBackup:()=>false}),/cancelled/);
-const site=readFileSync(new URL("../web/make_site.py",import.meta.url),"utf8");assert(site.includes("69 owned")&&site.includes("lib[1]===96")&&site.includes("57,54,ticket[1]"));
+const site=readFileSync(new URL("../web/make_site.py",import.meta.url),"utf8");assert(site.includes('(library / "initialize.html").unlink()'));
 console.log("PASS: clean installer accepts compatible FM1 regardless of previous firmware or storage; explicit confirmation required");

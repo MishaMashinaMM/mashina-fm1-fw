@@ -19,6 +19,7 @@ static size_t logical_len;
 static uint8_t rx[1024];
 static uint32_t rx_len, rx_full, now_ms, requests, erases, bad_range, record_cleared, f0_asked;
 static uint32_t flip_addr = 0xFFFFFFFFu, flip_seen, flip_on;   /* serve addr's flip_on-th reply with a byte changed */
+static int allow_layout_reset;
 static uint32_t fail_prog_once_at=0xFFFFFFFFu;  /* simulate a power-cut app page program */
 
 static uint32_t pack7(const uint8_t *in, uint32_t n, uint8_t *out)
@@ -86,7 +87,7 @@ static void ota_commit(const uint8_t *parm) { (void)parm; }
 static int ldr_fread(uint32_t off, void *p, uint32_t n) { memcpy(p, nor + off, n); return 0; }
 static int ldr_erase(uint32_t off)
 {
-    if (off < 0x4000u || off >= 0xFC000u || (off & 0xFFFu) || (off >= 0x97000u && off < 0xE0000u)) bad_range++;
+    if (off < 0x4000u || off >= 0xFC000u || (off & 0xFFFu) || (off >= 0x97000u && off < 0xE0000u && !(allow_layout_reset && (off==0xA0000u || off==0xA1000u)))) bad_range++;
     if (off < 0x4000u) { printf("ERASE IN THE HEAD %#x\n", off); exit(1); }
     erases++;
     memset(nor + off, 0xFF, 0x1000);
@@ -181,6 +182,7 @@ int main(int argc, char **argv)
     uint32_t ofo, nfo, i;
     int bad = 0, rc;
     if (argc < 3) { printf("usage: ldr_test OLD.fwsc NEW.fwsc [APP_SLOT]\n"); return 2; }
+    allow_layout_reset=argc>4 && !strcmp(argv[4],"clean");
     old = load_logical(argv[1], &olen);
     logical = load_logical(argv[2], &logical_len);
     ofo = flash_off(old);
@@ -243,7 +245,11 @@ int main(int argc, char **argv)
     bad += check("finish asked (0xF0000000)", f0_asked >= 1);
     bad += check("update records cleared (RAM + flash 0xE4F00, the stock firmware's 0xE8F00)",
                  record_cleared && nor[0xE4F06] == 0xFF && nor[0xE8F06] == 0xFF);
-    bad += check("user data in Felucca's store that looks like a record is kept", !memcmp(nor + 0xA0000, user, sizeof user));
+    if(allow_layout_reset){
+        memset(user,255,sizeof user);
+        memset(store+0xA0000u-0x93000u,255,8192u);
+    }
+    bad += check("bank zero reset only on incompatible layout", !memcmp(nor + 0xA0000, user, sizeof user));
     bad += check("all eight LIBRARY sectors preserved byte-exactly, even with forged OTA markers",
                  !memcmp(nor + 0xC0000u, library_before, sizeof library_before));
     bad += check("all three autosave/voice sectors preserve forged update-record signatures",

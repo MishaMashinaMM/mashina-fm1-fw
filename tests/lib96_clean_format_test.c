@@ -150,7 +150,8 @@ int main(void){
     mprs_head_t marker;
     errors+=ck("MPS1 marker cannot unlock LIB96",!mprs_valid(0,0,&marker));
     errors+=ck("arbitrary old contents pass read-only preflight",clean_layout_preflight()==0&&erases==0&&programs==0);
-    errors+=ck("format commits MPS2 marker last",clean_layout_initialize()==0&&programs==1&&mprs_valid(0,0,&marker)&&marker.magic==0x3253504Du);
+    uint8_t writes=0;
+    errors+=ck("first boot automatically initializes and commits MPS2 last",clean_layout_boot(&writes)==0&&writes&&programs==1&&mprs_valid(0,0,&marker)&&marker.magic==0x3253504Du);
     int ok=1;for(uint32_t i=1;i<56u;i++)if(!erased(MPRS_BASE+i*4096u))ok=0;
     for(uint32_t i=0;i<6;i++)if(!erased(st_sector(clean_user_object(i),clean_user_copy(i))))ok=0;
     for(uint32_t i=0;i<7;i++)if(!erased(clean_aux_address(i)))ok=0;
@@ -160,7 +161,7 @@ int main(void){
     errors+=ck("cold boot first and last project sections empty",mprs_load(0,record)==0&&record[0]==0&&mprs_load(31,record)==0&&record[0]==0);
     memset(record,0x31,sizeof record);
     errors+=ck("marker survives alternating project save",mprs_save(0,record)==0&&mprs_valid(0,1,&marker)&&mprs_load(0,again)==0&&!memcmp(record,again,sizeof record));
-    unsigned done=erases;errors+=ck("completed format cannot repeat",clean_layout_initialize()==1&&erases==done);
+    unsigned done=erases;errors+=ck("compatible reboot does not erase and retains saved project",clean_layout_boot(&writes)==0&&writes&&erases==done&&mprs_load(0,again)==0&&!memcmp(record,again,sizeof record));
     int failures=1;
     for(int n=0;n<69;n++){
         reset_source();memset(nor+MPRS_BASE,0x6A,0x38000u);memset(nor+FVB_HOME,0x33,4096);
@@ -170,6 +171,8 @@ int main(void){
     }
     errors+=ck("erase interruption leaves no valid new marker",failures);
     reset_source();tear_final_marker=1;
-    errors+=ck("torn final marker leaves writes locked",clean_layout_initialize()==2&&!mprs_valid(0,0,&marker)&&!mprs_valid(0,1,&marker));
+    errors+=ck("torn final marker leaves writes locked",clean_layout_boot(&writes)==2&&!writes&&!mprs_valid(0,0,&marker)&&!mprs_valid(0,1,&marker));
+    tear_final_marker=0;
+    errors+=ck("next boot recovers interrupted initialization automatically",clean_layout_boot(&writes)==0&&writes&&mprs_valid(0,0,&marker));
     return !!errors;
 }

@@ -35,6 +35,8 @@
 #define LDR_DATA_LO 0x97000u                    /* the stock firmware's: 0xE8F00), never in Felucca's store, whose */
 #define LDR_DATA_HI 0xE0000u                    /* bytes (the store) the host writes */
 #define LDR_NSEC ((LDR_APP_HI - LDR_APP_LO) >> 12)
+#define LDR_LAYOUT_OFF 0x40E0u /* reserved app directory padding, 32-byte SFC block */
+#define LDR_LAYOUT_BANK0 0xA0000u
 #define LDR_FL_MAX 0x100000u                    /* flash.bin: at most the 1 MiB part */
 
 static int ldr_fread(uint32_t off, void *p, uint32_t n);
@@ -89,7 +91,7 @@ static int ldr_chip_key(uint32_t *key)
 
 /* 2b. flash.bin [0, fl_size) from the host, before any erase: its CRC16 must be the UFW entry's (want); sc gets
  * the CRC16 of each app sector as it came in */
-static int ldr_check(uint32_t fl_off, uint32_t fl_size, uint32_t want, uint16_t *sc, uint8_t *b)
+static int ldr_check(uint32_t fl_off, uint32_t fl_size, uint32_t want, uint16_t *sc, uint8_t *b, uint8_t layout[32])
 {
     uint32_t i, n, crc = 0;
     for (i = 0; i < fl_size; i += n) {
@@ -97,6 +99,7 @@ static int ldr_check(uint32_t fl_off, uint32_t fl_size, uint32_t want, uint16_t 
         if (ota_read(fl_off + i, b, n))
             return -7;
         crc = ota_crc16(b, n, crc);
+        if(i==LDR_APP_LO)memcpy(layout,b+LDR_LAYOUT_OFF-LDR_APP_LO,32u);
         if (i >= LDR_APP_LO && i < LDR_APP_HI) {     /* (512-byte reads from 0: never across a sector) */
             uint32_t k = (i - LDR_APP_LO) >> 12;
             sc[k] = (uint16_t)ota_crc16(b, n, (i & 0xFFFu) ? sc[k] : 0u);
@@ -105,10 +108,40 @@ static int ldr_check(uint32_t fl_off, uint32_t fl_size, uint32_t want, uint16_t 
     return crc == want ? 0 : -12;
 }
 
+/* The incoming tag is captured during the full verified package pass.
+ * Only our exact recognized storage ABI may invalidate its own bank-zero
+ * marker; no arbitrary package-controlled erase address. Matching ABI
+ * upgrades never touch storage. The marker is invalidated before any app
+ * sector writes, so a power cut/resume cannot mistake old data for new.
+ * The new application's first boot handles the remaining owned sectors. */
+static int ldr_layout_transition(uint8_t layout[32],uint32_t key,uint8_t *scratch)
+{
+    static const uint8_t abi[32]="MASHINA-FM1-LIB96-MPS2-ABI-0001";
+    uint8_t previous[32];
+    ldr_sfc(layout,32u,LDR_LAYOUT_OFF-LDR_APP_LO,key);
+    if(!ota_memeq(layout,abi,32u))return 0;
+    if(ldr_fread(LDR_LAYOUT_OFF,previous,32u))return -8;
+    ldr_sfc(previous,32u,LDR_LAYOUT_OFF-LDR_APP_LO,key);
+    if(ota_memeq(previous,abi,32u))return 0;
+    for(uint32_t off=LDR_LAYOUT_BANK0;off<LDR_LAYOUT_BANK0+8192u;off+=4096u){
+        if(ldr_fread(off,scratch,4096u))return -8;
+        uint32_t i;
+        for(i=0;i<4096u&&scratch[i]==255u;i++){}
+        if(i<4096u){
+            if(ldr_erase(off))return -9;
+            if(ldr_fread(off,scratch,4096u))return -8;
+            for(i=0;i<4096u;i++)if(scratch[i]!=255u)return -11;
+        }
+        ldr_progress(0,LDR_APP_HI-LDR_APP_LO);
+    }
+    return 0;
+}
+
 static int ldr_session(void)
 {
     static uint8_t hdr[0x400], sec[0x1000], cur[0x1000];
     static uint16_t sc[LDR_NSEC];
+    uint8_t layout[32];
     uint32_t i, k, fl_off, fl_size, ota_off, ota_len, key, s, want = ~0u, done = 0;   /* (no CRC16: no flash.bin entry) */
     int rc;
     /* 1. UFW header + entry list (ota.c; it leaves the entries decoded in hdr) */
@@ -128,8 +161,9 @@ static int ldr_session(void)
     if (ota_crc16(sec + 2, 30, 0) != ota_rd16(sec))
         return -6;                                       /* package for another chip key */
     /* 2b. the whole package first: nothing is erased for a damaged one */
-    if ((rc = ldr_check(fl_off, fl_size, want, sc, sec)) != 0)
+    if ((rc = ldr_check(fl_off, fl_size, want, sc, sec, layout)) != 0)
         return rc;
+    if((rc=ldr_layout_transition(layout,key,cur))!=0)return rc;
     /* 3. app area, sector by sector */
     for (s = LDR_APP_LO; s < LDR_APP_HI; s += 0x1000u) {
         uint32_t again;

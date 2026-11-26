@@ -255,6 +255,9 @@ static void fm1_main(void)
     usb_serial_apply();                                 /* (#67: the saved USB SERIAL before usb_start) */
     lcd_init();
     draw_splash();                                      /* ui_draw.c (1.1.5) */
+#if FELUCCA_LIB96 && FELUCCA_PUBLIC_LAYOUT
+    if(!flash_ok)draw_text_line(0,212,240,&AF_M,"STORAGE ERROR",UI_CRASH_INK,UI_CRASH_BG,1);
+#endif
     if (felucca_dbg.magic != DBG_MAGIC) {
         memset(&felucca_dbg, 0, sizeof felucca_dbg);
         felucca_dbg.magic = DBG_MAGIC;

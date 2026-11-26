@@ -8,7 +8,8 @@ static uint8_t flash_ok;                 /* JEDEC id matched at boot (persist_bo
 /* The first boot of a clean-install image can still see OLD FUN/USER sectors.
  * NO ordinary persistent save may write until a committed MPS1 marker is
  * checked at boot. Only the synchronous confirmed FORMAT command temporarily
- * enables writes, and then immediately locks them again until a cold boot. */
+ * enables writes. LIB96 also performs the same guarded transaction on boot
+ * before any old state is loaded, unlocking normal writes only after verify. */
 static uint8_t clean_layout_normal_writes;
 #endif
 static int st_read(uint32_t off, void *dst, uint32_t n)   /* 256-byte IRQ-off windows: audio keeps up */

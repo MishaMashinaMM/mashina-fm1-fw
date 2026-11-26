@@ -61,6 +61,21 @@ jobs:
           node tests/factory_catalog_complete_test.mjs build/host/factory-drum-records.json
           node tests/factory_catalog_selection_test.mjs
           node tests/lib96_clean_trial_test.mjs
+          # Construct an untagged package with the same app for the real loader
+          # host test. No second package is distributed.
+          python3 - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,"tools")
+          import fm1pkg_make as p
+          p.SDK=Path.home()/"fw-AC79_AIoT_SDK"
+          app=Path("build/felucca.bin").read_bytes()
+          ota=Path("build/loader/ota.bin").read_bytes()
+          Path("build/lib96-untagged.fwsc").write_bytes(p.ufw(p.flash_image(app,p.KEY),ota,"FM-1_914"))
+          PY
+          cc -O2 tests/ldr_test.c -o build/host/ldr_test
+          build/host/ldr_test build/lib96-untagged.fwsc build/felucca-0.14-lib96test.fwsc 584336 clean
+          build/host/ldr_test build/felucca-0.14-lib96test.fwsc build/felucca-0.14-lib96test.fwsc 584336
           python3 web/make_site.py build/felucca-0.14-lib96test.fwsc 0.14-lib96test build/lib96-test
           python3 - <<'PY'
           from pathlib import Path
@@ -68,13 +83,12 @@ jobs:
           s=p.read_text()
           needle='  <p><button id="go" disabled data-t="install"></button></p>'
           assert needle in s
-          s=s.replace(needle,'  <p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL LIB96 CLEAN INSTALL: any compatible FM1 firmware. Existing data will be erased during initialization; export anything you want to retain first (optional). After flashing, open <a href="../../web-library/initialize.html">Initialize storage</a>, then power-cycle.</p>'+needle)
+          s=s.replace(needle,'  <p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL LIB96 CLEAN INSTALL: any compatible FM1 firmware. Existing data will be erased during initialization; export anything you want to retain first (optional). Incompatible data is erased automatically on first boot. Compatible MASHINA updates retain data. Keep the FM1 powered until it boots. Then open <a href="../../web-library/">Web Library</a>.</p>'+needle)
           p.write_text(s)
           for q in Path("build/lib96-test/webapp").glob("installer-orange-*/index.html"):q.write_text(s)
           PY
-          test -s build/lib96-test/web-library/initialize.html
-          grep -Fq "69 owned" build/lib96-test/web-library/initialize.html
-          grep -Fq "lib[1]===96" build/lib96-test/web-library/initialize.html
+          test ! -e build/lib96-test/web-library/initialize.html
+          test -s build/lib96-test/web-library/index.html
           test -s build/lib96-test/web-library/factory-drum-records.json
           printf '%s\n' "$GITHUB_SHA" > build/lib96-test/firmware/SOURCE_COMMIT
           cp docs/lib96-device-test.md build/lib96-test/READ-ME-FIRST.md

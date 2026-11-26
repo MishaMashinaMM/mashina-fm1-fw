@@ -3288,11 +3288,21 @@ static void persist_boot(void)                    /* before settings_init / pane
      * marker from the PREVIOUS boot. Old FUN records are NOT a substitute.
      * Before first format this leaves all normal writes locked; after format
      * the owner MUST power-cycle to start normal saving and USB restore. */
+#if FELUCCA_LIB96 && FELUCCA_PUBLIC_LAYOUT
+    if(clean_layout_boot(&clean_layout_normal_writes)){
+        /* No partial or incompatible state is loaded after a failed init.
+         * Reboot retries; the normal update service remains accessible. */
+        flash_ok=0;
+        settings_fresh();
+        return;
+    }
+#else
     {
         mprs_head_t marker;
         clean_layout_normal_writes=(uint8_t)(mprs_valid(0u,0u,&marker) ||
                                              mprs_valid(0u,1u,&marker));
     }
+#endif
 #endif
     {
         int n = st_load(OBJ_SETTINGS, &p, sizeof p);

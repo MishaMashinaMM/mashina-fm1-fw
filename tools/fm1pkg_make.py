@@ -108,7 +108,9 @@ def sdk_file(rel):
         raise SystemExit(f"fm1pkg_make: {path}: {e.strerror}. Set AC79_SDK to a JieLi AC79 SDK checkout.")
 
 
-def flash_image(app, key):
+LIB96_LAYOUT_TAG = b"MASHINA-FM1-LIB96-MPS2-ABI-0001".ljust(32, b"\x00")
+
+def flash_image(app, key, layout_tag=None):
     spl = sdk_file("uboot.boot")                         # SDK SPL, BANKCB-encoded as in the SDK
     cfg_tool = sdk_file("cfg_tool.bin")
     eq = sdk_file("cfg/eq_cfg_hw.bin")
@@ -145,6 +147,11 @@ def flash_image(app, key):
             entry(0xFFFF, 0xE9000, 0x1000, 0x92, 0x80, 0, bytes.fromhex("4254494600ffffffffffffff4155544f")),
             entry(0xFFFF, 0xEA000, 0x12000, 0x92, 0x81, 1, "USR")]
     area[32:32 + len(b"".join(ents))] = b"".join(ents)
+    # Last directory entry terminates at 0xE0. Tag occupies existing padding,
+    # covered by app_area_head CRC and encrypted as a normal SFC block.
+    if layout_tag is not None:
+        assert len(layout_tag) == 32 and 32 + len(b"".join(ents)) == 0xE0
+        area[0xE0:0x100] = layout_tag
     area[0:32] = entry(crc16(area[32:blk]), 0x02000120, blk, 0x83, 0xFF, 0, "app_area_head")
     # nested cfg directory right after the block: SDK default EQ table
     eq_e = entry(crc16(eq), 0x40, len(eq), 0x82, 0xFF, 1, "eq_cfg_hw.bin")

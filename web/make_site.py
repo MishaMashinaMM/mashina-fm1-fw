@@ -176,7 +176,7 @@ def main(pkg, version, out, prev=None):
     if version == "0.14-lib96test":
         needle = "await runInstall({ up, image, product, ui, state });"
         assert installer_html.count(needle) == 1
-        installer_html = installer_html.replace(needle, 'await runInstall({ up, image, product, ui, state, cleanLib96Trial:true, confirmTrialBackup:()=>confirm("This is my test FM1. I understand clean initialization erases its existing user data. Proceed?") });')
+        installer_html = installer_html.replace(needle, 'await runInstall({ up, image, product, ui, state, cleanLib96Trial:true, confirmTrialBackup:()=>confirm("Install MASHINA? Existing data is erased automatically if the previous firmware or storage layout is incompatible. Compatible MASHINA updates retain data.") });')
     (inst / "index.html").write_text(installer_html, encoding="utf-8")
     # New permanent URL gives browsers a fresh document even when the older installer URL was cached.
     fresh = out / "webapp" / ("installer-orange-v" + version.replace(".", ""))
@@ -220,13 +220,11 @@ def main(pkg, version, out, prev=None):
         public_manager = library / "index.html"
         public_manager.write_text(public_manager.read_text(encoding="utf-8").replace('<div class="panel advanced">', '<div class="panel advanced" style="display:none">').replace('href="./advanced.html"', 'href="./guide.html"'), encoding="utf-8")
         if version == "0.14-lib96test":
-            init = library / "initialize.html"
-            page = init.read_text(encoding="utf-8")
-            page = page.replace("MASHINA v0.14 for the first time", "the experimental MASHINA 32+96 firmware")
-            page = page.replace("A device already initialized for MASHINA's 32+32 storage is not eligible, and normal updates retain its data.", "The previous layout, including initialized 32+32, is replaced. Once this 32+96 layout is initialized, repeating this operation is blocked.")
-            page = page.replace("lib[1]===32", "lib[1]===96").replace("53 owned", "69 owned")
-            page = page.replace("[77,65,83,72,73,78,65,51,50,ticket[1]]", "[77,65,83,72,73,78,65,57,54,ticket[1]]")
-            init.write_text(page, encoding="utf-8")
+            # This layout initializes itself before any old state is read.
+            (library / "initialize.html").unlink()
+            manager = public_manager.read_text(encoding="utf-8")
+            manager = manager.replace('href="initialize.html" hidden>Initialize storage', 'href="./guide.html" hidden>Storage information')
+            public_manager.write_text(manager, encoding="utf-8")
     shutil.copy(HERE / "404.html", out / "404.html")
     (out / "index.html").write_text(
         '<!doctype html><meta charset="utf-8"><title>MASHINA</title>'
