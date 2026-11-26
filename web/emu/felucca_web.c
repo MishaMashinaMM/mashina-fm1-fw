@@ -546,7 +546,14 @@ EXPORT uint32_t web_ble_control(uint32_t cmd)
 EXPORT uint32_t web_ble_buf(void) { return (uint32_t)(uintptr_t)web_ble_buffer; }
 EXPORT uint32_t web_ble_count(void) { return web_ble_received; }
 EXPORT uint32_t web_ble_owner(uint32_t source,uint32_t ch,uint32_t note)
-{ return mn_get((source==3u?16u:0u)+(ch&15u),note&127u); }
+{ return mn_get((source==3u?16u:source==4u?32u:0u)+(ch&15u),note&127u); }
+/* Inject peer 2 only for the independent ownership regression test. */
+EXPORT uint32_t web_ble_second(uint32_t status,uint32_t d1,uint32_t d2)
+{
+    if(!status)return midi_enqueue(0,4u);
+    if(status<0x80u || status>=0xF0u)return 0;
+    return midi_enqueue((status>>4)|(status<<8)|((d1&127u)<<16)|((d2&127u)<<24),4u);
+}
 static void web_ble_sink(void *ctx, uint32_t pkt, uint16_t ts)
 {
     (void)ctx; (void)ts;
