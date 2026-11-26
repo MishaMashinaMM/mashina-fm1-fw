@@ -399,6 +399,16 @@ EXPORT uint32_t web_lib_slots(void) { return LIB_SLOTS; }
 #if MASHINA_LIBRARY_SLOTS == 96u
 EXPORT uint32_t web_factory_record(uint32_t slot)
 { return mashina_factory_decode(slot,library_record)?0u:(uint32_t)(uintptr_t)library_record; }
+EXPORT uint32_t web_factory_object(uint32_t id)
+{
+    int rc=1;
+    switch(id){
+    case 0: rc=MASHINA_FACTORY_UNPACK(0,proj_wire_u.raw);break;
+    case 1: rc=MASHINA_FACTORY_UNPACK(1,proj_wire_u.raw);break;
+    case 10:rc=MASHINA_FACTORY_UNPACK(10,proj_wire_u.raw);break;
+    }
+    return rc?0u:(uint32_t)(uintptr_t)proj_wire_u.raw;
+}
 #endif
 EXPORT uint32_t web_test_rx_channel(uint32_t track)
 { return track<NTRK?midi_rx[track]:0; }

@@ -5,6 +5,10 @@ const {instance}=await WebAssembly.instantiate(readFileSync("build/emu/felucca.w
 const e=instance.exports;
 e.web_nor_erase();e.web_boot();
 assert.equal(e.web_lib_slots(),96);
+for(const object of archive.archive.objects.filter(o=>[0,1,10].includes(o.id))){
+  const ptr=e.web_factory_object(object.id);assert.ok(ptr);
+  assert.deepEqual(Buffer.from(new Uint8Array(e.memory.buffer,ptr,object.size)),Buffer.from(object.data,"base64"),"exact factory archive object "+object.id);
+}
 assert.ok(archive.userPresets.every(x=>x===null),"source USER bank must be empty");
 for(let i=0;i<32;i++)assert.equal(e.web_test_user_preset(i),0,"fresh USER "+(i+1)+" must be empty");
 for(let i=0;i<96;i++){
