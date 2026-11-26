@@ -17,3 +17,14 @@ for(const name of ["Write USER changes","Write LIBRARY changes","Write PROJECT c
 assert.match(script,/renameSoundRecord\(raw,name\)/);
 assert.match(script,/renameProjectRecord\(projectAt\(i\),name\)/);
 console.log("PASS: manager syntax, automatic capture, no automatic download, rename staging and write labels");
+
+assert.match(connect,/\},"Connecting FM1"\);/);
+assert.doesNotMatch(html,/id="rename-dialog"/);
+assert.match(html,/\.inline-name input\[readonly\]\{pointer-events:none;cursor:grab/);
+assert.match(script,/input\.readOnly=true/);
+assert.match(script,/input\.readOnly=false/);
+assert.match(script,/input\.onblur=\(\)=>finish\(true,true\)/);
+assert.match(script,/if\(row\)row\.draggable=false/);
+assert.match(script,/if\(row\)row\.draggable=wasDraggable/);
+assert.match(script,/finish\(e\.key==="Enter"\)/);
+console.log("PASS: connection progress dialog, inline name edits, normal drag cursor and keyboard commit/cancel");

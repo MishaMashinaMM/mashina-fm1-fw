@@ -86,8 +86,8 @@ dialog h2{font-size:21px;margin:0 0 14px;color:var(--orange)}
 .slot-panel td:has(button[aria-label^="Double-click"]){position:relative;padding-right:25px}
 .slot-panel td>button[aria-label^="Double-click"]{position:absolute;right:2px;top:50%;transform:translateY(-50%);min-height:18px;font-size:12px;padding:0 3px;background:transparent;border:0;color:var(--muted)}
 .slot-panel td>button[aria-label^="Double-click"]:hover{color:var(--orange)}
-#collection-filename,#rename-input{width:100%;min-height:36px;padding:8px 10px;font:inherit;color:#eee;background:#151515;border:1px solid #666;border-radius:4px}
-#collection-filename-error,#rename-error{color:#ffba79;min-height:1.4em;margin:5px 0;font-size:12px}
+#collection-filename{width:100%;min-height:36px;padding:8px 10px;font:inherit;color:#eee;background:#151515;border:1px solid #666;border-radius:4px}
+#collection-filename-error{color:#ffba79;min-height:1.4em;margin:5px 0;font-size:12px}
 #confirm-choice{width:100%;margin-top:10px;color:#eee;background:#151515;border:1px solid #666;border-radius:4px;min-height:36px;padding:7px 10px;font:inherit}
 #confirm-summary{font-size:12px;color:#ccc;white-space:pre-wrap;overflow-wrap:anywhere;max-height:28dvh;overflow:auto;padding:8px;background:#171717;border:1px solid #393939;border-radius:4px}
 #confirm-message{white-space:pre-wrap;overflow-wrap:anywhere}
@@ -138,7 +138,18 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 .collection-list{flex:1 1 120px;min-height:80px;overflow:auto;background:#161616;border:1px solid #393939;border-radius:4px;overscroll-behavior:contain}
 .collection-item{display:flex;gap:5px;align-items:center;padding:3px 5px;border-bottom:1px solid #353535;min-width:0}
 .collection-item:nth-child(even){background:#222}
-.collection-item[draggable=true]{cursor:grab}
+.collection-item[draggable=true],.collection-item[draggable=true] .item-name,.slot-panel tr[data-slot][draggable=true] td,.slot-panel tr[data-slot][draggable=true] .cell-text{cursor:grab}
+.collection-item[draggable=true]:active,.slot-panel tr[data-slot][draggable=true]:active{cursor:grabbing}
+.inline-name{display:block;min-width:0;overflow:hidden;cursor:grab}
+.inline-name input{display:block;width:100%;min-width:0;max-width:100%;height:16px;line-height:16px;padding:0;border:0;border-radius:0;background:transparent;color:inherit;font:inherit;text-overflow:ellipsis;outline:none}
+.inline-name input[readonly]{pointer-events:none;cursor:grab;user-select:none}
+.inline-name[data-editing=true]{cursor:text;overflow:visible}
+.inline-name[data-editing=true] input{pointer-events:auto;cursor:text;user-select:text;background:#111;color:#eee;outline:1px solid var(--orange);outline-offset:0}
+.inline-name[data-editing=true] input[aria-invalid=true]{outline-color:#df694d}
+.collection-item .inline-name{flex:1}
+.slot-panel td:has(.inline-name[data-editing=true]){padding-right:4px}
+.slot-panel td:has(.inline-name[data-editing=true])>button{visibility:hidden}
+.inline-name:focus-visible{outline:1px solid var(--orange);outline-offset:1px}
 .collection-item,.slot-panel tr[data-slot]{user-select:none}
 .collection-item[data-selected=true]{background:#4a361a!important;box-shadow:inset 3px 0 var(--orange)}
 .slot-panel tr[data-selected=true]{outline:1px solid var(--orange);outline-offset:-1px}
@@ -174,7 +185,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <header><div><h1>MASHINA</h1><small>FM1 PERFORMANCE FW / WEB LIBRARY</small></div><div class="row"><a id="initialize-link" href="initialize.html" hidden>Initialize storage</a><span id="connection" class="muted">Disconnected</span><span id="write-state" class="muted" aria-live="polite">No verified device data</span><button id="connect" class="primary">Connect FM1</button><button id="disconnect" disabled>Disconnect</button></div></header>
 <div id="status" class="status" role="status">Connect FM1 to automatically read and verify its data. Offline collections can be edited without connecting.</div>
 <nav aria-label="Library sections"><button data-tab="user" aria-selected="false">USER</button><button data-tab="library" aria-selected="false">LIBRARY</button><button data-tab="projects" aria-selected="false">PROJECTS</button><button data-tab="backup" aria-selected="true">BACKUP</button></nav>
-<section id="tab-user" hidden><div class="section-head"><h2>USER <span class="muted">001–032</span></h2><p>Drag sounds to numbered slots; drag slots to move or swap. Changes are staged until written. Double-click a name to rename.</p></div>
+<section id="tab-user" hidden><div class="section-head"><h2>USER <span class="muted">001–032</span></h2><p>Drag sounds to numbered slots; drag slots to move or swap. Changes are staged until written. Double-click a name to edit inline; Enter saves, Escape cancels.</p></div>
 <div class="workspace">
 <div class="panel slot-panel"><h3>FM1 USER slots <span class="fine">Drag to arrange · orange = pending</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots-second"></tbody></table></div></div></div>
 <div class="side">
@@ -186,7 +197,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <details class="manual-controls" id="user-manual"><summary>Manual selection / fixed-slot import</summary><div class="row"><button id="user-export" disabled>Export device USER sounds</button><button id="user-import-all" disabled>Queue all imported sounds</button></div><label class="field">Source sound<select id="user-source"></select></label><label class="field">Destination<select id="user-target"></select></label><div class="row"><button id="user-add" disabled>Add to USER queue</button><button id="user-reset" disabled>Clear USER slot</button></div></details></div>
 <div class="panel queue-panel"><h3>USER write queue</h3><div class="queue-list" id="user-queue"></div><p id="user-impact" class="fine impact"></p><div class="row queue-actions"><button id="user-apply" class="primary" disabled>Write USER changes</button><button id="user-clear">Clear queue</button></div></div>
 </div></div></section>
-<section id="tab-library" hidden><div class="section-head"><h2>LIBRARY <span class="muted" id="library-range">033–128</span></h2><p>Drag sounds to numbered slots; drag slots to swap. Loaded sounds refresh when written. Double-click a name to rename.</p></div>
+<section id="tab-library" hidden><div class="section-head"><h2>LIBRARY <span class="muted" id="library-range">033–128</span></h2><p>Drag sounds to numbered slots; drag slots to swap. Loaded sounds refresh when written. Double-click a name to edit inline; Enter saves, Escape cancels.</p></div>
 <div class="workspace">
 <div class="panel slot-panel"><h3>FM1 LIBRARY slots <span class="fine">Drag to arrange · orange = pending</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots-second"></tbody></table></div></div></div>
 <div class="side"><div class="panel source-panel collection-panel" id="library-source-panel"><div class="collection-head"><h3>Available presets</h3><span id="library-collection-count" class="fine"></span></div>
@@ -198,7 +209,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="panel queue-panel"><h3>LIBRARY write queue</h3><p class="fine">Replacing a preset changes its sound in all projects that use it. Currently loaded sounds refresh after applying.</p><div class="queue-list" id="library-queue"></div><p id="library-impact" class="fine impact"></p><div class="row queue-actions"><button id="library-apply" class="primary" disabled>Write LIBRARY changes</button><button id="library-clear">Clear queue</button></div></div>
 </div></div></section>
 <section id="tab-projects" hidden><div class="section-head"><h2>PROJECTS <span class="muted">8 × A–D</span></h2><p>Edit section settings and shared preset references, not sound records.</p></div>
-<div class="workspace"><div class="panel slot-panel"><h3>Project sections <span class="fine">32 sections · double-click names to rename</span></h3><div class="dual-tables"><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Write?</th></tr></thead><tbody id="project-rows"></tbody></table></div><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Write?</th></tr></thead><tbody id="project-rows-second"></tbody></table></div></div></div>
+<div class="workspace"><div class="panel slot-panel"><h3>Project sections <span class="fine">32 sections · double-click names to edit inline</span></h3><div class="dual-tables"><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Write?</th></tr></thead><tbody id="project-rows"></tbody></table></div><div class="scroll"><table class="projects"><thead><tr><th scope="col">Section</th><th scope="col">Device</th><th scope="col">Imported</th><th scope="col">Write?</th></tr></thead><tbody id="project-rows-second"></tbody></table></div></div></div>
 <div class="side"><div class="panel source-panel collection-panel"><div class="collection-head"><h3>Offline projects</h3><span id="projects-collection-count" class="fine"></span></div>
 <div class="row collection-tools"><label class="file-label">Import JSON<input id="projects-import" type="file" accept=".json" aria-label="Import projects JSON"></label><button id="projects-collection-save">Save collection</button><button id="projects-collection-capture" disabled>Add device projects</button></div>
 <div class="row collection-filters"><input id="projects-search" type="search" placeholder="Search projects" aria-label="Search projects collection"></div>
@@ -236,13 +247,6 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="op-actions"><button id="collection-save-cancel" type="button">CANCEL</button><button id="collection-save-accept" type="submit" class="primary">SAVE</button></div>
 </form>
 </dialog>
-<dialog id="rename-dialog" aria-labelledby="rename-title">
-<h2 id="rename-title">Rename</h2>
-<form id="rename-form"><p id="rename-description" class="op-message"></p>
-<label class="field" for="rename-input">Name (up to 12 characters)<input id="rename-input" maxlength="12" autocomplete="off" spellcheck="false" aria-describedby="rename-error"></label>
-<p id="rename-error" role="status" aria-live="polite"></p>
-<div class="op-actions"><button id="rename-cancel" type="button">CANCEL</button><button id="rename-accept" type="submit" class="primary">RENAME</button></div>
-</form></dialog>
 <script type="module">
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
@@ -255,6 +259,7 @@ import {projectCapability,captureFullDevice,captureVerifiedFullDevice,validateFu
 const $=id=>document.getElementById(id),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const num=n=>String(n).padStart(3,"0"),pLabel=i=>"P"+(Math.floor(i/4)+1)+":"+("ABCD"[i%4]);
 let dev=null,writable=false,needsInitialization=false,busy=false,snapshot=null,verified=null,projectFile=null,fullSource=null;
+let inlineEdit=null;
 let factory=[],factoryFallbacksBySize={},factoryRecordsBySize={},engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
 let offlineWorkspace=false,collections={user:[],library:[],projects:[]},pages={user:0,library:0,projects:0},dragState=null;
 const soundOrigins={user:new Map(),library:new Map()};
@@ -314,7 +319,7 @@ function dragSelection(bank,side,key){
   return order.filter(k=>s.keys.has(k));
 }
 document.addEventListener("keydown",e=>{
-  if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open||$("rename-dialog").open)return;
+  if(inlineEdit||busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open)return;
   const bank=banks.find(b=>!$("tab-"+b).hidden);
   if(!bank)return;
   if(e.key==="Escape"){clearSelection(bank);paintSelection(bank);return;}
@@ -356,7 +361,7 @@ function addFactorySounds(bank){
 }
 function removeCollection(bank,index){clearSelection(bank,"collection");collections[bank].splice(index,1);render();}
 function engineName(n){return engineNames.get(n)??"Engine "+n;}
-function dragStart(e,payload){if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open||$("rename-dialog").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
+function dragStart(e,payload){if(inlineEdit||busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
 function dragEnd(){dragState=null;for(const n of document.querySelectorAll(".drop-over"))n.classList.remove("drop-over");}
 function dropTarget(node,accept,handle){
   node.ondragover=e=>{if(dragState&&accept(dragState)&&!busy){e.preventDefault();e.dataTransfer.dropEffect=["slot","slot-group","project-slot","project-slot-group"].includes(dragState.type)?"move":"copy";node.classList.add("drop-over");}};
@@ -477,9 +482,9 @@ function renderCollection(bank){
     const name=document.createElement("span");name.className="item-name";name.textContent=p.name;
     const meta=document.createElement("span");meta.className="item-meta";meta.textContent=p.meta;
     row.append(name,meta);row.tabIndex=0;
-    name.title="Double-click to rename";name.style.cursor="text";
-    name.ondblclick=e=>{e.stopPropagation();renameCollectionItem(bank,p);};row.setAttribute("role","option");
-    row.onclick=e=>{if(e.target.closest("button"))return;row.focus({preventScroll:true});selectItem(bank,"collection",entryKey(p),e);};
+    makeInlineName(name,()=>renameCollectionItem(bank,p,name));
+    row.setAttribute("role","option");
+    row.onclick=e=>{if(e.target.closest("button,input:not([readonly])"))return;row.focus({preventScroll:true});selectItem(bank,"collection",entryKey(p),e);};
     row.onfocus=()=>{selection[bank].side="collection";};
     row.onkeydown=e=>{if(e.target===row&&(e.key===" "||e.key==="Enter")){e.preventDefault();selectItem(bank,"collection",entryKey(p),e);}};
     row.ondragstart=e=>{
@@ -492,7 +497,7 @@ function renderCollection(bank){
       for(let i=0;i<4;i++)if(p.sections[i]){
         const chip=document.createElement("button");chip.textContent="ABCD"[i];chip.title="Drag section "+"ABCD"[i];chip.draggable=true;
         chip.ondragstart=e=>{e.stopPropagation();dragStart(e,{type:"section",recordBytes:p.sections[i]});};chip.ondragend=dragEnd;
-        chip.ondblclick=e=>{e.stopPropagation();renameCollectionItem(bank,p,i);};
+        chip.ondblclick=e=>{e.stopPropagation();renameCollectionItem(bank,p,name,i);};
         row.append(chip);
       }
     }else{
@@ -500,9 +505,8 @@ function renderCollection(bank){
       action.setAttribute("aria-label","Remove "+p.name);action.disabled=busy;
       action.onclick=()=>removeSelectedSounds(bank,[p]);
       row.append(action);
-      row.addEventListener("dblclick",e=>{if(!e.target.closest("button"))renameCollectionItem(bank,p);});
     }
-    const rename=document.createElement("button");rename.textContent="✎";rename.title="Rename "+(project?"project":"preset");rename.setAttribute("aria-label",rename.title+" "+p.name);rename.disabled=busy;rename.onclick=()=>renameCollectionItem(bank,p);row.append(rename);
+    const rename=document.createElement("button");rename.textContent="✎";rename.title="Rename "+(project?"project":"preset");rename.setAttribute("aria-label",rename.title+" "+p.name);rename.disabled=busy;rename.onclick=()=>renameCollectionItem(bank,p,name);row.append(rename);
     if(project){const remove=document.createElement("button");remove.textContent="−";remove.title="Remove from collection";remove.onclick=()=>removeCollection(bank,p.index);row.append(remove);}
     host.append(row);
   }
@@ -636,29 +640,59 @@ $("collection-save-form").onsubmit=e=>{
 };
 function download(name,obj){const u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function label(r){return r?decodeRecord(r).name:"Empty";}
-let renameAction=null;
-function openRename(title,description,name,action){
-  if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open||$("rename-dialog").open)return;
-  renameAction=action;
-  $("rename-title").textContent=title;$("rename-description").textContent=description;
-  $("rename-input").value=name;$("rename-error").textContent="";
-  $("rename-dialog").showModal();$("rename-input").focus();$("rename-input").select();
+/* Read-only name inputs ignore pointer events so the surrounding row keeps
+ * normal single-click selection and native drag/drop. Only the explicit
+ * inline edit temporarily accepts text input and disables row dragging. */
+function makeInlineName(host,activate){
+  const value=host.textContent;
+  const input=document.createElement("input");
+  input.type="text";input.readOnly=true;input.tabIndex=-1;input.value=value;
+  input.setAttribute("aria-label","Name");input.draggable=false;input.autocomplete="off";input.spellcheck=false;
+  host.classList.add("inline-name");host.tabIndex=0;host.title=value+" · Double-click or F2 to rename";
+  host.replaceChildren(input);
+  host.ondblclick=e=>{e.preventDefault();e.stopPropagation();if(!inlineEdit)activate();};
+  host.onkeydown=e=>{if(e.target===host&&(e.key==="F2"||e.key==="Enter")){e.preventDefault();e.stopPropagation();if(!inlineEdit)activate();}};
 }
-$("rename-cancel").onclick=()=>$("rename-dialog").close();
-$("rename-dialog").addEventListener("close",()=>{renameAction=null;});
-$("rename-form").onsubmit=e=>{
-  e.preventDefault();
-  const name=$("rename-input").value.trim();
-  if(!name||name.length>12||!/^[\x20-\x7e]+$/.test(name)){$("rename-error").textContent="Use 1–12 printable ASCII characters.";return;}
-  try{if(!renameAction||busy)return;renameAction(name);$("rename-dialog").close();}
-  catch(e){$("rename-error").textContent=e.message;}
-};
-function renameCollectionItem(bank,p,section=null){
+function openRename(host,title,description,name,action){
+  if(busy||inlineEdit||$("operation").open||$("confirmation").open||$("collection-save-dialog").open)return;
+  if(!host)return;
+  if(!host.classList.contains("inline-name"))makeInlineName(host,()=>{});
+  const input=host.querySelector("input"),display=input.value,row=host.closest("[draggable]"),wasDraggable=row?.draggable;
+  const editor={input,host,row,wasDraggable,display,finish:null};
+  inlineEdit=editor;
+  if(row)row.draggable=false;
+  host.dataset.editing="true";input.readOnly=false;input.tabIndex=0;input.maxLength=12;input.value=name;input.setAttribute("aria-label",title);
+  status(description+" Enter to save; Escape to cancel.");
+  function finish(commit,blur=false){
+    if(inlineEdit!==editor)return;
+    const next=input.value.trim();
+    if(commit&&(!next||next.length>12||!/^[\x20-\x7e]+$/.test(next))){
+      input.setAttribute("aria-invalid","true");status("Use 1–12 printable ASCII characters.","error");
+      if(!blur)return;
+      commit=false;
+    }
+    // Reset before action/render, as replacing an active input can emit blur.
+    inlineEdit=null;input.onblur=null;input.onkeydown=null;input.onclick=null;input.ondblclick=null;input.oninput=null;input.ondragstart=null;
+    input.readOnly=true;input.tabIndex=-1;input.removeAttribute("maxlength");input.removeAttribute("aria-invalid");input.value=display;
+    input.setAttribute("aria-label","Name");delete host.dataset.editing;
+    if(row)row.draggable=wasDraggable;
+    if(commit&&next!==name){try{action(next);}catch(e){status(e.message,"error");}}
+    if(!blur&&host.isConnected)host.focus({preventScroll:true});
+  }
+  editor.finish=finish;
+  input.onclick=e=>e.stopPropagation();input.ondblclick=e=>e.stopPropagation();
+  input.ondragstart=e=>{e.preventDefault();e.stopPropagation();};
+  input.oninput=()=>input.removeAttribute("aria-invalid");
+  input.onkeydown=e=>{e.stopPropagation();if(e.key==="Enter"||e.key==="Escape"){e.preventDefault();finish(e.key==="Enter");}};
+  input.onblur=()=>finish(true,true);
+  input.focus({preventScroll:true});input.select();
+}
+function renameCollectionItem(bank,p,host,section=null){
   const project=bank==="projects";
   if(project){
     const item=collections.projects[p.index];if(!item)return;
     const initial=section===null?item.name:decodeProject(item.sections[section]).name;
-    openRename(section===null?"Rename offline project":"Rename offline section",section===null?"All occupied A–D sections will use the new project name.":"Only this section's name changes.",initial,name=>{
+    openRename(host,section===null?"Rename offline project":"Rename offline section",section===null?"All occupied A–D sections will use the new project name.":"Only this section's name changes.",initial,name=>{
       const sections=item.sections.map((r,i)=>r&&(section===null||section===i)?renameProjectRecord(r,name):r);
       const updated={name:section===null?name:item.name,sections};
       const next=collections.projects.slice();next[p.index]=updated;
@@ -666,7 +700,7 @@ function renameCollectionItem(bank,p,section=null){
       status("Offline project name updated. No device writes.","ok");
     });
   }else{
-    openRename("Rename offline preset","Only the name changes. Save the collection to keep it.",label(p.recordBytes),name=>{
+    openRename(host,"Rename offline preset","Only the name changes. Save the collection to keep it.",label(p.recordBytes),name=>{
       const key=soundKey(p),recordBytes=renameSoundRecord(p.recordBytes,name);
       const next=collections[bank].map(x=>soundKey(x)===key?{recordBytes}:x);
       const mapped=packs[bank].map(x=>soundKey(x)===key?{...x,...decodeRecord(recordBytes)}:x);
@@ -676,19 +710,19 @@ function renameCollectionItem(bank,p,section=null){
     });
   }
 }
-function renameDeviceItem(bank,slot,wholeProject=false){
+function renameDeviceItem(bank,slot,host,wholeProject=false){
   if(!snapshot)return;
   if(bank==="projects"){
     const first=Math.floor(slot/4)*4,slots=wholeProject?[first,first+1,first+2,first+3]:[slot];
     const occupied=slots.filter(i=>projectAt(i));if(!occupied.length)return;
-    openRename(wholeProject?"Rename project":"Rename section",wholeProject?"Rename all occupied sections of P"+(first/4+1)+". Write PROJECT changes to commit.":"Rename "+pLabel(slot)+". Write PROJECT changes to commit.",decodeProject(projectAt(occupied[0])).name,name=>{
+    openRename(host,wholeProject?"Rename project":"Rename section",wholeProject?"Rename all occupied sections of P"+(first/4+1)+". Write PROJECT changes to commit.":"Rename "+pLabel(slot)+". Write PROJECT changes to commit.",decodeProject(projectAt(occupied[0])).name,name=>{
       const sections=projectFile?structuredClone(projectFile.sections):structuredClone(snapshot.projects);
       for(const i of occupied){sections[i]=renameProjectRecord(projectAt(i),name);if(eq(sections[i],snapshot.projects[i]))selected.delete(i);else selected.add(i);}
       projectFile=projectsBackup(sections);render();status("Project name change staged. Write PROJECT changes to commit.","ok");
     });
   }else{
     const raw=actualSound(bank,slot);if(!raw)return;
-    openRename("Rename "+bank.toUpperCase()+" preset","Slot "+num(slot+(bank==="user"?1:33))+" stays unchanged. Write "+bank.toUpperCase()+" changes to commit.",label(raw),name=>{
+    openRename(host,"Rename "+bank.toUpperCase()+" preset","Slot "+num(slot+(bank==="user"?1:33))+" stays unchanged. Write "+bank.toUpperCase()+" changes to commit.",label(raw),name=>{
       const next=renameSoundRecord(raw,name);
       if(eq(next,raw))return;
       setPresetChanges(bank,[{slot,recordBytes:bank==="library"&&eq(next,fallbackRecord(slot))?null:next}]);
@@ -709,10 +743,14 @@ function rows(id,data){
         if(col>0&&value!=="—"&&value!=="Empty"&&value!=="Not inspected")span.tabIndex=0;td.append(span);}
       const bank=id==="project-rows"?"projects":id.startsWith("user-")?"user":id.startsWith("library-")?"library":null;
       if(bank&&snapshot&&((bank!=="projects"&&col===1&&actualSound(bank,index))||(bank==="projects"&&col===1&&projectAt(index))||(bank==="projects"&&col===0&&Array.from({length:4},(_,i)=>projectAt(Math.floor(index/4)*4+i)).some(Boolean)))){
-        td.title=bank==="projects"&&col===0?"Double-click to rename all occupied project sections":"Double-click to rename";
-        td.style.cursor="text";
-        td.ondblclick=e=>{e.stopPropagation();renameDeviceItem(bank,index,bank==="projects"&&col===0);};
-        const edit=document.createElement("button");edit.textContent="✎";edit.title=td.title;edit.setAttribute("aria-label",td.title);edit.disabled=busy;edit.onclick=e=>{e.stopPropagation();renameDeviceItem(bank,index,bank==="projects"&&col===0);};td.append(edit);
+        const whole=bank==="projects"&&col===0;
+        td.title=whole?"Double-click to rename all occupied project sections":"Double-click to rename";
+        // Group renames use the adjacent device-name field, not the narrow
+        // project/section index cell. The index never changes.
+        const activate=()=>renameDeviceItem(bank,index,whole?tr.cells[1]?.querySelector(".cell-text"):td.querySelector(".cell-text"),whole);
+        if(whole)td.ondblclick=e=>{e.stopPropagation();activate();};
+        else makeInlineName(td.querySelector(".cell-text"),activate);
+        const edit=document.createElement("button");edit.textContent="✎";edit.title=td.title;edit.setAttribute("aria-label",td.title);edit.disabled=busy;edit.onclick=e=>{e.stopPropagation();activate();};td.append(edit);
       }
       tr.append(td);
     }
@@ -788,6 +826,7 @@ function sourceControls(bank){
 }
 function projectName(p){return p?(decodeProject(p).name||"Saved section")+" · "+decodeProject(p).refs.filter(r=>r!==255).map(r=>num(r+1)).join(", "):"Empty";}
 function render(){
+  if(inlineEdit)inlineEdit.finish(false,true);
   $("library-range").textContent="033–"+num(32+bankCount("library"));
   $("connection").textContent=dev?dev.name+(writable?" · Writable":" · Read-only"):offlineWorkspace?"OFFLINE PERFORMANCE":"Disconnected";
   $("write-state").textContent=busy?"Operation in progress":offlineWorkspace?"Offline editing · No USB writes":!dev?"No verified device data":!writable?"Read-only firmware":verified?"Device data verified · Ready to write":"Refresh device data · Writes locked";
@@ -817,7 +856,8 @@ function render(){
 function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
 for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
 async function run(fn,operation=null){
-  if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open||$("rename-dialog").open)return;
+  if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open)return;
+  if(inlineEdit)inlineEdit.finish(false,true);
   busy=true;if(operation)beginOperation(operation);
   try{render();await fn();}catch(e){status(e.message,"error");}
   finally{busy=false;try{render();}finally{if(operation)finishOperation();}}
@@ -830,6 +870,7 @@ function disconnected(connection){
   status("FM1 disconnected. Reconnect to read and verify device data automatically.","error");render();
 }
 $("connect").onclick=()=>run(async()=>{
+  status("Connecting to FM1…");
   if(offlineWorkspace&&hasEdits())throw Error("Save the complete performance, then close the offline workspace before connecting.");
   offlineWorkspace=false;clearStaging();invalidate();snapshot=null;
   let candidate;
@@ -840,10 +881,10 @@ $("connect").onclick=()=>run(async()=>{
     if(needsInitialization)status("First installation required. Disconnect, then open Initialize storage.");
     else await readConnectedDevice(candidate);
   }catch(e){if(dev!==candidate)candidate.close();throw e;}
-});
+},"Connecting FM1");
 $("disconnect").onclick=()=>run(async()=>{dev?.close();dev=null;writable=false;needsInitialization=false;snapshot=null;offlineWorkspace=false;invalidate();clearStaging();status("Disconnected.");});
 $("backup-capture").onclick=()=>{if(snapshot&&!busy){download("mashina-full-fm1-backup.json",snapshot);status("Complete device backup saved locally.","ok");}};
-$("backup-refresh").onclick=()=>run(async()=>{if(dev)await readConnectedDevice(dev);});
+$("backup-refresh").onclick=()=>run(async()=>{if(dev)await readConnectedDevice(dev);},"Reading FM1 data");
 function apply(fn,name,title){return run(async()=>{if(!dev||!writable||!verified)throw Error("Refresh device data before writing.");const before=verified,connection=dev;invalidate();try{
     const result=await fn(before);
     if(dev!==connection||!connection.connected)throw Error("FM1 disconnected during transfer. Reconnect and inspect before another write.");
