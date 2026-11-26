@@ -89,3 +89,19 @@ const projectCollection=collectionFile("projects",[{sections:[null,projects[5],n
 assert.equal(readCollection("projects",projectCollection).length,1);
 for(const kind of ["user","library"])assert.throws(()=>readCollection(kind,projectCollection),/collections/i);
 console.log("PASS: existing USER/LIBRARY collection files open in either sound tab, 107 records round-trip without changes, projects stay separate");
+
+import {renameSoundRecord,decodeRecord} from "../web/presets-library-codec.mjs";
+import {renameProjectRecord,decodeProject} from "../web/projects-library-codec.mjs";
+const named=renameSoundRecord(A,"NEW BASS");
+assert.equal(decodeRecord(named).name,"NEW BASS");
+assert.deepEqual(named.slice(16),A.slice(16));assert.deepEqual(named.slice(0,4),A.slice(0,4));
+const fm=Array.from(encodeRecord({engine:12,name:"FM SIX",params,fm6:Array.from({length:128},(_,i)=>i)}));
+assert.deepEqual(renameSoundRecord(fm,"NEW FM").slice(16),fm.slice(16));
+const drum=A.slice();drum[2]=10;drum[303]=0xD3;
+assert.deepEqual(renameSoundRecord(drum,"NEW KIT").slice(16),drum.slice(16));
+assert.throws(()=>renameSoundRecord(A,"1234567890123"));
+const renamedProject=decodeProject(renameProjectRecord(projects[5],"NEW SECTION"));
+const oldProject=decodeProject(projects[5]);
+assert.equal(renamedProject.name,"NEW SECTION");assert.equal(renamedProject.section,oldProject.section);
+assert.deepEqual(renamedProject.refs,oldProject.refs);assert.deepEqual(renamedProject.settingsBytes,oldProject.settingsBytes);
+console.log("PASS: renaming changes only sound names and project names/CRC, with all parameters and companions retained");

@@ -45,6 +45,9 @@ export function encodeProject({section,refs,name="",settingsBytes=[]}){
   put32(r,28,crc(r,settings.length));
   return Array.from(r);
 }
+export function renameProjectRecord(record,name){
+  return encodeProject({...decodeProject(record),name});
+}
 export function decodeProject(input){
   const r=bytes(input,MAX_RECORD,"project record");
   check(r.length>=MPR_HEADER && MAGIC.every((v,i)=>r[i]===v) &&

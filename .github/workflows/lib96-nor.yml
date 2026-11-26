@@ -37,4 +37,5 @@ jobs:
           node tests/presets_library_sync_test.mjs
           node tests/projects_library_codec_test.mjs
           node tests/performance_backup_test.mjs
+          node tests/web_library_manager_test.mjs
           node tests/full_device_backup_test.mjs

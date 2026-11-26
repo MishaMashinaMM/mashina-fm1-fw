@@ -71,6 +71,11 @@ export function encodeRecord(p){
   if(e===12)r.set(packFm6(p.fm6),192);
   return validateRecord(r);
 }
+export function renameSoundRecord(record,name){
+  const raw=decodeRecord(record).recordBytes,nm=nameBytes(name);
+  raw.fill(0,4,16);raw.splice(4,nm.length,...nm);
+  return decodeRecord(raw).recordBytes;
+}
 export function decodeRecord(record){
   const r=validateRecord(record instanceof Uint8Array?record:bytes(record,ENTRY_BYTES,"record"));
   const name=String.fromCharCode(...r.slice(4,16)).replace(/\x00+$/,"");

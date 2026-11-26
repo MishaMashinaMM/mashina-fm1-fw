@@ -424,6 +424,12 @@ export function compareFlashFingerprints(before,after){
  * references are protected by default and may be explicitly permitted. A fresh complete snapshot must equal the
  * verified offline backup before writing; all unselected logical bytes must
  * still match after the write. No automatic retry or rollback. */
+export async function captureVerifiedFullDevice(request,firmware="",progress=()=>{}){
+  const first=await captureFullDevice(request,firmware,(phase,i,n)=>progress("READ · "+phase,i,n));
+  const second=await captureFullDevice(request,firmware,(phase,i,n)=>progress("VERIFY · "+phase,i,n));
+  sameFullPayload(first,second);
+  return second;
+}
 function sameFullPayload(a,b) {
   for(const key of ["userPresets","libraryPresets","projects","currentPerformance","selectedProject"])
     insist(JSON.stringify(a[key])===JSON.stringify(b[key]),key+" changed");
@@ -464,7 +470,7 @@ export async function applyVerifiedLibraryChanges(request,verifiedFile,changes,p
     "Use the initialized update firmware with formatting disabled");
   const fresh=await captureFullDevice(request,baseline.firmware,progress);
   try{sameFullPayload(baseline,fresh);}catch(e){
-    throw Error("Device changed since verified backup: "+e.message+". Capture and verify a new complete backup. No writes sent.");
+    throw Error("Device changed since verified backup: "+e.message+". Refresh device data. No writes sent.");
   }
   if(!plan.length)return {changed:0,after:fresh};
   const expected=structuredClone(fresh);
@@ -572,7 +578,7 @@ export async function applyVerifiedUserRestore(request,verifiedFile,slot,recordB
     const id=plan.objectIds[i];
     try{await putUserObject(request,archive.objects.find(o=>o.id===id));}
     catch(e){throw Error("USER restore stopped on object "+id+" after "+i+" acknowledged objects: "+e.message+". Partial state possible; do not retry.");}
-    progress("USER RESTORE",i+1,plan.objectIds.length);
+    progress("USER WRITE",i+1,plan.objectIds.length);
   }
   const after=await captureFullDevice(request,baseline.firmware,progress);
   try{sameFullPayload(plan.expected,after);}catch(e){
@@ -659,7 +665,7 @@ async function transferRestorePlan(request,verified,plan,progress){
     return {changed:done,after:observed};
   }catch(e){
     const error=Error("STOP — "+label+" failed after "+done+"/"+total+
-      " acknowledged operations: "+e.message+". State may be partial. Keep the original backup; no automatic retry.");
+      " acknowledged operations: "+e.message+". State may be partial. Refresh device data before further writes.");
     if(observed){
       error.readback=observed;
       const storedKeys=["userPresets","libraryPresets","projects","selectedProject"];
