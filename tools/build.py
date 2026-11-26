@@ -352,6 +352,7 @@ def check(img, syms, dis, rt):
     bss = sym("_bss_end") - 0x01C08000
     pool = sym("_pool_end") - sym("_pool_start")
     pool_top = max(sym("_pool_end"), sym("_c1_stack_hi"))   # (the second core's stacks after the pool)
+    notes.append(f"LOWBUF {sym('_low_end') - sym('_low_start')} B of 28672")
     notes.append(f"image {len(img)} B of the {APP_SLOT} B slot ({APP_SLOT - len(img)} B free); RAM .data+.bss {bss} B of 98304; pool {pool} B, spare {POOL_END - pool_top} B")
     if bss > 96 * 1024:
         errors.append("RAM region overflow")

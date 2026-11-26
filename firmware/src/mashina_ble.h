@@ -8,9 +8,13 @@
 #define FELUCCA_BLE_BOND 1
 #define BLE_DIAG 0
 #define BLE_DMA_MEMORY __attribute__((section(".pool"), aligned(4)))
-#define FM1_RF_CAL_MEMORY __attribute__((section(".pool")))
+#define FM1_RF_CAL_MEMORY __attribute__((section(".lowbuf"), aligned(4)))
 /* Stock uses 27-octet PDUs. Keep that radio-tested limit until DLE is measured. */
 #define BLE_LL_MAX_OCTETS 27u
+/* Standard 23-byte ATT MTU, bounded rings for a single input controller. */
+#define BLE_ATT_MTU_MAX 23u
+#define BLE_LL_TX_RING 128u
+#define BLE_SCAN_RING 8u
 #define BLE_BARRIER() RING_PUBLISH()
 #include "ble/ble.h"
 #include "ble/ble_scan.h"
@@ -47,6 +51,6 @@ typedef struct {
 #define MEL_BLE_MAGIC 0x31454C42u /* BLE1 */
 #define MB_VISIBLE 1u   /* Mode VISIBLE: advertise for a computer or phone, never scan */
 #define MB_RADIO 2u     /* the radio as last set: started again at power-on */
-static mel_ble_saved_t mb_saved __attribute__((section(".pool")));
+static mel_ble_saved_t mb_saved __attribute__((section(".lowbuf"), aligned(4)));
 static volatile uint32_t mb_revision;
 static uint32_t mb_committed;

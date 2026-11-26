@@ -8,7 +8,7 @@
 #include "ble/ble_stack.c"
 #include "ble/ble_vm.c"
 
-#define MBQ 64u
+#define MBQ 32u
 #define MBRT 16u                                /* clock, transport, Song Position (usb.c midi_rt_q) */
 static struct {
     uint32_t rx[MBQ], time[MBQ], tx[MBQ], ms[MBQ];
@@ -28,7 +28,7 @@ static struct {
     struct ble_keys keys;
     volatile uint8_t keys_new;
     char failure[24];
-} mb __attribute__((section(".pool")));
+} mb __attribute__((section(".lowbuf"), aligned(4)));
 
 
 static void mb_dirty(void) { mb_saved.magic = MEL_BLE_MAGIC; mb_revision++; }
