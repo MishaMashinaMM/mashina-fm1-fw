@@ -133,7 +133,9 @@ static void mel_ble_drain(void) /* TIMER5, the shared input queue's sole produce
 {
     if (mb.lost || mb.overflow) {
         mb_lock(); mb.rr = mb.rw; mb.lost = mb.overflow = 0; mb_unlock();
-        midi_in_overflow = 1;
+        /* Preserve wired owners. A full shared queue still invokes its
+         * existing global overflow recovery rather than losing the marker. */
+        (void)midi_enqueue(0,3u);
     }
     for (uint32_t n = 0; mb.rr != mb.rw && n < MBQ; n++) {
         RING_PUBLISH(); uint32_t at = mb.rr % MBQ;
@@ -185,7 +187,8 @@ static int mel_ble_set(int on)
             for (uint32_t i = 0; i < 6u; i++) mb_saved.addr[i] = (uint8_t)fm1_ble_rng32();
             mb_saved.addr[5] |= 0xC0u; mb_saved.valid = 1; mb_dirty();
         }
-        /* Caller rejects live music; startup holds IRQs, keeps CPU1 in its RAM idle loop. */
+        /* Complete pending display DMA before radio setup; feed the watchdog
+         * ahead of calibration and park any second-core audio job. */
         mel_ble_radio_start(&mb.trims);
         ble_init(mb_saved.addr, 1);
         ble_ll_advertise(!!(mb_saved.flags & MB_VISIBLE));
@@ -408,9 +411,15 @@ static int mel_ble_flash_read(void *ctx, uint32_t off, uint8_t *dst, uint32_t n)
 }
 static void mel_ble_radio_start(const struct ble_rf_trims *t)
 {
+    lcd_sync();
+    fm1_wdt_feed();
     uint32_t ie=fm1_icfg(); fm1_irq_off();
+#if FELUCCA_DUAL_CORE
+    fm1_mc_park();
+#endif
     audio_silence();
     ble_hw_wl82_start(t);
+    fm1_wdt_feed();
     fm1_icfg_set(ie);
 }
 

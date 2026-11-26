@@ -2387,7 +2387,7 @@ static void events_block(uint32_t n)
         mo_flush_of((1u << NTRK) - 1u);
         for (i = 0; i < NTRK; i++)
             midi_silence_track(i);
-        for (i = 0; i < 16u; i++) {
+        for (i = 0; i < MIDI_STATE_CHANNELS; i++) {
             midi_ch[i].pedal = 0;
             midi_ch[i].targets = 0;
         }
@@ -2460,6 +2460,12 @@ static void events_block(uint32_t n)
         uint32_t d1 = (pkt >> 16) & 0x7Fu, d2 = (pkt >> 24) & 0x7Fu;
         uint32_t source = midi_in_source[at] ? midi_in_source[at] : 1u, ms = midi_in_ms[at];
         mi_r++;
+#if MIDI_BLE_INPUT
+        if(source==3u){
+            if(!pkt){midi_ble_release();continue;}
+            ch+=16u;
+        }
+#endif
         if (status >= 0xF8u) {
             if (clock_mode == source) {
                 if (status == 0xF8u)

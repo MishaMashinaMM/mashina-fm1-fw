@@ -240,11 +240,26 @@ static uint32_t sx_out_q[SXQ];
 static volatile uint32_t so_w, so_r;
 #endif
 
+/* Bluetooth uses a second bank of MIDI-channel ownership. USB/TRS retain
+ * their established shared-channel behaviour. The zero packet is an ordered
+ * BLE link-loss marker, never an actual MIDI channel message. */
+#if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
+#define MIDI_BLE_INPUT 1
+#define MIDI_STATE_CHANNELS 32u
+#else
+#define MIDI_BLE_INPUT 0
+#define MIDI_STATE_CHANNELS 16u
+#endif
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#define MIDI_STATE_MEMORY __attribute__((section(".lowbuf"),aligned(4)))
+#else
+#define MIDI_STATE_MEMORY
+#endif
 /* MIDI rings: 4-byte USB-MIDI event packets */
 #define MQ 64u
 static uint32_t midi_in_q[MQ], midi_out_q[MQ];
 static uint32_t midi_in_ms[MQ];
-static uint8_t midi_in_source[MQ];                    /* 1 USB, 2 TRS */
+static uint8_t midi_in_source[MQ];                    /* 1 USB, 2 TRS, 3 BLE */
 static volatile uint32_t fm1_ms;                    /* also declared by core.h; parser-only host tests */
 static volatile uint32_t mi_w, mi_r, mo_w, mo_r;
 static volatile uint8_t midi_in_overflow;               /* audio ISR discards a broken stream and releases notes */

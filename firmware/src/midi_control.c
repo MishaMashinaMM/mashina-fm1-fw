@@ -13,15 +13,15 @@ typedef struct {
     uint8_t ready, semis, cents;
     uint8_t rpn_msb, rpn_lsb;
 } midi_channel_t;
-static midi_channel_t midi_ch[16];
+static midi_channel_t midi_ch[MIDI_STATE_CHANNELS] MIDI_STATE_MEMORY;
 /* One byte per channel/note: six owner bits and one pedal flag (2 KiB total).
  * A release belongs to the original owners, never to the current selection. */
 #define MIDI_TRACK_MASK ((1u << NTRK) - 1u)
 #define MIDI_PEDAL_NOTE 0x80u
 _Static_assert(NTRK == 6, "MIDI ownership has six track bits");
-static uint8_t midi_sel_on[16][128];
-static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch & 15u][note & 127u]; }
-static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch & 15u][note & 127u] = (uint8_t)v; }
+static uint8_t midi_sel_on[MIDI_STATE_CHANNELS][128] MIDI_STATE_MEMORY;
+static uint32_t mn_get(uint32_t ch, uint32_t note) { return midi_sel_on[ch][note & 127u]; }
+static void mn_set(uint32_t ch, uint32_t note, uint32_t v) { midi_sel_on[ch][note & 127u] = (uint8_t)v; }
 static uint16_t midi_owners[NTRK];
 /* Transposed MIDI note snapshots. The former 16*128*6 dense table used 12 KiB
  * even when no notes were held and overflowed the FM1's RAM region.
@@ -31,10 +31,10 @@ static uint16_t midi_owners[NTRK];
  * No recording in project/global settings: this is transient MIDI state. */
 #define MIDI_SNAPSHOT_SLOTS 128u
 typedef struct { uint8_t ch1, note, pitch; } midi_pitch_slot_t;
-static midi_pitch_slot_t midi_pitch[NTRK][MIDI_SNAPSHOT_SLOTS];
+static midi_pitch_slot_t midi_pitch[NTRK][MIDI_SNAPSHOT_SLOTS] MIDI_STATE_MEMORY;
 _Static_assert(sizeof(midi_pitch_slot_t) == 3, "MIDI snapshot must remain compact");
 /* At most 16 MIDI channels can hold the same sounding pitch on one track. */
-static uint8_t midi_pitch_count[NTRK][128];
+static uint8_t midi_pitch_count[NTRK][128] MIDI_STATE_MEMORY;
 
 static int midi_pitch_save(uint32_t ch, uint32_t note, uint32_t track, uint32_t pitch)
 {
@@ -85,6 +85,7 @@ static int midi_command_cc(uint32_t cc) { return (cc >= 85u && cc <= 90u); }
 static uint32_t midi_route_mask(uint32_t ch)
 {
     uint32_t i, mask = 0, limit;
+    ch &= 15u; /* transport bank never changes the MIDI channel */
     if (midi_live_rx[0] || midi_live_rx[1] || midi_live_rx[2]) {
         for (i = 0; i < trk_live; i++)
             if (midi_live_channel(i) == ch + 1u)
@@ -266,7 +267,7 @@ static void midi_pedal_up(uint32_t ch)
 static void __attribute__((noinline)) midi_forget_track(uint32_t track)
 {
     uint32_t ch, note;
-    for (ch = 0; ch < 16u; ch++) {
+    for (ch = 0; ch < MIDI_STATE_CHANNELS; ch++) {
         if (!(midi_ch[ch].targets & (1u << track)))
             continue;
         for (note = 0; note < 128u; note++)
@@ -480,7 +481,7 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     /* Until the dedicated command handler is installed, swallow reserved CCs
      * before REC capture, legacy MIDI LEARN, macros, and the standard map. */
     if (midi_command_cc(cc)) {
-        if (midi_random_cc(cc)) random_command(ch, cc, value);
+        if (midi_random_cc(cc)) random_command(ch & 15u, cc, value);
         else {
             uint32_t k = cc - 88u;
             midi_live_rx[k] = (uint8_t)(value >= 64u ? 1u : 2u);
@@ -491,7 +492,7 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
     if (cm_wait == 1u) {                              /* REC > ADD: capture CC and its actual incoming channel */
         if (ml_free_cc(cc)) {
             cm_heard_cc = (uint8_t)cc;
-            cm_heard_ch = (uint8_t)ch;
+            cm_heard_ch = (uint8_t)(ch & 15u);
             cm_wait = 2u;                              /* next: select track/page, turn parameter knob */
             cm_ui_open = 0u;
             return;
@@ -500,7 +501,7 @@ static void midi_control(uint32_t ch, uint32_t cc, uint32_t value)
 #endif
     /* An armed legacy learner must still capture the incoming CC. Otherwise
      * enabled macros take priority over learned mappings of the same CC. */
-    if (!ml.arm && cm_apply(ch, cc, value))
+    if (!ml.arm && cm_apply(ch & 15u, cc, value))
         return;
     if (midi_learned(cc, value))                   /* (0.9.12) MIDI LEARN's (a learned CC is the user's) */
         return;
@@ -578,7 +579,7 @@ static void midi_route_update(void)
     if (setup == midi_route_setup)
         return;
     midi_route_setup = setup;
-    for (ch = 0; ch < 16u; ch++) {
+    for (ch = 0; ch < MIDI_STATE_CHANNELS; ch++) {
         uint32_t mask = midi_route_mask(ch), removed = midi_ch[ch].targets & ~mask;
         if (removed)
             for (note = 0; note < 128u; note++)
@@ -613,7 +614,7 @@ static volatile uint8_t midi_song_req;
 static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint32_t d1, uint32_t d2)
 {
     uint32_t i, mask;
-    if (st == 0xC0u && ch == 15u) {
+    if (st == 0xC0u && (ch & 15u) == 15u) {
         midi_song_req = (uint8_t)(d1 + 1u);
         return;
     }
@@ -650,3 +651,18 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
             }
     }
 }
+
+#if MIDI_BLE_INPUT
+/* The marker is processed in order with incoming packets, on the audio
+ * consumer only. Release BLE's notes and pedal owners, preserve wired notes
+ * even at the very same channel and pitch. No global panic on link loss. */
+static void midi_ble_release(void)
+{
+    for(uint32_t ch=16u;ch<MIDI_STATE_CHANNELS;ch++){
+        uint32_t mask=midi_ch[ch].targets;
+        if(mask)for(uint32_t note=0;note<128u;note++)
+            if(mn_get(ch,note))midi_release(ch,note);
+        memset(&midi_ch[ch],0,sizeof midi_ch[ch]);
+    }
+}
+#endif

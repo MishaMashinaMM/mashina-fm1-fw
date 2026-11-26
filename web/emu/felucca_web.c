@@ -532,7 +532,7 @@ EXPORT uint32_t web_ble_control(uint32_t cmd)
 {
     /* 0 off, 1 idle, 2 scan, 3 connected. Commands: off/on/scan/connect/disconnect. */
     if (cmd == 0 || cmd == 4) {
-        if (web_ble_state == 3) midi_in_overflow = 1;
+        if (web_ble_state == 3) (void)midi_enqueue(0,3u);
         web_ble_state = cmd == 0 ? 0 : web_ble_state ? 1 : 0;
         ble_midi_dec_reset(&web_ble_decoder);
     } else if (cmd == 1 && !web_ble_state) web_ble_state = 1;
@@ -545,6 +545,8 @@ EXPORT uint32_t web_ble_control(uint32_t cmd)
 }
 EXPORT uint32_t web_ble_buf(void) { return (uint32_t)(uintptr_t)web_ble_buffer; }
 EXPORT uint32_t web_ble_count(void) { return web_ble_received; }
+EXPORT uint32_t web_ble_owner(uint32_t source,uint32_t ch,uint32_t note)
+{ return mn_get((source==3u?16u:0u)+(ch&15u),note&127u); }
 static void web_ble_sink(void *ctx, uint32_t pkt, uint16_t ts)
 {
     (void)ctx; (void)ts;

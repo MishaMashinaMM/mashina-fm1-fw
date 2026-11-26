@@ -20,7 +20,25 @@ assert.equal(send([0,128,pc,32]),0);
 assert.equal(e.web_ble_count(),1);
 assert.equal(send([128,128,144,60,100,129,128,60,0]),1);
 assert.equal(e.web_ble_count(),3);
+// Use an actual active channel and an accepted note from the current preset.
+let note=-1;
+for(let n=36;n<96;n++){
+    e.web_midi(144|ch,n,100);
+    e.web_render(1024);
+    if(e.web_ble_owner(1,ch,n)&63){note=n;break;}
+    e.web_midi(128|ch,n,0);e.web_render(1024);
+}
+assert.ok(note>=0,"find a playable note");
+assert.equal(send([128,128,144|ch,note,100]),1);
+e.web_render(1024);
+assert.ok(e.web_ble_owner(1,ch,note)&63,"wired ownership before disconnect");
+assert.ok(e.web_ble_owner(3,ch,note)&63,"BLE ownership on the same pitch");
 assert.equal(e.web_ble_control(4),1);
+e.web_render(1024);
+assert.ok(e.web_ble_owner(1,ch,note)&63,"disconnect preserves wired note");
+assert.equal(e.web_ble_owner(3,ch,note),0,"disconnect releases BLE note");
+e.web_midi(128|ch,note,0);e.web_render(1024);
+assert.equal(e.web_ble_owner(1,ch,note),0);
 assert.equal(send([128,128,pc,32]),0);
 e.web_render(1024);
 e.web_midi(pc,32,0);

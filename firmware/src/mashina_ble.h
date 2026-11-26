@@ -14,7 +14,7 @@
 /* Standard 23-byte ATT MTU, bounded rings for a single input controller. */
 #define BLE_ATT_MTU_MAX 23u
 #define BLE_LL_TX_RING 128u
-#define BLE_SCAN_RING 8u
+#define BLE_SCAN_RING 16u
 #define BLE_BARRIER() RING_PUBLISH()
 #include "ble/ble.h"
 #include "ble/ble_scan.h"
