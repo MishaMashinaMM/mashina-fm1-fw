@@ -435,31 +435,84 @@ static void ble_page_knob(uint32_t k,int32_t steps)
     else if(k==3u){if(right && mb_pick<mb.count){mel_ble_scan(0);mel_ble_connect(mb_pick);}else if(!right)mel_ble_disconnect();}
     ui.force=1;
 }
+/* Standard 240x240 MASHINA table layout. Split canvas to stay below
+ * CV_MAX. Redraw only changed blocks; scanning must not flash the whole LCD. */
 static void ble_page_draw(void)
 {
-    static uint32_t sig;
-    uint32_t now=mel_ble_signature()+mb_pick*379u+mb.count*19u;
-    if(!ui.force && now==sig)return;
-    sig=now;ui.force=0;
-    if(mb_pick>=mb.count)mb_pick=mb.count?mb.count-1u:0u;
-    lcd_fill(0,0,240,240,T_BG);
-    draw_text_line(0,4,240,&AF_M,"BLUETOOTH MIDI",T_VALUE,T_BG,1);
-    draw_text_line(0,28,240,&AF_M,mel_ble_status(),T_TEXT,T_BG,1);
-    draw_text_line(0,51,240,&AF_S,mb.on?"K1 RADIO ON":"K1 RADIO OFF",T_VALUE,T_BG,0);
-    draw_text_line(0,68,240,&AF_S,mb.scanning?"K2 SCANNING":"K2 SCAN > / STOP <",T_TEXT,T_BG,0);
-    for(uint32_t i=0;i<4u;i++){
-        uint32_t first=mb_pick/4u*4u,row=first+i;
-        if(row>=mb.count)break;
-        const struct ble_found *f=&mb.found.e[mb.idx[row]];
-        uint16_t bg=row==mb_pick?T_VALUE:RGB(36,36,36);
-        draw_text_line(0,90+i*22u,240,&AF_M,f->name[0]?f->name:"UNNAMED",row==mb_pick?T_INK:T_TEXT,bg,0);
-    }
+    static uint32_t prev_head,prev_rows[4],prev_bottom;
+    const uint32_t full=ui.force;
     uint32_t code=mel_ble_code();
-    if(code!=BLE_NO_PASSKEY){
-        char pass[7];pass[6]=0;
-        for(int i=5;i>=0;i--){pass[i]=(char)('0'+code%10u);code/=10u;}
-        draw_text_line(0,180,240,&AF_M,pass,T_VALUE,T_BG,1);
-    }else draw_text_line(0,180,240,&AF_S,"K3 SELECT DEVICE",T_TEXT,T_BG,0);
-    draw_text_line(0,199,240,&AF_S,"K4 CONNECT > / DROP <",T_TEXT,T_BG,0);
-    draw_text_line(0,222,240,&AF_S,"GLO > SYSTEM > BLE     8/8",T_VALUE,T_BG,0);
+    if(mb_pick>=mb.count)mb_pick=mb.count?mb.count-1u:0u;
+    const char *status=mel_ble_status();
+    uint32_t head=mb.on | (uint32_t)mb.scanning<<1 | (uint32_t)mb.ready<<2;
+    for(const char *p=status;*p;p++)head=head*31u+(uint8_t)*p;
+    const char *peer=mb.ready?(mb.target.name[0]?mb.target.name:"MIDI DEVICE"):"";
+    for(const char *p=peer;*p;p++)head=head*31u+(uint8_t)*p;
+    if(full || head!=prev_head){
+        cv_begin(240,74,T_BG);
+        cv_text(4,2,&AF_S,"K1 RADIO",T_TEXT);
+        cv_text_r(115,2,&AF_M,mb.on?"ON":"OFF",T_VALUE,T_BG);
+        cv_text(124,2,&AF_S,"K2 SCAN",T_TEXT);
+        cv_text_r(236,2,&AF_M,mb.scanning?"ON":"OFF",T_VALUE,T_BG);
+        cv_rect(0,24,240,1,RGB(58,58,58));
+        cv_text(4,29,&AF_S,"STATUS",T_TEXT);
+        cv_text_r(236,29,&AF_M,status,T_VALUE,T_BG);
+        cv_free_text(4,48,&AF_M,peer,T_TEXT,T_BG,232);
+        cv_blit(0,0);
+        prev_head=head;
+    }
+    if(full){
+        cv_begin(240,18,RGB(58,58,58));
+        cv_text(4,2,&AF_S,"NO.",T_TEXT);
+        cv_text(34,2,&AF_S,"MIDI DEVICE",T_TEXT);
+        cv_text_r(236,2,&AF_S,"SIGNAL",T_TEXT,RGB(58,58,58));
+        cv_blit(0,74);
+    }
+    for(uint32_t i=0;i<4u;i++){
+        uint32_t row=mb_pick/4u*4u+i,selected=row==mb_pick && row<mb.count;
+        const struct ble_found *f=row<mb.count?&mb.found.e[mb.idx[row]]:0;
+        const char *name=f?(f->name[0]?f->name:"UNNAMED"):(!i && !mb.count?(mb.on?"NO DEVICES FOUND":"RADIO OFF"):"");
+        uint32_t bars=f?ble_scan_bars(&mb.found,mb.idx[row]):0u;
+        uint32_t sig=1u+row*8u+selected*4u+bars;
+        for(const char *p=name;*p;p++)sig=sig*31u+(uint8_t)*p;
+        if(!full && sig==prev_rows[i])continue;
+        prev_rows[i]=sig;
+        uint16_t bg=selected?T_VALUE:(i&1u?RGB(23,23,23):RGB(36,36,36));
+        uint16_t ink=selected?T_INK:T_TEXT;
+        cv_begin(240,24,bg);
+        if(f){
+            char num[4];fmt_int(num,row+1u);
+            cv_text(4,CAP_IN(M,24),&AF_M,num,ink);
+            for(uint32_t j=0;j<3u;j++)
+                cv_rect(211+j*8u,18-(j+1u)*4u,5,(j+1u)*4u,j<bars?(selected?T_INK:T_VALUE):RGB(70,70,70));
+        }
+        cv_free_text(34,CAP_IN(M,24),&AF_M,name,ink,bg,172);
+        cv_blit(0,92+i*24u);
+    }
+    uint32_t bottom=code;
+    if(full || bottom!=prev_bottom){
+        cv_begin(240,34,T_BG);
+        if(code!=BLE_NO_PASSKEY){
+            char pass[7];pass[6]=0;
+            for(int i=5;i>=0;i--){pass[i]=(char)('0'+code%10u);code/=10u;}
+            cv_text(4,1,&AF_S,"PAIRING CODE",T_TEXT);
+            cv_text_r(236,1,&AF_M,pass,T_VALUE,T_BG);
+        }else{
+            cv_text(4,1,&AF_S,"K3 SELECT DEVICE",T_TEXT);
+            cv_text(4,17,&AF_S,"K4 CONNECT > / DROP <",T_TEXT);
+        }
+        cv_blit(0,188);
+        prev_bottom=bottom;
+    }
+    if(full){
+        cv_begin(240,18,T_BG);
+        cv_rect(3,1,43,16,T_VALUE);
+        cv_text_in(5,1,39,&AF_S,"GLO",T_INK,T_VALUE);
+        cv_rect(48,1,65,16,RGB(58,58,58));
+        cv_text_in(51,1,59,&AF_S,"SYSTEM",T_TEXT,RGB(58,58,58));
+        cv_text(117,1,&AF_S,"BLUETOOTH",T_VALUE);
+        cv_text_r(237,1,&AF_S,"8/8",T_VALUE,T_BG);
+        cv_blit(0,222);
+    }
+    ui.force=0;
 }
