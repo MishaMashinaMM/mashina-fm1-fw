@@ -627,7 +627,7 @@ console.log("PASS: full-device MPR1 validation, strict archive equality, 32-sect
   const saved=collectionFile("user",many);
   assert.equal(readCollection("user",JSON.parse(JSON.stringify(saved))).length,2200);
   assert.equal(readCollection("user",{...saved,entries:[...saved.entries,many[0]]}).length,2200);
-  assert.throws(()=>readCollection("library",saved),/does not match/);
+  assert.deepEqual(readCollection("library",saved),readCollection("user",saved));
   const projects=Array.from({length:1200},(_,i)=>({name:"Project "+i,sections:[encodeProject({section:0,refs:[32,255,255,255,255,255],name:"P"+i,settingsBytes:[i&255,i>>8]}),null,null,null]}));
   assert.equal(readCollection("projects",collectionFile("projects",projects)).length,1200);
   assert.ok(projectCollectionFromSections(composed.projects).some(p=>p.sections[3]&&decodeProject(p.sections[3]).name==="COMPOSED"));
@@ -723,4 +723,42 @@ await assert.rejects(restoreFullDevice(async(cmd,args,opts)=>{
 assert.equal(forbiddenWrites,0);
 console.log("PASS: expanded LIBRARY 128 capture, restore, delta and geometry guard");
 
+}
+
+/* Automatic connect read: two complete consistent snapshots, no writes,
+ * and fail before marking ready if the device changes between reads. */
+{
+  const {captureVerifiedFullDevice}=await import("../web/full-device-backup.mjs");
+  const {renameSoundRecord}=await import("../web/presets-library-codec.mjs");
+  const {renameProjectRecord}=await import("../web/projects-library-codec.mjs");
+  mockLibrarySlots=96;
+  const phases=new Set();let writes=0;
+  const observed=async(cmd,args,opts)=>{if([67,92,93].includes(cmd))writes++;return mock(cmd,args,opts);};
+  const stable=await captureVerifiedFullDevice(observed,"FM1",(phase)=>phases.add(phase.split(" · ")[0]));
+  assert.deepEqual([...phases],["READ","VERIFY"]);
+  assert.equal(writes,0);
+  const original=mockLib.get(95);
+  let passes=0;
+  await assert.rejects(captureVerifiedFullDevice(async(cmd,args,opts)=>{
+    if(cmd===65&&++passes===2)mockLib.set(95,Uint8Array.from(renameSoundRecord(preset,"CHANGED")));
+    return observed(cmd,args,opts);
+  }),/libraryPresets changed/);
+  if(original)mockLib.set(95,original);else mockLib.delete(95);
+  assert.equal(writes,0);
+  const libraryPlan=planLibraryLayout(stable,[{slot:95,recordBytes:renameSoundRecord(stable.libraryPresets[95],"NEW NAME")}]);
+  assert.deepEqual(libraryPlan.expected.libraryPresets[95].slice(16),stable.libraryPresets[95].slice(16));
+  assert.deepEqual(libraryPlan.expected.projects,stable.projects);
+  const projectIndex=stable.projects.findIndex(Boolean);
+  assert(projectIndex>=0);
+  const sections=stable.projects.slice();
+  sections[projectIndex]=renameProjectRecord(sections[projectIndex],"NEW NAME");
+  const projectPlan=planProjectRestore(stable,{format:"mashina-projects-mpr1",version:1,projects:8,sectionsPerProject:4,sections},[projectIndex]);
+  assert.deepEqual(decodeProject(projectPlan.expected.projects[projectIndex]).refs,decodeProject(stable.projects[projectIndex]).refs);
+  assert.deepEqual(decodeProject(projectPlan.expected.projects[projectIndex]).settingsBytes,decodeProject(stable.projects[projectIndex]).settingsBytes);
+  const userSlot=stable.userPresets.findIndex(Boolean);
+  assert(userSlot>=0);
+  const userPlan=planUserLayout(stable,[{slot:userSlot,recordBytes:renameSoundRecord(stable.userPresets[userSlot],"NEW NAME")}]);
+  assert.deepEqual(userPlan.expected.userPresets[userSlot].slice(16),stable.userPresets[userSlot].slice(16));
+  assert.deepEqual(userPlan.expected.projects,stable.projects);
+  console.log("PASS: automatic capture compares complete reads, refuses mid-read changes, zero writes, rename plans preserve references and sound bytes");
 }

@@ -83,6 +83,9 @@ dialog h2{font-size:21px;margin:0 0 14px;color:var(--orange)}
 .op-warning{border-top:1px solid #444;margin-top:16px;padding-top:12px;color:#ffba79;font-size:13px}
 .op-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 #confirmation,#collection-save-dialog{border-color:#96631f}
+.slot-panel td:has(button[aria-label^="Double-click"]){position:relative;padding-right:25px}
+.slot-panel td>button[aria-label^="Double-click"]{position:absolute;right:2px;top:50%;transform:translateY(-50%);min-height:18px;font-size:12px;padding:0 3px;background:transparent;border:0;color:var(--muted)}
+.slot-panel td>button[aria-label^="Double-click"]:hover{color:var(--orange)}
 #collection-filename,#rename-input{width:100%;min-height:36px;padding:8px 10px;font:inherit;color:#eee;background:#151515;border:1px solid #666;border-radius:4px}
 #collection-filename-error,#rename-error{color:#ffba79;min-height:1.4em;margin:5px 0;font-size:12px}
 #confirm-choice{width:100%;margin-top:10px;color:#eee;background:#151515;border:1px solid #666;border-radius:4px;min-height:36px;padding:7px 10px;font:inherit}
@@ -203,7 +206,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="row collection-pager"><button id="projects-prev">‹</button><span id="projects-page" class="fine"></span><button id="projects-next">›</button><span id="projects-selection-count" class="fine" title="Ctrl-click selects individual items; Shift-click selects a range; Ctrl+A selects all filtered items; Escape clears selection."></span></div>
 <div class="row"><button id="projects-export" disabled>Export device projects</button><button id="projects-all" disabled>Select changed sections</button></div></div><div class="panel project-actions"><h3>PROJECT write queue</h3><p id="projects-impact" class="fine impact"></p><div class="row"><button id="projects-apply" class="primary" disabled>Write PROJECT changes</button><button id="projects-clear">Clear selection</button></div></div></div>
 </div></section>
-<section id="tab-backup"><div class="section-head"><h2>BACKUP</h2><p>Complete logical device backups. Keep your original JSON files.</p></div><div class="backup-grid">
+<section id="tab-backup"><div class="section-head"><h2>BACKUP</h2><p>Read and verify device data automatically; save or write a complete backup when needed.</p></div><div class="backup-grid">
 <div class="panel"><h3>1 · Current device backup</h3><p>32 USER, 32 or 96 LIBRARY, 32 sections, current performance and settings. Connecting automatically reads and verifies the complete device in memory. Save a JSON file only when you choose to.</p><div class="row"><button id="backup-capture" class="primary" disabled>Save complete backup</button><button id="backup-refresh" disabled>Refresh device data</button></div><p id="backup-summary">No device snapshot.</p></div>
 <div class="panel"><h3>2 · Write a complete backup</h3><p class="warn">Only changed records are written. An interrupted transfer may leave partial state. You can save the current backup before writing if desired.</p><label class="field">Choose source complete backup (.json)<input id="full-import" type="file" accept=".json"></label><p id="full-impact" class="impact">No source selected.</p><button id="full-apply" class="primary" disabled>Write complete backup</button></div>
 <div class="panel"><h3>3 · Performance file</h3><p>Save all USER, LIBRARY, project sections, current performance and device settings as one restorable file, including staged changes. Or open a saved file offline and arrange it without connecting FM1.</p><div class="row"><button id="performance-save" class="primary" disabled>Save complete performance</button><button id="performance-open" disabled>Open source offline</button><button id="performance-close" disabled>Close offline workspace</button></div><p id="performance-status" class="fine"></p></div>
@@ -737,7 +740,7 @@ async function readConnectedDevice(connection){
   const f=await captureVerifiedFullDevice(connection.request,connection.name,progress);
   if(dev!==connection||!connection.connected)throw Error("FM1 disconnected during data read.");
   acceptSnapshot(f,{checked:true});
-  status("FM1 data verified. Ready to edit and write changes. No file downloaded.","ok");
+  status(writable?"FM1 data verified. Ready to edit and write changes. No file downloaded.":"FM1 data verified. Device is read-only.","ok");
 }
 function ready(){return !!(dev?.connected&&writable&&verified&&!busy);}
 function sources(bank){

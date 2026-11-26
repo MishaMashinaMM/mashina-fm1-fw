@@ -61,6 +61,9 @@ jobs:
           node tests/factory_catalog_complete_test.mjs build/host/factory-drum-records.json
           node tests/factory_catalog_selection_test.mjs
           node tests/lib96_clean_trial_test.mjs
+          node tests/performance_backup_test.mjs
+          node tests/web_library_manager_test.mjs
+          node tests/full_device_backup_test.mjs
           # Construct an untagged package with the same app for the real loader
           # host test. No second package is distributed.
           python3 - <<'PY'
