@@ -141,7 +141,7 @@ WAVE/MIX はオシレーターの混合、CUT/RES はフィルター、GRIND/MET
 
 合計 **8 ボイスを全トラックとドラム音源で共有**します。BRASS にはさらに **1 トラック最大 4 ボイス**の上限があります。音が途切れる場合は同時のレイヤーや和音数を減らしてください。
 
-### v0.14 のファクトリー音色
+### v0.15 のファクトリー音色
 
 新しいファクトリーバンクは ANALOG 20 音色、INDUSTRIAL 12 音色、BRASS 5 音色、ATMOS 8 音色に加え、PHASE、WHEEL、NOISE、FM6、VOICE、LOFI も更新しました。多くのプリセット名は、歴史上のさまざまな時代の哲学者や思想家に由来します。DRUM-X: BUTTLER-1…9、DRUM-LAB: ZIZEK-1…3、DRUM-AC: KRIPKE-1…3、DRUM-IND: BADIOU-1…3。
 
@@ -150,7 +150,7 @@ WAVE/MIX はオシレーターの混合、CUT/RES はフィルター、GRIND/MET
 
 トラックと音源を選び、**EDIT** を開きます。SELECT で EDIT ページを移動し、K1〜K4 で調整します。
 
-### JIANT から継承した音源
+### メロディー音源
 
 次の 8 音源も MASHINA で使用できます。まずプリセットを選び、EDIT で音を変えてください。
 
@@ -391,9 +391,9 @@ EQ は **エフェクト前に置かれた全体共通の 1 つの EQ** で、�
 
 ## 7. プリセット管理と Web Library
 
-### 固定 64 音色スロット
+### 固定 128 音色スロット
 
-**USER 001–032**（MIDI Program Change 0–31）は FM1 で編集・保存できる音色。**LIBRARY 033–064**（PC 32–63）は Web Library で入れ替え、工場音色に戻せる 32 音色です。**SAVE → PRESETS** で K4 が BANK: ALL / USER / LIB、K1 と PRESETS エンコーダーが番号、K2 は音源選択、K3 はお気に入り登録／解除です。空 USER の番号も固定です。編集した音色は先に USER へ保存してください。オフラインカタログには FM6 やドラムキットを含む完全な 107 音色があります。
+**USER 001–032**（MIDI Program Change 0–31）は FM1 で編集・保存できる音色。**LIBRARY 033–128**（PC 32–127）は Web Library で入れ替え、工場音色に戻せる 96 音色です。**SAVE → PRESETS** で K4 が BANK: ALL / USER / LIB、K1 と PRESETS エンコーダーが番号、K2 は音源選択、K3 はお気に入り登録／解除です。空 USER の番号も固定です。編集した音色は先に USER へ保存してください。オフラインカタログには FM6 やドラムキットを含む完全な 107 音色があります。
 
 ### FM1 で編集したプリセットを保存
 
@@ -405,15 +405,19 @@ EQ は **エフェクト前に置かれた全体共通の 1 つの EQ** で、�
 
 ### Web Library と完全バックアップ
 
-デスクトップ Chrome または Edge で [MASHINA Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) を開き、USB MIDI で接続します。転送中は演奏を停止してください。BACKUP で **Backup complete FM1** をダウンロードし、同じ JSON を **Verify saved complete backup** で選びます。セッション内で確認は一度だけ。正常な書き込み後は検証済みバックアップが自動ダウンロードされ、失敗・予期しない変更・切断時は再びロックされます。
+[MASHINA Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) — Chrome / Edge, USB MIDI.
 
-USER/LIBRARY で JSON を読み込み、検索・絞り込み、工場／デバイス音色を選択できます。番号へドラッグして置換、スロット間のドラッグで移動・交換します。Ctrl クリックで個別選択、Shift クリックで範囲、Ctrl+A で絞り込み全件（他ページも）または使用中のスロット、Esc で解除。選択グループは連続した位置に入り、全件入らない場合は一切変更を準備しません。移動先の音色は空いた元の位置へ交換します。右リストへドラッグし **Save collection** で数千音色やプロジェクトも JSON 保存可能です。キューと参照先を確認して Apply/Restore を押します。現在の音色を置換すると演奏設定が再読み込みされます。
+BACKUP で **Connect FM1** を押します。ダイアログで自動読み込みと確認の進行状況を表示します。完了まで待ってください。**Save complete backup** を押した場合だけファイルを保存します。書き込み後のデータは自動更新されます。ブラウザー外で FM1 を変更した場合は **Refresh device data** を使用します。
 
-PROJECTS では A–D 全体または個別のチップをドラッグします。番号参照なので必要な音色を導入してください。BACKUP の **Save complete performance** は USER、LIBRARY、8 プロジェクト、現在の演奏、設定と準備中の変更を 1 ファイルへ保存します。オフラインで開いて編集し、**Restore complete FM1** で復元します。明示的な Apply/Restore だけが書き込みます。コレクションは完全バックアップではありません。[Web Library ガイド](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html) を参照してください。USB ポート名は **MASHINA** です。必要なら DAW で再選択してください。
+**Add factory sounds** または **Add device sounds** で Available presets に追加します。**Import JSON** は結合、**Open collection** は一覧の置換です。× または **Remove selected** で削除します。**Save collection** で名前を入力し、残りの一覧全体を保存します。同じ音色コレクションを USER と LIBRARY の両方で使用できます。名前をダブルクリックすると行内で編集でき、Enter または欄外クリックで確定、Escape でキャンセルします。名前は印字可能 ASCII 1–12 文字。機器の変更は **Write USER changes**、**Write LIBRARY changes**、**Write PROJECT changes** で書き込みます。オフラインの編集は即時反映されます。プロジェクトの名前を変更すると使用中の A–D セクションも変更されます。
+
+USER/LIBRARY で JSON を読み込み、検索・絞り込み、工場／デバイス音色を選択できます。番号へドラッグして置換、スロット間のドラッグで移動・交換します。Ctrl クリックで個別選択、Shift クリックで範囲、Ctrl+A で絞り込み全件（他ページも）または使用中のスロット、Esc で解除。選択グループは連続した位置に入り、全件入らない場合は一切変更を準備しません。移動先の音色は空いた元の位置へ交換します。右リストへドラッグし **Save collection** で数千音色やプロジェクトも JSON 保存可能です。キューと参照先を確認して Write を押します。現在の音色を置換すると演奏設定が再読み込みされます。
+
+PROJECTS では A–D 全体または個別のチップをドラッグします。番号参照なので必要な音色を導入してください。BACKUP の **Save complete performance** は USER、LIBRARY、8 プロジェクト、現在の演奏、設定と準備中の変更を 1 ファイルへ保存します。オフラインで開いて編集し、**Write complete backup** で復元します。明示的な Write だけが書き込みます。コレクションは完全バックアップではありません。[Web Library ガイド](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html) を参照してください。USB ポート名は **MASHINA** です。必要なら DAW で再選択してください。
 
 ### 初回導入
 
-v0.14 は新しい保存形式を使用します。以前の音色、プロジェクト、設定は移行されないので必要なデータを事前保存してください。[インストーラー](../webapp/installer/) の後、要求されたデバイスだけ [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) で一度消去を確認し、再起動後 Web Library を開きます。互換性のある 32+32 更新ではデータが保持されます。初期化済みの FM1 は再初期化しないでください。直接更新できない場合は公式 V15 を経由します。
+[インストーラー](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) を使用し、FM1 が起動するまで電源を入れたままにします。他のファームウェアや互換性のない旧版（v0.14 を含む）から v0.15 を導入すると、音色、プロジェクト、設定が自動消去されます。必要なデータを先に保存してください。互換更新はデータを保持します。追加の初期化は不要です。
 
 ## 8. ライブ設定の例
 
@@ -429,4 +433,4 @@ v0.14 は新しい保存形式を使用します。以前の音色、プロジ�
 
 ---
 
-MASHINA v0.14 · M-VAVE FM1
+MASHINA v0.15 · M-VAVE FM1

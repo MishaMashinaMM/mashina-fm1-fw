@@ -1,10 +1,10 @@
-# MASHINA — FM1 Performance Firmware v0.14
+# MASHINA — FM1 Performance Firmware v0.15
 
 **MASHINA** turns the **M-VAVE FM1** into a six-track sound module designed for **external MIDI keyboards, pad controllers and live performance**. Play multiple sounds together, split a keyboard into zones, shape sounds while performing and recall projects quickly.
 
 Developed by **Misha Mashina**, based on [JIANT by Juan Ignacio Antonucci (Juan Jiant)](https://github.com/juanjiant-bit/JIANT) and [Felucca](https://github.com/hugelton/Felucca). Free software under **GPL-3.0-only**.
 
-![MASHINA v0.14 — 64 presets, Web Library, MIDI routing and live controls](docs/mashina-overview.svg?v=0.14)
+![MASHINA v0.15 — 128 presets, Web Library, MIDI routing and live controls](docs/mashina-overview.svg?v=0.15)
 
 ### MASHINA online
 
@@ -27,10 +27,10 @@ MASHINA is a **live-performance instrument** for the FM1: six independently conf
 | **Live drum performance controls** | Per-pad **PAN**, **PITCH ±24 semitones**, velocity curve and response, choke groups, and overlap/restart retrigger behavior on all four drum engines. |
 | **Hands-on MIDI control** | **32 project-specific CC macros** alongside MIDI Learn; assign controller knobs, pads and pedals to sound parameters. Dedicated MIDI CC commands provide sound randomization/reset and live channel switching for T1–T3. |
 | **Sound shaping and effects** | Engine-specific EDIT controls, envelopes, LFO and modulation, track FX/sends, a **shared three-band EQ before effects**, and a master DJ Filter on the mixer. |
-| **64 replaceable presets** | **32 USER (001–032)**, editable on the FM1, and **32 LIBRARY (033–064)** factory-backed sounds, replaceable without reflashing. Full 107-sound catalog in Web Library, including FM6 and all drum kits. MIDI PC 0–63. |
+| **128 replaceable presets** | **32 USER (001–032)**, editable on the FM1, and **96 LIBRARY (033–128)** factory-backed sounds, replaceable without reflashing. Full 107-sound catalog in Web Library, including FM6 and all drum kits. MIDI PC 0–127. |
 | **8 projects × 4 sections (A–D)** | Each section references up to six preset slots and stores independent routing, zones, tuning, timing, mixer, effects and macros. Replace a preset once and every referencing project uses the new sound. Instant recall via **REC + FX / SEL / ENV / LFO**. |
 | **Streamlined performance UI** | High-contrast orange-and-gray interface, clear track activity indicators, dedicated **SEQ** and **PLAY** drum pages, and a **GLO + OCT− panic shortcut** for immediate silence. No song sequencer or decorative UI animations. |
-| **Web Library and complete performances** | Drag, multi-select, swap and replace presets and whole projects; save unlimited offline JSON collections or one complete performance file, arrange it offline, and restore it to FM1. Verified backups and read-back after writes. |
+| **Web Library and complete performances** | Drag, multi-select, swap, rename and replace presets and projects. Build reusable offline sound collections and complete performance files, then write them to FM1. Automatic device reading and verification; save backups only when desired. |
 | **USB identity** | Appears as **MASHINA** in MIDI devices and DAWs. |
 
 MASHINA **inherits selected sound and drum synthesis engines from JIANT**, built on Felucca, while combining them with its own engines, MIDI performance controls, drum features, project workflow and redesigned interface. The result is a substantially different firmware rather than a collection of additions to JIANT.
@@ -57,9 +57,9 @@ For **DRUM-X, DRUM-LAB, DRUM-AC and DRUM-IND**, select an individual pad in **SE
 
 ## Preset banks and Web Library
 
-**USER** stores 32 editable sounds; **LIBRARY** stores 32 factory-backed positions, all replaceable through the browser. **SAVE → PRESETS → BANK** selects ALL, USER or LIB. Projects store slot references; save edited sounds to USER before saving projects.
+**USER** stores 32 editable sounds; **LIBRARY** stores 96 factory-backed positions, all replaceable through the browser. **SAVE → PRESETS → BANK** selects ALL, USER or LIB. Projects store slot references; save edited sounds to USER before saving projects.
 
-The [Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) provides four workspaces: USER, LIBRARY, PROJECTS and BACKUP. Connect and verify a complete backup once, drag individual or Ctrl/Shift-selected groups to numbered destinations, review the changes and Apply. Successful writes automatically verify the resulting state and download an updated backup. Create independent collections of thousands of presets or projects, or save a single full performance containing all sound slots, project sections, live state and settings. See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html) and [Preset management and Web Library in the user manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/?lang=en#en-7-preset-management-and-web-library).
+The [Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) opens on BACKUP. Click **Connect FM1** to read and verify the device automatically. In USER, LIBRARY and PROJECTS, drag individual or Ctrl/Shift-selected groups, swap positions and rename directly in the list. Review the pending changes and click the corresponding **Write** button. Build your own offline collections: import, open, remove and rename sounds, then save a named JSON file. The same sound collection works in both USER and LIBRARY. Save a complete backup or a complete performance, including pending changes, whenever needed. See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html) and [user manual](https://mishamashinamm.github.io/mashina-fm1-fw/manual/?lang=en#en-7-preset-management-and-web-library).
 
 The offline melodic catalog contains 20 ANALOG presets (including CICERO and PLUTARCH), 12 INDUSTRIAL, 5 BRASS and 8 ATMOS, alongside custom PHASE, WHEEL, NOISE, VOICE, LOFI and FM6 sounds. The four drum engines retain their synthesis and have renamed factory kits: **BUTTLER-1–9** (DRUM-X), **ZIZEK-1–3** (DRUM-LAB), **KRIPKE-1–3** (DRUM-AC) and **BADIOU-1–3** (DRUM-IND).
 
@@ -75,9 +75,9 @@ Many factory presets are named after philosophers and thinkers from different pe
 
 Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/)** to install MASHINA with a compatible desktop browser, or **[try the emulator](https://mishamashinamm.github.io/mashina-fm1-fw/emu/)** without flashing your device. The **[web editor](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/editor/)** supports live sound editing; use Web Library for complete device backups and preset/project management.
 
-**First installation:** v0.14 is a new storage layout, not a migration from another firmware. Back up any old data you want to keep using its own tools. After flashing, use [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) only if requested; explicitly confirm the one-time erase, then reboot. Already initialized 32+32 devices retain their data on compatible updates. If direct updating is unsupported by your old firmware, use the official V15 recovery path first.
+**Installation:** flash MASHINA using the web installer and keep FM1 powered until it starts. Installing from another firmware or an incompatible older MASHINA version (including v0.14) clears presets, projects and settings automatically. Save anything you want to keep first. Compatible updates retain existing data. No separate initialization is required.
 
-**Current version:** v0.14.
+**Current version:** v0.15.
 
 ## Credits and licensing
 

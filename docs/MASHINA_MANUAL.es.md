@@ -137,7 +137,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.14
+### Sonidos de fábrica en v0.15
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -146,7 +146,7 @@ El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS
 
 Elegí una pista y un motor, luego abrí **EDIT**. Girá **SELECT** para recorrer sus páginas y modificá los controles con K1–K4.
 
-### Motores de sonido heredados de JIANT
+### Motores de sonido melódicos
 
 Estos ocho motores siguen disponibles junto a los nuevos. Elegí un preset para escuchar su carácter y ajustá sus parámetros desde EDIT.
 
@@ -383,9 +383,9 @@ Mantené pulsado **REC** para entrar. Luego tocá **FX / SEL / ENV / LFO** para 
 
 ## 7. Gestión de presets y biblioteca web
 
-### 64 posiciones fijas de presets
+### 128 posiciones fijas de presets
 
-**USER 001–032** (Program Change 0–31): sonidos editables que se guardan en FM1. **LIBRARY 033–064** (PC 32–63): 32 sonidos de fábrica reemplazables desde la biblioteca web; se pueden restablecer. Abrí **SAVE → PRESETS**; K4 elige BANK: ALL / USER / LIB, K1 y el encoder PRESETS recorren posiciones, K2 selecciona el motor; K3 marca o desmarca el favorito. Las posiciones USER vacías conservan su número. Guardá cualquier sonido editado primero en USER. El catálogo offline incluye 107 sonidos completos, también kits y voces FM6.
+**USER 001–032** (Program Change 0–31): sonidos editables que se guardan en FM1. **LIBRARY 033–128** (PC 32–127): 96 sonidos de fábrica reemplazables desde la biblioteca web; se pueden restablecer. Abrí **SAVE → PRESETS**; K4 elige BANK: ALL / USER / LIB, K1 y el encoder PRESETS recorren posiciones, K2 selecciona el motor; K3 marca o desmarca el favorito. Las posiciones USER vacías conservan su número. Guardá cualquier sonido editado primero en USER. El catálogo offline incluye 107 sonidos completos, también kits y voces FM6.
 
 ### Guardar un preset editado en FM1
 
@@ -397,15 +397,19 @@ Cada proyecto tiene cuatro secciones, hasta seis referencias a presets numerados
 
 ### Biblioteca web y copias completas
 
-Abrí la [biblioteca web MASHINA](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) en Chrome o Edge de escritorio. Conectá por USB MIDI y detené la ejecución durante las transferencias. En BACKUP, descargá **Backup complete FM1** y seleccioná el mismo JSON en **Verify saved complete backup**. Basta una verificación por sesión: las escrituras correctas descargan automáticamente el nuevo respaldo verificado; una falla, cambio inesperado o desconexión vuelve a bloquear escrituras.
+[MASHINA Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) — Chrome / Edge, USB MIDI.
 
-En USER/LIBRARY importá JSON, buscá y filtrá fuentes o elegí sonidos de fábrica/del dispositivo. Arrastrá a una posición para reemplazarla o entre posiciones para mover/intercambiar. Ctrl-clic selecciona elementos, Shift-clic un rango, Ctrl+A todos los resultados del filtro (también otras páginas) o posiciones ocupadas, Escape limpia la selección. Arrastrá un grupo a posiciones consecutivas: si no entra entero, no se prepara ningún cambio. Los elementos desplazados van a las posiciones liberadas. Arrastrá elementos del dispositivo a la colección derecha y usá **Save collection** para guardar miles de sonidos o proyectos en JSON. Revisá la cola y referencias antes de Apply/Restore; los sonidos activos se recargan al reemplazarlos.
+En BACKUP pulsá **Connect FM1**. El diálogo muestra la lectura y verificación automáticas. Esperá a que termine. No se descarga ningún archivo salvo que pulses **Save complete backup**. Después de escribir, los datos se actualizan automáticamente. Usá **Refresh device data** si modificaste el FM1 fuera del navegador.
 
-En PROJECTS arrastrá proyectos A–D completos o una sección por su chip. Las referencias siguen siendo numéricas; instalá los sonidos necesarios. En BACKUP, **Save complete performance** guarda USER, LIBRARY, ocho proyectos, estado actual y ajustes, incluso cambios pendientes; se puede abrir y ordenar offline y restaurar después en FM1 con **Restore complete FM1**. Sólo Apply/Restore escribe. Una colección de presets o proyectos no es una copia completa. Consultá la [guía](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html). El puerto USB se llama **MASHINA**; volvé a seleccionarlo en el DAW si es necesario.
+Usá **Add factory sounds** o **Add device sounds** para añadir sonidos a Available presets. **Import JSON** combina colecciones y **Open collection** reemplaza la lista. Quitá con × o **Remove selected**. **Save collection** pide un nombre y guarda toda la lista restante. Una colección de sonidos sirve tanto en USER como en LIBRARY. Doble clic sobre un nombre permite editarlo directamente; Enter o clic fuera guarda, Escape cancela. Nombres de 1–12 caracteres ASCII imprimibles. Las ediciones del dispositivo se preparan hasta **Write USER changes**, **Write LIBRARY changes** o **Write PROJECT changes**; las offline son inmediatas. Cambiar el nombre del proyecto renombra las secciones A–D ocupadas.
+
+En USER/LIBRARY importá JSON, buscá y filtrá fuentes o elegí sonidos de fábrica/del dispositivo. Arrastrá a una posición para reemplazarla o entre posiciones para mover/intercambiar. Ctrl-clic selecciona elementos, Shift-clic un rango, Ctrl+A todos los resultados del filtro (también otras páginas) o posiciones ocupadas, Escape limpia la selección. Arrastrá un grupo a posiciones consecutivas: si no entra entero, no se prepara ningún cambio. Los elementos desplazados van a las posiciones liberadas. Arrastrá elementos del dispositivo a la colección derecha y usá **Save collection** para guardar miles de sonidos o proyectos en JSON. Revisá la cola y referencias antes de Write; los sonidos activos se recargan al reemplazarlos.
+
+En PROJECTS arrastrá proyectos A–D completos o una sección por su chip. Las referencias siguen siendo numéricas; instalá los sonidos necesarios. En BACKUP, **Save complete performance** guarda USER, LIBRARY, ocho proyectos, estado actual y ajustes, incluso cambios pendientes; se puede abrir y ordenar offline y restaurar después en FM1 con **Write complete backup**. Sólo Write escribe. Una colección de presets o proyectos no es una copia completa. Consultá la [guía](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html). El puerto USB se llama **MASHINA**; volvé a seleccionarlo en el DAW si es necesario.
 
 ### Instalación inicial
 
-v0.14 usa un formato nuevo. No migra presets, proyectos ni ajustes anteriores; guardá lo que quieras conservar antes de instalar. Después del [instalador](../webapp/installer/), usá [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) sólo si el dispositivo lo solicita. Confirmá el borrado único, reiniciá y abrí Web Library. Las actualizaciones compatibles conservan los datos 32+32. No inicialices un dispositivo ya inicializado. Si el protocolo de actualización no es compatible, volvé primero al V15 oficial.
+Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) y mantené el FM1 encendido hasta que arranque. Instalar v0.15 desde otro firmware o una versión anterior incompatible (incluida v0.14) borra automáticamente presets, proyectos y ajustes. Guardá lo que quieras conservar primero. Las actualizaciones compatibles conservan datos. No hace falta inicializar por separado.
 
 ## 8. Ejemplos para tocar en vivo
 
@@ -421,4 +425,4 @@ v0.14 usa un formato nuevo. No migra presets, proyectos ni ajustes anteriores; g
 
 ---
 
-MASHINA v0.14 · M-VAVE FM1
+MASHINA v0.15 · M-VAVE FM1

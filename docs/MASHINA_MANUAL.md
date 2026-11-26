@@ -98,7 +98,7 @@ Use TRN to shift one layer up or down and FINE to thicken two sounds played in u
 
 Select the track, choose a sound/engine with the preset controls, then open **EDIT**. Turn **SELECT** to access the available EDIT pages; K1–K4 adjust the labels shown on each page. Use ENV, LFO, FX, SCL and ARP for further shaping.
 
-### Existing JIANT sound engines
+### Melodic sound engines
 
 These engines are available alongside MASHINA's additions. Each has its own factory presets and EDIT parameters.
 
@@ -124,7 +124,7 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
-### Factory sounds in v0.14
+### Factory sounds in v0.15
 
 The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
 
@@ -328,12 +328,12 @@ Use **SAVE** for edited sounds, project slots and the library. A project stores 
 
 ## 7. Preset management and Web Library
 
-### 64 fixed preset positions
+### 128 fixed preset positions
 
 | Bank | Positions | MIDI Program Change (0-based) | Storage |
 | --- | --- | --- | --- |
 | USER | 001–032 | 0–31 | Edit and save sounds on FM1; replace, move or export them in Web Library |
-| LIBRARY | 033–064 | 32–63 | 32 factory-backed sounds; replace or restore factory defaults in Web Library |
+| LIBRARY | 033–128 | 32–127 | 96 factory-backed sounds; replace or revert to factory presets in Web Library |
 
 Open **SAVE → PRESETS**. K4 selects **BANK: ALL / USER / LIB**; K1 and the PRESETS encoder navigate positions; K2 selects an engine; K3 marks or unmarks the current favorite. USER positions stay numbered even when empty. LIBRARY sounds are loaded and played like USER sounds, but saving an edited sound requires a USER slot. The offline factory catalog contains 107 sounds, including complete FM6 voices and all four drum-kit types; choose any of them for a device slot. To keep edits to a sound, save the sound to USER first.
 
@@ -349,17 +349,19 @@ Projects store references to the numbered presets rather than copies of sounds. 
 
 Open the [MASHINA Web Library](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/) in desktop Chrome or Edge; connect via USB MIDI and stop playing during transfers. The left side contains device positions; the right side is an independent offline collection.
 
-1. In **BACKUP**, click **Backup complete FM1**, keep the downloaded JSON and select it under **Verify saved complete backup**. This unlocks writes for the session. After successful transfers the new verified backup is downloaded automatically; no repeated manual verification is needed. A failure, unexpected device change or disconnection locks writes again.
+1. Click **Connect FM1** in BACKUP. The progress dialog shows automatic reading and verification; wait until complete. No files are downloaded unless you choose **Save complete backup**. Successful writes update the displayed device data automatically. Use **Refresh device data** if you change the device outside the browser.
+
+Use **Add factory sounds** or **Add device sounds** to populate Available presets. **Import JSON** merges sounds; **Open collection** replaces the list. Remove with × or **Remove selected**. **Save collection** asks for a filename and saves the entire remaining list. A sound collection can be used in either USER or LIBRARY. Double-click a preset or project name to edit it inline; Enter or clicking outside saves, Escape cancels. Names use 1–12 printable ASCII characters. Device edits are staged until **Write USER changes**, **Write LIBRARY changes** or **Write PROJECT changes**; offline edits are immediate. Rename a project label to rename all occupied A–D sections.
 2. In **USER** or **LIBRARY**, import JSON, search and filter the source list, or choose factory/device sounds. Drag onto a numbered destination to replace it; drag between device slots to move or swap. LIBRARY overrides may be reset to their factory sound. The queue lists changes and affected project references. Applying changes to currently loaded sounds reloads the current performance. Stop playing before applying.
 3. Click one row, Ctrl-click to toggle individual items, Shift-click to select a range, Ctrl+A to select all matching source items (even on other pages) or occupied device positions, Escape to clear. Drag any selected item to place a group in consecutive destinations. If it cannot fit, nothing is staged. Device groups swap displaced items into vacated positions. Drag selected device rows into the collection and **Save collection** to keep them in JSON. Collections may contain thousands of sounds or projects, independent of the FM1 capacity.
 4. In **PROJECTS**, drag complete A–D projects or individual A–D chips into the destination project. References are numerical: ensure the corresponding sounds are installed. The saved project collection does not embed those sounds.
-5. In **BACKUP**, **Save complete performance** includes USER, LIBRARY overrides, all eight projects, current performance and settings, including staged edits. Open a complete file offline to arrange it without FM1; later use **Restore complete FM1** to restore it. Only explicit Apply/Restore actions write to the device.
+5. In **BACKUP**, **Save complete performance** includes USER, LIBRARY overrides, all eight projects, current performance and settings, including staged edits. Open a complete file offline to arrange it without FM1; later use **Write complete backup** to restore it. Only explicit Write actions write to the device.
 
 See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/guide.html) for backup/restore details. A preset or project collection is not a full device backup. The USB device now appears as **MASHINA**; reselect MIDI ports in your DAW if necessary.
 
 ### First installation and updates
 
-MASHINA v0.14 uses a new storage layout. Previous firmware's presets, projects and settings are not migrated; back up anything you want to keep before flashing. Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/), then [Initialize storage](https://mishamashinamm.github.io/mashina-fm1-fw/web-library/initialize.html) only if the device reports that first installation is required. Confirm the one-time erase, reboot, then open Web Library. Already initialized 32+32 devices must not be initialized again; compatible updates retain their data. The installer may require official V15 as an intermediate step when the current firmware's update protocol is not supported.
+Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) and leave FM1 powered until it starts. Installing v0.15 over another firmware or an incompatible older MASHINA version (including v0.14) automatically clears presets, projects and settings. Save anything you want to keep beforehand. Compatible updates retain data. No separate initialization is necessary.
 
 ## 8. Example live configurations
 
@@ -375,4 +377,4 @@ MASHINA v0.14 uses a new storage layout. Previous firmware's presets, projects a
 
 ---
 
-MASHINA v0.14 · M-VAVE FM1 · Usage reference
+MASHINA v0.15 · M-VAVE FM1 · Usage reference
