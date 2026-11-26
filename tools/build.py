@@ -460,12 +460,11 @@ def main():
         raise SystemExit("LIB96 requires the dedicated compile or one-device test target")
     if lib96_trial and not (
         os.environ.get("GITHUB_REF") == "refs/heads/presets-library-96"
-        and os.environ.get("MASHINA_LIB96_TRIAL") == "ONE-INITIALIZED-FM1-96"
-        and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"
+        and os.environ.get("MASHINA_LIB96_TRIAL") == "ONE-FM1-CLEAN-96"
     ):
         raise SystemExit("LIB96 test package requires explicit branch-only authorization")
     public_authorized = a.release == "0.14"
-    if public_authorized:
+    if public_authorized or lib96_trial:
         release_flags = {
             "FELUCCA_LIB32": "1", "FELUCCA_LIB32_WRITE": "1",
             "FELUCCA_PROJECT_REFS": "1", "FELUCCA_PROJECT_REFS_WRITE": "1",
@@ -476,7 +475,7 @@ def main():
         }
         for k, v in release_flags.items():
             if os.environ.get(k, v) != v:
-                raise SystemExit(f"v0.14 release requires {k}={v}")
+                raise SystemExit(f"{a.release} release requires {k}={v}")
             os.environ[k] = v
     elif os.environ.get("FELUCCA_PUBLIC_LAYOUT", "0") != "0":
         raise SystemExit("Public layout is reserved for the v0.14 release build")
@@ -528,9 +527,9 @@ def main():
             raise SystemExit("Update-only release requires initialized-layout write gate and no formatter")
     # The public release is a separately reviewed configuration, with an
     # explicit user-confirmed first-install action and permanent marker lock.
-    if public_authorized:
+    if public_authorized or lib96_trial:
         non_distributable = False
-    if lib96 and os.environ.get("FELUCCA_INITIALIZED_UPDATE") != "1":
+    if lib96_compile and os.environ.get("FELUCCA_INITIALIZED_UPDATE") != "1":
         raise SystemExit("LIB96 requires initialized-layout write gating")
     if non_distributable or lib96:
         (OUT / name).unlink(missing_ok=True)

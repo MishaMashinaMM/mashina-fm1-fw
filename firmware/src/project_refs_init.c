@@ -241,9 +241,14 @@ static int clean_layout_preflight(void)
 {
 #if FELUCCA_CLEAN_INSTALL_LAYOUT
     if(!flash_ok || transport_busy())return 2;
-    /* Exact 128+32 KiB application storage, no USR or other partitions. */
-    if(MPRS_BASE!=0xA0000u || MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR!=LIB_BASE ||
-       LIB_BASE+LIB_BANKS*2u*LIB_SECTOR!=0xC8000u)return 2;
+    /* Exact owned sectors only; expanded region ends before song index. */
+#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
+    if(LIB_BANKS!=12u || LIB_BASE+LIB_BANKS*2u*LIB_SECTOR!=0xD8000u)return 2;
+#else
+    if(LIB_BANKS!=4u || LIB_BASE+LIB_BANKS*2u*LIB_SECTOR!=0xC8000u)return 2;
+#endif
+    if(MPRS_BASE!=0xA0000u || MPRS_BANKS!=16u ||
+       MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR!=LIB_BASE || LIB_BASE!=0xC0000u)return 2;
 #if FELUCCA_PUBLIC_LAYOUT
     mprs_head_t marker;
     if(mprs_valid(0u,0u,&marker)||mprs_valid(0u,1u,&marker))return 1;

@@ -90,8 +90,8 @@
 #ifndef FELUCCA_LIB96
 #define FELUCCA_LIB96 0
 #endif
-#if FELUCCA_LIB96 && (!FELUCCA_INITIALIZED_UPDATE || !FELUCCA_LIB32 || !FELUCCA_FLASH || !FELUCCA_OTA || FELUCCA_PUBLIC_LAYOUT || FELUCCA_CLEAN_INSTALL_LAYOUT)
-#error "LIB96 is restricted to initialized-layout engineering builds without formatter"
+#if FELUCCA_LIB96 && ((!FELUCCA_INITIALIZED_UPDATE && !FELUCCA_PUBLIC_LAYOUT) || !FELUCCA_LIB32 || !FELUCCA_FLASH || !FELUCCA_OTA)
+#error "LIB96 requires a guarded initialized-update or clean-install layout"
 #endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 1            /* USB CDC-ACM serial console */

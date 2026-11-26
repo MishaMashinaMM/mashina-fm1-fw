@@ -35,17 +35,20 @@ jobs:
             retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
             (cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin && retry git checkout d179b4484759423312073f5fbb232501aa491047)
           fi
-      - name: Build authorized initialized-device test package
+      - name: Build authorized clean-install test package
         env:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
           FELUCCA_LIB96: "1"
-          MASHINA_LIB96_TRIAL: "ONE-INITIALIZED-FM1-96"
+          MASHINA_LIB96_TRIAL: "ONE-FM1-CLEAN-96"
           FELUCCA_LIB32: "1"
           FELUCCA_LIB32_WRITE: "1"
           FELUCCA_PROJECT_REFS: "1"
           FELUCCA_PROJECT_REFS_WRITE: "1"
-          FELUCCA_INITIALIZED_UPDATE: "1"
+          FELUCCA_INITIALIZED_UPDATE: "0"
+          FELUCCA_PUBLIC_LAYOUT: "1"
+          FELUCCA_PROJECT_REFS_FORMAT: "1"
+          FELUCCA_CLEAN_INSTALL_LAYOUT: "1"
         run: |
           python3 tools/build.py --release 0.14-lib96test
           python3 tools/check_app_flash_headroom.py
@@ -57,7 +60,7 @@ jobs:
           build/host/factory_drum_export > build/host/factory-drum-records.json
           node tests/factory_catalog_complete_test.mjs build/host/factory-drum-records.json
           node tests/factory_catalog_selection_test.mjs
-          node tests/lib96_trial_caps_test.mjs
+          node tests/lib96_clean_trial_test.mjs
           python3 web/make_site.py build/felucca-0.14-lib96test.fwsc 0.14-lib96test build/lib96-test
           python3 - <<'PY'
           from pathlib import Path
@@ -65,11 +68,13 @@ jobs:
           s=p.read_text()
           needle='  <p><button id="go" disabled data-t="install"></button></p>'
           assert needle in s
-          s=s.replace(needle,'  <p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL LIB96: one initialized 32+32 FM1 ONLY (v0.13-update or v0.14). Save and verify a complete 32+32 Web Library backup before installing. Do not use on an incompatible or uninitialized storage layout. Factory slot mappings changed. After flash, open <a href="../../web-library/expand.html">Expansion inspection</a>.</p>'+needle)
+          s=s.replace(needle,'  <p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL LIB96 CLEAN INSTALL: any compatible FM1 firmware. Existing data will be erased during initialization; export anything you want to retain first (optional). After flashing, open <a href="../../web-library/initialize.html">Initialize storage</a>, then power-cycle.</p>'+needle)
           p.write_text(s)
           for q in Path("build/lib96-test/webapp").glob("installer-orange-*/index.html"):q.write_text(s)
           PY
-          test -s build/lib96-test/web-library/expand.html
+          test -s build/lib96-test/web-library/initialize.html
+          grep -Fq "69 owned" build/lib96-test/web-library/initialize.html
+          grep -Fq "lib[1]===96" build/lib96-test/web-library/initialize.html
           test -s build/lib96-test/web-library/factory-drum-records.json
           printf '%s\n' "$GITHUB_SHA" > build/lib96-test/firmware/SOURCE_COMMIT
           cp docs/lib96-device-test.md build/lib96-test/READ-ME-FIRST.md

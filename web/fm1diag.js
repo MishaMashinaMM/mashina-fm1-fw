@@ -89,19 +89,12 @@ const fwName = (fw) => [fw.text, fw.version].filter(Boolean).join(" ");
  * -> "done" or "cancel"; anything else is thrown with a code */
 const otaOf = (up) => up.find((id) => /^ota-/i.test(id.model));
 
-export function lib96TrialCaps(lib,pr) {
-  return lib.length===3 && lib[0]===1 && lib[1]===32 && lib[2]===1 &&
-         pr.length===4 && pr[0]===1 && pr[1]===32 && pr[2]===1 && pr[3]===0;
-}
 export async function runInstall(ctx) {
   const { up, ui, state } = ctx;
   state.flow = "install";
+  if (ctx.cleanLib96Trial && !ctx.confirmTrialBackup?.()) throw new Error("Clean installation cancelled. Nothing written.");
   const ota = await otaOf(up);
   if (ota) {                                   // in update mode (an interrupted install): the write goes on
-    if (ctx.initializedLib96Trial) {
-      ota.link.close();
-      throw new Error("LIB96 trial refuses an unidentified update loader. Recover with the official v0.14 installer first.");
-    }
     ota.link.close();
     state.fw = { kind: "loader", text: ota.id.text };
     ui.say("resuming", ota.id.text);
@@ -111,26 +104,7 @@ export async function runInstall(ctx) {
   ui.say("checking");
   const fw = state.fw = await fwKind(up);
   if (fw.kind === "none") throw up.notFound();
-  if (ctx.initializedLib96Trial) {
-    // This is a private update-only experiment. Do not permit the ordinary
-    // installer path to accept stock or an uninitialized reference layout.
-    if (!fw.ports)
-      throw new Error("LIB96 trial requires a device with verifiable 32+32 storage capabilities.");
-    const link = new BackupConnection(fw.ports.input, fw.ports.output);
-    try {
-      const lib = await link.request([89, []], {timeout: 5000});
-      const pr = await link.request([95, []], {timeout: 5000});
-      if (!lib96TrialCaps(lib,pr))
-        throw new Error("LIB96 trial requires writable initialized 32+32 storage. No firmware was written.");
-    } finally { link.close(); }
-    if (!ctx.confirmTrialBackup?.())
-      throw new Error("LIB96 trial cancelled. No firmware was written.");
-    // The capability response, not an arbitrary version/brand string, is
-    // the criterion for this storage-preserving experimental update.
-    await up.install(ctx.image, ctx.product, ui.step);
-    return "done";
-  }
-  if (fw.kind === "stock" || fw.kind === "jiant") {
+  if (ctx.cleanLib96Trial || fw.kind === "stock" || fw.kind === "jiant") {
     await up.install(ctx.image, ctx.product, ui.step);
     return "done";
   }

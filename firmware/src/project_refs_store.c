@@ -15,7 +15,11 @@
 enum { MPRS_SECTOR=4096, MPRS_HEADER_OFF=256, MPRS_SLOTS=32,
        MPRS_BANKS=16, MPRS_PAIR=2, MPRS_BANK_BYTES=MPR_MAX_RECORD*2 };
 #define MPRS_BASE 0xA0000u
+#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
+#define MPRS_MAGIC 0x3253504Du /* MPS2: expanded physical layout */
+#else
 #define MPRS_MAGIC 0x3153504Du /* MPS1 */
+#endif
 _Static_assert(MPRS_BANK_BYTES<=MPRS_SECTOR-MPRS_HEADER_OFF,"two sections must fit flash");
 _Static_assert(MPRS_BASE+MPRS_BANKS*2u*MPRS_SECTOR==0xC0000u,"unexpected project flash reservation");
 
