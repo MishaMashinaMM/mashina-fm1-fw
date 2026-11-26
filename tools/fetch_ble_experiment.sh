@@ -131,4 +131,40 @@ replace("firmware/hal/fm1_ble.h",
     'static uint32_t fm1_ble_pll_tbl[81 * 3] __attribute__((section(".pool"), aligned(4)));',
     'static uint32_t fm1_ble_pll_tbl[81 * 3] __attribute__((aligned(4)));')
 
+# MASHINA is a controller host (central), not a discoverable MIDI peripheral.
+# Strip dormant advertising/accept-connection paths, retaining central
+# pairing, ATT, SMP, encryption and MIDI I/O.
+def body(path, signature, new):
+    p=Path(path)
+    s=p.read_text()
+    i=s.index(signature)
+    start=s.index("{",i)
+    level=1
+    end=start+1
+    while level:
+        level += (s[end]=="{")-(s[end]=="}")
+        end+=1
+    p.write_text(s[:start]+"{"+new+"}"+s[end:])
+body("firmware/src/ble/ble_ll.c", "static void ll_adv_start(void)", "\n    /* central-only */\n")
+body("firmware/src/ble/ble_ll.c", "BLE_API int ble_ll_hw_connect_ind(", "\n    (void)pdu; (void)len; return 0;\n")
+body("firmware/src/ble/ble_hw_wl82.c", "BLE_API void ble_hw_adv_start(", "\n    (void)a;\n")
+body("firmware/src/ble/ble_hw_wl82.c", "static void hw_rx_adv_isr(", "\n    (void)t0;\n")
+body("firmware/src/ble/ble_hw_wl82.c", "static void hw_rx_adv_late(", "\n")
+body("firmware/src/ble/ble_smp.c", "BLE_API void ble_smp_connected(void)\n", "\n    ble_smp_reset();\n")
+# Both links use the full central initiator pairing path.
+p=Path("firmware/src/ble/ble_smp.c")
+s=p.read_text()
+i=s.rindex("BLE_API void ble_smp_rx(")
+start=s.index("{",i)
+end=s.index("\n}\n",start)+2
+s=s[:start]+"{\n    if(n)smp_init_rx(p,n);\n}"+s[end:]
+p.write_text(s)
+# Remove unused peripheral advertising data construction.
+body("firmware/src/ble/ble_host.c", "BLE_API void ble_init(", """
+    gap_name(addr);
+    ble_ll_init(addr, addr_random);
+    ble_ll_advertise(0);
+    ble_att_reset();
+""")
+
 PY
