@@ -167,4 +167,58 @@ body("firmware/src/ble/ble_host.c", "BLE_API void ble_init(", """
     ble_att_reset();
 """)
 
+# Independent LL, host, ATT, SMP, GATT-client and central state. Use pointer
+# selection at IRQ/foreground boundaries, not a memory copy on every packet.
+# Shared scan report ring and local GAP name remain common to both links.
+import re
+for file, names in (
+    ("ble_ll.c", ("bll",)),
+    ("ble_ll_central.c", ("llc",)),
+    ("ble_host.c", ("bhs","bhs_key")),
+    ("ble_att.c", ("batt",)),
+    ("ble_smp.c", ("bsmp",)),
+    ("ble_central.c", ("bcen",)),
+    ("ble_gattc.c", ("bgc",)),
+):
+    p=Path("firmware/src/ble")/file
+    s=p.read_text()
+    for name in names:
+        old="} "+name+";"
+        new=("} "+name+"_bank[2];\n"
+             "static __typeof__("+name+"_bank[0]) *"+name+"_ptr="+name+"_bank;\n"
+             "#define "+name+" (*"+name+"_ptr)")
+        assert s.count(old)==1, (file,name)
+        s=s.replace(old,new)
+    p.write_text(s)
+replace("firmware/src/ble/ble_smp.c",
+    "static uint32_t smp_passkey = BLE_NO_PASSKEY;",
+    "static uint32_t smp_passkey_bank[2] = {BLE_NO_PASSKEY,BLE_NO_PASSKEY};\n#define smp_passkey (smp_passkey_bank[mashina_hw_link])")
+p=Path("firmware/src/ble/ble_hw_wl82.c")
+s=p.read_text()
+old="""    for(mashina_hw_link=0;mashina_hw_link<2u;mashina_hw_link++)
+        if(fm1_ble_rx_pending(HW_LINK))mashina_ble_rx_one();
+    mashina_hw_link=old;"""
+new="""    for(uint32_t i=0;i<2u;i++)
+        if(fm1_ble_rx_pending(i)){mashina_proto_select(i);mashina_ble_rx_one();}
+    mashina_proto_select(old);"""
+assert s.count(old)==1
+s=s.replace(old,new)
+old="""    for(mashina_hw_link=0;mashina_hw_link<2u;mashina_hw_link++){
+        if(fm1_ble_event_pending(HW_LINK))mashina_ble_event_one();
+        else if(FM1_BLE_G2EN & FM1_BLE_G2PND & (1u<<HW_LINK))fm1_ble_event_tail(HW_LINK);
+    }
+    mashina_hw_link=old;"""
+new="""    for(uint32_t i=0;i<2u;i++){
+        if(fm1_ble_event_pending(i)){mashina_proto_select(i);mashina_ble_event_one();}
+        else if(FM1_BLE_G2EN & FM1_BLE_G2PND & (1u<<i))fm1_ble_event_tail(i);
+    }
+    mashina_proto_select(old);"""
+assert s.count(old)==1
+s=s.replace(old,new)
+p.write_text(s)
+# Each scan now has its own LL state; reports still use the shared ring.
+replace("firmware/src/ble/ble_ll_central.c",
+    "if ((!mashina_hw_link && bll.state != LL_SCAN) || len < 8u || len > LL_REP_MAX)",
+    "if (bll.state != LL_SCAN || len < 8u || len > LL_REP_MAX)")
+
 PY

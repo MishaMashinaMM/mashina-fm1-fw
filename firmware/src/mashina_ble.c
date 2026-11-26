@@ -7,7 +7,15 @@
  * (relink), Mode VISIBLE advertises for a computer or phone. No USB echo/bridge and no wireless update SysEx. */
 /* Link 0 is the established controller; link 1 is a low-duty discovery experiment. */
 static uint8_t mashina_hw_link;
+static void mashina_proto_select(uint32_t);
 #include "ble/ble_stack.c"
+static void mashina_proto_select(uint32_t i)
+{
+    mashina_hw_link=(uint8_t)i;
+    bll_ptr=&bll_bank[i];llc_ptr=&llc_bank[i];bhs_ptr=&bhs_bank[i];
+    bhs_key_ptr=&bhs_key_bank[i];batt_ptr=&batt_bank[i];bsmp_ptr=&bsmp_bank[i];
+    bcen_ptr=&bcen_bank[i];bgc_ptr=&bgc_bank[i];
+}
 #include "ble/ble_vm.c"
 
 #define MBQ 32u
@@ -185,18 +193,19 @@ static void mb_relink(int on)
  * A low-duty active scan on a separate hardware instance tests radio coexistence. */
 static void mb_aux_scan(int on)
 {
-    mashina_hw_link=1;
+    mashina_proto_select(1);
     if(on && drv.state!=HW_SCAN){
         ble_scan_clear(&mb.found);mb.count=0;bscan.r=bscan.w;
         struct ble_hw_scan s;
         s.interval=160u; s.window=8u; s.active=1;
         s.own=mb_saved.addr; s.own_rand=1;
+        bll.state=LL_SCAN;
         ble_hw_scan_start(&s);
     }else if(!on && drv.state==HW_SCAN){
-        ble_hw_scan_stop();
+        ble_hw_scan_stop();bll.state=LL_OFF;
         bb.inst[1]=0;
     }
-    mashina_hw_link=0;
+    mashina_proto_select(0);
 }
 static int mel_ble_set(int on)
 {
@@ -210,8 +219,9 @@ static int mel_ble_set(int on)
         /* Complete pending display DMA before radio setup; feed the watchdog
          * ahead of calibration and park any second-core audio job. */
         mel_ble_radio_start(&mb.trims);
+        mashina_proto_select(1);ble_init(mb_saved.addr,1);mashina_proto_select(0);
         ble_init(mb_saved.addr, 1);
-        ble_ll_advertise(!!(mb_saved.flags & MB_VISIBLE));
+        ble_ll_advertise(0);
         if (mb_saved.bond[0] == 0xB5u && mb_saved.bond[1] == 1)
             ble_host_set_key(mb_saved.bond + 2, ble_rd16(mb_saved.bond + 10), mb_saved.bond + 12);
         mb.started = 1;
