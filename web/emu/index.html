@@ -103,8 +103,8 @@ footer small { font-size: 11px; opacity: .8; }
   </div>
   <p id="flash-status" role="status">Export includes all saved USER/LIBRARY presets, projects, settings and RESTORE LAST data. Select a JSON and choose Switch on for a temporary isolated session, or Restore permanently to replace browser saves after confirmation.</p>
   <details>
-    <summary>Import an older MASHINA / Jiant device backup instead</summary>
-    <label><span data-ml="backup">Mashina, Jiant Live Drums, Jiant Live or Jiant backup (.json):</span> <input id="backup-file" type="file" accept=".json,application/json"></label>
+    <summary>Import an older device backup instead</summary>
+    <label><span data-ml="backup">Device backup (.json):</span> <input id="backup-file" type="file" accept=".json,application/json"></label>
     <span data-ml="optional">Optional: select before Switch on. The backup is validated and loaded into an isolated session; existing browser saves and your original file are not changed.</span>
     <p id="backup-status" role="status" data-ml="none">No backup selected — normal emulator.</p>
   </details>
@@ -729,7 +729,7 @@ async function switchOn() {
           if (m.leds) drawLights(lastLeds = m.leds, m.anim);
           if (m.sectors && !backupMode && !flashSession && !saveFlash(m.sectors) && !warned) {
             warned = true;
-            console.warn("JIANT: this browser does not keep the saves; they last until the page closes.");
+            console.warn("MASHINA: this browser does not keep the saves; they last until the page closes.");
           }
         }
       };
@@ -743,7 +743,7 @@ async function switchOn() {
     document.getElementById("start").hidden = true;
     midiTestEnable(true);
     go.textContent = "On";
-    if (ac.sampleRate !== 44100) console.warn(`JIANT: the browser plays at ${ac.sampleRate} Hz, the pitch is off by ${(1200 * Math.log2(ac.sampleRate / 44100)).toFixed(0)} cents.`);
+    if (ac.sampleRate !== 44100) console.warn(`MASHINA: the browser plays at ${ac.sampleRate} Hz, the pitch is off by ${(1200 * Math.log2(ac.sampleRate / 44100)).toFixed(0)} cents.`);
     syncButtons();
     syncKeys();
     send({ type: "visible", on: !document.hidden });
