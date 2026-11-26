@@ -200,7 +200,7 @@ def main(pkg, version, out, prev=None):
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "factory-samples.json", "factory-voices.json", "FACTORY-VOICES.md", "FACTORY-SAMPLES.md"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
-    if version == "0.14":
+    if version in ("0.14", "0.14-lib96test"):
         library = out / "web-library"
         library.mkdir(parents=True, exist_ok=True)
         for src, dest in (("presets-library-manager.html", "index.html"), ("presets-library-guide.html", "guide.html"), ("initialize-library.html", "initialize.html")):
@@ -215,6 +215,10 @@ def main(pkg, version, out, prev=None):
         # DOM element for its harmless event binding, but do not expose a link.
         public_manager = library / "index.html"
         public_manager.write_text(public_manager.read_text(encoding="utf-8").replace('<div class="panel advanced">', '<div class="panel advanced" style="display:none">').replace('href="./advanced.html"', 'href="./guide.html"'), encoding="utf-8")
+        if version == "0.14-lib96test":
+            shutil.copy(HERE / "lib96-expand.html", library / "expand.html")
+            # No v0.14 first-install page on this update-only package.
+            (library / "initialize.html").write_text('<!doctype html><meta charset="utf-8"><h1>LIB96 update only</h1><p>Initialize v0.14 first, with the official v0.14 installer and library. Never format here.</p><a href="expand.html">Expansion inspection</a>', encoding="utf-8")
     shutil.copy(HERE / "404.html", out / "404.html")
     (out / "index.html").write_text(
         '<!doctype html><meta charset="utf-8"><title>MASHINA</title>'

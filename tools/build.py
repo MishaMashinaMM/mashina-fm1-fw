@@ -453,9 +453,17 @@ def main():
     # v0.14 is the first public reference-layout release. Explicitly
     # select the complete, mutually exclusive storage configuration here,
     # rather than silently distributing the old FUN storage build.
-    lib96_compile = os.environ.get("FELUCCA_LIB96", "0") == "1"
-    if lib96_compile != (a.release == "0.14-lib96"):
-        raise SystemExit("LIB96 requires the dedicated 0.14-lib96 compile-only target")
+    lib96 = os.environ.get("FELUCCA_LIB96", "0") == "1"
+    lib96_compile = a.release == "0.14-lib96"
+    lib96_trial = a.release == "0.14-lib96test"
+    if lib96 != (lib96_compile or lib96_trial):
+        raise SystemExit("LIB96 requires the dedicated compile or one-device test target")
+    if lib96_trial and not (
+        os.environ.get("GITHUB_REF") == "refs/heads/presets-library-96"
+        and os.environ.get("MASHINA_LIB96_TRIAL") == "ONE-INITIALIZED-FM1-96"
+        and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"
+    ):
+        raise SystemExit("LIB96 test package requires explicit branch-only authorization")
     public_authorized = a.release == "0.14"
     if public_authorized:
         release_flags = {
@@ -510,7 +518,7 @@ def main():
         and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"
     )
     if a.release == "0.13-update" or os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1":
-        if not (a.release in ("0.13-update", "0.14-lib96")
+        if not (a.release in ("0.13-update", "0.14-lib96", "0.14-lib96test")
                 and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"
                 and all(os.environ.get(k) == "1" for k in (
                     "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
@@ -522,9 +530,9 @@ def main():
     # explicit user-confirmed first-install action and permanent marker lock.
     if public_authorized:
         non_distributable = False
-    if lib96_compile and os.environ.get("FELUCCA_INITIALIZED_UPDATE") != "1":
+    if lib96 and os.environ.get("FELUCCA_INITIALIZED_UPDATE") != "1":
         raise SystemExit("LIB96 requires initialized-layout write gating")
-    if non_distributable or lib96_compile:
+    if non_distributable or lib96:
         (OUT / name).unlink(missing_ok=True)
         if a.release:
             shutil.rmtree(OUT / f"release-{a.release}", ignore_errors=True)

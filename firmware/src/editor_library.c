@@ -15,10 +15,46 @@ static uint32_t clean_arm_ms, clean_arm_usb;
 static uint8_t clean_arm_nonce, clean_armed;
 #endif
 
+#if FELUCCA_LIB96
+static uint32_t lib96_arm_ms,lib96_arm_usb;
+static uint8_t lib96_arm_nonce,lib96_armed;
+#endif
 static int ed_library_handle(uint32_t cmd, const uint8_t *args, uint32_t n)
 {
     uint8_t response[LIB_WIRE_MAX];
     uint32_t length;
+#if FELUCCA_LIB96
+    if(cmd==103u){ /* LIB96_PREPARE: read-only classify exactly 16 sectors */
+        uint8_t states[LIB96_SECTORS];
+        lib96_armed=0u;
+        if(n || !flash_ok || !clean_layout_normal_writes || transport_busy()){
+            ed_b(2u);return 1;
+        }
+        uint32_t rc=(uint32_t)lib96_reclaim_scan(states);
+        lib96_arm_ms=fm1_ms;lib96_arm_usb=usb.resets;
+        lib96_arm_nonce=(uint8_t)((fm1_ms^(fm1_ms>>7)^0x69u)&127u);
+        lib96_armed=(uint8_t)(rc==0u);
+        ed_b(rc);ed_b(lib96_arm_nonce);
+        for(uint32_t i=0;i<LIB96_SECTORS;i++)ed_b(states[i]);
+        return 1;
+    }
+    if(cmd==104u){ /* LIB96_COMMIT: one-shot, repeat preflight before erase */
+        static const uint8_t phrase[9]={'M','A','S','H','I','N','A','9','6'};
+        int ok=lib96_armed && n==10u && !memcmp(args,phrase,sizeof phrase) &&
+               args[9]==lib96_arm_nonce && lib96_arm_usb==usb.resets &&
+               (uint32_t)(fm1_ms-lib96_arm_ms)<=15000u;
+        lib96_armed=0u;
+        if(!ok || !clean_layout_normal_writes || !flash_ok)ed_b(1u);
+        else if(ed_flash_stop())ed_b(2u);
+        else {
+            uint32_t rc=(uint32_t)lib96_reclaim_apply();
+            library_metadata_boot();
+            ui.force=1;
+            ed_b(rc);
+        }
+        return 1;
+    }
+#endif
     if (cmd == 95u) { /* MPR1_CAP: 32 project sections, separate write gate */
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS
         if(n) {ed_b(127u);ed_b(1u);return 1;}

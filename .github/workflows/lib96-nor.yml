@@ -14,6 +14,8 @@ jobs:
           /tmp/lib32
           gcc -std=gnu11 -O2 -DMASHINA_LIB96_NOR_TEST tests/preset_library_storage_test.c -o /tmp/lib96
           /tmp/lib96
+          gcc -std=gnu11 -O2 tests/lib96_reclaim_test.c -o /tmp/lib96-reclaim
+          /tmp/lib96-reclaim
 
       - name: Prepare generated firmware assets
         run: |

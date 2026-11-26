@@ -148,6 +148,37 @@ static int lib_flash_erase(uint32_t addr)
     (void)addr; return -1;
 #endif
 }
+#if defined(FELUCCA_LIB96) && FELUCCA_LIB96 && FELUCCA_FLASH
+#include "lib96_reclaim.c"
+_Static_assert(LIB_BASE+LIB96_FIRST_BANK*2u*LIB_SECTOR==0xC8000u &&
+               LIB_BASE+LIB_BANKS*2u*LIB_SECTOR==0xD8000u,
+               "LIB96 expansion ownership changed");
+static void lib96_watchdog(void){fm1_wdt_feed();}
+static uint32_t lib96_sector_state(uint32_t index)
+{
+    uint8_t page[256];
+    lib_head_t lh;
+    st_hdr_t sh;
+    uint32_t bank=LIB96_FIRST_BANK+index/2u, copy=index%2u;
+    uint32_t base=lib_base(bank,copy), blank=1u;
+    if(index>=LIB96_SECTORS || !flash_ok)return L96_IO;
+    if(lib_valid(bank,copy,&lh))return L96_VALID;
+    for(uint32_t off=0;off<LIB_SECTOR;off+=sizeof page){
+        if(lib_flash_read(base+off,page,sizeof page))return L96_IO;
+        for(uint32_t k=0;k<sizeof page;k++)if(page[k]!=0xFFu)blank=0u;
+        fm1_wdt_feed();
+    }
+    if(blank)return L96_BLANK;
+    const uint32_t obj=OBJ_SONG1+16u+bank;
+    if(st_sector(obj,copy)==base && st_copy_valid(obj,copy,&sh))return L96_LEGACY;
+    return L96_UNKNOWN;
+}
+static int lib96_erase_sector(uint32_t index)
+{
+    if(index>=LIB96_SECTORS)return 1;
+    return lib_flash_erase(lib_base(LIB96_FIRST_BANK+index/2u,index%2u));
+}
+#endif
 static int lib_flash_prog(uint32_t addr, const void *src, uint32_t n)
 {
 #if defined(MASHINA_LIB_HOST_FLASH)

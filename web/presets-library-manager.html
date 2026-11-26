@@ -234,7 +234,7 @@ import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChange
 const $=id=>document.getElementById(id),eq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const num=n=>String(n).padStart(3,"0"),pLabel=i=>"P"+(Math.floor(i/4)+1)+":"+("ABCD"[i%4]);
 let dev=null,writable=false,needsInitialization=false,busy=false,snapshot=null,verified=null,pending=null,projectFile=null,fullSource=null;
-let factory=[],factoryFallbacks=[],factoryFallbackRecords=[],engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
+let factory=[],factoryFallbacksBySize={},factoryRecordsBySize={},engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
 let offlineWorkspace=false,collections={user:[],library:[],projects:[]},pages={user:0,library:0,projects:0},dragState=null;
 const PAGE_SIZE=50;
 const banks=["user","library","projects"];
@@ -243,6 +243,7 @@ const selection=Object.fromEntries(banks.map(bank=>[bank,{
 }]));
 let connectedLibraryCount=96;
 const bankCount=bank=>bank==="library"?(snapshot?.libraryPresets.length??connectedLibraryCount):32;
+const fallbackRecord=i=>factoryRecordsBySize[bankCount("library")]?.[i]??null;
 const projectIndex=slot=>Math.floor(slot/4);
 const entryKey=p=>String(p.type==="project"?p.index:p.id);
 const deviceKey=(bank,slot)=>String(bank==="projects"?projectIndex(slot):slot);
@@ -305,7 +306,7 @@ const stagedEdits=()=>({user:entries(queues.user),library:entries(queues.library
 const hasEdits=()=>queues.user.size||queues.library.size||selected.size;
 function clearStaging(){for(const q of Object.values(queues))q.clear();selected.clear();projectFile=null;for(const bank of banks)clearSelection(bank); }
 function slotRecord(bank,slot){return queues[bank].has(slot)?queues[bank].get(slot):snapshot?.[bankKey(bank)][slot]??null;}
-function actualSound(bank,slot){const r=slotRecord(bank,slot);return r??(bank==="library"?factoryFallbackRecords[slot]??null:null);}
+function actualSound(bank,slot){const r=slotRecord(bank,slot);return r??(bank==="library"?fallbackRecord(slot):null);}
 function projectAt(slot){return selected.has(slot)&&projectFile?projectFile.sections[slot]:snapshot?.projects[slot]??null;}
 function addCollection(bank,items){clearSelection(bank,"collection");collections[bank]=mergeCollection(bank,collections[bank],items);}
 function removeCollection(bank,index){clearSelection(bank,"collection");collections[bank].splice(index,1);render();}
@@ -343,7 +344,7 @@ function presetDrop(bank,slot,p){
   const values=Array.from({length:bankCount(bank)},(_,i)=>actualSound(bank,i));
   if(source.some(i=>!values[i]))throw Error("A selected slot has no sound record.");
   const changes=groupPlacement(values,source,slot);
-  const canonical=(i,r)=>bank==="library"&&r&&eq(r,factoryFallbackRecords[i])?null:r;
+  const canonical=(i,r)=>bank==="library"&&r&&eq(r,fallbackRecord(i))?null:r;
   if(bank==="library"&&changes.some(x=>!x.value))throw Error("Factory fallback record unavailable; cannot swap.");
   setPresetChanges(bank,changes.map(x=>({slot:x.slot,recordBytes:canonical(x.slot,x.value)})));
   clearSelection(bank,"device");
@@ -556,7 +557,7 @@ function rows(id,data){
         if(col>0&&value!=="—"&&value!=="Empty"&&value!=="Not inspected")span.tabIndex=0;td.append(span);}
       tr.append(td);
     }
-    (second&&index>=16?second:first).append(tr);
+    (second&&index>=Math.ceil(data.length/2)?second:first).append(tr);
     const bank=id==="project-rows"?"projects":id.startsWith("user-")?"user":id.startsWith("library-")?"library":null;
     if(bank)bindSlotRow(tr,bank,index);
   }
@@ -588,7 +589,7 @@ function sources(bank){
   if(snapshot){for(const [key,offset] of [["userPresets",1],["libraryPresets",33]])snapshot[key].forEach((r,i)=>{if(r)a.push({id:key+i,name:(offset===1?"USER ":"LIBRARY ")+num(i+offset)+" · "+label(r),recordBytes:r});});}
   return a.concat(factory.filter(x=>x.available).map(x=>({...x,name:"Factory · "+x.name})));
 }
-function fallback(i){return factoryFallbacks[i]?factoryFallbacks[i]+" (factory)":"Factory fallback";}
+function fallback(i){const name=factoryFallbacksBySize[bankCount("library")]?.[i];return name?name+" (factory)":"Factory fallback";}
 function sourceControls(bank){
   const src=$(bank+"-source"),target=$(bank+"-target"),old=src.value,oldTarget=target.value;
   src.replaceChildren();opt(src,"","Choose source sound");
@@ -764,5 +765,5 @@ $("full-apply").onclick=async()=>{if(!await askConfirmation({title:"Restore comp
 $("advanced-link").onclick=e=>{if(dev||busy){e.preventDefault();status("Disconnect FM1 before opening the experimental lab.","error");}};
 window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else dev?.close();});
 render();
-(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets)engineNames.set(p.engine,p.engineName);defaultFactorySelection(catalog,96).forEach((index,i)=>{const p=catalog.presets[index];factoryFallbacks[i]=p.name;factoryFallbackRecords[i]=factory.find(x=>x.id==="F"+p.factoryIndex&&x.available)?.recordBytes??null;});render();}catch(e){console.warn(e.message);}})();
+(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets)engineNames.set(p.engine,p.engineName);for(const size of [32,96]){factoryFallbacksBySize[size]=[];factoryRecordsBySize[size]=[];defaultFactorySelection(catalog,size).forEach((index,i)=>{const p=catalog.presets[index];factoryFallbacksBySize[size][i]=p.name;factoryRecordsBySize[size][i]=factory.find(x=>x.id==="F"+p.factoryIndex&&x.available)?.recordBytes??null;});}render();}catch(e){console.warn(e.message);}})();
 </script></main></body></html>
