@@ -65,7 +65,7 @@ jobs:
           s=p.read_text()
           needle='  <p><button id="go" disabled data-t="install"></button></p>'
           assert needle in s
-          s=s.replace(needle,'  <p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL LIB96: one initialized v0.14 FM1 ONLY. Save and verify a complete v0.14 Web Library backup before installing. Do not use on other firmware or an uninitialized device. Factory slot mappings changed. After flash, open <a href="../../web-library/expand.html">Expansion inspection</a>.</p>'+needle)
+          s=s.replace(needle,'  <p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL LIB96: one initialized 32+32 FM1 ONLY (v0.13-update or v0.14). Save and verify a complete 32+32 Web Library backup before installing. Do not use on an incompatible or uninitialized storage layout. Factory slot mappings changed. After flash, open <a href="../../web-library/expand.html">Expansion inspection</a>.</p>'+needle)
           p.write_text(s)
           for q in Path("build/lib96-test/webapp").glob("installer-orange-*/index.html"):q.write_text(s)
           PY

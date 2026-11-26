@@ -1,10 +1,10 @@
 <!doctype html><html lang="en"><meta charset="utf-8"><title>MASHINA LIB96 expansion test</title>
 <style>body{background:#111;color:#eee;font:16px system-ui;max-width:760px;margin:35px auto;padding:12px}h1{color:#f90}button,input{padding:10px;margin:6px;background:#222;color:#fff;border:1px solid #f90}pre{white-space:pre-wrap}button:disabled{opacity:.4}</style>
 <h1>MASHINA · LIB96 test</h1>
-<p>Only for an already initialized v0.14 FM1 updated with the experimental 32+96 package. Save a verified complete v0.14 backup BEFORE flashing. Use one FM1 only. Stop playing and disconnect other MIDI devices.</p>
+<p>Only for an already initialized 32+32 FM1 updated with the experimental 32+96 package. Save a verified complete 32+32 backup BEFORE flashing. Use one FM1 only. Stop playing and disconnect other MIDI devices.</p>
 <p>Inspect is read-only. Expansion erases only CRC-verified retired legacy project sectors at C8000–D7FFF. Blank and committed LIB1 sectors are preserved. Unknown data stops the operation. Existing factory references can now play different sounds.</p>
 <button id="inspect">Connect / inspect</button>
-<label><input id="backup" type="checkbox"> I saved my complete pre-upgrade v0.14 backup.</label>
+<label><input id="backup" type="checkbox"> I saved my complete pre-upgrade 32+32 backup.</label>
 <label>Type MASHINA96 to authorize reclaim: <input id="phrase" autocomplete="off"></label>
 <button id="apply" disabled>Reclaim verified retired sectors</button>
 <pre id="report">Not connected.</pre><a href="index.html" style="color:#f90">Open matching Web Library after successful inspection / reboot</a>
@@ -17,7 +17,7 @@ function controls(){$("inspect").disabled=busy;$("apply").disabled=busy||!eligib
 $("backup").onchange=$("phrase").oninput=controls;
 async function scan(){
  const cap=await dev.request(89,[]);
- if(cap.length!==3||cap[1]!==96||cap[2]!==1)throw Error("Expected writable LIB96 on an initialized v0.14 device. Stop.");
+ if(cap.length!==3||cap[1]!==96||cap[2]!==1)throw Error("Expected writable LIB96 on an initialized device. Stop.");
  const r=await dev.request(103,[],{timeout:30000});
  if(r.length!==18)throw Error("Expansion scan refused or unavailable.");
  $("report").textContent=Array.from(r.slice(2),(v,i)=>(0xC8000+i*4096).toString(16).toUpperCase()+": "+(labels[v]??"invalid")).join("\n");

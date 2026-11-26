@@ -114,8 +114,8 @@ export async function runInstall(ctx) {
   if (ctx.initializedLib96Trial) {
     // This is a private update-only experiment. Do not permit the ordinary
     // installer path to accept stock or an uninitialized reference layout.
-    if (fw.kind !== "jiant" || !/^(JIANT|FELUCCA) v0\.14$/i.test(fw.version) || !fw.ports)
-      throw new Error("LIB96 trial requires an initialized stable MASHINA v0.14 FM1.");
+    if (!fw.ports)
+      throw new Error("LIB96 trial requires a device with verifiable 32+32 storage capabilities.");
     const link = new BackupConnection(fw.ports.input, fw.ports.output);
     try {
       const lib = await link.request([89, []], {timeout: 5000});
@@ -125,6 +125,10 @@ export async function runInstall(ctx) {
     } finally { link.close(); }
     if (!ctx.confirmTrialBackup?.())
       throw new Error("LIB96 trial cancelled. No firmware was written.");
+    // The capability response, not an arbitrary version/brand string, is
+    // the criterion for this storage-preserving experimental update.
+    await up.install(ctx.image, ctx.product, ui.step);
+    return "done";
   }
   if (fw.kind === "stock" || fw.kind === "jiant") {
     await up.install(ctx.image, ctx.product, ui.step);

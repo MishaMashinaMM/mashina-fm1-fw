@@ -176,7 +176,7 @@ def main(pkg, version, out, prev=None):
     if version == "0.14-lib96test":
         needle = "await runInstall({ up, image, product, ui, state });"
         assert installer_html.count(needle) == 1
-        installer_html = installer_html.replace(needle, 'await runInstall({ up, image, product, ui, state, initializedLib96Trial:true, confirmTrialBackup:()=>confirm("I verified a complete v0.14 backup and this is my ONE test FM1. Proceed?") });')
+        installer_html = installer_html.replace(needle, 'await runInstall({ up, image, product, ui, state, initializedLib96Trial:true, confirmTrialBackup:()=>confirm("I verified a complete 32+32 backup and this is my ONE test FM1. Proceed?") });')
     (inst / "index.html").write_text(installer_html, encoding="utf-8")
     # New permanent URL gives browsers a fresh document even when the older installer URL was cached.
     fresh = out / "webapp" / ("installer-orange-v" + version.replace(".", ""))
