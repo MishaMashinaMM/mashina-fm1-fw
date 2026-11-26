@@ -118,6 +118,13 @@ replace("firmware/hal/fm1_ble.h",
 replace("firmware/hal/fm1_ble.h",
     "    FM1_BLE_G2EN = 0x101u << link;",
     "    FM1_BLE_G2EN = (FM1_BLE_G2EN & 0xFFu) | (0x101u<<link);")
+# Avoid echoing write-to-ack bits of other hardware instances.
+replace("firmware/hal/fm1_ble.h",
+    "    FM1_BLE_G2EN &= ~(0x101u << link);",
+    "    FM1_BLE_G2EN = (FM1_BLE_G2EN & 0xFFu & ~(1u<<link)) | (0x100u<<link);")
+replace("firmware/hal/fm1_ble.h",
+    "        FM1_BLE_G2EN |= 0x100u << link;",
+    "        FM1_BLE_G2EN = (FM1_BLE_G2EN & 0xFFu) | (0x100u<<link);")
 # Keep the larger DMA block in the proven pool region, move only the
 # small fixed PLL table to regular SRAM to retain the pool reserve.
 replace("firmware/hal/fm1_ble.h",

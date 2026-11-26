@@ -187,6 +187,7 @@ static void mb_aux_scan(int on)
 {
     mashina_hw_link=1;
     if(on && drv.state!=HW_SCAN){
+        ble_scan_clear(&mb.found);mb.count=0;bscan.r=bscan.w;
         struct ble_hw_scan s;
         s.interval=160u; s.window=8u; s.active=1;
         s.own=mb_saved.addr; s.own_rand=1;
