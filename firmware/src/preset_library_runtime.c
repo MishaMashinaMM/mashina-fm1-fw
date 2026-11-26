@@ -15,7 +15,7 @@ static uint32_t ed_diag_project_bank(uint32_t bank);
 #endif
 #include "preset_library_store.c"
 #include "preset_library_wire.c"
-#if LIB_SLOTS == 96u
+#if MASHINA_LIBRARY_SLOTS == 96u
 #include "mashina_factory_records.h"
 #endif
 
@@ -107,7 +107,7 @@ static void library_metadata_boot(void)
 static uint32_t library_metadata(uint32_t slot, char *name, uint32_t *engine)
 {
     if (slot >= LIB_SLOTS) return 2u;
-#if LIB_SLOTS == 96u
+#if MASHINA_LIBRARY_SLOTS == 96u
     /* Blank physical slots resolve to the exact new compiled factory sound.
      * Preserve the raw wire/backup status (blank means no uploaded override). */
     if (library_meta_kind[slot] == 0u) {
@@ -192,7 +192,7 @@ static int library_slot_ready(uint32_t slot)
     if (lib_record_valid(library_record) && up_valid(record)) return 0;
     for (uint32_t i = 0; i < LIB_ENTRY; i++)
         if (library_record[i]) return 1;
-#if LIB_SLOTS == 96u
+#if MASHINA_LIBRARY_SLOTS == 96u
     if (mashina_factory_decode(slot,library_record) || !lib_record_valid(library_record) || !up_valid(record)) return 1;
 #endif
     return 0;
@@ -233,7 +233,7 @@ static int library_sound_load(uint32_t slot)
         /* A factory fallback is valid ONLY if the complete record is zero. */
         for (i = 0; i < LIB_ENTRY; i++)
             if (library_record[i]) return 2;
-#if LIB_SLOTS == 96u
+#if MASHINA_LIBRARY_SLOTS == 96u
         if (mashina_factory_decode(slot,library_record) || !lib_record_valid(library_record) || !up_valid(r)) return 2;
 #else
         return 1;

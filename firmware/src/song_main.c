@@ -36,8 +36,7 @@ static void song_index_load(void)
         return;
     }
 #endif
-#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
-    _Static_assert(sizeof song_idx==sizeof mashina_factory_object_10,"factory project index ABI");
+#if MASHINA_LIBRARY_SLOTS == 96u    _Static_assert(sizeof song_idx==sizeof mashina_factory_object_10,"factory project index ABI");
     memcpy(&song_idx,mashina_factory_object_10,sizeof song_idx);
     if(song_idx.magic==SONG_MAGIC && song_idx.version==2u && song_idx.cur<NSONG){
         for(k=0;k<NSONG;k++)song_rows_fix(&song_idx.rows[k]);

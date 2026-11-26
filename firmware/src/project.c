@@ -3265,8 +3265,7 @@ static void project_load(uint32_t slot)
 /* settings + learned panel table: one flash object. The flash copy wins at
  * boot (the .noinit copies are garbage after a power-off). */
 #include "settings_persist.c"
-#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
-#include "mashina_factory_performance.h"
+#if MASHINA_LIBRARY_SLOTS == 96u#include "mashina_factory_performance.h"
 _Static_assert(sizeof(persist_t)==sizeof mashina_factory_object_1,"factory settings ABI");
 _Static_assert(MPR_MAX_RECORD==sizeof mashina_factory_object_0,"factory performance ABI");
 #endif
@@ -3667,8 +3666,7 @@ static int autosave_boot(int allowed)
 #else
     (void)allowed;
 #endif
-#if defined(FELUCCA_LIB96) && FELUCCA_LIB96
-    if (!rc && !mpr_restore_unsaved(mashina_factory_object_0))
+#if MASHINA_LIBRARY_SLOTS == 96u    if (!rc && !mpr_restore_unsaved(mashina_factory_object_0))
         rc=1;
 #endif
     as.saved = as.seen = autosave_sig();
