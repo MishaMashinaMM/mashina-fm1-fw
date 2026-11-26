@@ -5,6 +5,8 @@
  * Audio/UI -> TX ring -> BLE IRQ. Foreground mutations mask the BLE IRQs only.
  * One radio link, either role: Mode CONNECT OUT scans on the Bluetooth page and keeps the last device linked
  * (relink), Mode VISIBLE advertises for a computer or phone. No USB echo/bridge and no wireless update SysEx. */
+/* Link 0 is the established controller; link 1 is a low-duty discovery experiment. */
+static uint8_t mashina_hw_link;
 #include "ble/ble_stack.c"
 #include "ble/ble_vm.c"
 
@@ -179,6 +181,22 @@ static void mb_relink(int on)
     mb.relink_scan = 0; mb.relink_t = fm1_ms - MB_RELINK_MS;
 }
 
+/* Called with BLE IRQs held. Keep link 0's host/LL state untouched.
+ * A low-duty active scan on a separate hardware instance tests radio coexistence. */
+static void mb_aux_scan(int on)
+{
+    mashina_hw_link=1;
+    if(on && drv.state!=HW_SCAN){
+        struct ble_hw_scan s;
+        s.interval=160u; s.window=8u; s.active=1;
+        s.own=mb_saved.addr; s.own_rand=1;
+        ble_hw_scan_start(&s);
+    }else if(!on && drv.state==HW_SCAN){
+        ble_hw_scan_stop();
+        bb.inst[1]=0;
+    }
+    mashina_hw_link=0;
+}
 static int mel_ble_set(int on)
 {
     mb.boot = 0;
@@ -201,7 +219,7 @@ static int mel_ble_set(int on)
     if (f != mb_saved.flags) { mb_saved.flags = f; mb_dirty(); }
     mb_lock();
     mb.on = (uint8_t)!!on;
-    if (!on) { mb.scanning = mb.attempt = mb.relink_scan = 0; mb.lost = 1; mb.ready=0; }
+    if (!on) { if(mb.started)mb_aux_scan(0); mb.scanning = mb.attempt = mb.relink_scan = 0; mb.lost = 1; mb.ready=0; }
     if (mb.started) ble_enable(on);
     mb_unlock(); mb.generation++;
     if(!on){ble_scan_clear(&mb.found);mb.count=0;}
@@ -212,8 +230,14 @@ static int mel_ble_set(int on)
 static void mel_ble_scan(int on)
 {
     mb_lock();
-    mb.scanning = (uint8_t)(on && mb.on && !(mb_saved.flags & MB_VISIBLE) && !mb.attempt && !ble_connected());
-    if (mb.started) ble_ll_scan(mb.scanning);
+    if(mb.started && mb.ready){
+        mb.scanning=(uint8_t)(on && mb.on);
+        mb_aux_scan(mb.scanning);
+    }else{
+        if(mb.started)mb_aux_scan(0);
+        mb.scanning = (uint8_t)(on && mb.on && !(mb_saved.flags & MB_VISIBLE) && !mb.attempt && !ble_connected());
+        if (mb.started) ble_ll_scan(mb.scanning);
+    }
     mb_unlock();
 }
 /* Mode: VISIBLE advertises (no scan, no relink), CONNECT OUT stays quiet unless scanning or connecting out.
@@ -233,6 +257,8 @@ static void mel_ble_visible(int on)
 static void mb_drop(void)
 {
     mb_lock();
+    if(mb.started)mb_aux_scan(0);
+    mb.scanning=0;
     mb.closing = (uint8_t)ble_connected(); mb.ready = 0; mb.tr = mb.tw; mb.rt_r = mb.rt_w;
     if (mb.started) { ble_enable(0); ble_enable(mb.on); }
     mb.attempt = 0; mb.lost = 1;
@@ -349,6 +375,7 @@ static void mel_ble_poll(void)
         }
         mb_unlock();
     }
+    if(!mb.ready && mashina_drv[1].state==HW_SCAN){mb_lock();mb_aux_scan(0);mb.scanning=0;mb_unlock();}
     uint8_t pdu[39]; uint16_t rssi; uint32_t n;
     for (uint32_t i = 0; i < BLE_SCAN_RING && (n = ble_ll_scan_take(pdu, &rssi)); i++)
         ble_scan_add(&mb.found, pdu, n, rssi, fm1_ms);
@@ -461,8 +488,8 @@ static void ble_page_knob(uint32_t k,int32_t steps)
         }
     }
     else if(k==1u){mel_ble_scan(right);if(right)mb_pick=0;}
-    else if(k==2u && mb.count){mb_pick=(uint8_t)clamp((int32_t)mb_pick+(right?1:-1),0,mb.count-1u);}
-    else if(k==3u){if(right && mb_pick<mb.count){mel_ble_scan(0);mel_ble_connect(mb_pick);}else if(!right)mel_ble_disconnect();}
+    else if(k==2u && mb.count && !mb.ready){mb_pick=(uint8_t)clamp((int32_t)mb_pick+(right?1:-1),0,mb.count-1u);}
+    else if(k==3u){if(right && !mb.ready && mb_pick<mb.count){mel_ble_scan(0);mel_ble_connect(mb_pick);}else if(!right)mel_ble_disconnect();}
     ui.force=1;
 }
 /* Standard 240x240 MASHINA table layout. Split canvas to stay below
@@ -503,8 +530,17 @@ static void ble_page_draw(void)
     for(uint32_t i=0;i<4u;i++){
         uint32_t row=mb_pick/4u*4u+i,selected=row==mb_pick && row<mb.count;
         const struct ble_found *f=linked?(i==0?&mb.target:0):(row<mb.count?&mb.found.e[mb.idx[row]]:0);
+        uint32_t auxidx=0;
+        if(linked && i && mb.scanning){
+            uint32_t n=0;
+            for(uint32_t j=0;j<mb.count;j++){
+                const struct ble_found *q=&mb.found.e[mb.idx[j]];
+                if(q->addr_rand==mb.target.addr_rand && !memcmp(q->addr,mb.target.addr,6))continue;
+                if(++n==i){f=q;auxidx=mb.idx[j];break;}
+            }
+        }
         const char *name=f?(f->name[0]?f->name:"UNNAMED"):(!i && !mb.count&&!linked?(mb.on?"NO DEVICES FOUND":"RADIO OFF"):"");
-        uint32_t bars=f&&!linked?ble_scan_bars(&mb.found,mb.idx[row]):0u;
+        uint32_t bars=f&&(!linked||i)?ble_scan_bars(&mb.found,linked?auxidx:mb.idx[row]):0u;
         if(linked)selected=i==0;
         uint32_t sig=1u+row*8u+selected*4u+bars+linked*512u;
         for(const char *p=name;*p;p++)sig=sig*31u+(uint8_t)*p;
@@ -516,14 +552,14 @@ static void ble_page_draw(void)
         if(f){
             char num[4];fmt_int(num,row+1u);
             cv_text(4,CAP_IN(M,24),&AF_M,num,ink);
-            if(linked)cv_text_r(236,CAP_IN(S,24),&AF_S,"LINKED",ink,bg);
+            if(linked && !i)cv_text_r(236,CAP_IN(S,24),&AF_S,"LINKED",ink,bg);
             else for(uint32_t j=0;j<3u;j++)
                 cv_rect(211+j*8u,18-(j+1u)*4u,5,(j+1u)*4u,j<bars?(selected?T_INK:T_VALUE):RGB(70,70,70));
         }
-        cv_free_text(34,CAP_IN(M,24),&AF_M,name,ink,bg,linked?140:172);
+        cv_free_text(34,CAP_IN(M,24),&AF_M,name,ink,bg,linked&&!i?140:172);
         cv_blit(0,92+i*24u);
     }
-    uint32_t bottom=code;
+    uint32_t bottom=code^(linked?1u<<30:0u);
     if(full || bottom!=prev_bottom){
         cv_begin(240,34,T_BG);
         if(code!=BLE_NO_PASSKEY){
@@ -532,7 +568,7 @@ static void ble_page_draw(void)
             cv_text(4,1,&AF_S,"PAIRING CODE",T_TEXT);
             cv_text_r(236,1,&AF_M,pass,T_VALUE,T_BG);
         }else{
-            cv_text(4,1,&AF_S,"K3 SELECT DEVICE",T_TEXT);
+            cv_text(4,1,&AF_S,linked?"K2 SCAN (LINK TEST)":"K3 SELECT DEVICE",T_TEXT);
             cv_text(4,17,&AF_S,"K4 CONNECT > / DROP <",T_TEXT);
         }
         cv_blit(0,188);
