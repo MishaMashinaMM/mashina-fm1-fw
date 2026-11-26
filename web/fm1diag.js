@@ -102,9 +102,15 @@ export async function runInstall(ctx) {
     return "done";
   }
   ui.say("checking");
+  if(ctx.cleanLib96Trial){
+    // Normal updater checks the hardware model and package integrity.
+    // Do not query the old firmware editor or storage at all.
+    await up.install(ctx.image,ctx.product,ui.step);
+    return "done";
+  }
   const fw = state.fw = await fwKind(up);
   if (fw.kind === "none") throw up.notFound();
-  if (ctx.cleanLib96Trial || fw.kind === "stock" || fw.kind === "jiant") {
+  if (fw.kind === "stock" || fw.kind === "jiant") {
     await up.install(ctx.image, ctx.product, ui.step);
     return "done";
   }
