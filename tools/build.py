@@ -462,7 +462,10 @@ def main():
     lib96 = os.environ.get("FELUCCA_LIB96", "0") == "1"
     lib96_compile = a.release == "0.14-lib96"
     lib96_trial = a.release == "0.14-lib96test"
-    if lib96 != (lib96_compile or lib96_trial or public96):
+    ble_trial = a.release == "0.15-bletest"
+    if ble_trial and not (os.environ.get("GITHUB_REF") == "refs/heads/bluetooth-midi" and os.environ.get("MASHINA_BLE_TRIAL") == "INITIALIZED-FM1-ONLY" and os.environ.get("MASHINA_BLE_EXPERIMENT") == "1" and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"):
+        raise SystemExit("BLE test requires branch-only initialized update authorization")
+    if lib96 != (lib96_compile or lib96_trial or public96 or ble_trial):
         raise SystemExit("LIB96 requires the dedicated compile or one-device test target")
     if lib96_trial and not (
         os.environ.get("GITHUB_REF") == "refs/heads/presets-library-96"
@@ -523,7 +526,7 @@ def main():
         and os.environ.get("FELUCCA_FLASH_DIAG", "0") == "0"
     )
     if a.release == "0.13-update" or os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1":
-        if not (a.release in ("0.13-update", "0.14-lib96", "0.14-lib96test")
+        if not (a.release in ("0.13-update", "0.14-lib96", "0.14-lib96test", "0.15-bletest")
                 and os.environ.get("FELUCCA_INITIALIZED_UPDATE") == "1"
                 and all(os.environ.get(k) == "1" for k in (
                     "FELUCCA_LIB32", "FELUCCA_LIB32_WRITE",
@@ -570,7 +573,7 @@ def main():
         print("DESTRUCTIVE DATA FORMAT is possible via separate confirmed WebMIDI commands 101/102.")
         print("Never install on both FM1 devices; user data will be erased during the later formatter.")
     pkg = fm1pkg_make.ufw(fm1pkg_make.flash_image(img, fm1pkg_make.KEY,
-        fm1pkg_make.LIB96_LAYOUT_TAG if (lib96_trial or public96) else None), ota, PRODUCT)
+        fm1pkg_make.LIB96_LAYOUT_TAG if (lib96_trial or public96 or ble_trial) else None), ota, PRODUCT)
     (OUT / name).write_bytes(pkg)
     print(f"app      {OUT / 'felucca.bin'}  {len(img)} B")
     print(f"loader   {LDR / 'ota.bin'}  {len(ota)} B")

@@ -413,3 +413,44 @@ static void mel_ble_radio_start(const struct ble_rf_trims *t)
     ble_hw_wl82_start(t);
     fm1_icfg_set(ie);
 }
+
+/* GLO > SYSTEM > BLUETOOTH. Explicit radio enable, one MIDI peer.
+ * All controls run in the foreground. The audio input path is unchanged. */
+static uint8_t mb_pick __attribute__((section(".lowbuf")));
+static void ble_page_knob(uint32_t k,int32_t steps)
+{
+    int right=steps>0;
+    if(k==0u){if(!right || !transport_busy())mel_ble_set(right);}
+    else if(k==1u){mel_ble_scan(right);if(right)mb_pick=0;}
+    else if(k==2u && mb.count){mb_pick=(uint8_t)clamp((int32_t)mb_pick+(right?1:-1),0,mb.count-1u);}
+    else if(k==3u){if(right && mb_pick<mb.count){mel_ble_scan(0);mel_ble_connect(mb_pick);}else if(!right)mel_ble_disconnect();}
+    ui.force=1;
+}
+static void ble_page_draw(void)
+{
+    static uint32_t sig;
+    uint32_t now=mel_ble_signature()+mb_pick*379u+mb.count*19u;
+    if(!ui.force && now==sig)return;
+    sig=now;ui.force=0;
+    if(mb_pick>=mb.count)mb_pick=mb.count?mb.count-1u:0u;
+    lcd_fill(0,0,240,240,T_BG);
+    draw_text_line(0,4,240,&AF_M,"BLUETOOTH MIDI",T_VALUE,T_BG,1);
+    draw_text_line(0,28,240,&AF_M,mel_ble_status(),T_TEXT,T_BG,1);
+    draw_text_line(0,51,240,&AF_S,mb.on?"K1 RADIO ON":"K1 RADIO OFF",T_VALUE,T_BG,0);
+    draw_text_line(0,68,240,&AF_S,mb.scanning?"K2 SCANNING":"K2 SCAN > / STOP <",T_TEXT,T_BG,0);
+    for(uint32_t i=0;i<4u;i++){
+        uint32_t first=mb_pick/4u*4u,row=first+i;
+        if(row>=mb.count)break;
+        const struct ble_found *f=&mb.found.e[mb.idx[row]];
+        uint16_t bg=row==mb_pick?T_VALUE:RGB(36,36,36);
+        draw_text_line(0,90+i*22u,240,&AF_M,f->name[0]?f->name:"UNNAMED",row==mb_pick?T_INK:T_TEXT,bg,0);
+    }
+    uint32_t code=mel_ble_code();
+    if(code!=BLE_NO_PASSKEY){
+        char pass[7];pass[6]=0;
+        for(int i=5;i>=0;i--){pass[i]=(char)('0'+code%10u);code/=10u;}
+        draw_text_line(0,180,240,&AF_M,pass,T_VALUE,T_BG,1);
+    }else draw_text_line(0,180,240,&AF_S,"K3 SELECT DEVICE",T_TEXT,T_BG,0);
+    draw_text_line(0,199,240,&AF_S,"K4 CONNECT > / DROP <",T_TEXT,T_BG,0);
+    draw_text_line(0,222,240,&AF_S,"GLO > SYSTEM > BLE     8/8",T_VALUE,T_BG,0);
+}

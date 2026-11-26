@@ -79,7 +79,11 @@ static const ng_t CG_FX[] = {{"TRACK", "TRK"}, {"BUSES", "BUS"}, {"DELAY", "DLY"
  * Retain the underlying MANO/RIELES code for compatibility; do not expose
  * the unused pages. MIXER is the first GLO entry and first group. */
 static const nv_t CE_GLO[] = {NV("MIXER", 0, 0, 0), NV("ZONES", 0, 0, 0), NV("TUNING", 0, 0, 0), NV("SENDS", 0, 0, 0), NV("EQ", 0, 0, 0),
-                              NV("GLOBAL", 0, 1, 1), NV("SYSTEM", 0, 2, 2)};
+                              NV("GLOBAL", 0, 1, 1), NV("SYSTEM", 0, 2, 2)
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+                              , NV("BLUETOOTH", 0, 2, 2)
+#endif
+};
 static const ng_t CG_GLO[] = {{"MIX", 0}, {"GLOBAL", 0}, {"SYSTEM", 0}};
 static const nv_t CE_ENV[] = {NV("ENV", "TRACKS", 0, 0), NV("ENV DEST", "TRACKS DEST", 0, 0), NV("ENV", 0, 1, 1),
                               NV("ENV DEST", 0, 1, 1), NV("STAGE", 0, 2, 2)};

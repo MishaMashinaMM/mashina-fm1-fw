@@ -3014,6 +3014,9 @@ static void ui_input_frame(void)
         uint64_t held;
         if ((s = panel_enc(EN_K1 + k)) == 0)
             continue;
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+        if(ble_page() && !ui.confirm && !mac_latch){ble_page_knob(k,s);continue;}
+#endif
         if (gen_on()) {                                 /* GEN: its settings */
             gen_knob(k, s);
             continue;

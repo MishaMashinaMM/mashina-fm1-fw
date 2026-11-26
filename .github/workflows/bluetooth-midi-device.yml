@@ -1,0 +1,80 @@
+name: Experimental BLE MIDI initialized-device installer
+on:
+  push:
+    branches: [bluetooth-midi]
+    paths: ['firmware/**', 'tools/**', '.github/workflows/bluetooth-midi-device.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bluetooth-midi-device
+  cancel-in-progress: true
+jobs:
+  compile:
+    if: github.ref == 'refs/heads/bluetooth-midi'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.jieli
+            ~/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          key: jieli-ac79-v1.2.1
+      - name: JieLi toolchain and SDK
+        run: |
+          retry() { for d in 0 5 15 30 60; do sleep "$d"; "$@" && return 0; done; return 1; }
+          T=$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools
+          [ -e "$HOME/.jieli/toolchain" ] || retry sh tools/get_toolchain.sh "$HOME/.jieli"
+          if [ ! -s "$T/uboot.boot" ] || [ ! -s "$T/cfg_tool.bin" ] || [ ! -s "$T/cfg/eq_cfg_hw.bin" ]; then
+            rm -rf "$HOME/fw-AC79_AIoT_SDK"
+            retry git clone --filter=blob:none --no-checkout https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git "$HOME/fw-AC79_AIoT_SDK"
+            (cd "$HOME/fw-AC79_AIoT_SDK" && git sparse-checkout set --no-cone /cpu/wl82/tools/uboot.boot /cpu/wl82/tools/cfg_tool.bin /cpu/wl82/tools/cfg/eq_cfg_hw.bin && retry git checkout d179b4484759423312073f5fbb232501aa491047)
+          fi
+      - name: Fetch pinned open BLE stack
+        run: sh tools/fetch_ble_experiment.sh
+      - name: Compile branch-only BLE update package
+        env:
+          AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
+          JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
+          MASHINA_BLE_EXPERIMENT: "1"
+          MASHINA_BLE_TRIAL: "INITIALIZED-FM1-ONLY"
+          FELUCCA_CDC: "1"
+          FELUCCA_LIB96: "1"
+          FELUCCA_LIB32: "1"
+          FELUCCA_LIB32_WRITE: "1"
+          FELUCCA_PROJECT_REFS: "1"
+          FELUCCA_PROJECT_REFS_WRITE: "1"
+          FELUCCA_INITIALIZED_UPDATE: "1"
+        run: |
+          python3 tools/build.py --release 0.15-bletest
+          python3 tools/check_app_flash_headroom.py build/felucca.bin 1024
+          test -s build/felucca-0.15-bletest.fwsc
+
+      - name: Assemble offline installer
+        run: |
+          mkdir -p build/host
+          cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DMASHINA_HOST_TEST=1 -Ibuild/gen -Ifirmware/src -o build/host/factory_drum_export tests/factory_drum_export.c -lm
+          build/host/factory_drum_export > build/host/factory-drum-records.json
+          python3 web/make_site.py build/felucca-0.15-bletest.fwsc 0.15-bletest build/ble-test
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("build/ble-test/webapp/installer/index.html")
+          s=p.read_text()
+          needle='  <p><button id="go" disabled data-t="install"></button></p>'
+          assert needle in s
+          s=s.replace(needle,'<p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL BLUETOOTH: ONLY for an already initialized MASHINA v0.15 (32 USER / 96 LIBRARY) FM1. Export a full backup before installing. No data formatter is included. Test one device only. Bluetooth is OFF at boot. GLO > SYSTEM > BLUETOOTH: K1 radio, K2 scan, K3 select, K4 connect/disconnect.</p>'+needle)
+          p.write_text(s)
+          for q in Path("build/ble-test/webapp").glob("installer-orange-*/index.html"):q.write_text(s)
+          PY
+          test -s build/ble-test/webapp/installer/index.html
+          printf '%s\n' "$GITHUB_SHA" > build/ble-test/firmware/SOURCE_COMMIT
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-bluetooth-one-device-installer
+          path: build/ble-test/
+          if-no-files-found: error

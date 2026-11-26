@@ -490,6 +490,11 @@ static void scr_shown(void)                            /* after the frame: the r
 
 static const page_t *page_over;   /* a quick layer's own four knobs (ui_layer.c), while it edits or draws them */
 static const page_t *cur_page(void) { return page_over ? page_over : &PAGES[ui.page]; }
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+static int ble_page(void){return !ui.home && !ui.menu && str_eq(cur_page()->title,"BLUETOOTH");}
+static void ble_page_draw(void);
+static void ble_page_knob(uint32_t k,int32_t steps);
+#endif
 
 /* MENU > LARGE (#15, Discussion #80: what KNOB 1..4 do, in bigger type). Per page type:
  *   LK_TALL  HOME and the value pages (EDIT ENV LFO MOD FX SLICER SCL SHIFT ARP VOICE PATTERN STEP's knobs, MIXER,

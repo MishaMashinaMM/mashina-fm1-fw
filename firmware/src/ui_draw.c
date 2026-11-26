@@ -1,3 +1,8 @@
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#define GLO_PAGE(a,b) b
+#else
+#define GLO_PAGE(a,b) a
+#endif
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
  * Copyright (C) 2026 Juan Ignacio Antonucci (Juan Jiant) */
@@ -1343,9 +1348,9 @@ static void draw_foot(void)
         const char *name = PAGES[ui.page].title;
         const char *group = str_eq(name, "GLOBAL") ? "GLOBAL" :
                             str_eq(name, "SYSTEM") ? "SYSTEM" : "MIX";
-        const char *page = str_eq(name, "SENDS") ? "4/7" :
-                           str_eq(name, "EQ") ? "5/7" :
-                           str_eq(name, "GLOBAL") ? "6/7" : "7/7";
+        const char *page = str_eq(name, "SENDS") ? GLO_PAGE("4/7","4/8") :
+                           str_eq(name, "EQ") ? GLO_PAGE("5/7","5/8") :
+                           str_eq(name, "GLOBAL") ? GLO_PAGE("6/7","6/8") : GLO_PAGE("7/7","7/8");
         cv_begin(240, 18, T_BG);
         cv_rect(3, 1, 43, 16, T_VALUE);
         cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
@@ -1358,8 +1363,8 @@ static void draw_foot(void)
     }
     if (glo_mix_table_ui()) {
         const char *name = cur_page()->title;
-        const char *page = str_eq(name, "ZONES") ? "2/7" :
-                           str_eq(name, "TUNING") ? "3/7" : "1/7";
+        const char *page = str_eq(name, "ZONES") ? GLO_PAGE("2/7","2/8") :
+                           str_eq(name, "TUNING") ? GLO_PAGE("3/7","3/8") : GLO_PAGE("1/7","1/8");
         cv_begin(240, 18, T_BG);
         cv_rect(3, 1, 43, 16, T_VALUE);
         cv_text_in(5, 1, 39, &AF_S, "GLO", T_INK, T_VALUE);
@@ -3157,6 +3162,9 @@ static void ui_draw_body(uint32_t counting)
         ui.force = 0;
         return;
     }
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    if(ble_page()){ble_page_draw();return;}
+#endif
     if (ui.confirm == CF_DICE_ALL) {                    /* (0.8.5) GEN: HOME's lens, its last level (0.9.2: under
                                                          * a layer's map, a page as the others) */
         if (ui.force)
