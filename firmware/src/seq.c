@@ -2461,9 +2461,9 @@ static void events_block(uint32_t n)
         uint32_t source = midi_in_source[at] ? midi_in_source[at] : 1u, ms = midi_in_ms[at];
         mi_r++;
 #if MIDI_BLE_INPUT
-        if(source==3u){
-            if(!pkt){midi_ble_release();continue;}
-            ch+=16u;
+        if(source==3u || source==4u){
+            if(!pkt){midi_ble_release(source);continue;}
+            ch+=(source-2u)*16u;
         }
 #endif
         if (status >= 0xF8u) {

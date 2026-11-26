@@ -245,7 +245,7 @@ static volatile uint32_t so_w, so_r;
  * BLE link-loss marker, never an actual MIDI channel message. */
 #if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
 #define MIDI_BLE_INPUT 1
-#define MIDI_STATE_CHANNELS 32u
+#define MIDI_STATE_CHANNELS 48u /* wired + BLE peer 1 + BLE peer 2 */
 #else
 #define MIDI_BLE_INPUT 0
 #define MIDI_STATE_CHANNELS 16u
@@ -259,7 +259,7 @@ static volatile uint32_t so_w, so_r;
 #define MQ 64u
 static uint32_t midi_in_q[MQ], midi_out_q[MQ];
 static uint32_t midi_in_ms[MQ];
-static uint8_t midi_in_source[MQ];                    /* 1 USB, 2 TRS, 3 BLE */
+static uint8_t midi_in_source[MQ];                    /* 1 USB, 2 TRS, 3 BLE1, 4 BLE2 */
 static volatile uint32_t fm1_ms;                    /* also declared by core.h; parser-only host tests */
 static volatile uint32_t mi_w, mi_r, mo_w, mo_r;
 static volatile uint8_t midi_in_overflow;               /* audio ISR discards a broken stream and releases notes */

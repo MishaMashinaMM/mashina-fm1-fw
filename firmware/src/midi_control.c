@@ -656,9 +656,10 @@ static void __attribute__((noinline)) midi_event(uint32_t st, uint32_t ch, uint3
 /* The marker is processed in order with incoming packets, on the audio
  * consumer only. Release BLE's notes and pedal owners, preserve wired notes
  * even at the very same channel and pitch. No global panic on link loss. */
-static void midi_ble_release(void)
+static void midi_ble_release(uint32_t source)
 {
-    for(uint32_t ch=16u;ch<MIDI_STATE_CHANNELS;ch++){
+    uint32_t base=(source-2u)*16u;
+    for(uint32_t ch=base;ch<base+16u;ch++){
         uint32_t mask=midi_ch[ch].targets;
         if(mask)for(uint32_t note=0;note<128u;note++)
             if(mn_get(ch,note))midi_release(ch,note);
