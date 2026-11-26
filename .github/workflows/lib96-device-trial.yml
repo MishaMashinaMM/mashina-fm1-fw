@@ -57,6 +57,7 @@ jobs:
           build/host/factory_drum_export > build/host/factory-drum-records.json
           node tests/factory_catalog_complete_test.mjs build/host/factory-drum-records.json
           node tests/factory_catalog_selection_test.mjs
+          node tests/lib96_trial_caps_test.mjs
           python3 web/make_site.py build/felucca-0.14-lib96test.fwsc 0.14-lib96test build/lib96-test
           python3 - <<'PY'
           from pathlib import Path

@@ -2,7 +2,7 @@
 
 Use ONE FM1 already running initialized stable v0.14 (32+32). Keep the second device untouched. Before flashing, use the official v0.14 Web Library BACKUP to capture and verify a complete JSON; keep it offline. Also export any USER and LIBRARY sound packs you care about. This update changes factory fallback identities, so prior references to unoverridden factory slots may play a different sound. Do not treat a 32-slot backup as a 96-slot full restore. No first-install formatting is enabled in this build.
 
-Extract entire artifact, start `py -m http.server 8000` in the extracted directory, open http://localhost:8000/webapp/installer/ in Chrome/Edge. Flash only the initialized v0.14 test device. Keep USB connected; reboot as prompted.
+Extract entire artifact, start `py -m http.server 8000` in the extracted directory, open http://localhost:8000/webapp/installer/ in Chrome/Edge. The test installer checks that the connected device reports v0.14 with writable initialized 32+32 storage and asks you to confirm the backup. Flash only that test device. Keep USB connected; reboot as prompted. If an update was interrupted and the FM1 is in loader mode, the test installer refuses it: recover using the stable v0.14 installer before trying the test again.
 
 Open http://localhost:8000/web-library/expand.html. Connect/inspect. If all expanded sectors are blank or already valid LIB1, no erasure is necessary. If verified retired legacy records exist, check the pre-upgrade backup box and explicitly type MASHINA96, confirm reclaim. Only C8000–D7FFF may be reclaimed, never old 32 LIBRARY slots, MPR1 projects, USER or settings. Unknown/corrupt sectors or failed operations: STOP, report exact results; do not retry automatically. Power-cycle, inspect again.
 
