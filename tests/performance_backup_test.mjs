@@ -58,3 +58,11 @@ for(const kind of ["user","library"]){
   assert.deepEqual(readCollection(kind,collectionFile(kind,empty.entries)),[]);
 }
 console.log("PASS: editable collections remove any source, preserve same-name variants, remove fixed-slot sources, save and reopen exact remaining records");
+
+import {collectionFilename} from "../web/performance-backup.mjs";
+assert.equal(collectionFilename("My live presets"),"My live presets.json");
+assert.equal(collectionFilename("  Set 1.JSON  "),"Set 1.json");
+assert.equal(collectionFilename("Set.json.json"),"Set.json");
+assert.equal(collectionFilename("Моји звуци"),"Моји звуци.json");
+for(const bad of ["","   ",".json","../escape","C:\\test","NUL","COM1","LPT2.txt","bad?","ending.","a".repeat(176)])assert.throws(()=>collectionFilename(bad));
+console.log("PASS: collection download filenames accept custom names and normalize JSON extension");

@@ -121,6 +121,15 @@ export function removeSoundsFromCollection(kind,entries,packs,chosen){
   const remaining=before.filter(keep);
   return {entries:remaining,packs:packs.filter(keep),removed:before.length-remaining.length};
 }
+/* Portable local download name; preserve the user's spelling and spaces. */
+export function collectionFilename(value){
+  let base=String(value??"").trim().replace(/(?:\.json)+$/i,"").trim();
+  check(base.length>0,"Enter a file name.");
+  check(base.length<=175,"File name is too long.");
+  check(!/[<>:"/\\|?*\x00-\x1f]/.test(base),"File name contains an invalid character.");
+  check(!/[. ]$/.test(base)&&!/^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\.|$)/i.test(base),"Choose a valid file name.");
+  return base+".json";
+}
 export function collectionFile(kind,entries){
   return {format:"mashina-offline-collection",version:1,kind,entries:mergeCollection(kind,entries)};
 }

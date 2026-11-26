@@ -82,7 +82,9 @@ dialog h2{font-size:21px;margin:0 0 14px;color:var(--orange)}
 .op-detail{color:var(--muted);font-size:12px}
 .op-warning{border-top:1px solid #444;margin-top:16px;padding-top:12px;color:#ffba79;font-size:13px}
 .op-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-#confirmation{border-color:#96631f}
+#confirmation,#collection-save-dialog{border-color:#96631f}
+#collection-filename{width:100%;min-height:36px;padding:8px 10px;font:inherit;color:#eee;background:#151515;border:1px solid #666;border-radius:4px}
+#collection-filename-error{color:#ffba79;min-height:1.4em;margin:5px 0;font-size:12px}
 #confirm-choice{width:100%;margin-top:10px;color:#eee;background:#151515;border:1px solid #666;border-radius:4px;min-height:36px;padding:7px 10px;font:inherit}
 #confirm-summary{font-size:12px;color:#ccc;white-space:pre-wrap;overflow-wrap:anywhere;max-height:28dvh;overflow:auto;padding:8px;background:#171717;border:1px solid #393939;border-radius:4px}
 #confirm-message{white-space:pre-wrap;overflow-wrap:anywhere}
@@ -222,12 +224,21 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <label id="confirm-choice-field" class="field" hidden>MIDI port pair<select id="confirm-choice"></select></label>
 <div class="op-actions"><button id="confirm-cancel" type="button">CANCEL</button><button id="confirm-accept" type="button" class="primary">RESTORE</button></div>
 </dialog>
+<dialog id="collection-save-dialog" aria-labelledby="collection-save-title">
+<h2 id="collection-save-title">Save collection</h2>
+<form id="collection-save-form">
+<p id="collection-save-description" class="op-message"></p>
+<label class="field" for="collection-filename">File name (.json)<input id="collection-filename" type="text" autocomplete="off" spellcheck="false" maxlength="180" aria-describedby="collection-filename-error"></label>
+<p id="collection-filename-error" role="status" aria-live="polite"></p>
+<div class="op-actions"><button id="collection-save-cancel" type="button">CANCEL</button><button id="collection-save-accept" type="submit" class="primary">SAVE</button></div>
+</form>
+</dialog>
 <script type="module">
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
 import {decodeRecord,parseImportedLibrary} from "./presets-library-codec.mjs";
 import {decodeProject,encodeProject,projectsBackup,restoreProjectsBackup} from "./projects-library-codec.mjs";
-import {collectionFile,readCollection,mergeCollection,removeSoundsFromCollection,projectCollectionFromSections,groupPlacement} from "./performance-backup.mjs";
+import {collectionFilename,collectionFile,readCollection,mergeCollection,removeSoundsFromCollection,projectCollectionFromSections,groupPlacement} from "./performance-backup.mjs";
 import {factorySourceRecords} from "./emulator-snapshot-editor.mjs";
 import {defaultFactorySelection} from "./factory-catalog-selection.mjs";
 import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,planUserLayout,applyVerifiedUserLayout,planLibraryLayout,applyVerifiedLibraryLayout,composeFullPerformance,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
@@ -293,7 +304,7 @@ function dragSelection(bank,side,key){
   return order.filter(k=>s.keys.has(k));
 }
 document.addEventListener("keydown",e=>{
-  if(busy||$("operation").open||$("confirmation").open)return;
+  if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open)return;
   const bank=banks.find(b=>!$("tab-"+b).hidden);
   if(!bank)return;
   if(e.key==="Escape"){clearSelection(bank);paintSelection(bank);return;}
@@ -335,7 +346,7 @@ function addFactorySounds(bank){
 }
 function removeCollection(bank,index){clearSelection(bank,"collection");collections[bank].splice(index,1);render();}
 function engineName(n){return engineNames.get(n)??"Engine "+n;}
-function dragStart(e,payload){if(busy||$("operation").open||$("confirmation").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
+function dragStart(e,payload){if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
 function dragEnd(){dragState=null;for(const n of document.querySelectorAll(".drop-over"))n.classList.remove("drop-over");}
 function dropTarget(node,accept,handle){
   node.ondragover=e=>{if(dragState&&accept(dragState)&&!busy){e.preventDefault();e.dataTransfer.dropEffect=["slot","slot-group","project-slot","project-slot-group"].includes(dragState.type)?"move":"copy";node.classList.add("drop-over");}};
@@ -502,7 +513,7 @@ for(const bank of ["user","library","projects"]){
   for(const suffix of ["search",...(bank==="projects"?[]:["origin","engine"])])$(bank+"-"+suffix).oninput=()=>{clearSelection(bank,"collection");pages[bank]=0;renderCollection(bank);};
   $(bank+"-prev").onclick=()=>{pages[bank]--;renderCollection(bank);};
   $(bank+"-next").onclick=()=>{pages[bank]++;renderCollection(bank);};
-  $(bank+"-collection-save").onclick=()=>download("mashina-"+bank+"-collection.json",collectionFile(bank,collections[bank]));
+  $(bank+"-collection-save").onclick=()=>openCollectionSave(bank);
   $(bank+"-collection-capture").onclick=()=>collectionFromDevice(bank);
   if(bank!=="projects"){
     $(bank+"-collection-remove").onclick=()=>removeSelectedSounds(bank);
@@ -571,6 +582,44 @@ $("confirmation").addEventListener("close",()=>{
   // Unexpected programmatic dismissal is cancellation, never approval.
   if(!$("confirmation").open&&confirmationResolve){const p=confirmationResolve;confirmationResolve=null;p.resolve(p.choices?null:false);}
 });
+let collectionSaveBank=null;
+const lastCollectionFilename={};
+function validateCollectionFilename(){
+  try{
+    const name=collectionFilename($("collection-filename").value);
+    $("collection-filename-error").textContent="";
+    $("collection-save-accept").disabled=false;
+    return name;
+  }catch(e){
+    $("collection-filename-error").textContent=e.message;
+    $("collection-save-accept").disabled=true;
+    return null;
+  }
+}
+function openCollectionSave(bank){
+  const dialog=$("collection-save-dialog");
+  if(busy||dialog.open||$("operation").open||$("confirmation").open)return;
+  collectionSaveBank=bank;
+  const input=$("collection-filename");
+  input.value=lastCollectionFilename[bank]??("mashina-"+bank+"-collection");
+  $("collection-save-description").textContent=collections[bank].length+" "+(bank==="projects"?"project(s)":"preset(s)")+" will be saved as a local JSON file.";
+  validateCollectionFilename();
+  dialog.showModal();
+  input.focus();input.select();
+}
+$("collection-filename").oninput=validateCollectionFilename;
+$("collection-save-cancel").onclick=()=>$("collection-save-dialog").close();
+$("collection-save-dialog").addEventListener("close",()=>{collectionSaveBank=null;});
+$("collection-save-form").onsubmit=e=>{
+  e.preventDefault();
+  const bank=collectionSaveBank,name=validateCollectionFilename();
+  if(!bank||!name||busy)return;
+  try{
+    download(name,collectionFile(bank,collections[bank]));
+    lastCollectionFilename[bank]=name.slice(0,-5);
+    $("collection-save-dialog").close();
+  }catch(error){$("collection-filename-error").textContent=error.message;}
+};
 function download(name,obj){const u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 function label(r){return r?decodeRecord(r).name:"Empty";}
 function references(ref,liveOnly=false){if(!snapshot)return "";const list=[];if(!liveOnly)snapshot.projects.forEach((p,i)=>{if(p)decodeProject(p).refs.forEach((x,t)=>{if(x===ref)list.push(pLabel(i)+"/T"+(t+1));});});decodeProject(snapshot.currentPerformance).refs.forEach((x,t)=>{if(x===ref)list.push("Live/T"+(t+1));});return list.join(", ");}
@@ -684,7 +733,7 @@ function render(){
 function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
 for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
 async function run(fn,operation=null){
-  if(busy||$("operation").open||$("confirmation").open)return;
+  if(busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open)return;
   busy=true;if(operation)beginOperation(operation);
   try{render();await fn();}catch(e){status(e.message,"error");}
   finally{busy=false;try{render();}finally{if(operation)finishOperation();}}
