@@ -19,7 +19,7 @@ static struct {
     uint8_t on, started, cal, scanning, attempt, was_ready, connected, was_pairing, closing, forgetting;
     uint8_t boot, relink, relink_scan;          /* radio start owed from power-on; looking for the last device */
     uint8_t idx[BLE_SCAN_N], count;
-    uint32_t epoch_ms, deadline, aged, generation, relink_t;
+    uint32_t epoch_ms, deadline, aged, generation, relink_t, probe_t;
     char shown[24];                             /* "VISIBLE 1A2B": Melodee 1A2B on the computer */
     struct ble_rf_trims trims;
     struct ble_scan_tab found;
@@ -90,6 +90,7 @@ BLE_API void ble_app_state(void)
         mb.closing = 0;
         if (mb.forgetting) { memset(&bhs_key, 0, sizeof bhs_key); mb.forgetting = 0; }
     }
+    if(ready && !mb.ready)mb.probe_t=fm1_ms;
     mb.connected = connected;
     mb.ready = ready;
     if (!ready) { mb.tr = mb.tw; mb.rt_r = mb.rt_w; }
@@ -333,8 +334,19 @@ static void mel_ble_poll(void)
     if (!mb.started) return;
     if(mb.connected){
         mb_lock();
-        if(bll.state==LL_CONN && ble_hw_time_us()-bll.t_rx>(uint32_t)bll.timeout*10000u)
-            ll_close_by(BLE_ERR_CONN_TIMEOUT,BDC_SUPERVISION);
+        if(bll.state==LL_CONN){
+            if(bgc.probe==2u){bgc.probe=0;mb.probe_t=fm1_ms;}
+            /* The baseband event counter may advance without a live peer.
+             * An ATT response proves that the remote device is still alive,
+             * even when it is idle and sends no MIDI. A read does not alter
+             * the peer or decode its value as a performance message. */
+            uint32_t elapsed=fm1_ms-mb.probe_t;
+            if(ble_hw_time_us()-bll.t_rx>(uint32_t)bll.timeout*10000u ||
+                (mb.ready && elapsed>=6000u))
+                ll_close_by(BLE_ERR_CONN_TIMEOUT,BDC_SUPERVISION);
+            else if(mb.ready && elapsed>=2000u && !bgc.probe)
+                gc_probe();
+        }
         mb_unlock();
     }
     uint8_t pdu[39]; uint16_t rssi; uint32_t n;
