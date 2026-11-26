@@ -43,3 +43,18 @@ const bad=[...projects];bad[5]=[...projects[5]];bad[5][33]^=1;
 assert.throws(()=>makePerformanceBundle({userPresets:user,libraryPresets:library,projects:bad}),/checksum/);
 assert.throws(()=>parsePerformanceBundle({...bundle,version:2}),/unsupported/);
 console.log("PASS: self-contained USER/LIBRARY/project bundle, fallback, JSON round-trip, missing-reference safety and restore ordering");
+
+import {mergeCollection,collectionFile,readCollection,removeSoundsFromCollection} from "../web/performance-backup.mjs";
+const A=user[13],B=library[12],C=Array.from(encodeRecord({engine:0,name:"BASS 14",params:params.map(x=>(x+1)%32)}));
+for(const kind of ["user","library"]){
+  const initial=mergeCollection(kind,[A,B,C,A]);
+  const mapped=[{slot:5,recordBytes:A},{slot:7,recordBytes:B}];
+  const edited=removeSoundsFromCollection(kind,initial,mapped,[{recordBytes:A},{recordBytes:B}]);
+  assert.equal(edited.removed,2);assert.deepEqual(edited.entries,[{recordBytes:C}]);assert.deepEqual(edited.packs,[]);
+  assert.equal(initial.length,3);assert.equal(mapped.length,2);
+  assert.deepEqual(readCollection(kind,JSON.parse(JSON.stringify(collectionFile(kind,edited.entries)))),edited.entries);
+  assert.deepEqual(mergeCollection(kind,edited.entries,[A,B]).map(p=>p.recordBytes),[C,A,B]);
+  const empty=removeSoundsFromCollection(kind,edited.entries,[],edited.entries);
+  assert.deepEqual(readCollection(kind,collectionFile(kind,empty.entries)),[]);
+}
+console.log("PASS: editable collections remove any source, preserve same-name variants, remove fixed-slot sources, save and reopen exact remaining records");

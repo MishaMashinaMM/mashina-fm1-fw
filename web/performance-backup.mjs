@@ -111,6 +111,16 @@ export function mergeCollection(kind,...lists){
   }
   return result;
 }
+/* Removal changes only the editable local collection and its imported
+ * fixed-slot source mapping, never device snapshots or pending writes. */
+export function removeSoundsFromCollection(kind,entries,packs,chosen){
+  check(kind==="user"||kind==="library","Expected a sound collection");
+  const keys=new Set(mergeCollection(kind,chosen).map(p=>JSON.stringify(p.recordBytes)));
+  const before=mergeCollection(kind,entries);
+  const keep=p=>!keys.has(JSON.stringify(p.recordBytes));
+  const remaining=before.filter(keep);
+  return {entries:remaining,packs:packs.filter(keep),removed:before.length-remaining.length};
+}
 export function collectionFile(kind,entries){
   return {format:"mashina-offline-collection",version:1,kind,entries:mergeCollection(kind,entries)};
 }

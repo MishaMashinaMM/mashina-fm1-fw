@@ -174,7 +174,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="panel slot-panel"><h3>FM1 USER slots <span class="fine">Drag to arrange · orange = pending</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="user-slots-second"></tbody></table></div></div></div>
 <div class="side">
 <div class="panel source-panel collection-panel" id="user-source-panel"><div class="collection-head"><h3>Available presets</h3><span id="user-collection-count" class="fine"></span></div>
-<div class="row collection-tools"><label class="file-label">Import JSON<input id="user-import" type="file" accept=".json" aria-label="Import user JSON"></label><button id="user-collection-save">Save collection</button><button id="user-collection-capture" disabled>Add device sounds</button></div>
+<div class="row collection-tools"><label class="file-label">Import JSON<input id="user-import" type="file" accept=".json" aria-label="Import user JSON"></label><label class="file-label">Open collection<input id="user-collection-open" type="file" accept=".json" aria-label="Open collection (replace list)"></label><button id="user-collection-save">Save collection</button><button id="user-collection-factory" disabled>Add factory sounds</button><button id="user-collection-capture" disabled>Add device sounds</button><button id="user-collection-remove" disabled>Remove selected</button></div>
 <div class="row collection-filters"><input id="user-search" type="search" placeholder="Search presets" aria-label="Search user collection"><select id="user-engine" aria-label="Filter engine"><option value="">All engines</option></select><select id="user-origin" aria-label="Filter sound source"><option value="all">All sources</option><option value="collection">My collection</option><option value="factory">Factory</option><option value="device">Device</option></select></div>
 <div id="user-collection" class="collection-list" aria-label="user available items"></div>
 <div class="row collection-pager"><button id="user-prev">‹</button><span id="user-page" class="fine"></span><button id="user-next">›</button><span id="user-selection-count" class="fine" title="Ctrl-click selects individual items; Shift-click selects a range; Ctrl+A selects all filtered items; Escape clears selection."></span></div>
@@ -185,7 +185,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="workspace">
 <div class="panel slot-panel"><h3>FM1 LIBRARY slots <span class="fine">Drag to arrange · orange = pending</span></h3><div class="dual-tables"><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots"></tbody></table></div><div class="scroll"><table class="slots"><thead><tr><th scope="col">Slot</th><th scope="col">Sound</th><th scope="col">References</th></tr></thead><tbody id="library-slots-second"></tbody></table></div></div></div>
 <div class="side"><div class="panel source-panel collection-panel" id="library-source-panel"><div class="collection-head"><h3>Available presets</h3><span id="library-collection-count" class="fine"></span></div>
-<div class="row collection-tools"><label class="file-label">Import JSON<input id="library-import" type="file" accept=".json" aria-label="Import library JSON"></label><button id="library-collection-save">Save collection</button><button id="library-collection-capture" disabled>Add device sounds</button></div>
+<div class="row collection-tools"><label class="file-label">Import JSON<input id="library-import" type="file" accept=".json" aria-label="Import library JSON"></label><label class="file-label">Open collection<input id="library-collection-open" type="file" accept=".json" aria-label="Open collection (replace list)"></label><button id="library-collection-save">Save collection</button><button id="library-collection-factory" disabled>Add factory sounds</button><button id="library-collection-capture" disabled>Add device sounds</button><button id="library-collection-remove" disabled>Remove selected</button></div>
 <div class="row collection-filters"><input id="library-search" type="search" placeholder="Search presets" aria-label="Search library collection"><select id="library-engine" aria-label="Filter engine"><option value="">All engines</option></select><select id="library-origin" aria-label="Filter sound source"><option value="all">All sources</option><option value="collection">My collection</option><option value="factory">Factory</option><option value="device">Device</option></select></div>
 <div id="library-collection" class="collection-list" aria-label="library available items"></div>
 <div class="row collection-pager"><button id="library-prev">‹</button><span id="library-page" class="fine"></span><button id="library-next">›</button><span id="library-selection-count" class="fine" title="Ctrl-click selects individual items; Shift-click selects a range; Ctrl+A selects all filtered items; Escape clears selection."></span></div>
@@ -227,7 +227,7 @@ import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
 import {decodeRecord,parseImportedLibrary} from "./presets-library-codec.mjs";
 import {decodeProject,encodeProject,projectsBackup,restoreProjectsBackup} from "./projects-library-codec.mjs";
-import {collectionFile,readCollection,mergeCollection,projectCollectionFromSections,groupPlacement} from "./performance-backup.mjs";
+import {collectionFile,readCollection,mergeCollection,removeSoundsFromCollection,projectCollectionFromSections,groupPlacement} from "./performance-backup.mjs";
 import {factorySourceRecords} from "./emulator-snapshot-editor.mjs";
 import {defaultFactorySelection} from "./factory-catalog-selection.mjs";
 import {projectCapability,captureFullDevice,validateFullDevice,planLibraryChanges,applyVerifiedLibraryChanges,planUserBatch,applyVerifiedUserBatch,planUserLayout,applyVerifiedUserLayout,planLibraryLayout,applyVerifiedLibraryLayout,composeFullPerformance,proposeUserImport,planProjectRestore,applyVerifiedProjectRestore,planFullRestore,applyVerifiedFullRestore} from "./full-device-backup.mjs";
@@ -236,6 +236,9 @@ const num=n=>String(n).padStart(3,"0"),pLabel=i=>"P"+(Math.floor(i/4)+1)+":"+("A
 let dev=null,writable=false,needsInitialization=false,busy=false,snapshot=null,verified=null,pending=null,projectFile=null,fullSource=null;
 let factory=[],factoryFallbacksBySize={},factoryRecordsBySize={},engineNames=new Map(),packs={user:[],library:[]},queues={user:new Map(),library:new Map()},selected=new Set();
 let offlineWorkspace=false,collections={user:[],library:[],projects:[]},pages={user:0,library:0,projects:0},dragState=null;
+const soundOrigins={user:new Map(),library:new Map()};
+const seedFactory={user:true,library:true};
+const soundKey=x=>JSON.stringify(x.recordBytes??x);
 const PAGE_SIZE=50;
 const banks=["user","library","projects"];
 const selection=Object.fromEntries(banks.map(bank=>[bank,{
@@ -267,6 +270,7 @@ function paintSelection(bank){
     row.dataset.selected=String(on);row.setAttribute("aria-selected",String(on));
   }
   $(bank+"-selection-count").textContent=s.collection.keys.size+" source · "+s.device.keys.size+" device selected";
+  if(bank!=="projects")$(bank+"-collection-remove").disabled=busy||!s.collection.keys.size;
 }
 function selectItem(bank,side,key,event){
   const s=selection[bank][side],order=selectionOrder(bank,side),toggle=event.ctrlKey||event.metaKey;
@@ -294,6 +298,9 @@ document.addEventListener("keydown",e=>{
   if(!bank)return;
   if(e.key==="Escape"){clearSelection(bank);paintSelection(bank);return;}
   if(e.target.closest("input,select,textarea,button,[contenteditable=true]"))return;
+  if(e.key==="Delete"&&bank!=="projects"&&selection[bank].side==="collection"&&selection[bank].collection.keys.size){
+    e.preventDefault();removeSelectedSounds(bank);return;
+  }
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){
     e.preventDefault();const side=selection[bank].side,s=selection[bank][side];
     s.keys=new Set(selectionOrder(bank,side));s.anchor=selectionOrder(bank,side)[0]??null;paintSelection(bank);
@@ -308,7 +315,24 @@ function clearStaging(){for(const q of Object.values(queues))q.clear();selected.
 function slotRecord(bank,slot){return queues[bank].has(slot)?queues[bank].get(slot):snapshot?.[bankKey(bank)][slot]??null;}
 function actualSound(bank,slot){const r=slotRecord(bank,slot);return r??(bank==="library"?fallbackRecord(slot):null);}
 function projectAt(slot){return selected.has(slot)&&projectFile?projectFile.sections[slot]:snapshot?.projects[slot]??null;}
-function addCollection(bank,items){clearSelection(bank,"collection");collections[bank]=mergeCollection(bank,collections[bank],items);}
+function addCollection(bank,items,origin="collection"){
+  clearSelection(bank,"collection");
+  collections[bank]=mergeCollection(bank,collections[bank],items);
+  if(bank!=="projects")for(const item of items){const key=soundKey(item);if(!soundOrigins[bank].has(key))soundOrigins[bank].set(key,origin);}
+}
+function removeSelectedSounds(bank,items=null){
+  if(busy)return;
+  const chosen=items??selection[bank].collection.items.filter(p=>selection[bank].collection.keys.has(entryKey(p)));
+  if(!chosen.length)return;
+  const result=removeSoundsFromCollection(bank,collections[bank],packs[bank],chosen);
+  collections[bank]=result.entries;packs[bank]=result.packs;
+  for(const item of chosen)soundOrigins[bank].delete(soundKey(item));
+  clearSelection(bank,"collection");$(bank+"-source").value="";
+  render();status("Removed "+result.removed+" sound(s) from the offline collection. FM1 and staged device changes are unchanged.","ok");
+}
+function addFactorySounds(bank){
+  addCollection(bank,factory.filter(x=>x.available),"factory");
+}
 function removeCollection(bank,index){clearSelection(bank,"collection");collections[bank].splice(index,1);render();}
 function engineName(n){return engineNames.get(n)??"Engine "+n;}
 function dragStart(e,payload){if(busy||$("operation").open||$("confirmation").open){e.preventDefault();return;}dragState=payload;e.dataTransfer.setData("text/plain","MASHINA layout item");e.dataTransfer.effectAllowed="copyMove";}
@@ -403,7 +427,7 @@ function bindSlotRow(row,bank,slot){
 function collectionFromDevice(bank){
   if(!snapshot)return;
   if(bank==="projects")addCollection(bank,projectCollectionFromSections(Array.from({length:32},(_,i)=>projectAt(i))));
-  else addCollection(bank,Array.from({length:bankCount(bank)},(_,i)=>bank==="user"?slotRecord(bank,i):actualSound(bank,i)).filter(Boolean));
+  else addCollection(bank,Array.from({length:bankCount(bank)},(_,i)=>bank==="user"?slotRecord(bank,i):actualSound(bank,i)).filter(Boolean),"device");
   render();status("Added complete "+bank.toUpperCase()+" records to offline collection. Save the collection to keep them.","ok");
 }
 function renderCollection(bank){
@@ -414,7 +438,7 @@ function renderCollection(bank){
   }else{
     const origin=$(bank+"-origin").value,engine=$(bank+"-engine"),old=engine.value;
     if(engine.options.length===1&&engineNames.size){for(const [n,name] of engineNames)opt(engine,String(n),name);engine.value=old;}
-    list=sources(bank).map(p=>({...p,type:"sound",engine:p.recordBytes[2],meta:engineName(p.recordBytes[2]),origin:p.id.startsWith("F")?"factory":p.id.startsWith("I")||p.id.startsWith("C")?"collection":"device"}))
+    list=sources(bank).map(p=>({...p,type:"sound",engine:p.recordBytes[2],meta:engineName(p.recordBytes[2]),origin:p.origin}))
       .filter(p=>(origin==="all"||origin===p.origin)&&(engine.value===""||Number(engine.value)===p.engine));
   }
   list=list.filter(p=>(p.name+" "+p.meta).toLowerCase().includes(search));
@@ -448,27 +472,28 @@ function renderCollection(bank){
         row.append(chip);
       }
     }else{
-      const stored=collections[bank].findIndex(x=>eq(x.recordBytes,p.recordBytes));
-      const action=document.createElement("button");action.textContent=stored>=0?"−":"+";action.title=stored>=0?"Remove from offline collection":"Add to offline collection";
-      action.onclick=()=>{if(stored>=0){removeCollection(bank,stored);if(p.id.startsWith("I")){packs[bank]=packs[bank].filter(x=>!eq(x.recordBytes,p.recordBytes));render();}}else{addCollection(bank,[p]);render();}};
+      const action=document.createElement("button");action.textContent="×";action.title="Remove from Available presets (offline only)";
+      action.setAttribute("aria-label","Remove "+p.name);action.disabled=busy;
+      action.onclick=()=>removeSelectedSounds(bank,[p]);
       row.append(action);
       row.addEventListener("dblclick",e=>{if(e.target.closest("button"))return;$(bank+"-source").value=p.id;$(bank+"-manual").open=true;sourceControls(bank);});
     }
     if(project){const remove=document.createElement("button");remove.textContent="−";remove.title="Remove from collection";remove.onclick=()=>removeCollection(bank,p.index);row.append(remove);}
     host.append(row);
   }
-  if(!n)host.textContent="No matching items. Import JSON or drag device records here.";
-  $(bank+"-collection-count").textContent=collections[bank].length+" saved offline";
+  if(!n)host.textContent=project?"No matching items. Import JSON or drag device records here.":"No matching presets. Import JSON, open a collection, or add factory/device sounds.";
+  $(bank+"-collection-count").textContent=collections[bank].length+" in collection";
   $(bank+"-page").textContent=n?(start+1)+"–"+Math.min(start+PAGE_SIZE,n)+" / "+n:"0 items";
   $(bank+"-prev").disabled=page===0;$(bank+"-next").disabled=page===maxPage;
   $(bank+"-collection-capture").disabled=!snapshot||busy;
-  $(bank+"-collection-save").disabled=!collections[bank].length||busy;
+  $(bank+"-collection-save").disabled=busy;
+  if(!project)$(bank+"-collection-factory").disabled=busy||!factory.length;
   host.tabIndex=0;host.setAttribute("role","listbox");host.setAttribute("aria-multiselectable","true");
   host.onfocus=()=>{selection[bank].side="collection";};
   dropTarget(host,p=>project?["project-slot","project-slot-group"].includes(p.type):["slot","slot-group"].includes(p.type)&&p.bank===bank,p=>{
     const slots=p.type==="project-slot"?[projectIndex(p.slot)]:p.type==="slot"?[p.slot]:p.slots;
     if(project)addCollection(bank,slots.map(i=>({sections:Array.from({length:4},(_,j)=>projectAt(i*4+j))})));
-    else addCollection(bank,slots.map(i=>actualSound(bank,i)).filter(Boolean));
+    else addCollection(bank,slots.map(i=>actualSound(bank,i)).filter(Boolean),"device");
     render();status("Added "+slots.length+" selected item(s) to offline collection. Save collection to keep it.","ok");
   });
   paintSelection(bank);
@@ -479,6 +504,10 @@ for(const bank of ["user","library","projects"]){
   $(bank+"-next").onclick=()=>{pages[bank]++;renderCollection(bank);};
   $(bank+"-collection-save").onclick=()=>download("mashina-"+bank+"-collection.json",collectionFile(bank,collections[bank]));
   $(bank+"-collection-capture").onclick=()=>collectionFromDevice(bank);
+  if(bank!=="projects"){
+    $(bank+"-collection-remove").onclick=()=>removeSelectedSounds(bank);
+    $(bank+"-collection-factory").onclick=()=>{addFactorySounds(bank);render();status("Factory presets added to offline collection.","ok");};
+  }
 }
 function status(text,state=""){
   $("status").textContent=text;$("status").dataset.state=state;
@@ -583,11 +612,10 @@ function acceptSnapshot(file,name,{checked=false}={}){
 }
 function ready(){return !!(dev?.connected&&writable&&verified&&!busy);}
 function sources(bank){
-  const a=packs[bank].map((p,i)=>({id:"I"+i,name:"Imported · "+p.name,recordBytes:p.recordBytes}));
-  const imported=new Set(a.map(p=>JSON.stringify(p.recordBytes)));
-  collections[bank].forEach((p,i)=>{if(!imported.has(JSON.stringify(p.recordBytes)))a.push({id:"C"+i,name:"Collection · "+label(p.recordBytes),recordBytes:p.recordBytes});});
-  if(snapshot){for(const [key,offset] of [["userPresets",1],["libraryPresets",33]])snapshot[key].forEach((r,i)=>{if(r)a.push({id:key+i,name:(offset===1?"USER ":"LIBRARY ")+num(i+offset)+" · "+label(r),recordBytes:r});});}
-  return a.concat(factory.filter(x=>x.available).map(x=>({...x,name:"Factory · "+x.name})));
+  return collections[bank].map((p,i)=>{
+    const origin=soundOrigins[bank].get(soundKey(p))??"collection";
+    return {id:"C"+i,name:label(p.recordBytes),origin,recordBytes:p.recordBytes};
+  });
 }
 function fallback(i){const name=factoryFallbacksBySize[bankCount("library")]?.[i];return name?name+" (factory)":"Factory fallback";}
 function sourceControls(bank){
@@ -595,7 +623,7 @@ function sourceControls(bank){
   src.replaceChildren();opt(src,"","Choose source sound");
   const groups=new Map();
   for(const p of sources(bank)){
-    const group=p.id.startsWith("I")?"Imported sound pack":p.id.startsWith("userPresets")?"Device USER":p.id.startsWith("libraryPresets")?"Device LIBRARY overrides":"Factory catalog";
+    const group=p.origin==="factory"?"Factory catalog":p.origin==="device"?"Device sounds":"Offline collection";
     if(!groups.has(group)){const node=document.createElement("optgroup");node.label=group;src.append(node);groups.set(group,node);}
     opt(groups.get(group),p.id,p.name);
   }
@@ -702,9 +730,20 @@ function apply(fn,name,title){return run(async()=>{if(!dev||!writable||!verified
 for(const bank of ["user","library"]){
   fileInput(bank+"-import",file=>{
     if(file?.format==="mashina-full-device")file=validateFullDevice(file);
-    const imported=readCollection(bank,file);addCollection(bank,imported);
-    packs[bank]=Array.isArray(file.patches)&&file.patches.length<=96?parseImportedLibrary(file).map(x=>({slot:x.slot,...decodeRecord(x.record)})):[];
+    const imported=readCollection(bank,file);
+    const mapped=Array.isArray(file.patches)&&file.patches.length<=96?parseImportedLibrary(file).map(x=>({slot:x.slot,...decodeRecord(x.record)})):[];
+    addCollection(bank,imported);
+    packs[bank]=mapped;
     pages[bank]=0;$(bank+"-source").value="";status("Imported "+imported.length+" complete sounds. Offline collection: "+collections[bank].length+". Save collection to keep it.");
+  });
+  fileInput(bank+"-collection-open",file=>{
+    const imported=readCollection(bank,file);
+    const mapped=Array.isArray(file.patches)&&file.patches.length<=96?parseImportedLibrary(file).map(x=>({slot:x.slot,...decodeRecord(x.record)})):[];
+    if(!confirm("Replace the offline Available presets list with this file? This does not modify FM1 or staged device changes."))return;
+    seedFactory[bank]=false;collections[bank]=[];soundOrigins[bank].clear();
+    addCollection(bank,imported);packs[bank]=mapped;
+    pages[bank]=0;$(bank+"-search").value="";$(bank+"-origin").value="all";$(bank+"-engine").value="";$(bank+"-source").value="";
+    status("Opened "+imported.length+" sounds as the complete offline collection.","ok");
   });
   $(bank+"-source").onchange=render;$(bank+"-target").onchange=render;
   $(bank+"-import-all").onclick=()=>run(async()=>{
@@ -765,5 +804,5 @@ $("full-apply").onclick=async()=>{if(!await askConfirmation({title:"Restore comp
 $("advanced-link").onclick=e=>{if(dev||busy){e.preventDefault();status("Disconnect FM1 before opening the experimental lab.","error");}};
 window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else dev?.close();});
 render();
-(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets)engineNames.set(p.engine,p.engineName);for(const size of [32,96]){factoryFallbacksBySize[size]=[];factoryRecordsBySize[size]=[];defaultFactorySelection(catalog,size).forEach((index,i)=>{const p=catalog.presets[index];factoryFallbacksBySize[size][i]=p.name;factoryRecordsBySize[size][i]=factory.find(x=>x.id==="F"+p.factoryIndex&&x.available)?.recordBytes??null;});}render();}catch(e){console.warn(e.message);}})();
+(async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets)engineNames.set(p.engine,p.engineName);for(const size of [32,96]){factoryFallbacksBySize[size]=[];factoryRecordsBySize[size]=[];defaultFactorySelection(catalog,size).forEach((index,i)=>{const p=catalog.presets[index];factoryFallbacksBySize[size][i]=p.name;factoryRecordsBySize[size][i]=factory.find(x=>x.id==="F"+p.factoryIndex&&x.available)?.recordBytes??null;});}for(const bank of ["user","library"]){if(seedFactory[bank])addFactorySounds(bank);seedFactory[bank]=false;}render();}catch(e){console.warn(e.message);}})();
 </script></main></body></html>
