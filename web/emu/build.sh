@@ -44,6 +44,7 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" -e "s/@LIBRARY_SLOTS
     -e 's#../mashina-nav.css#./mashina-nav.css#g' \
     -e 's#../mashina-nav.js#./mashina-nav.js#g' \
     -e 's#../mashina-emu-locale.js#./mashina-emu-locale.js#g' \
+    -e "s/@FACTORY_STORE_SUFFIX@/${EMU_STORE_SUFFIX:-}/g" \
     web/emu/index.html > build/emu/index.html
 cp web/mashina-nav.css web/mashina-nav.js web/mashina-emu-locale.js build/emu/
 cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs web/emu/stems.js web/emu/sample-bank.js web/fm1backup.js build/emu/
