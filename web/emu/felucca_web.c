@@ -504,6 +504,44 @@ EXPORT uint32_t web_midi(uint32_t status, uint32_t d1, uint32_t d2)
     return (uint32_t)midi_enqueue((status >> 4) | status << 8 | (d1 & 127u) << 16 | (d2 & 127u) << 24, 1);
 }
 
+#if defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE
+/* Simulated link lifecycle; the actual upstream BLE-MIDI packet decoder is shared
+ * with the device build. Radio discovery, encryption and timing are not simulated. */
+#define BLE_API static
+#include "../../firmware/src/ble/ble_midi.c"
+static struct ble_midi_dec web_ble_decoder;
+static uint8_t web_ble_buffer[20];
+static uint32_t web_ble_state, web_ble_received;
+EXPORT uint32_t web_ble_control(uint32_t cmd)
+{
+    /* 0 off, 1 idle, 2 scan, 3 connected. Commands: off/on/scan/connect/disconnect. */
+    if (cmd == 0 || cmd == 4) {
+        if (web_ble_state == 3) midi_in_overflow = 1;
+        web_ble_state = cmd == 0 ? 0 : web_ble_state ? 1 : 0;
+        ble_midi_dec_reset(&web_ble_decoder);
+    } else if (cmd == 1 && !web_ble_state) web_ble_state = 1;
+    else if (cmd == 2 && web_ble_state == 1) web_ble_state = 2;
+    else if (cmd == 3 && web_ble_state == 2) {
+        ble_midi_dec_reset(&web_ble_decoder);
+        web_ble_state = 3;
+    }
+    return web_ble_state;
+}
+EXPORT uint32_t web_ble_buf(void) { return (uint32_t)(uintptr_t)web_ble_buffer; }
+EXPORT uint32_t web_ble_count(void) { return web_ble_received; }
+static void web_ble_sink(void *ctx, uint32_t pkt, uint16_t ts)
+{
+    (void)ctx; (void)ts;
+    uint32_t st = (pkt >> 8) & 255u;
+    if (st >= 0x80u && st < 0xF0u && midi_enqueue(pkt, 3u)) web_ble_received++;
+}
+EXPORT uint32_t web_ble_packet(uint32_t n)
+{
+    if (web_ble_state != 3 || !n || n > sizeof web_ble_buffer) return 0;
+    return ble_midi_dec(&web_ble_decoder, web_ble_buffer, (uint16_t)n, web_ble_sink, 0);
+}
+#endif
+
 /* the LEDs: bit b = the button labelled b lit (bit 14: PLAY's green), keys bit k; the dim glow and the breath alike */
 static uint32_t led_on(const uint8_t *l, uint32_t id)
 {

@@ -116,6 +116,28 @@ footer small { font-size: 11px; opacity: .8; }
 </div>
 
 
+<details class="midi-test" id="ble-sim" hidden>
+  <summary>Bluetooth MIDI — simulated single controller</summary>
+  <p>Radio and pairing are simulated; real BLE-MIDI packets are decoded by the firmware's shared decoder. No physical Bluetooth device is accessed.</p>
+  <div class="controls">
+    <button id="ble-on" disabled>Bluetooth ON</button>
+    <button id="ble-off" disabled>OFF</button>
+    <button id="ble-scan" disabled>Scan</button>
+    <label>Simulated device <select id="ble-device"><option>SMC-PAD (simulated)</option><option>Chocolate Plus (simulated)</option></select></label>
+    <button id="ble-connect" disabled>Connect</button>
+    <button id="ble-drop" disabled>Disconnect</button>
+  </div>
+  <p id="ble-state">OFF</p>
+  <div class="controls">
+    <label>Channel <input id="ble-ch" type="number" min="1" max="16" value="1"></label>
+    <label>Note / CC / PC <input id="ble-data" type="number" min="0" max="127" value="60"></label>
+    <label>Velocity / value <input id="ble-value" type="number" min="0" max="127" value="100"></label>
+    <button id="ble-note-on" disabled>Note On</button><button id="ble-note-off" disabled>Note Off</button>
+    <button id="ble-cc" disabled>Send CC</button><button id="ble-pc" disabled>Send PC</button>
+  </div>
+  <p id="ble-count">Accepted MIDI events: 0</p>
+</details>
+
 <details class="midi-test" id="midi-test">
   <summary data-ml="midi">MIDI test input (channels 1–16, no external keyboard required)</summary>
   <div class="controls">
@@ -574,6 +596,26 @@ const testValue = (id, lo, hi) => {
   el.value = String(v);
   return v;
 };
+const blePanel = document.getElementById("ble-sim");
+const bleSim = "@BLE_SIM@" === "1";
+let bleState = 0, bleReady = false;
+function bleRefresh() {
+  blePanel.hidden = !bleSim;
+  for (const [id,allowed] of [["on",bleState===0],["off",bleState!==0],["scan",bleState===1],["connect",bleState===2],["drop",bleState===2||bleState===3],["note-on",bleState===3],["note-off",bleState===3],["cc",bleState===3],["pc",bleState===3]])
+    document.getElementById("ble-"+id).disabled = !bleReady || !allowed;
+  document.getElementById("ble-device").disabled = !bleReady || bleState!==2;
+  document.getElementById("ble-state").textContent = ["OFF","IDLE","SCAN: choose simulated device","CONNECTED: "+document.getElementById("ble-device").value][bleState];
+}
+for (const [id,cmd] of [["on",1],["off",0],["scan",2],["connect",3],["drop",4]])
+  document.getElementById("ble-"+id).onclick = () => send({type:"ble-control",cmd});
+for (const [id,st] of [["note-on",0x90],["note-off",0x80],["cc",0xb0],["pc",0xc0]])
+  document.getElementById("ble-"+id).onclick = () => {
+    const ch=testValue("ble-ch",1,16)-1, d=testValue("ble-data",0,127), v=testValue("ble-value",0,127), t=Math.floor(performance.now())&8191;
+    const data=[0x80|(t>>7),0x80|(t&127),st|ch,d];
+    if(st!==0xc0) data.push(st===0x80?0:v);
+    send({type:"ble-packet",data});
+  };
+bleRefresh();
 const testChannel = () => testValue("midi-test-channel", 1, 16) - 1;
 const testNote = () => testValue("midi-test-note", 0, 127);
 const testVelocity = () => testValue("midi-test-velocity", 1, 127);
@@ -713,6 +755,8 @@ async function switchOn() {
         if (m.type === "ready") {
           res();
         }
+        else if (m.type === "ble-state") { bleState=m.state; bleRefresh(); }
+        else if (m.type === "ble-count") document.getElementById("ble-count").textContent="Accepted MIDI events: "+m.count;
         else if (m.type === "flash-snapshot") {
           snapshotRequested=false;
           flashExport.disabled=false;
@@ -742,6 +786,7 @@ async function switchOn() {
     if(flashSession)flashStatus.textContent="Isolated imported emulator running. Export any changes before closing: browser saves remain untouched.";
     document.getElementById("start").hidden = true;
     midiTestEnable(true);
+    bleReady=true; bleRefresh();
     go.textContent = "On";
     if (ac.sampleRate !== 44100) console.warn(`MASHINA: the browser plays at ${ac.sampleRate} Hz, the pitch is off by ${(1200 * Math.log2(ac.sampleRate / 44100)).toFixed(0)} cents.`);
     syncButtons();
@@ -752,6 +797,7 @@ async function switchOn() {
     node = null;
     flashSession=false;
     midiTestEnable(false);
+    bleReady=false; bleState=0; bleRefresh();
     go.disabled = false;
     go.textContent = "Switch on";
     say("Could not start: " + (err && err.message || err) + ". A current Chrome, Edge, Firefox or Safari should work.");

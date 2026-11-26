@@ -115,6 +115,18 @@ if (typeof registerProcessor === "function") {
       else if (m.type === "buttons" || m.type === "keys") this.queue.push(m);
       else if (m.type === "enc") ex.web_enc(m.role, m.n | 0);
       else if (m.type === "master") ex.web_master(m.value | 0);
+      else if (m.type === "ble-control" && ex.web_ble_control) {
+        const state = ex.web_ble_control(m.cmd | 0);
+        this.port.postMessage({type:"ble-state",state});
+      }
+      else if (m.type === "ble-packet" && ex.web_ble_packet) {
+        const data = m.data;
+        if (data.length > 0 && data.length <= 20) {
+          new Uint8Array(ex.memory.buffer,ex.web_ble_buf(),data.length).set(data);
+          ex.web_ble_packet(data.length);
+        }
+        this.port.postMessage({type:"ble-count",count:ex.web_ble_count()});
+      }
       else if (m.type === "midi") ex.web_midi(m.data[0] | 0, m.data[1] | 0, m.data[2] | 0);
       else if (m.type === "visible") this.period = m.on ? 1 / 30 : 1 / 4;
     }

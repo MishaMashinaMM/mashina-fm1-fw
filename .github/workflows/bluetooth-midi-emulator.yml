@@ -1,0 +1,40 @@
+name: Bluetooth MIDI simulated emulator
+on:
+  push:
+    branches: [bluetooth-midi]
+    paths: ['web/emu/**', 'firmware/src/**', 'tools/**', 'tests/emu_ble_test.mjs', '.github/workflows/bluetooth-midi-emulator.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emulator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: emscripten-core/setup-emsdk@v15
+      - name: Generate firmware tables and UI assets
+        run: |
+          python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Fetch pinned BLE decoder
+        run: sh tools/fetch_ble_experiment.sh
+      - name: Build LIB96 Bluetooth simulator
+        env:
+          MASHINA_EMU_REFS: '1'
+          MASHINA_EMU_LIB96: '1'
+          MASHINA_EMU_BLE: '1'
+          EMU_VERSION: 'v0.15-ble-sim'
+        run: sh web/emu/build.sh
+      - name: Test actual WASM decoder and LIB96 regression
+        run: |
+          node tests/emu_ble_test.mjs
+          node tests/emu_lib96_test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-bluetooth-midi-emulator
+          path: build/emu/
+          retention-days: 14

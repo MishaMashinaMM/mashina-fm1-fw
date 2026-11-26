@@ -33,6 +33,7 @@ emcc ${EMU_OPT:--O2} -ffp-contract=off -std=gnu99 -w ${EMU_CFLAGS:-} \
     "-DFELUCCA_NO_SEQUENCER=${FELUCCA_NO_SEQUENCER:-1}" \
     "-DMASHINA_EMU_REFS=${MASHINA_EMU_REFS:-0}" \
     "-DMASHINA_EMU_LIB96=${MASHINA_EMU_LIB96:-0}" \
+    "-DMASHINA_EMU_BLE=${MASHINA_EMU_BLE:-0}" \
     "-DFELUCCA_VERSION=\"$VERSION\"" -Ibuild/gen -Ifirmware/src \
     --no-entry -sSTANDALONE_WASM -sSTACK_SIZE=1048576 -sINITIAL_MEMORY=33554432 -sFILESYSTEM=0 \
     -o build/emu/felucca.wasm web/emu/felucca_web.c
@@ -44,6 +45,7 @@ sed -e "s/@VERSION@/$VERSION/g" -e "s/@PREVIEW@/$PREVIEW/g" -e "s/@LIBRARY_SLOTS
     -e 's#../mashina-nav.css#./mashina-nav.css#g' \
     -e 's#../mashina-nav.js#./mashina-nav.js#g' \
     -e 's#../mashina-emu-locale.js#./mashina-emu-locale.js#g' \
+    -e "s/@BLE_SIM@/${MASHINA_EMU_BLE:-0}/g" \
     web/emu/index.html > build/emu/index.html
 cp web/mashina-nav.css web/mashina-nav.js web/mashina-emu-locale.js build/emu/
 cp web/emu/worklet.js web/emu/emulator-flash-backup.mjs web/emu/stems.js web/emu/sample-bank.js web/fm1backup.js build/emu/
