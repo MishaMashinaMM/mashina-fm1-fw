@@ -3,8 +3,6 @@
 #pragma once
 #define BLE_API static
 #define BLE_DEVICE_NAME "MASHINA"
-#define FM1_IRQ_BLE_EVENT 45u
-#define FM1_IRQ_BLE_RX 29u
 #define BLE_CENTRAL 1
 #define BLE_MIDI_INITIAL_READ 1
 #define FELUCCA_BLE_BOND 1
