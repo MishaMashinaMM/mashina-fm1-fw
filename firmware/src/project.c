@@ -3265,6 +3265,11 @@ static void project_load(uint32_t slot)
 /* settings + learned panel table: one flash object. The flash copy wins at
  * boot (the .noinit copies are garbage after a power-off). */
 #include "settings_persist.c"
+#if MASHINA_LIBRARY_SLOTS == 96u
+#include "mashina_factory_performance.h"
+_Static_assert(sizeof(persist_t)==sizeof mashina_factory_object_1,"factory settings ABI");
+_Static_assert(MPR_MAX_RECORD==sizeof mashina_factory_object_0,"factory performance ABI");
+#endif
 #if FELUCCA_FLASH
 static persist_t persist_saved;
 static uint8_t persist_pending;                 /* 1 requested, 2 waiting after a flash error */
@@ -3309,8 +3314,15 @@ static void persist_boot(void)                    /* before settings_init / pane
         if (settings_import(&p, n)) {
             persist_saved = p;
             settings_jiant_once(&p);               /* (0.6.81: the saved copy without the mark: saved again later) */
-        } else
-            settings_fresh();                      /* (0.9.7) none saved: new settings' defaults (SKIN AIR) */
+        } else {
+#if MASHINA_LIBRARY_SLOTS == 96u
+            memcpy(&p,mashina_factory_object_1,sizeof p);
+            if(settings_import(&p,sizeof p)){persist_saved=p;settings_jiant_once(&p);}
+            else settings_fresh();
+#else
+            settings_fresh();
+#endif
+        }
     }
     song_index_load();                             /* the current song: whose sections fill the slots */
     {   /* projects: fill empty RAM slots from flash, so the slot list is right after power-on */
@@ -3654,6 +3666,10 @@ static int autosave_boot(int allowed)
     }
 #else
     (void)allowed;
+#endif
+#if MASHINA_LIBRARY_SLOTS == 96u
+    if (!rc && !mpr_restore_unsaved(mashina_factory_object_0))
+        rc=1;
 #endif
     as.saved = as.seen = autosave_sig();
 #if defined(FELUCCA_PROJECT_REFS) && FELUCCA_PROJECT_REFS

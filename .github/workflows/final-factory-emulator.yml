@@ -1,0 +1,35 @@
+name: Final factory performance emulator
+on:
+  push:
+    branches: [final-factory-performance]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emulator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: emscripten-core/setup-emsdk@v15
+      - name: Generate firmware tables and UI assets
+        run: |
+          python3 -m pip install Pillow==12.3.0 numpy==2.3.5 fonttools==4.61.1 Markdown==3.9
+          python3 -c "import sys; sys.path.insert(0, 'tools'); import build; build.generate()"
+      - name: Build final factory performance emulator
+        env:
+          MASHINA_EMU_REFS: '1'
+          MASHINA_EMU_LIB96: '1'
+          EMU_VERSION: 'v0.15-final-factory-sim'
+          EMU_STORE_SUFFIX: '-final-factory-v1'
+        run: sh web/emu/build.sh
+      - name: Verify exact factory records and startup references
+        run: node tests/emu_final_factory_test.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashina-final-factory-emulator
+          path: build/emu/
+          retention-days: 14
