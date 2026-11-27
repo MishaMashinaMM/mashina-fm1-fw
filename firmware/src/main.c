@@ -328,6 +328,9 @@ static void fm1_main(void)
         }
     }
     kb_boot_hold = 0;
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    if(!bootguard.failed&&(mb_saved.flags&MB_RADIO))mb.start_req=1;
+#endif
     lcd_fill(0, 0, 240, 240, T_BG);
     scrn.idle = fm1_ms;                        /* (MENU > SCREEN OFF: from here) */
     if (said)                                  /* (0.9.12) cpu_boot */

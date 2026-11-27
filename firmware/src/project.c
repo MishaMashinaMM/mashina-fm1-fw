@@ -3310,7 +3310,16 @@ static void persist_boot(void)                    /* before settings_init / pane
 #endif
 #endif
     {
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+        uint32_t ext_len=0;
+        _Static_assert(sizeof mb_saved <= EXT_MAX_DATA, "BLE settings extension fits");
+        int n=st_load_ext(OBJ_SETTINGS,&p,sizeof p,&mb_saved,sizeof mb_saved,&ext_len);
+        if(n<0 || ext_len!=sizeof mb_saved || mb_saved.magic!=MEL_BLE_MAGIC)
+            memset(&mb_saved,0,sizeof mb_saved);
+        if(n==-2)n=st_load(OBJ_SETTINGS,&p,sizeof p);
+#else
         int n = st_load(OBJ_SETTINGS, &p, sizeof p);
+#endif
         if (settings_import(&p, n)) {
             persist_saved = p;
             settings_jiant_once(&p);               /* (0.6.81: the saved copy without the mark: saved again later) */
@@ -3407,20 +3416,36 @@ static uint32_t lib_gen(void) { return proj_wire_gen + song_cur * 977u; }   /* (
 
 #include "song_main.c"                          /* the song: the main loop's part (song_chain.c) */
 
+static int autosave_quiet(void);
 static void settings_poll(void)
 {
 #if FELUCCA_FLASH
     persist_t p;
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    if(mb_revision!=mb_committed){
+        if(!autosave_quiet())return;
+        if(!persist_pending)persist_pending=1;
+    }
+#endif
     if (!persist_pending || !flash_ok || transport_busy() ||
         (persist_pending == 2u && (uint32_t)(fm1_ms - persist_retry_ms) < 1000u))
         return;
     p = persist_saved;
     settings_export(&p);
-    if (!memcmp(&p, &persist_saved, sizeof p)) {
+    if (!memcmp(&p, &persist_saved, sizeof p)
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+        && mb_revision==mb_committed
+#endif
+    ) {
         persist_pending = 0;
         return;                                    /* unchanged: no erase cycle */
     }
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+    if (st_save_ext(OBJ_SETTINGS,&p,sizeof p,&mb_saved,sizeof mb_saved)==0) {
+        mb_committed=mb_revision;
+#else
     if (st_save(OBJ_SETTINGS, &p, sizeof p) == 0) {
+#endif
         persist_saved = p;
         persist_pending = 0;
     } else {

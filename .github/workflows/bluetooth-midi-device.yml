@@ -69,7 +69,7 @@ jobs:
           s=p.read_text()
           needle='  <p><button id="go" disabled data-t="install"></button></p>'
           assert needle in s
-          s=s.replace(needle,'<p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL BLUETOOTH: ONLY for an already initialized MASHINA v0.15 (32 USER / 96 LIBRARY) FM1. Export a full backup before installing. No data formatter is included. Experimental two-controller pairing. Test both devices, independent disconnect and notes. Bluetooth is OFF at boot. GLO > SYSTEM > BLUETOOTH: K1 radio, K2 scan, K3 select, K4 connect/disconnect.</p>'+needle)
+          s=s.replace(needle,'<p style="border:2px solid #ff9900;padding:12px">EXPERIMENTAL BLUETOOTH: ONLY for an already initialized MASHINA v0.15 (32 USER / 96 LIBRARY) FM1. Export a full backup before installing. No data formatter is included. Experimental two-controller pairing. Test both devices, independent disconnect and notes. Bluetooth remembers both controllers and the last radio ON/OFF state. Test cold boot in both controller power-on orders. GLO > SYSTEM > BLUETOOTH: K1 radio, K2 scan, K3 select, K4 connect/disconnect.</p>'+needle)
           p.write_text(s)
           for q in Path("build/ble-test/webapp").glob("installer-orange-*/index.html"):q.write_text(s)
           PY

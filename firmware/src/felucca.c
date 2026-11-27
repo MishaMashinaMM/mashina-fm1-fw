@@ -194,6 +194,9 @@
 #if FELUCCA_LIB32
 #include "preset_library_runtime.c" /* 32 additional, uploadable sound records; opt-in only */
 #endif
+#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#include "mashina_ble.h"
+#endif
 #include "project.c"
 #if FELUCCA_OTA
 #include "ota.c"
@@ -201,7 +204,6 @@
 #include "editor.c"              /* web editor SysEx (needs the OTA SysEx plumbing) */
 #endif
 #if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
-#include "mashina_ble.h"
 #include "mashina_ble.c"
 #endif
 #if FELUCCA_CDC

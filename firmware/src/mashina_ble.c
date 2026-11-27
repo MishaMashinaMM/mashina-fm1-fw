@@ -38,10 +38,18 @@ static struct {
     struct ble_rf_trims trims;
     struct ble_scan_tab found;
     uint32_t aged;
-    uint8_t idx[BLE_SCAN_N],count,on,started,cal,scanning,scan_slot,start_req,pick;
+    uint8_t idx[BLE_SCAN_N],count,on,started,cal,scanning,scan_slot,start_req,pick,auto_scan,next_scan;
 } mb __attribute__((section(".lowbuf"),aligned(4)));
 
 static void mb_dirty(void){mb_saved.magic=MEL_BLE_MAGIC;mb_revision++;}
+static void mb_save_peer(uint32_t slot)
+{
+    uint8_t raw[BLE_DEV_STORE_SIZE];
+    ble_store_save(&mb_peer[slot].store,raw);
+    if(memcmp(raw,mb_saved.dev[slot],sizeof raw)){
+        memcpy(mb_saved.dev[slot],raw,sizeof raw);mb_dirty();
+    }
+}
 static uint32_t mb_lock_depth;
 static void mb_lock(void)
 {
@@ -143,8 +151,8 @@ static void mel_ble_boot(void) /* CPU1 held, IRQs off; does not start the radio 
     int save = 0;
     if (mb_saved.magic != MEL_BLE_MAGIC) memset(&mb_saved, 0, sizeof mb_saved);
     int complete = ble_vm_scan(mel_ble_flash_read, 0, &info, &vm, 0, 0);
-    mb.cal = (uint8_t)(ble_rf_choose(complete, &vm, info.area, mb_saved.rf, &mb.trims, &save) != BLE_RF_NONE);
-    if (save) mb_dirty();
+    mb.cal = (uint8_t)(ble_rf_choose(complete, &vm, info.area, mb_rf, &mb.trims, &save) != BLE_RF_NONE);
+    (void)save; /* RF copy remains session-local; stock RF sectors are read-only. */
     if (!mb.cal) {
         /* No stored calibration: the radio measures its own at start (hal/fm1_rf_cal.h, JieLi's SDK calibration
          * in C). 106 / 107 / 108 are the SDK board's constants; 187 is measured, about 160 ms. */
@@ -153,7 +161,7 @@ static void mel_ble_boot(void) /* CPU1 held, IRQs off; does not start the radio 
         fm1_rf_cal_on = 1;
         mb.cal = 1;                           /* (a saved calibration imported later still replaces it) */
     }
-    ble_store_load(&mb_peer[0].store, mb_saved.dev);
+    for(uint32_t i=0;i<2u;i++)ble_store_load(&mb_peer[i].store,mb_saved.dev[i]);
     ble_scan_clear(&mb.found);
 
     ble_hw_wl82_attach(); fm1_ble_crumb_boot();
@@ -216,7 +224,7 @@ static void mb_drop_peer(uint32_t slot,int forget)
     else if(bll.state==LL_SCAN)ble_ll_scan(0);
     p->connected=p->closing=0;
     bcen.st=BLE_CS_IDLE;
-    if(forget){ble_store_forget(&p->store);if(!slot){ble_store_save(&p->store,mb_saved.dev);mb_dirty();}}
+    if(forget){ble_store_forget(&p->store);mb_save_peer(slot);}
     mashina_proto_select(0);
 }
 static int mel_ble_set(int on)
@@ -235,6 +243,9 @@ static int mel_ble_set(int on)
     mb_lock();
     if(!on){mb_scan_stop();mb_drop_peer(0,0);mb_drop_peer(1,0);}
     mb.on=!!on;
+    if(!!(mb_saved.flags&MB_RADIO)!=!!on){
+        mb_saved.flags=(mb_saved.flags&~MB_RADIO)|(on?MB_RADIO:0u);mb_dirty();
+    }
     for(uint32_t i=0;i<2u;i++){
         mashina_proto_select(i);ble_enable(on);
         MP.relink=on&&ble_store_has_last(&MP.store);
@@ -250,7 +261,7 @@ static void mel_ble_scan(int on)
     if(!mb.started)return;
     mb_lock();
     int slot=mb_free();
-    if(on&&mb.on&&slot>=0)mb_scan_start((uint32_t)slot);
+    if(on&&mb.on&&slot>=0){mb_scan_start((uint32_t)slot);mb.auto_scan=0;}
     else if(!on)mb_scan_stop();
     mb_unlock();
 }
@@ -289,13 +300,22 @@ static int mel_ble_connect(uint32_t row)
 {
     if(row>=mb.count)return 0;
     mb_lock();int slot=mb_free(),ok=0;
-    if(slot>=0)ok=mb_connect((uint32_t)slot,&mb.found.e[mb.idx[row]]);
+    struct ble_found *f=&mb.found.e[mb.idx[row]];
+    for(uint32_t i=0;i<2u;i++)if(mb_same(&mb_peer[i].store,f->addr,f->addr_rand)){
+        slot=mb_peer[i].busy||mb_peer[i].closing?-1:(int)i;break;
+    }
+    if(slot>=0&&!mb_same(&mb_peer[slot].store,f->addr,f->addr_rand))
+        for(uint32_t i=0;i<2u;i++)if(!mb_peer[i].busy&&!mb_peer[i].closing&&!ble_store_has_last(&mb_peer[i].store)){slot=(int)i;break;}
+    if(slot>=0)ok=mb_connect((uint32_t)slot,f);
     mb_unlock();return ok;
 }
 static int mel_ble_last(void)
 {
     if(!mb.on)return 0;
-    mb_peer[0].relink=1;mb_peer[0].relink_t=fm1_ms-30000u;
+    for(uint32_t i=0;i<2u;i++){
+        mb_peer[i].relink=ble_store_has_last(&mb_peer[i].store);
+        mb_peer[i].relink_t=fm1_ms-30000u;
+    }
     return 1;
 }
 static void mb_peer_poll(uint32_t slot)
@@ -320,16 +340,19 @@ static void mb_peer_poll(uint32_t slot)
             if(k->has&BLE_KEYS_LTK)ble_store_set_bond(&p->store,k->ltk,k->rand,k->ediv,k->has&BLE_KEYS_AUTH);
             if(k->has&BLE_KEYS_ID)ble_store_set_id(&p->store,k->irk,k->id,k->id_rand);
         }
-        if(!slot){ble_store_save(&p->store,mb_saved.dev);mb_dirty();}
+        mb_save_peer(slot);
         if(state==BLE_CS_READY){p->was_ready=1;p->relink=1;}
     }
     if(state==BLE_CS_IDLE){
         uint8_t why=ble_central_fail();
-        p->busy=0;p->relink_t=fm1_ms-30000u;
-        if(why==BLE_CF_KEY){ble_store_drop_bond(&p->store);if(!slot){ble_store_save(&p->store,mb_saved.dev);mb_dirty();}}
-        if(why!=BLE_CF_LOST&&why!=BLE_CF_NONE)p->relink=0;
+        p->busy=0;p->relink_t=fm1_ms;
+        if(why==BLE_CF_KEY){ble_store_drop_bond(&p->store);mb_save_peer(slot);}
+        if(why==BLE_CF_NEED_MITM){ble_store_set_mitm(&p->store);mb_save_peer(slot);}
+        if(p->was_ready)p->relink_t=fm1_ms-30000u;
     }else if(!p->was_ready&&fm1_ms-p->deadline>(pairing?45000u:10000u)){
+        uint8_t retry=p->relink;
         mb_drop_peer(slot,0);
+        p->relink=retry;p->relink_t=fm1_ms;
     }
 }
 static void mel_ble_poll(void)
@@ -345,16 +368,23 @@ static void mel_ble_poll(void)
     /* Reconnect either remembered controller on a free instance. Do not
      * restart an active manual scan or steal a connected peer's slot. */
     mb_lock();
-    for(uint32_t i=0;i<2u;i++){
-        mb_peer_t *p=&mb_peer[i];if(p->busy||!p->relink)continue;
-        if(mb.scanning&&mb.scan_slot==i){
-            for(uint32_t j=0;j<mb.count;j++){
-                struct ble_found *f=&mb.found.e[mb.idx[j]];
-                if(mb_same(&p->store,f->addr,f->addr_rand)&&!mb_used(f)){mb_connect(i,f);break;}
+    if(mb.scanning&&mb.auto_scan){
+        uint32_t i=mb.scan_slot;
+        mb_peer_t *p=&mb_peer[i];
+        for(uint32_t j=0;j<mb.count;j++){
+            struct ble_found *f=&mb.found.e[mb.idx[j]];
+            if(mb_same(&p->store,f->addr,f->addr_rand)&&!mb_used(f)){
+                if(mb_connect(i,f))break;
             }
-            if(mb.scanning&&fm1_ms-p->relink_t>=10000u&&fm1_ms-p->relink_t<30000u)mb_scan_stop();
-        }else if(!mb.scanning&&fm1_ms-p->relink_t>=30000u){
-            p->relink_t=fm1_ms;mb_scan_start(i);
+        }
+        if(mb.scanning&&fm1_ms-p->relink_t>=4000u)mb_scan_stop();
+    }
+    if(!mb.scanning){
+        for(uint32_t j=0;j<2u;j++){
+            uint32_t i=(mb.next_scan+j)&1u;
+            mb_peer_t *p=&mb_peer[i];
+            if(p->busy||p->closing||!p->relink||fm1_ms-p->relink_t<5000u)continue;
+            p->relink_t=fm1_ms;mb_scan_start(i);mb.auto_scan=1;mb.next_scan=(uint8_t)(i^1u);break;
         }
     }
     mb_unlock();
@@ -390,12 +420,12 @@ static uint32_t mel_ble_import_cal(const uint8_t copy[BLE_RF_COPY_SIZE])
 {
     if (!ble_rf_copy_ok(copy)) return 1;
     if (mb.on || (mb_peer[0].busy||mb_peer[1].busy)) return 4;
-    if (mb.cal && !fm1_rf_cal_on && memcmp(mb_saved.rf, copy, BLE_RF_COPY_SIZE)) return 2;
+    if (mb.cal && !fm1_rf_cal_on && memcmp(mb_rf, copy, BLE_RF_COPY_SIZE)) return 2;
     if (mb.cal && !fm1_rf_cal_on) return 0;
-    memcpy(mb_saved.rf, copy, BLE_RF_COPY_SIZE);
+    memcpy(mb_rf, copy, BLE_RF_COPY_SIZE);
     ble_rf_copy_get(copy, &mb.trims);
     fm1_rf_cal_on = 0;                        /* (the saved one instead of the measurement) */
-    mb.cal = 1; mb_dirty();
+    mb.cal = 1;
     return 0;
 }
 
