@@ -585,6 +585,8 @@ static int page_visible(uint32_t i)
         return 0;   /* Stage 18A: hide sequencer-only pages in the measurement build */
 #endif
 #if FELUCCA_NO_SEQUENCER
+    if (PAGES[i].graph == GR_PUNCH)
+        return 0;   /* Live effects remain available; only the transport automation editor is retired. */
     if (PAGES[i].fam == FAM_SAVE && PAGES[i].graph == GR_SONG)
         return 0;   /* ARRANGE depends on song transport; preserve stored data, hide its editor. */
 #endif
@@ -656,10 +658,17 @@ static int lens_on(void) { return !ui.home && !page_over && PAGES[ui.page].fam =
 static int save_on(void) { return !ui.home && !page_over && PAGES[ui.page].fam == FAM_SAVE; }
 static void page_entered(void);
 static void page_flash(void);
+#if FELUCCA_NO_SEQUENCER
+#define FX_NMOD 5u
+static const char *const FX_MOD[FX_NMOD] = {"DELAY", "REVERB", "CHORUS", "SLICER", "MASTER"};
+static const char *const FX_MHEAD[FX_NMOD] = {"DLY", "REVERB", "CHORUS", "SLICER", "MASTER"};
+static const uint8_t FX_MN[FX_NMOD] = {3, 2, 1, 4, 1};
+#else
 #define FX_NMOD 6u
 static const char *const FX_MOD[FX_NMOD] = {"DELAY", "REVERB", "CHORUS", "SLICER", "MASTER", "PUNCH"};
 static const char *const FX_MHEAD[FX_NMOD] = {"DLY", "REVERB", "CHORUS", "SLICER", "MASTER", "PUNCH"};   /* its first page */
 static const uint8_t FX_MN[FX_NMOD] = {3, 2, 1, 4, 1, 1};   /* its pages, one after another in PAGES */
+#endif
 static int page_visible(uint32_t i);
 static int fx_on(void) { return !ui.home && !page_over && PAGES[ui.page].fam == FAM_FX; }
 static uint32_t fx_page(const char *title)

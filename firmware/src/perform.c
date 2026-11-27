@@ -104,7 +104,12 @@ static volatile uint32_t perf_down;   /* ISR (0.9.17): the effects whose key is 
 static volatile uint8_t perf_latch_on;   /* main: MENU > FX LATCH ON (#40): a key with FX toggles its effect */
 static volatile uint32_t perf_latched;   /* ISR: the effects latched (FX LATCH; main clears it: OCT-, the menu) */
 static volatile uint32_t perf_act;    /* ISR: .. running (a 1/16 one from its start on) */
+/* No automation lane plays in the live-only build. */
+#if FELUCCA_NO_SEQUENCER
+#define pfx_lfx 0u
+#else
 static uint32_t pfx_lfx;              /* ISR (0.9.14): the audio effects the punch-in lane plays this block (pfx.c) */
+#endif
 static uint16_t perf_ord[PF_N], perf_seq;   /* press order: the last pressed buffer effect plays (0.9.17: 16 bits) */
 
 typedef struct {                       /* (0.9.17) SHUFFLE: a reader of the ADPCM ring, or live */
@@ -175,8 +180,10 @@ static void perf_press(uint32_t e, int down)
 {
     if (e == PF_TGT && down)
         pfx_tgt = (uint8_t)((pfx_tgt + 1u) % 3u);
+#if !FELUCCA_NO_SEQUENCER
     if (e == PF_CLR)
         pfx_clr = (uint8_t)(down ? 1u : 0u);
+#endif
     if (e >= PF_N)
         return;
     if (down) {

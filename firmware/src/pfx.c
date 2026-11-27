@@ -147,7 +147,10 @@ static uint32_t pfx_rec_held;                           /* (0.6.28) the effects 
                                                          * lane (a latched one wrote itself on every step it passed) */
 static __attribute__((noinline)) void pfx_block(uint32_t n, uint32_t held)
 {
-    uint32_t k, b = beat_samples(), lane = 0, raw = pfx_rec_held, nw;
+    uint32_t k, b = beat_samples(), nw;
+#if !FELUCCA_NO_SEQUENCER
+    uint32_t lane = 0, raw = pfx_rec_held;
+#endif
     pfx_blk++;
     pfx_qon &= held;                                    /* (JIANT) let go: at once; pressed: on the next 1/16 */
     nw = held & ~pfx_qon;
@@ -158,6 +161,7 @@ static __attribute__((noinline)) void pfx_block(uint32_t n, uint32_t held)
             pfx_qon |= nw;
     }
     held = pfx_qon;
+#if !FELUCCA_NO_SEQUENCER
     if (song.playing && b >= 4u) {                      /* the lane: record, or play; (0.6.99) its LEN and RES */
         uint32_t s16 = pfx_lane_step(b), len = pfx_lane_len(), st = (pfx_lph / s16) % len, half = pfx_lph % s16 >= s16 / 2u;
         uint32_t w = pfx_rec_ok() && (raw || pfx_clr) ? (raw ? pfx_lane_v((uint32_t)__builtin_ctz(raw)) : 0u) : 16u;
@@ -189,13 +193,21 @@ static __attribute__((noinline)) void pfx_block(uint32_t n, uint32_t held)
     }
     pfx_lfx = lane & ~PF_MIDI;                          /* (0.9.14) the audio ones: perform.c, on the lane's step */
     lane &= PF_MIDI;
+#endif
+#if FELUCCA_NO_SEQUENCER
+    if (!held && !pfx_any && !nw)
+#else
     if (!held && !pfx_any && !lane && !nw)
+#endif
         return;
     pfx_any = 0;
     for (k = 0; k < NTRK; k++) {
         track_t *t = &trk[k];
         int drum = t->engine == ENGI_DRUM;
-        uint32_t on = (!pfx_tgt || (pfx_tgt == 1u) == !drum ? held : 0u) | (!pfx_ltgt || (pfx_ltgt == 1u) == !drum ? lane : 0u);
+        uint32_t on = !pfx_tgt || (pfx_tgt == 1u) == !drum ? held : 0u;
+#if !FELUCCA_NO_SEQUENCER
+        on |= !pfx_ltgt || (pfx_ltgt == 1u) == !drum ? lane : 0u;
+#endif
         uint32_t old = t->pfx, f, rep, per = 0;
         rep = on & (PF_BIT(PF_S16) | PF_BIT(PF_S8) | PF_BIT(PF_ARP));
         per = (rep & (PF_BIT(PF_S16) | PF_BIT(PF_ARP))) ? b / 4u : b / 2u;   /* (JIANT 0.4: 1/8, 1/16; ARP 1/16) */

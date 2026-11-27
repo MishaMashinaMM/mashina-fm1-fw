@@ -1420,11 +1420,13 @@ static void act_do(void)
         name_open(NK_LYRIC, song.sel);
         return;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_PUNCH) {                /* (0.6.99) the punch-in lane cleared (a dialog) */
         if (chain_busy()) { ui_message("STOP TO EDIT"); return; }
         confirm_open(CF_CLEAR_PFX, song.sel);
         return;
     }
+#endif
     if (cur_page()->graph == GR_EVENTS) {
         ev_oct();
         return;

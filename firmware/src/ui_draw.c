@@ -1717,6 +1717,7 @@ static void draw_columns(void)
                     r < n ? VAL(3u) : T_DIM, RATIO(d, enum_rank(d, v)), param_icon(d, v));
         return;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_PUNCH) {               /* (0.6.99) the punch-in lane: LEN, RES, its state, CLEAR */
         uint32_t n = 0, i;
         for (i = 0; i < 64u; i++) n += pfx_lane_at(i) != 0u;
@@ -1729,6 +1730,7 @@ static void draw_columns(void)
         draw_act_column(3, "CLEAR", n ? T_MID : T_DIM, ICON_X_MOTION_DEL);
         return;
     }
+#endif
     if (cur_page()->graph == GR_MOTION) {
         draw_column(0, "PLAY", motion_enabled(TSEL) ? "ON" : "OFF", "", VAL(0u), -1, motion_icon());
         fmt_int(val, (int32_t)(motion_count(TSEL) - motion_lock_count(TSEL)));

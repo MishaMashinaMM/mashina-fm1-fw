@@ -2504,7 +2504,9 @@ static __attribute__((noinline)) void mix_block(int32_t *out, uint32_t n)   /* (
         send_c[i] = send_d[i] = send_r[i] = mix_l[i] = mix_r[i] = sl_l[i] = sl_r[i] = 0;
     if (fx_stems)                                       /* (0.7.1) a part not mixed this block: a silent stem */
         memset(stem_buf, 0, sizeof stem_buf);
+#if !FELUCCA_NO_SEQUENCER
     pfx_rec_held = perf_kill ? 0u : perf_held & PF_LANE;   /* (0.9.14: the audio ones too) */
+#endif
     pfx_block(n, (perf_kill ? 0u : (perf_held | perf_latched) & PF_MIDI) | scene_pfx);
     events_block(n);
     drum_delay_process(n);           /* deferred drum hits, before audio rendering */
