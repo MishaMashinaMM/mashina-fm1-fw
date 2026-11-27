@@ -235,8 +235,11 @@ def emit(face, tracking, gamma, kern_min):
             assert huff_unpack(hc, b, len(v)) == v
             newoff[off] = len(data)
             data += b
-        table = [(newoff.get(off, 0),) + t[1:] for t in table for off in (t[0],)]
         data += bytes(2)                               # gfx.c cv_alpha_hc reads up to 2 bytes ahead
+        if len(data) + len(hc) < len(raw):
+            table = [(newoff.get(off, 0),) + t[1:] for t in table for off in (t[0],)]
+        else:
+            data, hc = bytearray(raw), []
     assert len(data) < 65536, "glyph data over 64 KiB: split the face"
     kern = sorted(r["kern"].items())
     keys = [(ord(a) << 8) | ord(b) for (a, b), _ in kern if ord(a) < 256 and ord(b) < 256]

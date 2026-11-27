@@ -124,6 +124,10 @@ def main(src, dst):
     ir = Path(src).read_text()
     isr = isr_reach(ir)
     names, hit = {n for n in size_names() if n not in isr or (n.startswith(EVENT_PFX) and n not in EVENT_KEEP)}, set()
+    # MASHINA-specific storage and UI helpers only; never mark new IRQ/DSP paths.
+    for file in ("project_ref_settings.c", "project_refs_store.c", "project_refs_hw.c",
+                 "project_refs_live.c", "project_refs_init.c", "preset_library_runtime.c"):
+        names.update(set(definitions((SRC / file).read_text())) - isr)
     # (0.9.15) an event function of some size that an interrupt's -Os code calls stays a call (noinline): inlined there
     # it would be built -Os in its caller and its minsize lost (ep0_service into TIMER5, chord_glide, the arp's notes)
     body = {m.group(1): m.group(2) for m in IR_BODY.finditer(ir)}

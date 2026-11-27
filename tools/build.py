@@ -103,7 +103,7 @@ def generate():
     for old in ("felucca_font.h", "felucca_icons.h"):     # headers of the bitmap font and icon atlas
         (GEN / old).unlink(missing_ok=True)
     tools = SRC / "tools"
-    cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "oxanium"],   # (gen_aa_font.UI_PRESET),
+    cmds = [[tools / "gen_aa_font.py", GEN / "ui_fonts.h", "--preset", "oxanium", "--huff", "M,L,N,V,Q"],   # (gen_aa_font.UI_PRESET),
             [tools / "gen_px_font.py", GEN / "ui_font_x.h"],
             [tools / "gen_aa_icons.py", GEN / "ui_icons.h"],
             [tools / "gen_aa_keycaps.py", GEN / "ui_keycaps.h"],
@@ -298,6 +298,18 @@ def build_app():
                                ("common/bin/objdump", "-d", elf),
                                ("common/bin/objdump", "-d", "-j", ".ram_text", elf))
     (OUT / "felucca.dis").write_text(dis)
+    (OUT / "felucca.symbols.txt").write_text(syms)
+    # Largest linked objects/functions, rather than source-file size estimates.
+    entries = []
+    for line in syms.splitlines():
+        match = re.match(r"^([0-9a-fA-F]+)\s+.*?\s+(\.[\w.]+)\s+([0-9a-fA-F]+)\s+(\S+)$", line)
+        if match and int(match[3], 16):
+            entries.append((int(match[3], 16), match[2], match[4]))
+    for section in (".text", ".data", ".bss", ".pool", ".lowbuf", ".noinit"):
+        print("Largest linked symbols:", section)
+        for size_bytes, sec, name in sorted(entries, reverse=True):
+            if sec == section and size_bytes >= 256:
+                print(f"  {size_bytes:7d} {name}")
 
     def symv(name):
         return int(re.search(r"^([0-9a-f]+) .*\s" + name + r"$", syms, re.M).group(1), 16)
