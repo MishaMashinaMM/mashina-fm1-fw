@@ -50,6 +50,7 @@ typedef struct {
 } mel_ble_saved_t;
 #define MEL_BLE_MAGIC 0x32454C42u /* BLE2 */
 #define MB_VISIBLE 1u   /* Mode VISIBLE: advertise for a computer or phone, never scan */
+#define MB_FRESH(slot) (4u << (slot)) /* prefer peer-requested encryption after successful fallback */
 #define MB_RADIO 2u     /* the radio as last set: started again at power-on */
 static mel_ble_saved_t mb_saved __attribute__((section(".lowbuf"), aligned(4)));
 static uint8_t mb_rf[BLE_RF_COPY_SIZE]; /* stock RF source / session import, not pairing data */

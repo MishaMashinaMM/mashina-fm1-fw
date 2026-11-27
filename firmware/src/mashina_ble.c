@@ -225,7 +225,7 @@ static void mb_drop_peer(uint32_t slot,int forget)
     else if(bll.state==LL_SCAN)ble_ll_scan(0);
     p->connected=p->closing=0;
     bcen.st=BLE_CS_IDLE;
-    if(forget){ble_store_forget(&p->store);mb_save_peer(slot);}
+    if(forget){ble_store_forget(&p->store);mb_saved.flags&=~MB_FRESH(slot);mb_save_peer(slot);mb_dirty();}
     mashina_proto_select(0);
 }
 static int mel_ble_set(int on)
@@ -295,7 +295,9 @@ static int mb_connect(uint32_t slot,const struct ble_found *f)
     }
     /* After repeated pre-ready failures, try without the cached LTK. Keep
      * the saved identity and keys until a fresh connection actually works. */
-    if(p->failures>=2u)peer.bonded=0;
+    /* Alternate methods if the preferred one fails twice. Never erase a
+     * valid bond solely because of a transport timeout. */
+    if(peer.bonded && (((mb_saved.flags&MB_FRESH(slot))!=0) ^ ((p->failures/2u)&1u)))peer.bonded=0;
     p->bonded_attempt=peer.bonded;
     p->keys_new=0;p->busy=1;p->was_pairing=p->was_ready=0;p->deadline=fm1_ms;
     int ok=ble_central_connect(&peer);
@@ -339,8 +341,10 @@ static void mb_peer_poll(uint32_t slot)
     uint8_t state=ble_central_state(),pairing=ble_central_pairing();
     if(pairing!=p->was_pairing){p->was_pairing=pairing;p->deadline=fm1_ms;}
     if(p->keys_new||(state==BLE_CS_READY&&!p->was_ready)){
-        if(!mb_same(&p->store,p->target.addr,p->target.addr_rand))
+        if(!mb_same(&p->store,p->target.addr,p->target.addr_rand)){
+            mb_saved.flags&=~MB_FRESH(slot);
             ble_store_set_last(&p->store,p->target.addr,p->target.addr_rand,p->target.name,p->target.kind);
+        }
         if(p->keys_new){
             struct ble_keys *k=&p->keys;p->keys_new=0;
             if(k->has&BLE_KEYS_LTK)ble_store_set_bond(&p->store,k->ltk,k->rand,k->ediv,k->has&BLE_KEYS_AUTH);
@@ -348,9 +352,13 @@ static void mb_peer_poll(uint32_t slot)
         }
         mb_save_peer(slot);
         if(state==BLE_CS_READY){
-            if(p->failures>=2u&&!p->bonded_attempt&&!bcen.encrypted){
-                ble_store_drop_bond(&p->store);mb_save_peer(slot);
-            }
+            /* Learn only when READY is reached. Keep the LTK even when the
+             * peer works better without central-initiated encryption. */
+            uint8_t flags=mb_saved.flags;
+            if(p->bonded_attempt)mb_saved.flags&=~MB_FRESH(slot);
+            else if(p->store.dev.info&BLE_DEV_BONDED)mb_saved.flags|=MB_FRESH(slot);
+            else mb_saved.flags&=~MB_FRESH(slot);
+            if(flags!=mb_saved.flags)mb_dirty();
             p->failures=0;p->was_ready=1;p->relink=1;
         }
     }
@@ -359,7 +367,7 @@ static void mb_peer_poll(uint32_t slot)
         uint8_t why=ble_central_fail();
         p->last_fail=why;p->last_code=ble_central_code();
         if(!p->was_ready&&p->failures<255u)p->failures++;
-        p->busy=0;p->relink_t=fm1_ms;
+        p->busy=0;p->relink_t=fm1_ms-4000u;
         if(why==BLE_CF_KEY){ble_store_drop_bond(&p->store);mb_save_peer(slot);}
         if(why==BLE_CF_NEED_MITM){ble_store_set_mitm(&p->store);mb_save_peer(slot);}
         if(p->was_ready)p->relink_t=fm1_ms-30000u;
@@ -368,7 +376,7 @@ static void mb_peer_poll(uint32_t slot)
         p->last_fail=255u;p->last_code=state;
         if(p->failures<255u)p->failures++;
         mb_drop_peer(slot,0);
-        p->relink=retry;p->relink_t=fm1_ms;
+        p->relink=retry;p->relink_t=fm1_ms-4000u;
     }
 }
 static void mel_ble_poll(void)
@@ -395,7 +403,7 @@ static void mel_ble_poll(void)
         }
         if(mb.scanning&&fm1_ms-p->relink_t>=4000u)mb_scan_stop();
     }
-    if(!mb.scanning){
+    if(!mb.scanning && !(mb_peer[0].busy&&!mb_peer[0].ready) && !(mb_peer[1].busy&&!mb_peer[1].ready)){
         for(uint32_t j=0;j<2u;j++){
             uint32_t i=(mb.next_scan+j)&1u;
             mb_peer_t *p=&mb_peer[i];
