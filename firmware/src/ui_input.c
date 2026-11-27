@@ -1167,6 +1167,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         return;
     }
     int32_t v;
+#if !FELUCCA_NO_SEQUENCER
     if (pg->graph == GR_COMP) {
         comp_knob(slot, steps);
         return;
@@ -1196,6 +1197,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         }
         return;
     }
+#endif
     if (pg->graph == GR_DXSND) {                          /* EDIT > SOUND: the DRUM-X kit (ui_dx.c) */
         if (trk_eng(TSEL) == ENGI_DRUMLAB) lab_knob(pg, slot, steps);
         else if (trk_eng(TSEL) == ENGI_DRUMAC) ac_knob(pg, slot, steps);
@@ -1221,6 +1223,7 @@ static void edit_param(uint32_t slot, int32_t steps)
         dx_kit3_knob(slot, steps);
         return;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (pg->graph == GR_EVENTS) {                         /* AUTO LIST (ui_events.c) */
         ev_knob(slot, steps);
         return;
@@ -1271,6 +1274,7 @@ static void edit_param(uint32_t slot, int32_t steps)
                                                                 (int32_t)CHAIN_BARS);
         return;
     }
+#endif
     if (chain_busy() && (pg->scope == SC_STEP || pg->graph == GR_STEPS ||
         0)) {
         ui_message("STOP TO EDIT"); return;
@@ -1447,6 +1451,7 @@ static void act_do(void)
                      c == 2u ? ui.song_row : (uint32_t)song.g[G_SLOT] - 1u);
         return;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_SONG) {                 /* (0.8.5) SAVE > PROJECT's ARRANGE: OCT+ adds a row after the
                                                          * last (its section and bars), the new one selected; PLAY plays */
         chain_row_t *r;
@@ -1471,6 +1476,7 @@ static void act_do(void)
         }
         return;
     }
+#endif
     if (cur_page()->graph == GR_USER) {                   /* 1 LOAD, 2 ERASE, 3 SAVE (the NAME screen first) */
         if (c > 1u)
             ui.act = 0;

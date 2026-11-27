@@ -1210,6 +1210,7 @@ static uint32_t graph_signature(void)
          ui.ppick * 1299709u;
     if (pg->graph == GR_MSEQ)                        /* (JIANT) the step picked, the one playing, the level now */
         h ^= (ms_ui_step + 1u) * 40503u + (song.playing ? ui.frame * 2654435761u : 0u);
+#if !FELUCCA_NO_SEQUENCER
     if (pg->graph == GR_SONG) {
         for (uint32_t r = 0; r < CHAIN_ROWS; r++)
             h = (h ^ (song_idx.scene[song_cur][r].on * (r + 1u))) * 16777619u;
@@ -1221,6 +1222,7 @@ static uint32_t graph_signature(void)
         for (i = 0; i < 4u; i++) h ^= (uint32_t)graph_project_used(i) << (24u + i);
         h += graph_pname_sig;
     }
+#endif
     if (pg->graph == GR_MOD)
         h ^= (mod_ui_slot + 1u) * 40503u;
     if (pg->graph == GR_FOCUS)                       /* (0.8.5) EDIT > FOCUS: the parameter */
@@ -1249,6 +1251,7 @@ static uint32_t graph_signature(void)
         for (i = 0; i < CHAIN_ROWS; i++)
             h = (h ^ (chain_config.row[i].slot + 4u * chain_config.row[i].bars)) * 16777619u;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (pg->graph == GR_MOTION) h ^= motion_count(t) * 131u + motion_enabled(t);
     if (pg->graph == GR_EVENTS) {                    /* AUTO LIST: the rows, the one selected, + ADD LOCK's place */
         uint8_t idx[MOTION_MAX];
@@ -1259,8 +1262,10 @@ static uint32_t graph_signature(void)
         h = (h ^ (n + 1u) * 40503u ^ ev_row(n) * 2654435761u ^ ((uint32_t)ui.ev_step << 8 | ui.ev_id) * 104729u) * 16777619u;
     }
     if (pg->graph == GR_CHANCE) h ^= ui.cursor * 40503u + step_chance(&t->step[ui.cursor]);
+#endif
     if (pg->graph == GR_LIVE)                        /* (0.9.11) GLO > LIVE: the playheads, the ghosts, the keys */
         h = live_sig(h);
+#if !FELUCCA_NO_SEQUENCER
     if (pg->graph == GR_FUGUE) {                     /* (0.6.52) the heads, their settings, where they are */
         uint32_t ti = song.sel % NTRK, k;
         h = (h ^ (steps_hash(t) + (song.playing ? seq_src(t, t->seq_idx) : 0xFFFFu) * 31u + fg_ui * 7u)) * 16777619u;
@@ -1268,6 +1273,7 @@ static uint32_t graph_signature(void)
             h = (h ^ ((uint32_t)fg_set[ti][k].rate | (uint32_t)fg_set[ti][k].dir << 4 | (uint32_t)(uint8_t)fg_set[ti][k].ivl << 8 |
                       (song.playing ? (uint32_t)fg_head[ti][k].idx << 16 : 0u))) * 16777619u;
     }
+#endif
     if (pg->graph == GR_LYRIC || (pg->scope == SC_ENGINE && trk_engp(t) == &ENG_FORMANT &&
                                   t->p[P_VLANG])) {   /* (0.8.5) the syllable, the phoneme, the formants, the gains */
         const sing_t *s = sing_view(t);
@@ -1285,6 +1291,7 @@ static uint32_t graph_signature(void)
     if (pg->graph == GR_MORPH)                       /* (0.6.45) the wave, MORPH */
         h = (h ^ ((uint32_t)t->p[P_MORPH] << 16 | (uint32_t)t->p[P_E0] << 8 | (uint32_t)t->p[P_E1] |
                   (uint32_t)t->p[P_E2] << 24)) * 16777619u;
+#if !FELUCCA_NO_SEQUENCER
     if (pg->graph == GR_MUTATE) {                    /* (0.6.43) the bar, the settings, FREEZE */
         h = (h ^ (song.playing ? bar_n : 0u) * 2654435761u ^ mut_freeze * 977u ^ (uint32_t)mut_back_ok() * 131u) * 16777619u;
         for (i = 0; i < NTRK; i++)
@@ -1302,6 +1309,7 @@ static uint32_t graph_signature(void)
         h = (h ^ ((uint32_t)cs->carg2 | (uint32_t)cs->cwhen << 8 | (uint32_t)cs->ctime << 16 | comp_slot() << 24)) *
             16777619u;                                  /* (0.6.82) COMP 2, WHEN */
     }
+#endif
     if (pg->scope == SC_ENGINE && (trk_engp(t) == &ENG_WHEEL || trk_eng(t) == ENGI_FM6 ||
                                    (FELUCCA_FM4 && trk_eng(t) == ENGI_DIGITAL)))
         h ^= (ui.hot_t ? ui.hot_col + 1u : 0u) * 65537u;

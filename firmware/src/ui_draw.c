@@ -1523,6 +1523,7 @@ static void draw_columns(void)
         dx_kit3_cards();
         return;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_SONG) {
         uint32_t row = ui.song_row < CHAIN_ROWS ? ui.song_row : CHAIN_ROWS - 1u;
         int used = row < chain_config.count;
@@ -1554,6 +1555,8 @@ static void draw_columns(void)
                     used && song_idx.scene[song_cur][row].on ? VAL(3u) : T_DIM, -1, ICON_MIX);   /* (JIANT) */
         return;
     }
+#endif
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_SHAPE) {               /* (0.6.85) STRETCH REPEAT NUDGE; (0.6.92) ROTATE, done on the turn */
         int32_t k = shp_k(), r = (int32_t)shp_rep(), ofs = TSEL->p[P_SOFS];
         val[0] = k > 0 ? 'x' : '/';
@@ -1582,6 +1585,8 @@ static void draw_columns(void)
         draw_column(3, "INTVL", val, "DEG", f->rate ? VAL(3u) : T_DIM, (int32_t)(f->ivl + 14) * 1000 / 28, ICON_PITCH);
         return;
     }
+#endif
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_COMP) {                /* (0.6.39) STEP TYPE and the TYPE's two values */
         const step_t *cs = &TSEL->step[ui.cursor];
         uint32_t v = comp_view(), ca = comp_arg(cs), k = comp_slot();
@@ -1717,6 +1722,7 @@ static void draw_columns(void)
                     r < n ? VAL(3u) : T_DIM, RATIO(d, enum_rank(d, v)), param_icon(d, v));
         return;
     }
+#endif
 #if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_PUNCH) {               /* (0.6.99) the punch-in lane: LEN, RES, its state, CLEAR */
         uint32_t n = 0, i;
@@ -1731,6 +1737,7 @@ static void draw_columns(void)
         return;
     }
 #endif
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_MOTION) {
         draw_column(0, "PLAY", motion_enabled(TSEL) ? "ON" : "OFF", "", VAL(0u), -1, motion_icon());
         fmt_int(val, (int32_t)(motion_count(TSEL) - motion_lock_count(TSEL)));
@@ -1740,6 +1747,7 @@ static void draw_columns(void)
         draw_act_column(3, "CLEAR", T_MID, ICON_X_MOTION_DEL);
         return;
     }
+#endif
     if (cur_page()->graph == GR_TOOLS) {
 #if FELUCCA_NO_SEQUENCER
         static const char *const labels[] = {"SOUND", "SLOT", "PROJECT", "CPU"};
@@ -1796,6 +1804,7 @@ static void draw_columns(void)
         draw_column(3, "BANK", N_BROWSE_BANK[browse_bank], "", VAL(3u), -1, ICON_X_FOLDER);
         return;
     }
+#if !FELUCCA_NO_SEQUENCER
     if (cur_page()->graph == GR_PATS) {                  /* PAT, then LOAD (a GO button) */
         uint32_t n = pat_count(), k = pat_pick();
         char tag[4], nm[13];
@@ -1806,6 +1815,7 @@ static void draw_columns(void)
         draw_column(3, "", "", "", T_THEME, -1, ICON_AUTO);
         return;
     }
+#endif
     if (cur_page()->graph == GR_SLOTS) {                 /* (0.6.12) PROJECT, SECT A-D, then LOAD and SAVE */
         uint32_t k = (uint32_t)song.g[G_SLOT] - 1u;
         int used = graph_project_used(k);
