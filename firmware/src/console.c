@@ -377,6 +377,16 @@ static void con_exec(const char *p)
             }
         }
         con_puts(mel_ble_status()); con_puts("\r\n");
+        for(uint32_t i=0;i<2u;i++){
+            mb_peer_t *q=&mb_peer[i];
+            con_puts("PEER ");con_dec(i+1u);
+            con_puts(" STAGE ");con_dec(q->last_stage);
+            con_puts(" FAIL ");con_dec(q->last_fail);
+            con_puts(" CODE ");con_dec(q->last_code);
+            con_puts(" RETRIES ");con_dec(q->failures);
+            con_puts(" BOND ");con_dec(q->bonded_attempt);
+            con_puts("\r\n");
+        }
         uint32_t code = mel_ble_code();
         if (code != BLE_NO_PASSKEY) { con_puts("PASSKEY "); for (uint32_t d=100000u; d; d/=10u) con_putc('0'+(code/d)%10u); con_puts("\r\n"); }
     }

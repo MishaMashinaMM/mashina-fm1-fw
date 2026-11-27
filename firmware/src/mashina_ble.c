@@ -27,6 +27,7 @@ typedef struct {
     volatile uint32_t rw,rr,tw,tr,rt_w,rt_r;
     volatile uint8_t ready,lost,overflow;
     uint8_t peeked_rt,busy,connected,closing,was_pairing,was_ready,relink,keys_new;
+    uint8_t bonded_attempt,failures,last_fail,last_code,last_stage;
     uint32_t deadline,probe_t,relink_t;
     struct ble_dev_store store;
     struct ble_found target;
@@ -280,9 +281,10 @@ static void mel_ble_forget(void)
 }
 static int mb_connect(uint32_t slot,const struct ble_found *f)
 {
-    if(!mb.on||mb_peer[slot].busy||mb_used(f))return 0;
+    if(!mb.on||mb_peer[slot].busy||mb_peer[slot].closing||mb_used(f))return 0;
     mb_scan_stop();mashina_proto_select(slot);
     mb_peer_t *p=&MP;
+    if(!mb_same(&p->store,f->addr,f->addr_rand))p->failures=0;
     p->target=*f;
     struct ble_peer peer={0};
     memcpy(peer.addr,f->addr,6);peer.addr_rand=f->addr_rand;
@@ -291,6 +293,10 @@ static int mb_connect(uint32_t slot,const struct ble_found *f)
         peer.bonded=!!(d->info&BLE_DEV_BONDED);memcpy(peer.ltk,d->ltk,16);
         memcpy(peer.rand,d->rand,8);peer.ediv=ble_rd16(d->ediv);peer.sec=d->sec;
     }
+    /* After repeated pre-ready failures, try without the cached LTK. Keep
+     * the saved identity and keys until a fresh connection actually works. */
+    if(p->failures>=2u)peer.bonded=0;
+    p->bonded_attempt=peer.bonded;
     p->keys_new=0;p->busy=1;p->was_pairing=p->was_ready=0;p->deadline=fm1_ms;
     int ok=ble_central_connect(&peer);
     if(!ok)p->busy=0;
@@ -341,16 +347,26 @@ static void mb_peer_poll(uint32_t slot)
             if(k->has&BLE_KEYS_ID)ble_store_set_id(&p->store,k->irk,k->id,k->id_rand);
         }
         mb_save_peer(slot);
-        if(state==BLE_CS_READY){p->was_ready=1;p->relink=1;}
+        if(state==BLE_CS_READY){
+            if(p->failures>=2u&&!p->bonded_attempt&&!bcen.encrypted){
+                ble_store_drop_bond(&p->store);mb_save_peer(slot);
+            }
+            p->failures=0;p->was_ready=1;p->relink=1;
+        }
     }
+    if(state!=BLE_CS_IDLE)p->last_stage=state;
     if(state==BLE_CS_IDLE){
         uint8_t why=ble_central_fail();
+        p->last_fail=why;p->last_code=ble_central_code();
+        if(!p->was_ready&&p->failures<255u)p->failures++;
         p->busy=0;p->relink_t=fm1_ms;
         if(why==BLE_CF_KEY){ble_store_drop_bond(&p->store);mb_save_peer(slot);}
         if(why==BLE_CF_NEED_MITM){ble_store_set_mitm(&p->store);mb_save_peer(slot);}
         if(p->was_ready)p->relink_t=fm1_ms-30000u;
     }else if(!p->was_ready&&fm1_ms-p->deadline>(pairing?45000u:10000u)){
         uint8_t retry=p->relink;
+        p->last_fail=255u;p->last_code=state;
+        if(p->failures<255u)p->failures++;
         mb_drop_peer(slot,0);
         p->relink=retry;p->relink_t=fm1_ms;
     }
@@ -500,7 +516,7 @@ static void ble_page_draw(void)
         uint32_t id=row<mb_row_n?mb_rows[row]:255u;
         const struct ble_found *f=id<2u?&mb_peer[id].target:id!=255u?&mb.found.e[mb.idx[id-2u]]:0;
         const char *name=f?(f->name[0]?f->name:"UNNAMED"):(!i&&!mb_row_n?(mb.on?"NO DEVICES FOUND":"RADIO OFF"):"");
-        const char *tag=id<2u?(mb_peer[id].ready?"LINKED":"WAIT"):"";
+        const char *tag=id<2u?(mb_peer[id].ready?"LINKED":mb_peer[id].failures>=2u?"RETRY":"WAIT"):"";
         uint32_t bars=f&&id>=2u?ble_scan_bars(&mb.found,mb.idx[id-2u]):0;
         uint32_t sig=1u+row*8u+selected*4u+bars+id*64u;
         for(const char *p=name;*p;p++)sig=sig*31u+(uint8_t)*p;
