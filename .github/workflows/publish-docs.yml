@@ -56,19 +56,19 @@ jobs:
           import json
           from pathlib import Path
           a=json.loads(Path("build/pages/firmware/versions.json").read_text())
-          assert a and a[0]["version"].removeprefix("v") == "0.16"
+          assert a and a[0]["version"].removeprefix("v") == "1.0"
           assert (Path("build/pages/firmware") / a[0]["file"]).is_file()
           PY
             then
               found=1
-              echo "Reusing successful v0.16 Pages artifact from run $runid"
+              echo "Reusing successful v1.0 Pages artifact from run $runid"
               break
             fi
             rm -rf build/pages
             mkdir -p build/pages
           done < <(gh run list --workflow emulator.yml --branch main --status success --limit 20 --json databaseId --jq '.[].databaseId')
           if [ "$found" != 1 ]; then
-            echo "::error::No successful v0.16 Pages artifact found. Do not publish an older firmware beneath updated docs."
+            echo "::error::No successful v1.0 Pages artifact found. Do not publish an older firmware beneath updated docs."
             exit 1
           fi
       - name: Refresh home and six-language manuals

@@ -460,16 +460,16 @@ def main():
         m = re.fullmatch(r"(\d)\.(\d{1,2})(?:\.\d){0,2}(-[A-Za-z0-9]+)?", a.release)
         if not m or (len(m[2]) == 2 and m[1] != "0"):
             raise SystemExit(f"--release {a.release}: use X.Y, X.Y.Z, X.Y.Z.W or 0.YY (1–2 minor digits)")
-        PRODUCT = "FM-1_9" + (m[2] if len(m[2]) == 2 else m[1] + m[2])
+        PRODUCT = "FM-1_917" if a.release == "1.0" else "FM-1_9" + (m[2] if len(m[2]) == 2 else m[1] + m[2])  # v1.0 must not reuse v0.10 identity
         VERSION = "v" + a.release.lower()      # e.g. v1.0, v1.1-rc1
         name = f"felucca-{a.release}.fwsc"
     # v0.14 is the first public reference-layout release. Explicitly
     # select the complete, mutually exclusive storage configuration here,
     # rather than silently distributing the old FUN storage build.
-    public96 = a.release in ("0.15", "0.16")
-    if a.release == "0.16":
+    public96 = a.release in ("0.15", "0.16", "1.0")
+    if a.release in ("0.16", "1.0"):
         if os.environ.get("MASHINA_BLE_EXPERIMENT", "1") != "1":
-            raise SystemExit("v0.16 requires Bluetooth MIDI")
+            raise SystemExit(f"v{a.release} requires Bluetooth MIDI")
         os.environ["MASHINA_BLE_EXPERIMENT"] = "1"
         subprocess.run(["sh", str(SRC / "tools" / "fetch_ble_experiment.sh")], check=True)
     if public96:
@@ -489,7 +489,7 @@ def main():
         and os.environ.get("MASHINA_LIB96_TRIAL") == "ONE-FM1-CLEAN-96"
     ):
         raise SystemExit("LIB96 test package requires explicit branch-only authorization")
-    public_authorized = a.release in ("0.14", "0.15", "0.16")
+    public_authorized = a.release in ("0.14", "0.15", "0.16", "1.0")
     if public_authorized or lib96_trial:
         release_flags = {
             "FELUCCA_LIB32": "1", "FELUCCA_LIB32_WRITE": "1",
@@ -504,7 +504,7 @@ def main():
                 raise SystemExit(f"{a.release} release requires {k}={v}")
             os.environ[k] = v
     elif os.environ.get("FELUCCA_PUBLIC_LAYOUT", "0") != "0":
-        raise SystemExit("Public layout is reserved for the v0.14/v0.15/v0.16 release builds")
+        raise SystemExit("Public layout is reserved for the v0.14/v0.15/v0.16/v1.0 release builds")
     if not a.release:
         # Unversioned engineering images must not impersonate the v0.14 public layout.
         PRODUCT = "FM-1_913"

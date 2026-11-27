@@ -129,7 +129,7 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
-### Factory sounds in v0.16
+### Factory sounds in v1.0
 
 The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
 
@@ -369,7 +369,7 @@ See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-
 
 ### First installation and updates
 
-Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) and leave FM1 powered until it starts. Installing v0.16 over another firmware or an incompatible older MASHINA version (including v0.14) automatically clears presets, projects and settings. Save anything you want to keep beforehand. Compatible updates retain data. No separate initialization is necessary.
+Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) and leave FM1 powered until it starts. Installing v1.0 over another firmware or an incompatible older MASHINA version (including v0.14) automatically clears presets, projects and settings. Save anything you want to keep beforehand. Compatible updates retain data. No separate initialization is necessary.
 
 ## 8. Example live configurations
 
@@ -385,4 +385,4 @@ Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/insta
 
 ---
 
-MASHINA v0.16 · M-VAVE FM1 · Usage reference
+MASHINA v1.0 · M-VAVE FM1 · Usage reference

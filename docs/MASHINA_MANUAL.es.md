@@ -142,7 +142,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.16
+### Sonidos de fábrica en v1.0
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -417,7 +417,7 @@ En PROJECTS arrastrá proyectos A–D completos o una sección por su chip. Las 
 
 ### Instalación inicial
 
-Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) y mantené el FM1 encendido hasta que arranque. Instalar v0.16 desde otro firmware o una versión anterior incompatible (incluida v0.14) borra automáticamente presets, proyectos y ajustes. Guardá lo que quieras conservar primero. Las actualizaciones compatibles conservan datos. No hace falta inicializar por separado.
+Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) y mantené el FM1 encendido hasta que arranque. Instalar v1.0 desde otro firmware o una versión anterior incompatible (incluida v0.14) borra automáticamente presets, proyectos y ajustes. Guardá lo que quieras conservar primero. Las actualizaciones compatibles conservan datos. No hace falta inicializar por separado.
 
 ## 8. Ejemplos para tocar en vivo
 
@@ -433,4 +433,4 @@ Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/inst
 
 ---
 
-MASHINA v0.16 · M-VAVE FM1
+MASHINA v1.0 · M-VAVE FM1
