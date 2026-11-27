@@ -50,4 +50,7 @@ for code in codes:
     assert f'data-manual-lang="{code}"' in manual, f"Manual: missing {code}"
     assert (Path("docs") / ("MASHINA_MANUAL.md" if code == "en" else f"MASHINA_MANUAL.{code}.md")).is_file()
 assert len(re.findall(r'data-manual-lang="(?:en|es|ja|ru|sr|hi)"', manual)) == 6
-print("PASS: all five pages and six language choices are included in Pages artifact")
+guide = (root / "web-library/guide.html").read_text(encoding="utf-8")
+for code in codes[1:]:
+    assert f'data-library-lang="{code}"' in guide, f"Web Library guide missing {code}"
+print("PASS: all published pages and six-language Web Library guidance")

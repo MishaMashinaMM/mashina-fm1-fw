@@ -125,6 +125,17 @@ def manual(out):
     html = template.replace(marker, "\n".join(all_articles))
     (dst / "index.html").write_text(html, encoding="utf-8")
     print(f"site: {dst}: MASHINA user manual ({len(html)} B)")
+    # The translated preset-management chapters are also the localized Web Library guide.
+    guide = Path(out) / "web-library" / "guide.html"
+    if guide.is_file():
+        source = (HERE / "presets-library-guide.html").read_text(encoding="utf-8")
+        localized = []
+        for lang in ("es", "ja", "ru", "sr", "hi"):
+            md = (HERE.parent / "docs" / f"MASHINA_MANUAL.{lang}.md").read_text(encoding="utf-8")
+            chapter = md.split("\n## 7.", 1)[1].split("\n## 8.", 1)[0]
+            content = markdown.markdown("## 7." + chapter, extensions=["tables", "fenced_code"])
+            localized.append(f'<article hidden data-library-lang="{lang}">{content}</article>')
+        guide.write_text(source.replace("<!--LOCALIZED_LIBRARY_GUIDE-->", "\n".join(localized)), encoding="utf-8")
 
 
 def main(pkg, version, out, prev=None):
