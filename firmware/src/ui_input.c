@@ -3022,7 +3022,7 @@ static void ui_input_frame(void)
         uint64_t held;
         if ((s = panel_enc(EN_K1 + k)) == 0)
             continue;
-#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
         if(ble_page() && !ui.confirm && !mac_latch){ble_page_knob(k,s);continue;}
 #endif
         if (gen_on()) {                                 /* GEN: its settings */

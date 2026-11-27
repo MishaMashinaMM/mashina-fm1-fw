@@ -116,14 +116,15 @@ if (typeof registerProcessor === "function") {
       else if (m.type === "enc") ex.web_enc(m.role, m.n | 0);
       else if (m.type === "master") ex.web_master(m.value | 0);
       else if (m.type === "ble-control" && ex.web_ble_control) {
-        const state = ex.web_ble_control(m.cmd | 0);
-        this.port.postMessage({type:"ble-state",state});
+        if(ex.web_ble_select && m.peer!==undefined)ex.web_ble_select(m.peer|0);
+        if(m.cmd!==undefined)ex.web_ble_control(m.cmd|0);
+        this.port.postMessage({type:"ble-state",state:ex.web_ble_status()});
       }
       else if (m.type === "ble-packet" && ex.web_ble_packet) {
         const data = m.data;
         if (data.length > 0 && data.length <= 20) {
           new Uint8Array(ex.memory.buffer,ex.web_ble_buf(),data.length).set(data);
-          ex.web_ble_packet(data.length);
+          ex.web_ble_packet_peer(m.peer|0,data.length);
         }
         this.port.postMessage({type:"ble-count",count:ex.web_ble_count()});
       }
@@ -134,6 +135,7 @@ if (typeof registerProcessor === "function") {
     publish() {
       const ex = this.ex, mem = ex.memory.buffer;
       const msg = { type: "frame" };
+      if(ex.web_ble_status){const state=ex.web_ble_status();if(state!==this.sentBle){this.sentBle=state;this.port.postMessage({type:"ble-state",state});}}
       if (ex.web_drum_pad_note) {
         const notes = Array.from({ length: 12 }, (_, i) => ex.web_drum_pad_note(i));
         const track = ex.web_drum_selected_track();

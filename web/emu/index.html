@@ -117,13 +117,13 @@ footer small { font-size: 11px; opacity: .8; }
 
 
 <details class="midi-test" id="ble-sim" hidden>
-  <summary data-ml="bleTitle">Bluetooth MIDI — simulated controller</summary>
-  <p data-ml="bleHint">Practice connecting a simulated controller. This panel does not connect to a real Bluetooth device.</p>
+  <summary data-ml="bleTitle">Bluetooth MIDI — simulated controllers</summary>
+  <p data-ml="bleHint">Practice connecting up to two simulated controllers. This panel does not connect to a real Bluetooth device.</p>
   <div class="controls">
     <button id="ble-on" disabled>Bluetooth ON</button>
     <button id="ble-off" disabled>OFF</button>
     <button id="ble-scan" disabled>Scan</button>
-    <label>Simulated device <select id="ble-device"><option>SMC-PAD (simulated)</option><option>Chocolate Plus (simulated)</option><option>JamJum JP-1 (simulated)</option></select></label>
+    <label>Simulated device <select id="ble-device"><option>SMC-PAD (simulated)</option><option>JamJum JP-1 (simulated)</option></select></label>
     <button id="ble-connect" disabled>Connect</button>
     <button id="ble-drop" disabled>Disconnect</button>
   </div>
@@ -601,19 +601,23 @@ const bleSim = "@BLE_SIM@" === "1";
 let bleState = 0, bleReady = false;
 function bleRefresh() {
   blePanel.hidden = !bleSim;
-  for (const [id,allowed] of [["on",bleState===0],["off",bleState!==0],["scan",bleState===1],["connect",bleState===2],["drop",bleState===2||bleState===3],["note-on",bleState===3],["note-off",bleState===3],["cc",bleState===3],["pc",bleState===3]])
+  const radio=!!(bleState&1),scan=!!(bleState&2),links=(bleState>>2)&3,peer=(bleState>>4)&1,linked=!!(links&(1<<peer));
+  const device=document.getElementById("ble-device");
+  device.selectedIndex=peer;
+  device.disabled=!bleReady||!radio||(!scan&&links!==3);
+  for (const [id,allowed] of [["on",!radio],["off",radio],["scan",radio&&links!==3],["connect",radio&&scan&&!linked],["drop",linked],["note-on",linked],["note-off",linked],["cc",linked],["pc",linked]])
     document.getElementById("ble-"+id).disabled = !bleReady || !allowed;
-  document.getElementById("ble-device").disabled = !bleReady || bleState!==2;
-  document.getElementById("ble-state").textContent = ["OFF","IDLE","SCAN: choose simulated device","CONNECTED: "+document.getElementById("ble-device").value][bleState];
+  document.getElementById("ble-state").textContent=!radio?"OFF":(scan?"SCANNING · ":"")+(links?Array.from(device.options).filter((_,i)=>links&(1<<i)).map(o=>o.textContent+" LINKED").join(" · "):"NO LINKS");
 }
+document.getElementById("ble-device").onchange=()=>send({type:"ble-control",peer:document.getElementById("ble-device").selectedIndex});
 for (const [id,cmd] of [["on",1],["off",0],["scan",2],["connect",3],["drop",4]])
-  document.getElementById("ble-"+id).onclick = () => send({type:"ble-control",cmd});
+  document.getElementById("ble-"+id).onclick = () => send({type:"ble-control",cmd,peer:document.getElementById("ble-device").selectedIndex});
 for (const [id,st] of [["note-on",0x90],["note-off",0x80],["cc",0xb0],["pc",0xc0]])
   document.getElementById("ble-"+id).onclick = () => {
     const ch=testValue("ble-ch",1,16)-1, d=testValue("ble-data",0,127), v=testValue("ble-value",0,127), t=Math.floor(performance.now())&8191;
     const data=[0x80|(t>>7),0x80|(t&127),st|ch,d];
     if(st!==0xc0) data.push(st===0x80?0:v);
-    send({type:"ble-packet",data});
+    send({type:"ble-packet",data,peer:document.getElementById("ble-device").selectedIndex});
   };
 bleRefresh();
 const testChannel = () => testValue("midi-test-channel", 1, 16) - 1;

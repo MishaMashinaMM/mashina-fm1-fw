@@ -525,29 +525,40 @@ EXPORT uint32_t web_midi(uint32_t status, uint32_t d1, uint32_t d2)
  * with the device build. Radio discovery, encryption and timing are not simulated. */
 #define BLE_API static
 #include "../../firmware/src/ble/ble_midi.c"
-static struct ble_midi_dec web_ble_decoder;
+static struct ble_midi_dec web_ble_decoder[2];
 static uint8_t web_ble_buffer[20];
-static uint32_t web_ble_state, web_ble_received;
+static uint32_t web_ble_radio, web_ble_scan, web_ble_links, web_ble_pick, web_ble_received;
+static const char *const web_ble_names[2]={"SMC-PAD","JamJum JP-1"};
+/* State bits: radio, scan, two independent links, selected peer. */
+EXPORT uint32_t web_ble_status(void)
+{ return web_ble_radio | (web_ble_scan<<1) | (web_ble_links<<2) | (web_ble_pick<<4); }
+static uint32_t web_ble_state(void)
+{ return !web_ble_radio?0u:(web_ble_links&(1u<<web_ble_pick))?3u:web_ble_scan?2u:1u; }
+static void web_ble_drop(uint32_t peer)
+{
+    if(web_ble_links&(1u<<peer))(void)midi_enqueue(0,3u+peer);
+    web_ble_links&=~(1u<<peer);
+    ble_midi_dec_reset(&web_ble_decoder[peer]);
+}
+EXPORT uint32_t web_ble_select(uint32_t peer)
+{ if(peer<2u)web_ble_pick=peer; ui.force=1; return web_ble_status(); }
 EXPORT uint32_t web_ble_control(uint32_t cmd)
 {
-    /* 0 off, 1 idle, 2 scan, 3 connected. Commands: off/on/scan/connect/disconnect. */
-    if (cmd == 0 || cmd == 4) {
-        if (web_ble_state == 3) (void)midi_enqueue(0,3u);
-        web_ble_state = cmd == 0 ? 0 : web_ble_state ? 1 : 0;
-        ble_midi_dec_reset(&web_ble_decoder);
-    } else if (cmd == 1 && !web_ble_state) web_ble_state = 1;
-    else if (cmd == 2 && web_ble_state == 1) web_ble_state = 2;
-    else if (cmd == 3 && web_ble_state == 2) {
-        ble_midi_dec_reset(&web_ble_decoder);
-        web_ble_state = 3;
-    }
-    return web_ble_state;
+    if(cmd==0){web_ble_drop(0);web_ble_drop(1);web_ble_radio=web_ble_scan=0;}
+    else if(cmd==1)web_ble_radio=1;
+    else if(cmd==2&&web_ble_radio)web_ble_scan=1;
+    else if(cmd==3&&web_ble_radio&&web_ble_scan&&!(web_ble_links&(1u<<web_ble_pick))){
+        ble_midi_dec_reset(&web_ble_decoder[web_ble_pick]);
+        web_ble_links|=1u<<web_ble_pick;web_ble_scan=0;
+    }else if(cmd==4){web_ble_drop(web_ble_pick);web_ble_scan=0;}
+    else if(cmd==5)web_ble_scan=0;
+    if(!web_ble_scan&&web_ble_links&&!(web_ble_links&(1u<<web_ble_pick)))web_ble_pick=(web_ble_links&1u)?0u:1u;
+    ui.force=1;return web_ble_state();
 }
 EXPORT uint32_t web_ble_buf(void) { return (uint32_t)(uintptr_t)web_ble_buffer; }
 EXPORT uint32_t web_ble_count(void) { return web_ble_received; }
 EXPORT uint32_t web_ble_owner(uint32_t source,uint32_t ch,uint32_t note)
 { return mn_get((source==3u?16u:source==4u?32u:0u)+(ch&15u),note&127u); }
-/* Inject peer 2 only for the independent ownership regression test. */
 EXPORT uint32_t web_ble_second(uint32_t status,uint32_t d1,uint32_t d2)
 {
     if(!status)return midi_enqueue(0,4u);
@@ -556,15 +567,54 @@ EXPORT uint32_t web_ble_second(uint32_t status,uint32_t d1,uint32_t d2)
 }
 static void web_ble_sink(void *ctx, uint32_t pkt, uint16_t ts)
 {
-    (void)ctx; (void)ts;
+    (void)ts;uint32_t peer=*(const uint32_t*)ctx;
     uint32_t st = (pkt >> 8) & 255u;
-    if (st >= 0x80u && st < 0xF0u && midi_enqueue(pkt, 3u)) web_ble_received++;
+    if (st >= 0x80u && st < 0xF0u && midi_enqueue(pkt, 3u+peer)) web_ble_received++;
 }
-EXPORT uint32_t web_ble_packet(uint32_t n)
+EXPORT uint32_t web_ble_packet_peer(uint32_t peer,uint32_t n)
 {
-    if (web_ble_state != 3 || !n || n > sizeof web_ble_buffer) return 0;
-    return ble_midi_dec(&web_ble_decoder, web_ble_buffer, (uint16_t)n, web_ble_sink, 0);
+    if(peer>=2u || !(web_ble_links&(1u<<peer)) || !n || n>sizeof web_ble_buffer)return 0;
+    return ble_midi_dec(&web_ble_decoder[peer],web_ble_buffer,(uint16_t)n,web_ble_sink,&peer);
 }
+EXPORT uint32_t web_ble_packet(uint32_t n){return web_ble_packet_peer(web_ble_pick,n);}
+EXPORT uint32_t web_ble_page(void){return ble_page();}
+static void ble_page_knob(uint32_t k,int32_t steps)
+{
+    if(k==0)web_ble_control(steps>0?1:0);
+    else if(k==1)web_ble_control(steps>0?2:5);
+    else if(k==2&&web_ble_radio&&(web_ble_scan||web_ble_links==3u))web_ble_select(steps>0?1:0);
+    else if(k==3)web_ble_control(steps>0?3:4);
+}
+static void ble_page_draw(void)
+{
+    static uint32_t prev=~0u;
+    uint32_t state=web_ble_status();
+    if(!ui.force&&prev==state)return;
+    prev=state;
+    cv_begin(240,74,T_BG);
+    cv_text(4,2,&AF_S,"K1 RADIO",T_TEXT);cv_text_r(115,2,&AF_M,web_ble_radio?"ON":"OFF",T_VALUE,T_BG);
+    cv_text(124,2,&AF_S,"K2 SCAN",T_TEXT);cv_text_r(236,2,&AF_M,web_ble_scan?"ON":"OFF",T_VALUE,T_BG);
+    cv_rect(0,24,240,1,RGB(58,58,58));
+    cv_text(4,29,&AF_S,"STATUS",T_TEXT);
+    cv_text_r(236,29,&AF_M,!web_ble_radio?"BLE OFF":web_ble_links==3u?"2 BLE CONNECTED":web_ble_scan?"SCANNING":web_ble_links?"BLE CONNECTED":"BLE AVAILABLE",T_VALUE,T_BG);
+    cv_text(4,48,&AF_M,"MAX 2 MIDI DEVICES",T_TEXT);cv_blit(0,0);
+    cv_begin(240,18,RGB(58,58,58));cv_text(4,2,&AF_S,"NO.",T_TEXT);cv_text(34,2,&AF_S,"MIDI DEVICE",T_TEXT);cv_text_r(236,2,&AF_S,"STATUS",T_TEXT,RGB(58,58,58));cv_blit(0,74);
+    uint32_t row=0;
+    for(uint32_t i=0;i<2u;i++){
+        if(!web_ble_radio||(!web_ble_scan&&!(web_ble_links&(1u<<i))))continue;
+        uint16_t bg=i==web_ble_pick?T_VALUE:RGB(36,36,36),ink=i==web_ble_pick?T_INK:T_TEXT;
+        cv_begin(240,24,bg);cv_text(4,CAP_IN(M,24),&AF_M,i?"2":"1",ink);
+        cv_free_text(34,CAP_IN(M,24),&AF_M,web_ble_names[i],ink,bg,140);
+        cv_text_r(236,CAP_IN(S,24),&AF_S,(web_ble_links&(1u<<i))?"LINKED":"AVAILABLE",ink,bg);
+        cv_blit(0,92+24u*row++);
+    }
+    if(!row){cv_begin(240,24,T_BG);cv_text(34,CAP_IN(M,24),&AF_M,web_ble_radio?"NO DEVICES FOUND":"RADIO OFF",T_TEXT);cv_blit(0,92);row++;}
+    for(;row<4;row++){cv_begin(240,24,T_BG);cv_blit(0,92+row*24u);}
+    cv_begin(240,34,T_BG);cv_text(4,1,&AF_S,"K3 SELECT DEVICE",T_TEXT);cv_text(4,17,&AF_S,"K4 CONNECT > / DROP <",T_TEXT);cv_blit(0,188);
+    cv_begin(240,18,T_BG);cv_rect(3,1,43,16,T_VALUE);cv_text_in(5,1,39,&AF_S,"GLO",T_INK,T_VALUE);cv_rect(48,1,65,16,RGB(58,58,58));cv_text_in(51,1,59,&AF_S,"SYSTEM",T_TEXT,RGB(58,58,58));cv_text(117,1,&AF_S,"BLUETOOTH",T_VALUE);cv_text_r(237,1,&AF_S,"8/8",T_VALUE,T_BG);cv_blit(0,222);
+    ui.force=0;
+}
+
 #endif
 
 /* the LEDs: bit b = the button labelled b lit (bit 14: PLAY's green), keys bit k; the dim glow and the breath alike */

@@ -53,3 +53,19 @@ for(let i=0;i<12;i++)e.web_render(1024);
 assert.equal(e.web_mpr_ref(0),33);
 assert.equal(e.web_ble_control(0),0);
 console.log("PASS: simulated one-link lifecycle, actual BLE decoder, routing, disconnect and independent wired MIDI");
+
+// Navigate through actual GLO pages and exercise panel encoders, then send packets on both links.
+e.web_buttons(1<<5);e.web_render(1024);e.web_buttons(0);e.web_render(1024);
+for(let i=0;i<16&&!e.web_ble_page();i++){e.web_enc(0,1);for(let j=0;j<4;j++)e.web_render(1024);}
+assert.equal(e.web_ble_page(),1,"GLO exposes Bluetooth page");
+const knob=(k,n)=>{e.web_enc(k,n);for(let j=0;j<4;j++)e.web_render(1024);};
+knob(3,1);assert.equal(e.web_ble_status()&1,1);
+knob(4,1);assert.equal(e.web_ble_status()&2,2);
+knob(6,1);assert.equal((e.web_ble_status()>>2)&3,1);
+knob(4,1);knob(5,1);knob(6,1);assert.equal((e.web_ble_status()>>2)&3,3);
+const packet=[128,128,144|ch,note,100];new Uint8Array(e.memory.buffer,e.web_ble_buf(),packet.length).set(packet);
+assert.equal(e.web_ble_packet_peer(0,packet.length),1);assert.equal(e.web_ble_packet_peer(1,packet.length),1);e.web_render(1024);
+assert.ok(e.web_ble_owner(3,ch,note)&63);assert.ok(e.web_ble_owner(4,ch,note)&63);
+knob(6,-1);assert.equal((e.web_ble_status()>>2)&3,1);assert.equal(e.web_ble_owner(4,ch,note),0);assert.ok(e.web_ble_owner(3,ch,note)&63);
+knob(3,-1);assert.equal(e.web_ble_status()&15,0);assert.equal(e.web_ble_owner(3,ch,note),0);
+console.log("PASS: Bluetooth GLO navigation, knob controls and two independent simulated controllers");

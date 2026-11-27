@@ -695,7 +695,7 @@ static const page_t PAGES[] = {
     {"MANO", FAM_GLO, SC_GLOBAL, GR_LIVE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* (0.9.11) GLO > LIVE: the keys a board of live
                                                          * modifiers (ui_live.c, seq_live.c) */
     {"RIELES", FAM_GLO, SC_GLOBAL, GR_LIVE, {0xFF, 0xFF, 0xFF, 0xFF}},   /* .. the six sequences as rails, four knobs */
-#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
     {"BLUETOOTH", FAM_GLO, SC_GLOBAL, GR_NONE, {0xFF,0xFF,0xFF,0xFF}},
 #endif
     {"LFO 2", FAM_LFO, SC_TRACK, GR_LFO, {ID_LPHS, 0xFF, 0xFF, 0xFF}},   /* (0.9.18) PHASE: where TRIG starts (FREE: dimmed) */

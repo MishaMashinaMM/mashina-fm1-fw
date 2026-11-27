@@ -80,7 +80,7 @@ static const ng_t CG_FX[] = {{"TRACK", "TRK"}, {"BUSES", "BUS"}, {"DELAY", "DLY"
  * the unused pages. MIXER is the first GLO entry and first group. */
 static const nv_t CE_GLO[] = {NV("MIXER", 0, 0, 0), NV("ZONES", 0, 0, 0), NV("TUNING", 0, 0, 0), NV("SENDS", 0, 0, 0), NV("EQ", 0, 0, 0),
                               NV("GLOBAL", 0, 1, 1), NV("SYSTEM", 0, 2, 2)
-#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
                               , NV("BLUETOOTH", 0, 2, 2)
 #endif
 };

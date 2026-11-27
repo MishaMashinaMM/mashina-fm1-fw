@@ -1,4 +1,4 @@
-#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
 #define GLO_PAGE(a,b) b
 #else
 #define GLO_PAGE(a,b) a
@@ -3174,7 +3174,7 @@ static void ui_draw_body(uint32_t counting)
         ui.force = 0;
         return;
     }
-#if defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT
+#if (defined(MASHINA_BLE_EXPERIMENT) && MASHINA_BLE_EXPERIMENT) || (defined(MASHINA_EMU_BLE) && MASHINA_EMU_BLE)
     if(ble_page()){ble_page_draw();return;}
 #endif
     if (ui.confirm == CF_DICE_ALL) {                    /* (0.8.5) GEN: HOME's lens, its last level (0.9.2: under
