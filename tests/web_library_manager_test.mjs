@@ -28,3 +28,23 @@ assert.match(script,/if\(row\)row\.draggable=false/);
 assert.match(script,/if\(row\)row\.draggable=wasDraggable/);
 assert.match(script,/finish\(e\.key==="Enter"\)/);
 console.log("PASS: connection progress dialog, inline name edits, normal drag cursor and keyboard commit/cancel");
+
+// Every visible static label is present in each locale, apart from product/hardware names.
+const {catalog,languages,translate}=await import("../web/web-library-locales.mjs");
+const {extra}=await import("../web/web-library-messages.mjs");
+const enKeys=Object.keys(catalog.es).sort(),messageKeys=Object.keys(extra.es).sort();
+for(const lang of languages.slice(1)){
+ assert.deepEqual(Object.keys(catalog[lang]).sort(),enKeys);
+ assert.deepEqual(Object.keys(extra[lang]).sort(),messageKeys);
+ for(const key of [...enKeys,...messageKeys]){
+   const value=extra[lang][key]??catalog[lang][key];assert(value&&value.trim(),lang+": "+key);
+   assert.deepEqual([...value.matchAll(/\\{\\d+\\}/g)].map(x=>x[0]).sort(),[...key.matchAll(/\\{\\d+\\}/g)].map(x=>x[0]).sort(),lang+": "+key);
+ }
+ assert.notEqual(translate("Connect FM1",lang),"Connect FM1");
+ assert.notEqual(translate("Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.",lang),"Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.");
+}
+assert.match(script,/localizeStatic\\(document.body\\)/);
+assert.match(script,/langSelect.onchange/);
+assert.match(script,/location.assign\\(u.href\\)/);
+assert.match(script,/guide.html\\?lang=/);
+console.log("PASS: all five Web Library translation catalogs, dynamic placeholders and language links");

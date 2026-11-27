@@ -1,0 +1,16 @@
+name: Web Library localization check
+on:
+  push:
+    branches: [web-library-locales]
+    paths: ['web/**', 'tests/web_library_manager_test.mjs', '.github/workflows/web-library-locales.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: node tests/web_library_manager_test.mjs
+      - run: node tests/full_device_backup_test.mjs
+      - run: node tests/performance_backup_test.mjs

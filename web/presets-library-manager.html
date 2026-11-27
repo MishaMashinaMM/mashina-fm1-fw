@@ -393,7 +393,7 @@ function presetDrop(bank,slot,p){
   if(!snapshot)return;
   if(p.type==="sound"||p.type==="sound-group"){
     const sounds=p.type==="sound"?[p]:p.items;
-    if(slot+sounds.length>bankCount(bank))throw Error(sounds.length+" selected presets do not fit from slot "+num(slot+(bank==="user"?1:33))+". Nothing staged.");
+    if(slot+sounds.length>bankCount(bank))throw Error(t("{0} selected presets do not fit from slot {1}. Nothing staged.",sounds.length,num(slot+(bank==="user"?1:33))));
     setPresetChanges(bank,sounds.map((x,i)=>({slot:slot+i,recordBytes:x.recordBytes})));return;
   }
   if(!["slot","slot-group"].includes(p.type)||p.bank!==bank)return;
@@ -414,7 +414,7 @@ function projectDrop(slot,p){
   const dest=projectIndex(slot);
   if(p.type==="project"||p.type==="project-group"){
     const items=p.type==="project"?[p]:p.items;
-    if(dest+items.length>8)throw Error(items.length+" selected projects do not fit from P"+(dest+1)+". Nothing staged.");
+    if(dest+items.length>8)throw Error(t("{0} selected projects do not fit from P{1}. Nothing staged.",items.length,dest+1));
     items.forEach((item,j)=>item.sections.forEach((r,i)=>changes.push({slot:(dest+j)*4+i,recordBytes:r})));
   }else if(p.type==="section"){
     changes.push({slot,recordBytes:p.recordBytes});
@@ -745,7 +745,7 @@ function rows(id,data){
     const tr=document.createElement("tr");
     for(const [col,value] of values.entries()){
       const td=document.createElement("td");
-      if(value instanceof Node){if(value.type==="checkbox")value.setAttribute("aria-label","Write "+values[0]);td.append(value);}
+      if(value instanceof Node){if(value.type==="checkbox")value.setAttribute("aria-label",t("Write {0}",values[0]));td.append(value);}
       else{const span=document.createElement("span");span.className="cell-text";span.textContent=value;span.title=String(value);
         if(col>0&&value!=="—"&&value!=="Empty"&&value!=="Not inspected")span.tabIndex=0;td.append(span);}
       const bank=id==="project-rows"?"projects":id.startsWith("user-")?"user":id.startsWith("library-")?"library":null;
@@ -897,7 +897,7 @@ function apply(fn,name,title){return run(async()=>{if(!dev||!writable||!verified
     if(dev!==connection||!connection.connected)throw Error("FM1 disconnected during transfer. Reconnect and inspect before another write.");
     acceptSnapshot(result.after,{checked:true});
     status("SUCCESS · Device data verified and updated in memory. You can continue editing.","ok");
-  }catch(e){invalidate();snapshot=null;if(e.readback){acceptSnapshot(e.readback);status(e.message+" Read-back is available via Save complete backup. Refresh device data before writing again.","error");}else throw Error((e.message.startsWith("STOP")?"":"STOP — ")+e.message+" Refresh device data before writing again.");}},title);}
+  }catch(e){invalidate();snapshot=null;if(e.readback){acceptSnapshot(e.readback);status(t("Transfer stopped. Do not retry automatically. Keep your backup.")+" "+t("Read-back is available via Save complete backup.")+" "+t("Refresh device data before writing again.")+"\n"+t("Original diagnostic details:")+" "+e.message,"error");}else throw Error(t("Transfer stopped. Do not retry automatically. Keep your backup.")+" "+t("Refresh device data before writing again.")+"\n"+t("Original diagnostic details:")+" "+e.message);}},title);}
 for(const bank of ["user","library"]){
   fileInput(bank+"-import",file=>{
     if(file?.format==="mashina-full-device")file=validateFullDevice(file);
@@ -960,7 +960,7 @@ fileInput("full-import",file=>{fullSource=validateFullDevice(file);status("Sourc
 $("performance-save").onclick=()=>{try{
   const f=composeFullPerformance(snapshot,stagedEdits());
   download("mashina-complete-performance.json",f);status("Complete performance saved, including staged changes and settings. No device writes.","ok");
-}catch(e){status("Cannot save performance: "+e.message,"error");}};
+}catch(e){status(t("Cannot save performance:")+" "+diagnostic(e.message),"error");}};
 $("performance-open").onclick=async()=>{
   if(dev||!fullSource)return;
   if(offlineWorkspace&&hasEdits()&&!await askConfirmation({title:"Open another performance",message:"This discards the current staged arrangement. Save it first if needed.",action:"OPEN"}))return;

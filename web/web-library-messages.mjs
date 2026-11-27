@@ -74,7 +74,15 @@ export const extra={
   "Search projects collection": "Buscar colección de proyectos",
   "user available items": "Elementos USER disponibles",
   "library available items": "Elementos LIBRARY disponibles",
-  "projects available items": "Proyectos disponibles"
+  "projects available items": "Proyectos disponibles",
+  "Cannot save performance:": "No se puede guardar la interpretación:",
+  "Read-back is available via Save complete backup.": "Podés guardar los datos releídos con Guardar copia completa.",
+  "Refresh device data before writing again.": "Actualizá los datos antes de volver a escribir.",
+  "Transfer stopped. Do not retry automatically. Keep your backup.": "Transferencia detenida. No reintentes automáticamente. Conservá la copia.",
+  "Open Web Library": "Abrir Web Library",
+  "Write {0}": "Escribir {0}",
+  "Original diagnostic details:": "Detalles del diagnóstico original:",
+  "Save collection and pending changes before changing language.": "Guardá la colección y los cambios pendientes antes de cambiar el idioma."
  },
  "ja": {
   "{0} in collection": "コレクション内 {0} 件",
@@ -150,7 +158,15 @@ export const extra={
   "Search projects collection": "プロジェクトコレクション検索",
   "user available items": "利用可能な USER 項目",
   "library available items": "利用可能な LIBRARY 項目",
-  "projects available items": "利用可能なプロジェクト"
+  "projects available items": "利用可能なプロジェクト",
+  "Cannot save performance:": "パフォーマンスを保存できません:",
+  "Read-back is available via Save complete backup.": "再読み取りデータは「完全バックアップを保存」で保存できます。",
+  "Refresh device data before writing again.": "再書き込み前に本体データを更新してください。",
+  "Transfer stopped. Do not retry automatically. Keep your backup.": "転送を停止しました。自動再試行しないでください。バックアップを保管してください。",
+  "Open Web Library": "Web Library を開く",
+  "Write {0}": "{0} を書き込む",
+  "Original diagnostic details:": "診断詳細（原文）:",
+  "Save collection and pending changes before changing language.": "言語変更前にコレクションと保留中の変更を保存してください。"
  },
  "ru": {
   "{0} in collection": "В коллекции: {0}",
@@ -226,7 +242,15 @@ export const extra={
   "Search projects collection": "Поиск коллекции проектов",
   "user available items": "Доступные элементы USER",
   "library available items": "Доступные элементы LIBRARY",
-  "projects available items": "Доступные проекты"
+  "projects available items": "Доступные проекты",
+  "Cannot save performance:": "Не удалось сохранить конфигурацию:",
+  "Read-back is available via Save complete backup.": "Повторно считанные данные доступны через «Сохранить полную копию».",
+  "Refresh device data before writing again.": "Обновите данные перед повторной записью.",
+  "Transfer stopped. Do not retry automatically. Keep your backup.": "Передача остановлена. Не повторяйте автоматически. Сохраните резервную копию.",
+  "Open Web Library": "Открыть Web Library",
+  "Write {0}": "Записать {0}",
+  "Original diagnostic details:": "Исходные данные диагностики:",
+  "Save collection and pending changes before changing language.": "Перед сменой языка сохраните коллекцию и ожидающие изменения."
  },
  "sr": {
   "{0} in collection": "У колекцији: {0}",
@@ -302,7 +326,15 @@ export const extra={
   "Search projects collection": "Претражи колекцију пројеката",
   "user available items": "Доступне USER ставке",
   "library available items": "Доступне LIBRARY ставке",
-  "projects available items": "Доступни пројекти"
+  "projects available items": "Доступни пројекти",
+  "Cannot save performance:": "Поставку није могуће сачувати:",
+  "Read-back is available via Save complete backup.": "Поново очитани подаци доступни су преко „Сачувај потпуну копију“.",
+  "Refresh device data before writing again.": "Освежите податке пре поновног уписа.",
+  "Transfer stopped. Do not retry automatically. Keep your backup.": "Пренос је заустављен. Не понављајте аутоматски. Сачувајте резервну копију.",
+  "Open Web Library": "Отвори Web Library",
+  "Write {0}": "Упиши {0}",
+  "Original diagnostic details:": "Изворни дијагностички детаљи:",
+  "Save collection and pending changes before changing language.": "Сачувајте колекцију и измене на чекању пре промене језика."
  },
  "hi": {
   "{0} in collection": "संग्रह में {0}",
@@ -378,6 +410,14 @@ export const extra={
   "Search projects collection": "प्रोजेक्ट संग्रह खोजें",
   "user available items": "उपलब्ध USER आइटम",
   "library available items": "उपलब्ध LIBRARY आइटम",
-  "projects available items": "उपलब्ध प्रोजेक्ट"
+  "projects available items": "उपलब्ध प्रोजेक्ट",
+  "Cannot save performance:": "परफ़ॉर्मेंस सहेजी नहीं जा सकती:",
+  "Read-back is available via Save complete backup.": "दोबारा पढ़ा डेटा पूरा बैकअप सहेजें से उपलब्ध है।",
+  "Refresh device data before writing again.": "दोबारा लिखने से पहले डिवाइस डेटा रीफ़्रेश करें।",
+  "Transfer stopped. Do not retry automatically. Keep your backup.": "ट्रांसफ़र रुक गया। अपने आप पुनः प्रयास न करें। बैकअप सुरक्षित रखें।",
+  "Open Web Library": "Web Library खोलें",
+  "Write {0}": "{0} लिखें",
+  "Original diagnostic details:": "मूल निदान विवरण:",
+  "Save collection and pending changes before changing language.": "भाषा बदलने से पहले संग्रह और लंबित बदलाव सहेजें।"
  }
 };
