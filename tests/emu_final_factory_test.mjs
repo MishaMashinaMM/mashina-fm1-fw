@@ -21,5 +21,5 @@ for(let i=0;i<180;i++)e.web_render(1024);
 for(let i=0;i<96;i++){assert.equal(e.web_mpr_assign(0,i+32),0,"playable slot "+(i+33));}
 assert.equal(e.web_mpr_ref(0),128);
 for(let i=0;i<32;i++)assert.equal(e.web_test_user_preset(i),0,"browsing must not create USER "+(i+1));
-assert.match(readFileSync("build/emu/index.html","utf8"),/const STORE = .*"-final-factory-v1";/);
+assert.match(readFileSync("build/emu/index.html","utf8"),process.env.EMU_PUBLIC_STORAGE==="1"?/const STORE = .*\+"";/:/const STORE = .*"-final-factory-v1";/);
 console.log("PASS: 96 exact factory sounds, fresh startup references, all slots playable, all 32 USER slots empty, isolated browser storage");

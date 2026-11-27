@@ -85,6 +85,8 @@ Use the **[FM1 web installer](https://mishamashinamm.github.io/mashina-fm1-fw/we
 
 **MASHINA:** Misha Mashina.
 
+**Bluetooth MIDI:** based on [Melodee / Optimist](https://github.com/keremimo/melodee).
+
 **JIANT:** Juan Ignacio Antonucci (Juan Jiant) — [source repository](https://github.com/juanjiant-bit/JIANT) and [project/manual](https://juanjiant-bit.github.io/JIANT/).
 
 **Felucca:** Hügelton Instruments, including Leo Kuroshita and other contributors. Additional credits are preserved in source headers, firmware ABOUT information and bundled license notices.

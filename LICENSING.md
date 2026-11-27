@@ -105,4 +105,4 @@ by those owners.
 
 ## Radio
 
-Felucca never enables the Bluetooth / Wi-Fi radio of the hardware.
+MASHINA supports Bluetooth Low Energy MIDI using the GPL-3.0-only [Melodee](https://github.com/keremimo/melodee) / Optimist code, retrieved from a pinned revision by `tools/fetch_ble_experiment.sh`. Original source copyright notices are retained. Wi-Fi is not used.
