@@ -55,6 +55,9 @@ assert.equal(e.web_ble_control(0),0);
 console.log("PASS: simulated one-link lifecycle, actual BLE decoder, routing, disconnect and independent wired MIDI");
 
 // Navigate through actual GLO pages and exercise panel encoders, then send packets on both links.
+// Return to the same preset whose accepted note was determined above.
+e.web_midi(pc,127,0);for(let i=0;i<12;i++)e.web_render(1024);
+assert.equal(e.web_mpr_ref(0),128);
 e.web_buttons(1<<5);e.web_render(1024);e.web_buttons(0);e.web_render(1024);
 for(let i=0;i<16&&!e.web_ble_page();i++){e.web_enc(0,1);for(let j=0;j<4;j++)e.web_render(1024);}
 assert.equal(e.web_ble_page(),1,"GLO exposes Bluetooth page");
