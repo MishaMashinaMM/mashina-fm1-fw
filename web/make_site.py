@@ -171,9 +171,9 @@ def main(pkg, version, out, prev=None):
         f.unlink()
     brand = (HERE / "jiant-ui.css").read_text(encoding="utf-8")
     installer_html = html.replace("/*JIANT_UI*/", brand).replace("/*BUILD_TAG*/", release_tag)
-    if version != "0.15":
-        installer_html = installer_html.replace("v0.15 · MASHINA · BUILD", f"v{version.lstrip(chr(118))} · MASHINA · BUILD")
-    if version in ("0.15", "0.14-lib96test", "0.15-bletest"):
+    if version != "0.16":
+        installer_html = installer_html.replace("v0.16 · MASHINA · BUILD", f"v{version.lstrip(chr(118))} · MASHINA · BUILD")
+    if version in ("0.15", "0.16", "0.14-lib96test", "0.15-bletest"):
         needle = "await runInstall({ up, image, product, ui, state });"
         assert installer_html.count(needle) == 1
         installer_html = installer_html.replace(needle, 'await runInstall({ up, image, product, ui, state, cleanLib96Trial:true, confirmTrialBackup:()=>confirm(t("firstText")) });')
@@ -204,7 +204,7 @@ def main(pkg, version, out, prev=None):
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt", "fm1backup.js", "factory-samples.json", "factory-voices.json", "FACTORY-VOICES.md", "FACTORY-SAMPLES.md"):
         if (HERE / f).exists():
             shutil.copy(HERE / f, ed / f)
-    if version in ("0.14", "0.15", "0.14-lib96test", "0.15-bletest"):
+    if version in ("0.14", "0.15", "0.16", "0.14-lib96test", "0.15-bletest"):
         library = out / "web-library"
         library.mkdir(parents=True, exist_ok=True)
         for src, dest in (("presets-library-manager.html", "index.html"), ("presets-library-guide.html", "guide.html"), ("initialize-library.html", "initialize.html")):
@@ -221,7 +221,7 @@ def main(pkg, version, out, prev=None):
         # DOM element for its harmless event binding, but do not expose a link.
         public_manager = library / "index.html"
         public_manager.write_text(public_manager.read_text(encoding="utf-8").replace('<div class="panel advanced">', '<div class="panel advanced" style="display:none">').replace('href="./advanced.html"', 'href="./guide.html"'), encoding="utf-8")
-        if version in ("0.15", "0.14-lib96test", "0.15-bletest"):
+        if version in ("0.15", "0.16", "0.14-lib96test", "0.15-bletest"):
             # This layout initializes itself before any old state is read.
             (library / "initialize.html").unlink()
             manager = public_manager.read_text(encoding="utf-8")

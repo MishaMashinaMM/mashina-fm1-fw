@@ -466,7 +466,12 @@ def main():
     # v0.14 is the first public reference-layout release. Explicitly
     # select the complete, mutually exclusive storage configuration here,
     # rather than silently distributing the old FUN storage build.
-    public96 = a.release == "0.15"
+    public96 = a.release in ("0.15", "0.16")
+    if a.release == "0.16":
+        if os.environ.get("MASHINA_BLE_EXPERIMENT", "1") != "1":
+            raise SystemExit("v0.16 requires Bluetooth MIDI")
+        os.environ["MASHINA_BLE_EXPERIMENT"] = "1"
+        subprocess.run(["sh", str(SRC / "tools" / "fetch_ble_experiment.sh")], check=True)
     if public96:
         if os.environ.get("FELUCCA_LIB96", "1") != "1":
             raise SystemExit("v0.15 requires 96 LIBRARY slots")
@@ -484,7 +489,7 @@ def main():
         and os.environ.get("MASHINA_LIB96_TRIAL") == "ONE-FM1-CLEAN-96"
     ):
         raise SystemExit("LIB96 test package requires explicit branch-only authorization")
-    public_authorized = a.release in ("0.14", "0.15")
+    public_authorized = a.release in ("0.14", "0.15", "0.16")
     if public_authorized or lib96_trial:
         release_flags = {
             "FELUCCA_LIB32": "1", "FELUCCA_LIB32_WRITE": "1",
@@ -499,7 +504,7 @@ def main():
                 raise SystemExit(f"{a.release} release requires {k}={v}")
             os.environ[k] = v
     elif os.environ.get("FELUCCA_PUBLIC_LAYOUT", "0") != "0":
-        raise SystemExit("Public layout is reserved for the v0.14/v0.15 release builds")
+        raise SystemExit("Public layout is reserved for the v0.14/v0.15/v0.16 release builds")
     if not a.release:
         # Unversioned engineering images must not impersonate the v0.14 public layout.
         PRODUCT = "FM-1_913"

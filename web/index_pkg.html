@@ -49,7 +49,7 @@
 <main>
   <nav class="lang" id="lang" aria-label="Language"><button data-lang="en" lang="en">English</button><button data-lang="es" lang="es">Español</button><button data-lang="ja" lang="ja">日本語</button><button data-lang="ru" lang="ru">Русский</button><button data-lang="sr" lang="sr-Cyrl">Српски</button><button data-lang="hi" lang="hi">हिन्दी</button></nav>
   <h1 class="jiant-wordmark"><a href="https://github.com/MishaMashinaMM/mashina-fm1-fw" aria-label="MASHINA home" style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.25"><span style="display:block">MASHINA</span><span class="fm" style="display:block;margin:0">FM1 PERFORMANCE FW</span></a><span class="jiant-tool" data-nav-label="installer">INSTALLER</span></h1>
-  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.15 · MASHINA · BUILD /*BUILD_TAG*/</p>
+  <p id="release-stamp" style="color:#ff9900;font:600 12px/1.5 monospace;letter-spacing:.04em">v0.16 · MASHINA · BUILD /*BUILD_TAG*/</p>
   <p data-t="intro"></p>
   <p data-t="warn"></p>
   <p data-t="samples" style="color:var(--orange)"></p>
@@ -100,7 +100,7 @@
   <p><span data-t="manual"></span>
     <a href="https://mishamashinamm.github.io/mashina-fm1-fw/manual/" style="color:inherit">MASHINA user manual</a></p>
   
-  <p class="small">MASHINA v0.15 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
+  <p class="small">MASHINA v0.16 modification: Misha Mashina. Original JIANT firmware: Juan Ignacio Antonucci (Juan Jiant).<br>
     Credits: Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener" style="color:inherit">Hügelton Instruments</a>, with its CrispyZebra waveforms and Fukiai icons (MIT); the song system after SLOOP by isod89.<br>
     Font: Inter Tight (The Inter Project Authors, SIL OFL 1.1).<br>
     FM6 engine: msfa from Dexed (Google Inc., Pascal Gauthier, Apache-2.0). The package also holds three JieLi AC79 SDK files, uboot.boot, cfg_tool.bin and eq_cfg_hw.bin (JieLi Technology, Apache-2.0). <a href="../../firmware/LICENSING.md" style="color:inherit">Licences</a>: <a href="../../firmware/LICENSE" style="color:inherit">GPL-3.0</a>, <a href="../../firmware/LICENSES/Apache-2.0.txt" style="color:inherit">Apache-2.0</a>, <a href="../../firmware/LICENSES/" style="color:inherit">all</a>.<br>
@@ -114,11 +114,11 @@ const TEXT = {
   ja: {
     intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
     warn: "書き込み中は USB を抜かないでください。",
-    samples: "互換性の注意: MASHINA v0.15 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
-    dual: "MASHINA v0.15: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。",
+    samples: "互換性の注意: MASHINA v0.16 は Felucca のユーザーサンプル再生に対応していません。ファームウェアを切り替える前に元の WAV と完全バックアップを保存してください。",
+    dual: "MASHINA v0.16: 6トラックのMIDIノート/ベロシティ範囲を設定できるZONES、TRN ±36半音とFINE ±50セントのTUNING、BRASS / INDUSTRIAL、12パッドのDRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND、32件のMIDIマクロを搭載。外部MIDIコントローラーを使ったライブ演奏向けのファームウェアです。 対応する Bluetooth MIDI コントローラーを最大2台まで FM1 に直接接続できます。両方の接続先を記憶し、それぞれ自動再接続します。",
     install: "インストール",
     firstTitle: "インストール前に",
-    "firstText": "別のファームウェアや互換性のない旧版から v0.15 に切り替えると、音色、プロジェクト、設定は自動的に消去されます。必要なデータは事前に保存してください。互換性のある MASHINA の更新ではデータを保持します。",
+    "firstText": "別のファームウェアや互換性のない旧版から v0.16 に切り替えると、音色、プロジェクト、設定は自動的に消去されます。必要なデータは事前に保存してください。互換性のある MASHINA の更新ではデータを保持します。",
     firstStock: "公式 V15 に戻す",
     "firstOk": "FM1 が起動するまで電源と USB を接続したままにしてください。追加操作は不要です。",
     "webLibrary": "ウェブライブラリ",
@@ -163,11 +163,11 @@ const TEXT = {
   en: {
     intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
     warn: "Do not unplug the USB cable while writing.",
-    samples: "Compatibility note: MASHINA v0.15 does not provide Felucca user-sample playback. If changing from Felucca or another firmware, preserve your original WAV files and a complete backup before installation.",
-    dual: "MASHINA v0.15: six-track MIDI routing, note and velocity zones, per-track tuning, ATMOS / BRASS / INDUSTRIAL synthesizers, four 12-sound drum engines (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ and 32 MIDI macros.",
+    samples: "Compatibility note: MASHINA v0.16 does not provide Felucca user-sample playback. If changing from Felucca or another firmware, preserve your original WAV files and a complete backup before installation.",
+    dual: "MASHINA v0.16: six-track MIDI routing, note and velocity zones, per-track tuning, ATMOS / BRASS / INDUSTRIAL synthesizers, four 12-sound drum engines (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ and 32 MIDI macros. Connect up to two compatible Bluetooth MIDI controllers directly to FM1. Both are remembered and reconnect independently.",
     install: "Install",
     firstTitle: "Before installing MASHINA",
-    "firstText": "Installing v0.15 from another firmware or an incompatible older MASHINA version automatically clears presets, projects and settings. Save anything you want to keep first. Compatible MASHINA updates retain data.",
+    "firstText": "Installing v0.16 from another firmware or an incompatible older MASHINA version automatically clears presets, projects and settings. Save anything you want to keep first. Compatible MASHINA updates retain data.",
     firstStock: "Return to official V15",
     "firstOk": "Keep FM1 powered and connected until it starts. No separate initialization is needed.",
     "webLibrary": "Web Library",
@@ -348,11 +348,11 @@ Object.assign(TEXT.ja, {
 TEXT.es = {
   intro: "Conectá el FM-1 por USB. (Funciona en Chrome o Edge en una computadora; en Android con Chrome puede funcionar. En iPhone/iPad no.)",
   warn: "No desconectes el cable USB mientras escribe.",
-  samples: "Compatibilidad: MASHINA v0.15 no reproduce samples de usuario de Felucca. Antes de cambiar de firmware, conservá tus WAV originales y un backup completo.",
-    dual: "MASHINA v0.15: seis pistas MIDI, zonas de notas y velocidad, afinación por pista, sintetizadores ATMOS / BRASS / INDUSTRIAL, cuatro motores de batería de 12 sonidos (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ y 32 macros MIDI.",
+  samples: "Compatibilidad: MASHINA v0.16 no reproduce samples de usuario de Felucca. Antes de cambiar de firmware, conservá tus WAV originales y un backup completo.",
+    dual: "MASHINA v0.16: seis pistas MIDI, zonas de notas y velocidad, afinación por pista, sintetizadores ATMOS / BRASS / INDUSTRIAL, cuatro motores de batería de 12 sonidos (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ y 32 macros MIDI. Conectá hasta dos controladores MIDI Bluetooth compatibles directamente al FM1. Se recuerdan y se reconectan de forma independiente.",
   install: "Instalar",
   firstTitle: "Antes de instalar MASHINA",
-  "firstText": "Al instalar v0.15 desde otro firmware o una versión anterior incompatible, se borran automáticamente los presets, proyectos y ajustes. Guardá primero lo que quieras conservar. Las actualizaciones compatibles de MASHINA conservan los datos.",
+  "firstText": "Al instalar v0.16 desde otro firmware o una versión anterior incompatible, se borran automáticamente los presets, proyectos y ajustes. Guardá primero lo que quieras conservar. Las actualizaciones compatibles de MASHINA conservan los datos.",
   firstStock: "Volver al V15 oficial",
   "firstOk": "Mantené el FM1 encendido y conectado hasta que arranque. No hace falta inicializarlo por separado.",
   "webLibrary": "Biblioteca web",
@@ -458,11 +458,11 @@ TEXT.es = {
 TEXT.ru = {
   "intro": "Подключите FM1 к компьютеру по USB (Chrome или Edge).",
   "warn": "Не отсоединяйте USB-кабель во время прошивки.",
-  "samples": "Совместимость: MASHINA v0.15 не воспроизводит пользовательские сэмплы Felucca. При смене прошивки сохраните исходные WAV-файлы и полную резервную копию.",
-  "dual": "MASHINA v0.15: шесть MIDI-дорожек, зоны нот и velocity, настройка высоты по дорожкам, синтезаторы ATMOS / BRASS / INDUSTRIAL, четыре барабанных движка по 12 звуков (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ и 32 MIDI-макроса.",
+  "samples": "Совместимость: MASHINA v0.16 не воспроизводит пользовательские сэмплы Felucca. При смене прошивки сохраните исходные WAV-файлы и полную резервную копию.",
+  "dual": "MASHINA v0.16: шесть MIDI-дорожек, зоны нот и velocity, настройка высоты по дорожкам, синтезаторы ATMOS / BRASS / INDUSTRIAL, четыре барабанных движка по 12 звуков (DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND), EQ и 32 MIDI-макроса. Подключайте к FM1 до двух совместимых Bluetooth MIDI-контроллеров напрямую. Устройства запоминаются и восстанавливают соединение независимо.",
   "install": "Установить",
   "firstTitle": "Перед установкой MASHINA",
-  "firstText": "При установке v0.15 поверх другой прошивки или несовместимой старой версии MASHINA пресеты, проекты и настройки автоматически удаляются. Сохраните нужное заранее. Совместимые обновления MASHINA сохраняют данные.",
+  "firstText": "При установке v0.16 поверх другой прошивки или несовместимой старой версии MASHINA пресеты, проекты и настройки автоматически удаляются. Сохраните нужное заранее. Совместимые обновления MASHINA сохраняют данные.",
   "firstStock": "Вернуться на официальную V15",
   "firstOk": "Не отключайте питание и USB до запуска FM1. Дополнительная инициализация не нужна.",
   "webLibrary": "Веб-библиотека",
@@ -586,10 +586,10 @@ TEXT.sr = {
   "intro": "Повежите FM1 са рачунаром преко USB кабла (Chrome или Edge).",
   "warn": "Не искључујте USB кабл током уписивања фирмвера.",
   "samples": "Компатибилност: MASHINA не репродукује корисничке Felucca семплове. Сачувајте оригиналне WAV датотеке и комплетну резервну копију пре промене фирмвера.",
-  "dual": "MASHINA v0.15: шест MIDI трака, зоне нота и јачине удара, транспозиција ±36 полустепена, фино штимовање ±50 центи, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND и 32 MIDI макроа.",
+  "dual": "MASHINA v0.16: шест MIDI трака, зоне нота и јачине удара, транспозиција ±36 полустепена, фино штимовање ±50 центи, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND и 32 MIDI макроа. Повежите до два компатибилна Bluetooth MIDI контролера директно са FM1. Оба се памте и поново повезују независно.",
   "install": "Инсталирај",
   "firstTitle": "Пре инсталације MASHINA",
-  "firstText": "Инсталација v0.15 преко другог фирмвера или некомпатибилне старије верзије MASHINA аутоматски брише пресете, пројекте и подешавања. Претходно сачувајте оно што желите да задржите. Компатибилне надоградње чувају податке.",
+  "firstText": "Инсталација v0.16 преко другог фирмвера или некомпатибилне старије верзије MASHINA аутоматски брише пресете, пројекте и подешавања. Претходно сачувајте оно што желите да задржите. Компатибилне надоградње чувају податке.",
   "firstStock": "Врати на званични V15",
   "firstOk": "Оставите FM1 укључен и повезан док се не покрене. Нема додатне иницијализације.",
   "webLibrary": "Веб библиотека",
@@ -713,10 +713,10 @@ TEXT.hi = {
   "intro": "FM1 को USB से कंप्यूटर में जोड़ें (Chrome या Edge का उपयोग करें)।",
   "warn": "फ़र्मवेयर लिखे जाने के दौरान USB केबल न निकालें।",
   "samples": "अनुकूलता: MASHINA Felucca के उपयोगकर्ता सैंपल नहीं चलाता। फ़र्मवेयर बदलने से पहले मूल WAV फ़ाइलें और पूरा बैकअप सुरक्षित रखें।",
-  "dual": "MASHINA v0.15: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND और 32 MIDI मैक्रो।",
+  "dual": "MASHINA v0.16: छह स्वतंत्र MIDI ट्रैक, नोट/वेलोसिटी ज़ोन, ±36 सेमीटोन ट्रांसपोज़, ±50 सेंट फाइन ट्यूनिंग, ATMOS / BRASS / INDUSTRIAL, DRUM-X / DRUM-LAB / DRUM-AC / DRUM-IND और 32 MIDI मैक्रो। FM1 से सीधे दो तक संगत Bluetooth MIDI कंट्रोलर जोड़ें। दोनों याद रहते हैं और स्वतंत्र रूप से फिर जुड़ते हैं।",
   "install": "इंस्टॉल करें",
   "firstTitle": "MASHINA इंस्टॉल करने से पहले",
-  "firstText": "दूसरे फ़र्मवेयर या असंगत पुराने MASHINA से v0.15 इंस्टॉल करने पर प्रीसेट, प्रोजेक्ट और सेटिंग अपने आप मिटते हैं। ज़रूरी डेटा पहले सहेजें। संगत MASHINA अपडेट डेटा रखते हैं।",
+  "firstText": "दूसरे फ़र्मवेयर या असंगत पुराने MASHINA से v0.16 इंस्टॉल करने पर प्रीसेट, प्रोजेक्ट और सेटिंग अपने आप मिटते हैं। ज़रूरी डेटा पहले सहेजें। संगत MASHINA अपडेट डेटा रखते हैं।",
   "firstStock": "आधिकारिक V15 पर लौटें",
   "firstOk": "FM1 चालू होने तक पावर और USB जुड़े रखें। अलग से प्रारंभ करने की ज़रूरत नहीं है।",
   "webLibrary": "वेब लाइब्रेरी",

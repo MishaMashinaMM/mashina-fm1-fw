@@ -37,7 +37,7 @@
     if (a.closest(".mashina-langs")) continue;
     const u = new URL(a.href, location.href);
     if (u.origin !== location.origin || !u.pathname.startsWith("/mashina-fm1-fw/")) continue;
-    if (!(/\/(emu|manual|webapp\/editor|webapp\/installer)\/?$/.test(u.pathname) ||
+    if (!(/\/(emu|manual|webapp\/editor|webapp\/installer|web-library(?:\/guide\.html)?)\/?$/.test(u.pathname) ||
           u.pathname === "/mashina-fm1-fw/")) continue;
     u.searchParams.set("lang", code); a.href = u.href;
   }

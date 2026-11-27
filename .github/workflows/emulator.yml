@@ -4,14 +4,14 @@
 name: emulator
 on:
   push:
-    branches: [main, presets-library-96]
+    branches: [main, presets-library-96, bluetooth-midi-multi]
   workflow_dispatch:
 permissions:
   contents: read
   pages: write
   id-token: write
 concurrency:
-  group: mashina-public-v015-${{ github.ref }}
+  group: mashina-public-v016-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   build:
@@ -33,13 +33,17 @@ jobs:
       - uses: mymindstorm/setup-emsdk@v14
         with:
           version: 6.0.11                # Emscripten toolchain version (not MASHINA release)
+      - name: Fetch Bluetooth MIDI sources
+        run: sh tools/fetch_ble_experiment.sh
       - name: the emulator
         run: |
           # build.sh already copies the current browser shell, substitutes
           # version placeholders and installs the browser assets.
-          MASHINA_EMU_REFS=1 MASHINA_EMU_LIB96=1 EMU_VERSION=v0.15 EMU_PREVIEW=0 sh web/emu/build.sh
+          MASHINA_EMU_REFS=1 MASHINA_EMU_LIB96=1 MASHINA_EMU_BLE=1 EMU_VERSION=v0.16 EMU_PREVIEW=0 sh web/emu/build.sh
           node web/emu/live-drums-wasm-test.mjs build/emu/felucca.wasm
           node tests/emu_lib96_test.mjs
+          node tests/emu_ble_test.mjs
+          node tests/emu_final_factory_test.mjs
       - name: live-drum firmware regressions
         run: bash tests/run_live_drum_tests.sh
       # (JIANT) the installer and the web editor next to the emulator: the package needs JieLi's toolchain (downloaded)
@@ -73,13 +77,13 @@ jobs:
           AC79_SDK: /home/runner/fw-AC79_AIoT_SDK
           JIELI_TOOLCHAIN: /home/runner/.jieli/toolchain
         run: |
-          python3 tools/build.py --release 0.15
+          python3 tools/build.py --release 0.16
           python3 tools/check_app_flash_headroom.py
           mkdir -p build/host
           cc -O1 -w -DFELUCCA_NO_SEQUENCER=1 -DMASHINA_HOST_TEST=1 -Ibuild/gen -Ifirmware/src -o build/host/factory_drum_export tests/factory_drum_export.c -lm
           build/host/factory_drum_export > build/host/factory-drum-records.json
           node tests/factory_catalog_complete_test.mjs build/host/factory-drum-records.json
-          python3 web/make_site.py build/felucca-0.15.fwsc "0.15" build/site
+          python3 web/make_site.py build/felucca-0.16.fwsc "0.16" build/site
           test ! -e build/site/web-library/initialize.html
           node tests/factory_catalog_selection_test.mjs
           node tests/full_device_backup_test.mjs
@@ -92,21 +96,21 @@ jobs:
           sys.path.insert(0,'tools')
           import fm1pkg_make as p
           p.SDK=Path.home()/'fw-AC79_AIoT_SDK'
-          Path('build/untagged.fwsc').write_bytes(p.ufw(p.flash_image(Path('build/felucca.bin').read_bytes(),p.KEY),Path('build/loader/ota.bin').read_bytes(),'FM-1_915'))
+          Path('build/untagged.fwsc').write_bytes(p.ufw(p.flash_image(Path('build/felucca.bin').read_bytes(),p.KEY),Path('build/loader/ota.bin').read_bytes(),'FM-1_916'))
           PY
           cc -O2 tests/ldr_test.c -o build/host/ldr_test
-          build/host/ldr_test build/untagged.fwsc build/felucca-0.15.fwsc 584336 clean
-          build/host/ldr_test build/felucca-0.15.fwsc build/felucca-0.15.fwsc 584336
+          build/host/ldr_test build/untagged.fwsc build/felucca-0.16.fwsc 584336 clean
+          build/host/ldr_test build/felucca-0.16.fwsc build/felucca-0.16.fwsc 584336
           test -s build/site/web-library/factory-drum-records.json
           printf '%s\n' "$GITHUB_SHA" > build/site/firmware/SOURCE_COMMIT
           (cd build/site/firmware && sha256sum felucca-*.fwsc > SHA256SUMS)
-          # Refuse to publish an unidentifiable or potentially cached earlier v0.15 binary.
-          test -s build/site/webapp/installer-orange-v015/index.html
-          grep -q 'v0.15 · MASHINA · BUILD' build/site/webapp/installer-orange-v015/index.html
+          # Refuse to publish an unidentifiable or potentially cached earlier v0.16 binary.
+          test -s build/site/webapp/installer-orange-v016/index.html
+          grep -q 'v0.16 · MASHINA · BUILD' build/site/webapp/installer-orange-v016/index.html
           grep -q 'cache: "no-store"' build/site/webapp/installer/index.html
           grep -q 'release=' build/site/webapp/installer/index.html
           test -s build/site/firmware/RELEASE_SHA256
-          (cd build/site/firmware && sha256sum felucca-0.15.fwsc | cut -d' ' -f1 | cmp - RELEASE_SHA256)
+          (cd build/site/firmware && sha256sum felucca-0.16.fwsc | cut -d' ' -f1 | cmp - RELEASE_SHA256)
           ! grep -q '/\\*BUILD_TAG\\*/' build/site/webapp/installer/index.html
           cp -r build/site/webapp build/site/firmware build/site/web-library build/emu/
       # (JIANT 0.7.9) the stems app's phase-0 probe (android/probe), next to the installer: app/jiant-probe.apk

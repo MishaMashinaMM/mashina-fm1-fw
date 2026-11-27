@@ -94,6 +94,11 @@ Open **GLO → MIX → TUNING**:
 
 Use TRN to shift one layer up or down and FINE to thicken two sounds played in unison. A note already sounding keeps its current pitch when TRN changes; later notes use the new tuning. Note Off and sustain still release the correct voices. DRUM-X and DRUM-LAB retain their drum pitches and MIDI note maps regardless of TRN/FINE.
 
+### Bluetooth MIDI controllers
+
+Enable Bluetooth MIDI mode on your controller. On FM1, open GLO → SYSTEM → BLUETOOTH (8/8). Turn K1 right to switch RADIO on, then K2 right to scan. Select a controller with K3 and turn K4 right to connect. When LINKED appears, play normally. Repeat for the second controller. To disconnect the selected device, turn K4 left; K1 left switches the radio off. FM1 remembers the radio setting and both paired controllers across restarts. WAIT or RETRY means a connection is being established; allow it to finish. Use the normal MIDI channel and track routing settings for both controllers.
+
+
 ## 3. Sound engines and polyphony
 
 Select the track, choose a sound/engine with the preset controls, then open **EDIT**. Turn **SELECT** to access the available EDIT pages; K1–K4 adjust the labels shown on each page. Use ENV, LFO, FX, SCL and ARP for further shaping.
@@ -124,7 +129,7 @@ These engines are available alongside MASHINA's additions. Each has its own fact
 
 MASHINA has **eight voices shared across all active tracks and drum engines**. Dense layered chords can exhaust the voice budget. BRASS also has a four-voice-per-track limit. Simplify layers if notes are being cut off.
 
-### Factory sounds in v0.15
+### Factory sounds in v0.16
 
 The refreshed factory bank includes 20 ANALOG, 12 INDUSTRIAL, 5 BRASS and 8 ATMOS sounds, plus updated PHASE, WHEEL, NOISE, FM6, VOICE and LOFI banks. Many presets are named after philosophers and thinkers from different periods of history. DRUM-X uses BUTTLER-1…9, DRUM-LAB ZIZEK-1…3, DRUM-AC KRIPKE-1…3 and DRUM-IND BADIOU-1…3.
 
@@ -343,6 +348,9 @@ Select a track and edit its sound. Open **SAVE → USER** (SOUND group). K1 sele
 
 ### Eight projects, four sections each (A–D)
 
+When saving a project, Tn: SAVE SOUND! means track n has unsaved sound edits. Save the sound first; SAVE TO USER SLOT means the edited LIBRARY sound must be saved to a USER slot. To use different sounds in different projects, use different preset slots. Mixer, routing and other project settings can be saved directly.
+
+
 Projects store references to the numbered presets rather than copies of sounds. Each of the eight projects has four sections, A–D, with up to six track references and independent performance settings (MIDI routing, zones, tuning, delays, mixer, effects, macros). Replacing a sound in a numbered position changes it wherever that position is referenced. Save an edited sound to USER before saving a project; unsaved sound edits are not embedded in the project. If you need two versions of a sound, save them to two distinct USER slots. **REC (hold) + FX / SEL / ENV / LFO** recalls A / B / C / D of the selected project. Clearing a referenced USER slot in Web Library is blocked if it would leave a missing sound.
 
 ### Web Library: manage sounds, projects and complete performances
@@ -361,7 +369,7 @@ See the [Web Library guide](https://mishamashinamm.github.io/mashina-fm1-fw/web-
 
 ### First installation and updates
 
-Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) and leave FM1 powered until it starts. Installing v0.15 over another firmware or an incompatible older MASHINA version (including v0.14) automatically clears presets, projects and settings. Save anything you want to keep beforehand. Compatible updates retain data. No separate initialization is necessary.
+Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) and leave FM1 powered until it starts. Installing v0.16 over another firmware or an incompatible older MASHINA version (including v0.14) automatically clears presets, projects and settings. Save anything you want to keep beforehand. Compatible updates retain data. No separate initialization is necessary.
 
 ## 8. Example live configurations
 
@@ -377,4 +385,4 @@ Use the [installer](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/insta
 
 ---
 
-MASHINA v0.15 · M-VAVE FM1 · Usage reference
+MASHINA v0.16 · M-VAVE FM1 · Usage reference

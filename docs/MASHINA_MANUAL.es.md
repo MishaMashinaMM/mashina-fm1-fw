@@ -96,6 +96,11 @@ En **GLO → MIX → TUNING**, **K1 TRN** ajusta **−36 a +36 semitonos**; **K2
 
 Si cambiás TRN mientras suena una nota, **esa nota mantiene su altura original**; las siguientes usan el valor nuevo. Note Off y sustain siguen liberando las voces correctas. DRUM-X y DRUM-LAB no cambian ni su afinación ni su mapa de notas por TRN/FINE.
 
+### Controladores MIDI Bluetooth
+
+Activá el modo MIDI Bluetooth en el controlador. En FM1 abrí GLO → SYSTEM → BLUETOOTH (8/8). Girá K1 a la derecha para activar RADIO y K2 a la derecha para buscar dispositivos. Elegí uno con K3 y girá K4 a la derecha para conectarlo. Cuando aparezca LINKED, podés tocar. Repetí con el segundo controlador. Para desconectar el seleccionado, girá K4 a la izquierda; K1 a la izquierda apaga la radio. FM1 recuerda la configuración y ambos dispositivos al reiniciar. WAIT o RETRY indica que se está conectando; esperá a que termine. Usá los canales y el ruteo MIDI habituales.
+
+
 ## 3. Zonas de teclado y afinación
 
 Abrí **GLO → MIX → ZONES**. Estos valores filtran las notas MIDI externas antes de la transposición:
@@ -137,7 +142,7 @@ WAVE/MIX mezclan osciladores; CUT/RES modelan el filtro; GRIND/METAL/CRUSH produ
 
 Las **ocho voces de síntesis son compartidas** por todas las pistas activas y motores de batería. BRASS tiene además un máximo de **cuatro voces por pista**. Si algunas notas se cortan, reducí capas simultáneas.
 
-### Sonidos de fábrica en v0.15
+### Sonidos de fábrica en v0.16
 
 El banco de fábrica renovado contiene 20 sonidos ANALOG, 12 INDUSTRIAL, 5 BRASS y 8 ATMOS, además de bancos actualizados de PHASE, WHEEL, NOISE, FM6, VOICE y LOFI. Muchos presets llevan nombres de filósofos y pensadores de distintas épocas de la historia. DRUM-X: BUTTLER-1…9; DRUM-LAB: ZIZEK-1…3; DRUM-AC: KRIPKE-1…3; DRUM-IND: BADIOU-1…3.
 
@@ -393,6 +398,9 @@ Elegí una pista y editá el sonido. Abrí **SAVE → USER** (SOUND). K1 elige 0
 
 ### Ocho proyectos con secciones A–D
 
+Al guardar un proyecto, Tn: SAVE SOUND! indica cambios de sonido sin guardar en la pista n. Guardá el sonido primero; SAVE TO USER SLOT indica que el sonido LIBRARY editado debe guardarse en USER. Usá posiciones distintas para sonidos diferentes en cada proyecto. El mezclador, ruteo y otros ajustes del proyecto se guardan directamente.
+
+
 Cada proyecto tiene cuatro secciones, hasta seis referencias a presets numerados y ajustes independientes (MIDI, zonas, afinación, retardos, mezcla, efectos, macros). Los sonidos no se duplican en los proyectos: reemplazar un preset modifica todos los proyectos que lo referencian. Para conservar variantes, guardalas en posiciones USER distintas. No se guardan cambios de sonido sin guardar primero el preset. **REC (mantener) + FX / SEL / ENV / LFO** llama A / B / C / D del proyecto elegido. No se permite borrar USER si deja una referencia sin sonido.
 
 ### Biblioteca web y copias completas
@@ -409,7 +417,7 @@ En PROJECTS arrastrá proyectos A–D completos o una sección por su chip. Las 
 
 ### Instalación inicial
 
-Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) y mantené el FM1 encendido hasta que arranque. Instalar v0.15 desde otro firmware o una versión anterior incompatible (incluida v0.14) borra automáticamente presets, proyectos y ajustes. Guardá lo que quieras conservar primero. Las actualizaciones compatibles conservan datos. No hace falta inicializar por separado.
+Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/installer/) y mantené el FM1 encendido hasta que arranque. Instalar v0.16 desde otro firmware o una versión anterior incompatible (incluida v0.14) borra automáticamente presets, proyectos y ajustes. Guardá lo que quieras conservar primero. Las actualizaciones compatibles conservan datos. No hace falta inicializar por separado.
 
 ## 8. Ejemplos para tocar en vivo
 
@@ -425,4 +433,4 @@ Usá el [instalador](https://mishamashinamm.github.io/mashina-fm1-fw/webapp/inst
 
 ---
 
-MASHINA v0.15 · M-VAVE FM1
+MASHINA v0.16 · M-VAVE FM1
