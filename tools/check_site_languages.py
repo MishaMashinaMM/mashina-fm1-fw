@@ -54,3 +54,12 @@ guide = (root / "web-library/guide.html").read_text(encoding="utf-8")
 for code in codes[1:]:
     assert f'data-library-lang="{code}"' in guide, f"Web Library guide missing {code}"
 print("PASS: all published pages and six-language Web Library guidance")
+
+manager = (root / "web-library/index.html").read_text(encoding="utf-8")
+for asset in ("web-library-locales.mjs", "web-library-messages.mjs"):
+    assert asset in manager, asset
+    src = (root / "web-library" / asset).read_text(encoding="utf-8")
+    for code in codes[1:]:
+        assert f'"{code}"' in src, f"Web Library: {asset} missing {code}"
+assert 'id="library-guide-language"' in manager
+print("PASS: six-language Web Library interface")

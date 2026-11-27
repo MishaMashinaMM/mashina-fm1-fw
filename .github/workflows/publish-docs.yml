@@ -75,6 +75,14 @@ jobs:
         run: |
           cp web/drums-home.html build/pages/index.html
           cp web/presets-library-guide.html build/pages/web-library/guide.html
+          cp web/web-library-locales.mjs web/web-library-messages.mjs build/pages/web-library/
+          # Preserve the released installer and device binary; refresh only the manager UI.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("web/presets-library-manager.html").read_text(encoding="utf-8")
+          p=p.replace('<div class="panel advanced">', '<div class="panel advanced" style="display:none">').replace('href="./advanced.html"', 'href="./guide.html"')
+          Path("build/pages/web-library/index.html").write_text(p,encoding="utf-8")
+          PY
           cp web/mashina-nav.js web/mashina-translations.js web/mashina-manual-locale.js build/pages/
           python3 web/make_site.py manual build/pages
           python3 tools/check_pages_links.py

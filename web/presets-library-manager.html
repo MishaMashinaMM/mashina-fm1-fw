@@ -5,7 +5,7 @@
 :root{color-scheme:dark;--bg:#121212;--panel:#1c1c1c;--line:#383838;--muted:#b6b6b6;--orange:#ff9900}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:#eee;font:13px/1.35 system-ui,sans-serif}
-main{max-width:1920px;margin:auto;padding:12px 16px 8px;display:grid;grid-template-columns:132px minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;min-height:100dvh}
+main{max-width:1920px;margin:auto;padding:12px 16px 8px;display:grid;grid-template-columns:minmax(132px,170px) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;gap:10px;min-height:100dvh}
 header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 h1{font-size:27px;line-height:1;letter-spacing:.055em;margin:0;color:var(--orange)}
 header small{display:block;color:#ddd;letter-spacing:.13em;font-weight:600;font-size:10px;margin-top:4px}
@@ -83,9 +83,9 @@ dialog h2{font-size:21px;margin:0 0 14px;color:var(--orange)}
 .op-warning{border-top:1px solid #444;margin-top:16px;padding-top:12px;color:#ffba79;font-size:13px}
 .op-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 #confirmation,#collection-save-dialog{border-color:#96631f}
-.slot-panel td:has(button[aria-label^="Double-click"]){position:relative;padding-right:25px}
-.slot-panel td>button[aria-label^="Double-click"]{position:absolute;right:2px;top:50%;transform:translateY(-50%);min-height:18px;font-size:12px;padding:0 3px;background:transparent;border:0;color:var(--muted)}
-.slot-panel td>button[aria-label^="Double-click"]:hover{color:var(--orange)}
+.slot-panel td:has(button[data-rename]){position:relative;padding-right:25px}
+.slot-panel td>button[data-rename]{position:absolute;right:2px;top:50%;transform:translateY(-50%);min-height:18px;font-size:12px;padding:0 3px;background:transparent;border:0;color:var(--muted)}
+.slot-panel td>button[data-rename]:hover{color:var(--orange)}
 #collection-filename{width:100%;min-height:36px;padding:8px 10px;font:inherit;color:#eee;background:#151515;border:1px solid #666;border-radius:4px}
 #collection-filename-error{color:#ffba79;min-height:1.4em;margin:5px 0;font-size:12px}
 #confirm-choice{width:100%;margin-top:10px;color:#eee;background:#151515;border:1px solid #666;border-radius:4px;min-height:36px;padding:7px 10px;font:inherit}
@@ -116,7 +116,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 @media(max-width:1179px){
  main{display:flex;flex-direction:column;min-height:100dvh;padding:12px}
  nav{display:flex;flex-direction:row;border-right:0;border-bottom:1px solid var(--line);padding:0;align-self:stretch}
- nav button{flex:1;text-align:center;border-left:0;border-bottom:3px solid transparent;padding:8px 4px}
+ nav button{flex:1;min-width:0;overflow-wrap:anywhere;text-align:center;border-left:0;border-bottom:3px solid transparent;padding:8px 4px}
  nav button[aria-selected=true]{border-left:0;border-bottom-color:var(--orange)}
  .workspace{grid-template-columns:minmax(0,1fr) minmax(240px,300px)}
 }
@@ -222,7 +222,7 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 <div class="panel"><h3>2 · Write a complete backup</h3><p class="warn">Only changed records are written. An interrupted transfer may leave partial state. You can save the current backup before writing if desired.</p><label class="field">Choose source complete backup (.json)<input id="full-import" type="file" accept=".json"></label><p id="full-impact" class="impact">No source selected.</p><button id="full-apply" class="primary" disabled>Write complete backup</button></div>
 <div class="panel"><h3>3 · Performance file</h3><p>Save all USER, LIBRARY, project sections, current performance and device settings as one restorable file, including staged changes. Or open a saved file offline and arrange it without connecting FM1.</p><div class="row"><button id="performance-save" class="primary" disabled>Save complete performance</button><button id="performance-open" disabled>Open source offline</button><button id="performance-close" disabled>Close offline workspace</button></div><p id="performance-status" class="fine"></p></div>
 <div class="panel advanced"><h3>Advanced / offline tools</h3><p>Legacy sound extraction, emulator snapshots, factory catalog selection and flash diagnostics. Disconnect first.</p><a href="./advanced.html" id="advanced-link">Open experimental lab</a></div></div></section>
-<footer><span id="library-footer">MASHINA v1.0 Web Library · USB connection required. Save edited sounds first.</span><span><select id="library-guide-language" aria-label="Guide language"><option value="en">English</option><option value="es">Español</option><option value="ja">日本語</option><option value="ru">Русский</option><option value="sr">Српски</option><option value="hi">हिन्दी</option></select> <a href="./guide.html" id="library-guide" target="_blank" rel="noopener">Web Library guide</a></span></footer>
+<footer><span id="library-footer">MASHINA v1.0 Web Library · USB connection required. Save edited sounds first.</span><span><select id="library-guide-language" aria-label="Language"><option value="en">English</option><option value="es">Español</option><option value="ja">日本語</option><option value="ru">Русский</option><option value="sr">Српски</option><option value="hi">हिन्दी</option></select> <a href="./guide.html" id="library-guide" target="_blank" rel="noopener">Web Library guide</a></span></footer>
 <dialog id="operation" aria-labelledby="op-title" aria-describedby="op-warning">
 <h2 id="op-title" tabindex="-1">Working…</h2>
 <div id="op-message" class="op-message" role="status" aria-live="polite"></div>
@@ -248,6 +248,13 @@ dialog[data-state=error]{border-color:#df694d}dialog[data-state=error] h2{color:
 </form>
 </dialog>
 <script type="module">
+import {locale,translate as baseTranslate,localizeStatic} from "./web-library-locales.mjs";
+import {extra} from "./web-library-messages.mjs";
+const t=(key,...args)=>(extra[locale]?.[key]??baseTranslate(key)).replace(/\{(\d+)\}/g,(m,i)=>args[i]??m);
+const diagnostic=message=>locale==="en"?message:(t(message)!==message?t(message):message);
+localizeStatic(document.body);document.documentElement.lang=locale==="sr"?"sr-Cyrl":locale;
+for(const el of document.querySelectorAll("[title],[aria-label],[placeholder]"))for(const attr of ["title","aria-label","placeholder"])if(el.hasAttribute(attr))el.setAttribute(attr,t(el.getAttribute(attr)));
+
 import {connectLibraryMidi} from "./presets-library-midi.mjs";
 import {capability,libraryBackupFile} from "./presets-library-sync.mjs";
 import {decodeRecord,renameSoundRecord,parseImportedLibrary} from "./presets-library-codec.mjs";
@@ -295,7 +302,7 @@ function paintSelection(bank){
     const on=s.device.keys.has(deviceKey(bank,Number(row.dataset.slot)));
     row.dataset.selected=String(on);row.setAttribute("aria-selected",String(on));
   }
-  $(bank+"-selection-count").textContent=s.collection.keys.size+" source · "+s.device.keys.size+" device selected";
+  $(bank+"-selection-count").textContent=t("{0} source · {1} device selected",s.collection.keys.size,s.device.keys.size);
   if(bank!=="projects")$(bank+"-collection-remove").disabled=busy||!s.collection.keys.size;
 }
 function selectItem(bank,side,key,event){
@@ -354,7 +361,7 @@ function removeSelectedSounds(bank,items=null){
   collections[bank]=result.entries;packs[bank]=result.packs;
   for(const item of chosen)soundOrigins[bank].delete(soundKey(item));
   clearSelection(bank,"collection");$(bank+"-source").value="";
-  render();status("Removed "+result.removed+" sound(s) from the offline collection. FM1 and staged device changes are unchanged.","ok");
+  render();status(t("{0} sounds removed from offline collection. FM1 and staged device changes are unchanged.",result.removed),"ok");
 }
 function addFactorySounds(bank){
   addCollection(bank,factory.filter(x=>x.available),"factory");
@@ -454,7 +461,7 @@ function collectionFromDevice(bank){
   if(!snapshot)return;
   if(bank==="projects")addCollection(bank,projectCollectionFromSections(Array.from({length:32},(_,i)=>projectAt(i))));
   else addCollection(bank,Array.from({length:bankCount(bank)},(_,i)=>bank==="user"?slotRecord(bank,i):actualSound(bank,i)).filter(Boolean),"device");
-  render();status("Added complete "+bank.toUpperCase()+" records to offline collection. Save the collection to keep them.","ok");
+  render();status(t("Complete {0} records added to offline collection. Save the collection to keep them.",bank.toUpperCase()),"ok");
 }
 function renderCollection(bank){
   const host=$(bank+"-collection"),search=$(bank+"-search").value.trim().toLowerCase(),project=bank==="projects";
@@ -495,24 +502,24 @@ function renderCollection(bank){
     row.ondragend=dragEnd;
     if(project){
       for(let i=0;i<4;i++)if(p.sections[i]){
-        const chip=document.createElement("button");chip.textContent="ABCD"[i];chip.title="Drag section "+"ABCD"[i];chip.draggable=true;
+        const chip=document.createElement("button");chip.textContent="ABCD"[i];chip.title=t("Drag section {0}","ABCD"[i]);chip.draggable=true;
         chip.ondragstart=e=>{e.stopPropagation();dragStart(e,{type:"section",recordBytes:p.sections[i]});};chip.ondragend=dragEnd;
         chip.ondblclick=e=>{e.stopPropagation();renameCollectionItem(bank,p,name,i);};
         row.append(chip);
       }
     }else{
-      const action=document.createElement("button");action.textContent="×";action.title="Remove from Available presets (offline only)";
-      action.setAttribute("aria-label","Remove "+p.name);action.disabled=busy;
+      const action=document.createElement("button");action.textContent="×";action.title=t("Remove from Available presets (offline only)");
+      action.setAttribute("aria-label",t("Remove")+" "+p.name);action.disabled=busy;
       action.onclick=()=>removeSelectedSounds(bank,[p]);
       row.append(action);
     }
-    const rename=document.createElement("button");rename.textContent="✎";rename.title="Rename "+(project?"project":"preset");rename.setAttribute("aria-label",rename.title+" "+p.name);rename.disabled=busy;rename.onclick=()=>renameCollectionItem(bank,p,name);row.append(rename);
-    if(project){const remove=document.createElement("button");remove.textContent="−";remove.title="Remove from collection";remove.onclick=()=>removeCollection(bank,p.index);row.append(remove);}
+    const rename=document.createElement("button");rename.textContent="✎";rename.title=t(project?"Rename project":"Rename preset");rename.setAttribute("aria-label",rename.title+" "+p.name);rename.disabled=busy;rename.onclick=()=>renameCollectionItem(bank,p,name);row.append(rename);
+    if(project){const remove=document.createElement("button");remove.textContent="−";remove.title=t("Remove from collection");remove.onclick=()=>removeCollection(bank,p.index);row.append(remove);}
     host.append(row);
   }
-  if(!n)host.textContent=project?"No matching items. Import JSON or drag device records here.":"No matching presets. Import JSON, open a collection, or add factory/device sounds.";
-  $(bank+"-collection-count").textContent=collections[bank].length+" in collection";
-  $(bank+"-page").textContent=n?(start+1)+"–"+Math.min(start+PAGE_SIZE,n)+" / "+n:"0 items";
+  if(!n)host.textContent=t(project?"No matching items. Import JSON or drag device records here.":"No matching presets. Import JSON, open a collection, or add factory/device sounds.");
+  $(bank+"-collection-count").textContent=t("{0} in collection",collections[bank].length);
+  $(bank+"-page").textContent=n?(start+1)+"–"+Math.min(start+PAGE_SIZE,n)+" / "+n:t("0 items");
   $(bank+"-prev").disabled=page===0;$(bank+"-next").disabled=page===maxPage;
   $(bank+"-collection-capture").disabled=!snapshot||busy;
   $(bank+"-collection-save").disabled=busy;
@@ -523,7 +530,7 @@ function renderCollection(bank){
     const slots=p.type==="project-slot"?[projectIndex(p.slot)]:p.type==="slot"?[p.slot]:p.slots;
     if(project)addCollection(bank,slots.map(i=>({sections:Array.from({length:4},(_,j)=>projectAt(i*4+j))})));
     else addCollection(bank,slots.map(i=>actualSound(bank,i)).filter(Boolean),"device");
-    render();status("Added "+slots.length+" selected item(s) to offline collection. Save collection to keep it.","ok");
+    render();status(t("{0} selected items added to offline collection. Save collection to keep it.",slots.length),"ok");
   });
   paintSelection(bank);
 }
@@ -539,23 +546,23 @@ for(const bank of ["user","library","projects"]){
   }
 }
 function status(text,state=""){
-  $("status").textContent=text;$("status").dataset.state=state;
+  text=state==="error"?diagnostic(text):t(text);$("status").textContent=text;$("status").dataset.state=state;
   if($("operation").open&&busy)$("op-message").textContent=text;
 }
 function beginOperation(title){
-  const d=$("operation");d.dataset.state="";$("op-title").textContent=title;
-  $("op-message").textContent="Starting…";$("op-detail").textContent="Preparing device communication";
+  const d=$("operation");d.dataset.state="";$("op-title").textContent=t(title);
+  $("op-message").textContent=t("Starting…");$("op-detail").textContent=t("Preparing device communication");
   const p=$("op-progress");p.hidden=false;p.removeAttribute("value");p.max=1;
-  $("op-warning").textContent="Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.";
+  $("op-warning").textContent=t("Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.");
   $("op-close").disabled=true;d.showModal();$("op-title").focus();
 }
 function finishOperation(){
   const state=$("status").dataset.state==="error"?"error":"ok";
   $("operation").dataset.state=state;
-  $("op-title").textContent=state==="error"?"Operation stopped":"Operation complete";
+  $("op-title").textContent=t(state==="error"?"Operation stopped":"Operation complete");
   $("op-message").textContent=$("status").textContent;
   $("op-progress").hidden=true;$("op-detail").textContent="";
-  $("op-warning").textContent=state==="error"?"Read the error before continuing. No automatic retry.":"You may close this message and continue.";
+  $("op-warning").textContent=t(state==="error"?"Read the error before continuing. No automatic retry.":"You may close this message and continue.");
   $("op-close").disabled=false;$("op-close").focus();
 }
 $("operation").addEventListener("cancel",e=>{if(busy)e.preventDefault();});
@@ -564,18 +571,18 @@ let confirmationResolve=null;
 function askConfirmation({title,message,summary="",action="WRITE",choices=null,initial=-1}){
   const dialog=$("confirmation");
   if(dialog.open||confirmationResolve)return Promise.resolve(choices?null:false);
-  $("confirm-title").textContent=title;
-  $("confirm-message").textContent=message;
+  $("confirm-title").textContent=t(title);
+  $("confirm-message").textContent=t(message);
   $("confirm-summary").textContent=summary;
   $("confirm-summary").hidden=!summary;
   $("confirm-choice-field").hidden=!choices;
   const select=$("confirm-choice");select.replaceChildren();
   if(choices){
-    opt(select,"","Choose MIDI port pair");
+    opt(select,"",t("Choose MIDI port pair"));
     choices.forEach((x,i)=>opt(select,String(i),x));
     select.value=initial>=0?String(initial):"";
   }
-  $("confirm-accept").textContent=action;
+  $("confirm-accept").textContent=t(action);
   $("confirm-accept").disabled=!!choices&&select.value==="";
   select.onchange=()=>{$("confirm-accept").disabled=select.value==="";};
   return new Promise(resolve=>{
@@ -609,7 +616,7 @@ function validateCollectionFilename(){
     $("collection-save-accept").disabled=false;
     return name;
   }catch(e){
-    $("collection-filename-error").textContent=e.message;
+    $("collection-filename-error").textContent=diagnostic(e.message);
     $("collection-save-accept").disabled=true;
     return null;
   }
@@ -620,7 +627,7 @@ function openCollectionSave(bank){
   collectionSaveBank=bank;
   const input=$("collection-filename");
   input.value=lastCollectionFilename[bank]??("mashina-"+bank+"-collection");
-  $("collection-save-description").textContent=collections[bank].length+" "+(bank==="projects"?"project(s)":"preset(s)")+" will be saved as a local JSON file.";
+  $("collection-save-description").textContent=t(bank==="projects"?"{0} project(s) will be saved as a local JSON file.":"{0} preset(s) will be saved as a local JSON file.",collections[bank].length);
   validateCollectionFilename();
   dialog.showModal();
   input.focus();input.select();
@@ -636,10 +643,10 @@ $("collection-save-form").onsubmit=e=>{
     download(name,collectionFile(bank,collections[bank]));
     lastCollectionFilename[bank]=name.slice(0,-5);
     $("collection-save-dialog").close();
-  }catch(error){$("collection-filename-error").textContent=error.message;}
+  }catch(error){$("collection-filename-error").textContent=diagnostic(error.message);}
 };
 function download(name,obj){const u=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:"application/json"}));const a=document.createElement("a");a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
-function label(r){return r?decodeRecord(r).name:"Empty";}
+function label(r){return r?decodeRecord(r).name:t("Empty");}
 /* Read-only name inputs ignore pointer events so the surrounding row keeps
  * normal single-click selection and native drag/drop. Only the explicit
  * inline edit temporarily accepts text input and disables row dragging. */
@@ -647,8 +654,8 @@ function makeInlineName(host,activate){
   const value=host.textContent;
   const input=document.createElement("input");
   input.type="text";input.readOnly=true;input.tabIndex=-1;input.value=value;
-  input.setAttribute("aria-label","Name");input.draggable=false;input.autocomplete="off";input.spellcheck=false;
-  host.classList.add("inline-name");host.tabIndex=0;host.title=value+" · Double-click or F2 to rename";
+  input.setAttribute("aria-label",t("Name"));input.draggable=false;input.autocomplete="off";input.spellcheck=false;
+  host.classList.add("inline-name");host.tabIndex=0;host.title=value+" · "+t("Double-click or F2 to rename");
   host.replaceChildren(input);
   host.ondblclick=e=>{e.preventDefault();e.stopPropagation();if(!inlineEdit)activate();};
   host.onkeydown=e=>{if(e.target===host&&(e.key==="F2"||e.key==="Enter")){e.preventDefault();e.stopPropagation();if(!inlineEdit)activate();}};
@@ -661,8 +668,8 @@ function openRename(host,title,description,name,action){
   const editor={input,host,row,wasDraggable,display,finish:null};
   inlineEdit=editor;
   if(row)row.draggable=false;
-  host.dataset.editing="true";input.readOnly=false;input.tabIndex=0;input.maxLength=12;input.value=name;input.setAttribute("aria-label",title);
-  status(description+" Enter to save; Escape to cancel.");
+  host.dataset.editing="true";input.readOnly=false;input.tabIndex=0;input.maxLength=12;input.value=name;input.setAttribute("aria-label",t(title));
+  status(t(description)+" "+t("Enter to save; Escape to cancel."));
   function finish(commit,blur=false){
     if(inlineEdit!==editor)return;
     const next=input.value.trim();
@@ -674,7 +681,7 @@ function openRename(host,title,description,name,action){
     // Reset before action/render, as replacing an active input can emit blur.
     inlineEdit=null;input.onblur=null;input.onkeydown=null;input.onclick=null;input.ondblclick=null;input.oninput=null;input.ondragstart=null;
     input.readOnly=true;input.tabIndex=-1;input.removeAttribute("maxlength");input.removeAttribute("aria-invalid");input.value=display;
-    input.setAttribute("aria-label","Name");delete host.dataset.editing;
+    input.setAttribute("aria-label",t("Name"));delete host.dataset.editing;
     if(row)row.draggable=wasDraggable;
     if(commit&&next!==name){try{action(next);}catch(e){status(e.message,"error");}}
     if(!blur&&host.isConnected)host.focus({preventScroll:true});
@@ -715,18 +722,18 @@ function renameDeviceItem(bank,slot,host,wholeProject=false){
   if(bank==="projects"){
     const first=Math.floor(slot/4)*4,slots=wholeProject?[first,first+1,first+2,first+3]:[slot];
     const occupied=slots.filter(i=>projectAt(i));if(!occupied.length)return;
-    openRename(host,wholeProject?"Rename project":"Rename section",wholeProject?"Rename all occupied sections of P"+(first/4+1)+". Write PROJECT changes to commit.":"Rename "+pLabel(slot)+". Write PROJECT changes to commit.",decodeProject(projectAt(occupied[0])).name,name=>{
+    openRename(host,wholeProject?"Rename project":"Rename section",wholeProject?t("Rename all occupied sections of P{0}. Write PROJECT changes to commit.",first/4+1):t("Rename {0}. Write PROJECT changes to commit.",pLabel(slot)),decodeProject(projectAt(occupied[0])).name,name=>{
       const sections=projectFile?structuredClone(projectFile.sections):structuredClone(snapshot.projects);
       for(const i of occupied){sections[i]=renameProjectRecord(projectAt(i),name);if(eq(sections[i],snapshot.projects[i]))selected.delete(i);else selected.add(i);}
       projectFile=projectsBackup(sections);render();status("Project name change staged. Write PROJECT changes to commit.","ok");
     });
   }else{
     const raw=actualSound(bank,slot);if(!raw)return;
-    openRename(host,"Rename "+bank.toUpperCase()+" preset","Slot "+num(slot+(bank==="user"?1:33))+" stays unchanged. Write "+bank.toUpperCase()+" changes to commit.",label(raw),name=>{
+    openRename(host,t("Rename {0} preset",bank.toUpperCase()),t("Slot {0} stays unchanged. Write {1} changes to commit.",num(slot+(bank==="user"?1:33)),bank.toUpperCase()),label(raw),name=>{
       const next=renameSoundRecord(raw,name);
       if(eq(next,raw))return;
       setPresetChanges(bank,[{slot,recordBytes:bank==="library"&&eq(next,fallbackRecord(slot))?null:next}]);
-      status("Preset name change staged. Write "+bank.toUpperCase()+" changes to commit.","ok");
+      status(t("Preset name change staged. Write {0} changes to commit.",bank.toUpperCase()),"ok");
     });
   }
 }
@@ -744,13 +751,13 @@ function rows(id,data){
       const bank=id==="project-rows"?"projects":id.startsWith("user-")?"user":id.startsWith("library-")?"library":null;
       if(bank&&snapshot&&((bank!=="projects"&&col===1&&actualSound(bank,index))||(bank==="projects"&&col===1&&projectAt(index))||(bank==="projects"&&col===0&&Array.from({length:4},(_,i)=>projectAt(Math.floor(index/4)*4+i)).some(Boolean)))){
         const whole=bank==="projects"&&col===0;
-        td.title=whole?"Double-click to rename all occupied project sections":"Double-click to rename";
+        td.title=t(whole?"Double-click to rename all occupied project sections":"Double-click to rename");
         // Group renames use the adjacent device-name field, not the narrow
         // project/section index cell. The index never changes.
         const activate=()=>renameDeviceItem(bank,index,whole?tr.cells[1]?.querySelector(".cell-text"):td.querySelector(".cell-text"),whole);
         if(whole)td.ondblclick=e=>{e.stopPropagation();activate();};
         else makeInlineName(td.querySelector(".cell-text"),activate);
-        const edit=document.createElement("button");edit.textContent="✎";edit.title=td.title;edit.setAttribute("aria-label",td.title);edit.disabled=busy;edit.onclick=e=>{e.stopPropagation();activate();};td.append(edit);
+        const edit=document.createElement("button");edit.textContent="✎";edit.dataset.rename="";edit.title=td.title;edit.setAttribute("aria-label",td.title);edit.disabled=busy;edit.onclick=e=>{e.stopPropagation();activate();};td.append(edit);
       }
       tr.append(td);
     }
@@ -760,10 +767,10 @@ function rows(id,data){
   }
 }
 function progress(phase,i,n){
-  status(phase+" "+i+"/"+n+" · Keep FM1 connected and do not touch its controls.");
+  phase=String(phase).split(" · ").map(x=>t(x)).join(" · ");status(phase+" "+i+"/"+n+" · "+t("Keep FM1 connected and do not touch its controls."));
   if($("operation").open&&busy){
     $("op-message").textContent=phase;
-    $("op-detail").textContent=i.toLocaleString()+" / "+n.toLocaleString()+" · "+(n>0?Math.floor(100*i/n):0)+"% of current phase";
+    $("op-detail").textContent=i.toLocaleString()+" / "+n.toLocaleString()+" · "+(n>0?Math.floor(100*i/n):0)+t("% of current phase");
     const p=$("op-progress");if(n>0){p.max=n;p.value=Math.min(i,n);}else p.removeAttribute("value");
   }
 }
@@ -787,22 +794,22 @@ function sources(bank){
     return {id:"C"+i,name:label(p.recordBytes),origin,recordBytes:p.recordBytes};
   });
 }
-function fallback(i){const name=factoryFallbacksBySize[bankCount("library")]?.[i];return name?name+" (factory)":"Factory fallback";}
+function fallback(i){const name=factoryFallbacksBySize[bankCount("library")]?.[i];return name?name+" ("+t("factory")+")":t("Factory fallback");}
 function sourceControls(bank){
   const src=$(bank+"-source"),target=$(bank+"-target"),old=src.value,oldTarget=target.value;
-  src.replaceChildren();opt(src,"","Choose source sound");
+  src.replaceChildren();opt(src,"",t("Choose source sound"));
   const groups=new Map();
   for(const p of sources(bank)){
     const group=p.origin==="factory"?"Factory catalog":p.origin==="device"?"Device sounds":"Offline collection";
-    if(!groups.has(group)){const node=document.createElement("optgroup");node.label=group;src.append(node);groups.set(group,node);}
+    if(!groups.has(group)){const node=document.createElement("optgroup");node.label=t(group);src.append(node);groups.set(group,node);}
     opt(groups.get(group),p.id,p.name);
   }
   if([...src.options].some(o=>o.value===old))src.value=old;
-  target.replaceChildren();opt(target,"","Choose destination");
+  target.replaceChildren();opt(target,"",t("Choose destination"));
   if(snapshot)for(let i=0;i<bankCount(bank);i++){
     const r=snapshot[bank==="user"?"userPresets":"libraryPresets"][i];
     const ref=i+(bank==="user"?0:32);
-    opt(target,String(i),num(ref+1)+" · "+(r?label(r):bank==="user"?"Empty":fallback(i))+(references(ref)?" · Referenced":""));
+    opt(target,String(i),num(ref+1)+" · "+(r?label(r):bank==="user"?t("Empty"):fallback(i))+(references(ref)?" · "+t("Referenced"):""));
   }
   if([...target.options].some(o=>o.value===oldTarget))target.value=oldTarget;
   const slot=target.value===""?null:Number(target.value),r=slot===null?null:snapshot?.[bank==="user"?"userPresets":"libraryPresets"][slot];
@@ -812,46 +819,46 @@ function sourceControls(bank){
   $(bank+"-export").disabled=busy||!snapshot;$(bank+"-import-all").disabled=busy||!snapshot||!packs[bank].length;$(bank+"-clear").disabled=busy;src.disabled=busy;target.disabled=busy;
   const q=queues[bank],items=[...q].map(([slot,recordBytes])=>({slot,recordBytes}));
   const body=$(bank+"-queue");body.replaceChildren();
-  if(!items.length)body.textContent="No changes queued.";
-  for(const {slot,recordBytes} of items){const row=document.createElement("div");row.className="row";const text=document.createElement("span");text.textContent=num(slot+(bank==="user"?1:33))+" ← "+(recordBytes?label(recordBytes):bank==="user"?"Empty slot":"Factory preset");const remove=document.createElement("button");remove.textContent="Remove";remove.disabled=busy;remove.onclick=()=>{q.delete(slot);render();};row.append(text,remove);body.append(row);}
-  let msg="Connect FM1 to read and verify device data.",ok=false;
+  if(!items.length)body.textContent=t("No changes queued.");
+  for(const {slot,recordBytes} of items){const row=document.createElement("div");row.className="row";const text=document.createElement("span");text.textContent=num(slot+(bank==="user"?1:33))+" ← "+(recordBytes?label(recordBytes):bank==="user"?t("Empty slot"):t("Factory preset"));const remove=document.createElement("button");remove.textContent=t("Remove");remove.disabled=busy;remove.onclick=()=>{q.delete(slot);render();};row.append(text,remove);body.append(row);}
+  let msg=t("Connect FM1 to read and verify device data."),ok=false;
   if(items.length&&snapshot)try{
     const plan=bank==="user"?planUserLayout(snapshot,items):planLibraryLayout(snapshot,items);
     ok=!!(plan.objectIds.length+plan.library.length);
-    msg=ok?items.length+" queued destination(s). "+(verified?"Device data verified.":"Refresh device data before writing."):"No actual changes.";
-    if(ok){const offset=bank==="user"?0:32;const uses=items.flatMap(x=>references(x.slot+offset)?[num(x.slot+offset+1)+": "+references(x.slot+offset)]:[]);if(uses.length)msg+=" Affected references: "+uses.join("; ")+". ";if(plan.objectIds.includes(0))msg+=" Current performance will reload after writing.";}
-  }catch(e){msg="Blocked: "+e.message;}
+    msg=ok?t("{0} queued destination(s).",items.length)+" "+t(verified?"Device data verified.":"Refresh device data before writing."):t("No actual changes.");
+    if(ok){const offset=bank==="user"?0:32;const uses=items.flatMap(x=>references(x.slot+offset)?[num(x.slot+offset+1)+": "+references(x.slot+offset)]:[]);if(uses.length)msg+=" "+t("Affected references:")+" "+uses.join("; ")+". ";if(plan.objectIds.includes(0))msg+=" "+t("Current performance will reload after writing.");}
+  }catch(e){msg=t("Blocked:")+" "+diagnostic(e.message);}
   $(bank+"-impact").textContent=msg;$(bank+"-apply").disabled=!ready()||!ok;
-  rows(bank+"-slots",Array.from({length:bankCount(bank)},(_,i)=>{const ref=i+(bank==="user"?0:32),r=snapshot?.[bank==="user"?"userPresets":"libraryPresets"][i];const pending=queues[bank].has(i),next=slotRecord(bank,i);return [num(ref+1),!snapshot?"Not inspected":pending?"→ "+(next?label(next):bank==="user"?"Empty":fallback(i)):r?label(r):bank==="user"?"Empty":fallback(i),references(ref)||"—"];}));
+  rows(bank+"-slots",Array.from({length:bankCount(bank)},(_,i)=>{const ref=i+(bank==="user"?0:32),r=snapshot?.[bank==="user"?"userPresets":"libraryPresets"][i];const pending=queues[bank].has(i),next=slotRecord(bank,i);return [num(ref+1),!snapshot?t("Not inspected"):pending?"→ "+(next?label(next):bank==="user"?t("Empty"):fallback(i)):r?label(r):bank==="user"?t("Empty"):fallback(i),references(ref)||"—"];}));
 }
-function projectName(p){return p?(decodeProject(p).name||"Saved section")+" · "+decodeProject(p).refs.filter(r=>r!==255).map(r=>num(r+1)).join(", "):"Empty";}
+function projectName(p){return p?(decodeProject(p).name||t("Saved section"))+" · "+decodeProject(p).refs.filter(r=>r!==255).map(r=>num(r+1)).join(", "):t("Empty");}
 function render(){
   if(inlineEdit)inlineEdit.finish(false,true);
   $("library-range").textContent="033–"+num(32+bankCount("library"));
-  $("connection").textContent=dev?dev.name+(writable?" · Writable":" · Read-only"):offlineWorkspace?"OFFLINE PERFORMANCE":"Disconnected";
-  $("write-state").textContent=busy?"Operation in progress":offlineWorkspace?"Offline editing · No USB writes":!dev?"No verified device data":!writable?"Read-only firmware":verified?"Device data verified · Ready to write":"Refresh device data · Writes locked";
+  $("connection").textContent=dev?dev.name+" · "+t(writable?"Writable":"Read-only"):t(offlineWorkspace?"OFFLINE PERFORMANCE":"Disconnected");
+  $("write-state").textContent=t(busy?"Operation in progress":offlineWorkspace?"Offline editing · No USB writes":!dev?"No verified device data":!writable?"Read-only firmware":verified?"Device data verified · Ready to write":"Refresh device data · Writes locked");
   $("write-state").dataset.ready=String(ready());
   $("connect").disabled=busy||!!dev;$("disconnect").disabled=busy||!dev;
   $("initialize-link").hidden=!needsInitialization;
   $("initialize-link").onclick=e=>{if(busy){e.preventDefault();return;}dev?.close();dev=null;writable=false;invalidate();};
   $("backup-capture").disabled=busy||!snapshot;
   $("backup-refresh").disabled=busy||!dev||needsInitialization;
-  $("backup-summary").textContent=snapshot? snapshot.userPresets.filter(Boolean).length+" USER · "+snapshot.libraryPresets.filter(Boolean).length+" LIBRARY overrides · "+snapshot.projects.filter(Boolean).length+" saved sections · "+(verified?"Backup verified":"Device data not verified"):"No device snapshot.";
+  $("backup-summary").textContent=snapshot? t("{0} USER · {1} LIBRARY overrides · {2} saved sections",snapshot.userPresets.filter(Boolean).length,snapshot.libraryPresets.filter(Boolean).length,snapshot.projects.filter(Boolean).length)+" · "+t(verified?"Backup verified":"Device data not verified"):t("No device snapshot.");
   for(const bank of ["user","library"])sourceControls(bank);
   $("projects-export").disabled=busy||!snapshot;$("projects-all").disabled=busy||!projectFile;
-  rows("project-rows",Array.from({length:32},(_,i)=>{const c=document.createElement("input");c.type="checkbox";c.checked=selected.has(i);c.disabled=busy||!snapshot||!projectFile||eq(snapshot.projects[i],projectFile.sections[i]);c.onchange=()=>{c.checked?selected.add(i):selected.delete(i);render();};return [pLabel(i),snapshot?projectName(snapshot.projects[i]):"Not inspected",projectFile?projectName(projectFile.sections[i]):"—",c];}));
-  let projectOk=false,projectMsg="Rename, drag or select project sections to stage changes.";
-  if(snapshot&&projectFile&&selected.size)try{const p=planProjectRestore(snapshot,projectFile,[...selected]);projectOk=!!p.objectIds.length;projectMsg=p.sections.map(pLabel).join(", ")+" · Presets unchanged."+(p.detached?" The live performance becomes unsaved (musical settings unchanged).":""); }catch(e){projectMsg="Blocked: "+e.message;}
-  $("projects-impact").textContent=projectMsg+(projectOk&&!ready()?" Refresh device data before writing.":"");$("projects-apply").disabled=!ready()||!projectOk;
-  let fullOk=false,fullMsg=fullSource?"Connect FM1 and read its data first.":"No source selected.";
-  if(snapshot&&fullSource)try{const p=planFullRestore(snapshot,fullSource);fullOk=!!(p.objectIds.length+p.library.length);fullMsg=p.users.length+" USER changes · "+p.library.length+" LIBRARY changes · "+p.sections.length+" section changes · "+p.objectIds.length+" archive objects. "+(p.objectIds.includes(0)?"Current live performance will also be written. ":"Current live performance will not be written. ")+(p.detached?" Live performance will be written as unsaved (same musical settings).":"")+(fullOk?"":" Already identical; no writes necessary.");}catch(e){fullMsg="Blocked: "+e.message;}
-  $("full-impact").textContent=fullMsg+(fullOk&&!ready()?" Refresh device data before writing.":"");$("full-apply").disabled=!ready()||!fullOk;
+  rows("project-rows",Array.from({length:32},(_,i)=>{const c=document.createElement("input");c.type="checkbox";c.checked=selected.has(i);c.disabled=busy||!snapshot||!projectFile||eq(snapshot.projects[i],projectFile.sections[i]);c.onchange=()=>{c.checked?selected.add(i):selected.delete(i);render();};return [pLabel(i),snapshot?projectName(snapshot.projects[i]):t("Not inspected"),projectFile?projectName(projectFile.sections[i]):"—",c];}));
+  let projectOk=false,projectMsg=t("Rename, drag or select project sections to stage changes.");
+  if(snapshot&&projectFile&&selected.size)try{const p=planProjectRestore(snapshot,projectFile,[...selected]);projectOk=!!p.objectIds.length;projectMsg=p.sections.map(pLabel).join(", ")+" · "+t("Presets unchanged.")+(p.detached?" "+t("The live performance becomes unsaved (musical settings unchanged)."):""); }catch(e){projectMsg=t("Blocked:")+" "+diagnostic(e.message);}
+  $("projects-impact").textContent=projectMsg+(projectOk&&!ready()?" "+t("Refresh device data before writing."):"");$("projects-apply").disabled=!ready()||!projectOk;
+  let fullOk=false,fullMsg=t(fullSource?"Connect FM1 and read its data first.":"No source selected.");
+  if(snapshot&&fullSource)try{const p=planFullRestore(snapshot,fullSource);fullOk=!!(p.objectIds.length+p.library.length);fullMsg=t("{0} USER changes · {1} LIBRARY changes · {2} section changes · {3} archive objects.",p.users.length,p.library.length,p.sections.length,p.objectIds.length)+" "+t(p.objectIds.includes(0)?"Current live performance will also be written.":"Current live performance will not be written.")+(p.detached?" "+t("Live performance will be written as unsaved (same musical settings)."):"")+(fullOk?"":" "+t("Already identical; no writes necessary."));}catch(e){fullMsg=t("Blocked:")+" "+diagnostic(e.message);}
+  $("full-impact").textContent=fullMsg+(fullOk&&!ready()?" "+t("Refresh device data before writing."):"");$("full-apply").disabled=!ready()||!fullOk;
   for(const id of ["user-import","library-import","projects-import","full-import"])$(id).disabled=busy;
   for(const bank of ["user","library","projects"])renderCollection(bank);
   $("performance-open").disabled=busy||!!dev||!fullSource;
   $("performance-close").disabled=busy||!offlineWorkspace;
   $("performance-save").disabled=busy||!snapshot;
-  $("performance-status").textContent=snapshot?(offlineWorkspace?"Offline base loaded. ":"Device snapshot loaded. ")+queues.user.size+" USER · "+queues.library.size+" LIBRARY · "+selected.size+" section edits staged.":"Capture FM1 or select a complete source backup and open it offline.";
+  $("performance-status").textContent=snapshot?t(offlineWorkspace?"Offline base loaded.":"Device snapshot loaded.")+" "+t("{0} USER · {1} LIBRARY · {2} section edits staged.",queues.user.size,queues.library.size,selected.size):t("Capture FM1 or select a complete source backup and open it offline.");
 }
 function tab(name){for(const b of document.querySelectorAll("[data-tab]"))b.setAttribute("aria-selected",String(b.dataset.tab===name));for(const s of document.querySelectorAll("section[id^=tab-]"))s.hidden=s.id!=="tab-"+name;}
 for(const b of document.querySelectorAll("[data-tab]"))b.onclick=()=>tab(b.dataset.tab);
@@ -898,7 +905,7 @@ for(const bank of ["user","library"]){
     const mapped=Array.isArray(file.patches)&&file.patches.length<=96?parseImportedLibrary(file).map(x=>({slot:x.slot,...decodeRecord(x.record)})):[];
     addCollection(bank,imported);
     packs[bank]=mapped;
-    pages[bank]=0;$(bank+"-source").value="";status("Imported "+imported.length+" complete sounds. Offline collection: "+collections[bank].length+". Save collection to keep it.");
+    pages[bank]=0;$(bank+"-source").value="";status(t("{0} complete sounds imported. Offline collection: {1}. Save collection to keep it.",imported.length,collections[bank].length));
   });
   fileInput(bank+"-collection-open",file=>{
     const imported=readCollection(bank,file);
@@ -907,7 +914,7 @@ for(const bank of ["user","library"]){
     seedFactory[bank]=false;collections[bank]=[];soundOrigins[bank].clear();
     addCollection(bank,imported);packs[bank]=mapped;
     pages[bank]=0;$(bank+"-search").value="";$(bank+"-origin").value="all";$(bank+"-engine").value="";$(bank+"-source").value="";
-    status("Opened "+imported.length+" sounds as the complete offline collection.","ok");
+    status(t("{0} sounds opened as the complete offline collection.",imported.length),"ok");
   });
   $(bank+"-source").onchange=render;$(bank+"-target").onchange=render;
   $(bank+"-import-all").onclick=()=>run(async()=>{
@@ -915,7 +922,7 @@ for(const bank of ["user","library"]){
     if(bank==="user"){
       const proposed=proposeUserImport(snapshot,packs[bank],[...q].map(([slot,recordBytes])=>({slot,recordBytes})));
       proposed.changes.forEach(x=>q.set(x.slot,x.recordBytes));
-      status("Queued "+proposed.changes.length+" imported USER sounds; "+proposed.skipped.length+" already present or queued. Review destinations before applying.");
+      status(t("{0} imported USER sounds queued; {1} already present or queued. Review destinations before applying.",proposed.changes.length,proposed.skipped.length));
     }else{
       const staged=new Map(q);
       for(const p of packs[bank]){
@@ -934,7 +941,7 @@ for(const bank of ["user","library"]){
     const offset=bank==="user"?0:32;const affected=items.flatMap(x=>references(x.slot+offset)?[num(x.slot+offset+1)+": "+references(x.slot+offset)]:[]);
     const plan=bank==="user"?planUserLayout(snapshot,items):planLibraryLayout(snapshot,items);
     const refresh=plan.objectIds.includes(0);
-    if(!await askConfirmation({title:bank==="user"?"Write USER changes":"Write LIBRARY changes",message:"Write "+items.length+" queued "+bank.toUpperCase()+" change(s)? Do not disconnect."+(refresh?" The current performance will reload with the new sounds. Stop playing before writing.":""),summary:affected.length?"Affected preset references (saved projects use new sounds on recall; current performance reloads after writing):\n"+affected.join("\n"):"",action:"WRITE"}))return;
+    if(!await askConfirmation({title:bank==="user"?"Write USER changes":"Write LIBRARY changes",message:t("Write {0} queued {1} change(s)? Do not disconnect.",items.length,bank.toUpperCase())+(refresh?" "+t("The current performance will reload with the new sounds. Stop playing before writing."):""),summary:affected.length?t("Affected preset references (saved projects use new sounds on recall; current performance reloads after writing):")+"\n"+affected.join("\n"):"",action:"WRITE"}))return;
     apply(async before=>{const f=bank==="user"?applyVerifiedUserLayout:applyVerifiedLibraryLayout;const result=await f(dev.request,before,items,progress);q.clear();return result;},"mashina-full-fm1-after-"+bank+".json",bank==="user"?"Writing USER changes":"Writing LIBRARY changes");};
 }
 $("projects-export").onclick=()=>download("mashina-projects-8x4.json",projectsBackup(snapshot.projects));
@@ -944,7 +951,7 @@ fileInput("projects-import",file=>{
   if(file.format==="mashina-projects-mpr1"||file.format==="mashina-full-device"){
     projectFile=projectsBackup(file.format==="mashina-full-device"?file.projects:restoreProjectsBackup(file));selected.clear();
   }
-  pages.projects=0;status("Imported "+list.length+" projects into the offline collection. Drag projects or sections to destination slots.");
+  pages.projects=0;status(t("{0} projects imported into the offline collection. Drag projects or sections to destination slots.",list.length));
 });
 $("projects-clear").onclick=()=>{selected.clear();projectFile=null;render();};
 $("projects-all").onclick=()=>{if(snapshot&&projectFile)selected=new Set(projectFile.sections.flatMap((r,i)=>eq(r,snapshot.projects[i])?[]:[i]));render();};
@@ -969,6 +976,12 @@ $("advanced-link").onclick=e=>{if(dev||busy){e.preventDefault();status("Disconne
 window.addEventListener("beforeunload",e=>{if(busy){e.preventDefault();e.returnValue="";}else dev?.close();});
 render();
 (async()=>{try{const [a,b]=await Promise.all([fetch("./factory-presets-from-code.json"),fetch("./factory-drum-records.json")]);if(!a.ok||!b.ok)throw Error("Factory catalog unavailable");const catalog=await a.json();factory=factorySourceRecords(catalog,await b.json());for(const p of catalog.presets)engineNames.set(p.engine,p.engineName);for(const size of [32,96]){factoryFallbacksBySize[size]=[];factoryRecordsBySize[size]=[];defaultFactorySelection(catalog,size).forEach((index,i)=>{const p=catalog.presets[index];factoryFallbacksBySize[size][i]=p.name;factoryRecordsBySize[size][i]=factory.find(x=>x.id==="F"+p.factoryIndex&&x.available)?.recordBytes??null;});}const finalResponse=await fetch("./factory-final-library.json");if(!finalResponse.ok)throw Error("Final factory library unavailable");const final=await finalResponse.json();if(final.records.length!==96)throw Error("Invalid final factory geometry");factoryRecordsBySize[96]=final.records;factoryFallbacksBySize[96]=final.records.map(r=>String.fromCharCode(...r.slice(4,16)).replace(/\0.*$/,""));for(const bank of ["user","library"]){if(seedFactory[bank])addFactorySounds(bank);seedFactory[bank]=false;}render();}catch(e){console.warn(e.message);}})();
-</script></main><script>
-(()=>{const lang=new URLSearchParams(location.search).get("lang")||"en";const labels={en:["USB connection required. Save edited sounds first.","Web Library guide"],es:["Conexión USB necesaria. Guardá primero los sonidos editados.","Guía de Web Library"],ja:["USB 接続が必要です。編集した音色は先に保存してください。","Web Library ガイド"],ru:["Требуется USB. Сначала сохраните изменённые звуки.","Руководство Web Library"],sr:["Потребна је USB веза. Прво сачувајте измењене звукове.","Упутство за Web Library"],hi:["USB कनेक्शन ज़रूरी है। पहले संपादित ध्वनियाँ सहेजें।","Web Library मार्गदर्शिका"]};const select=document.getElementById("library-guide-language");function choose(code){const t=labels[code]||labels.en;document.getElementById("library-footer").textContent="MASHINA v1.0 · "+t[0];const link=document.getElementById("library-guide");link.textContent=t[1];link.href="./guide.html?lang="+code;}select.value=labels[lang]?lang:"en";choose(select.value);select.addEventListener("change",()=>choose(select.value));})();
-</script></body></html>
+const langSelect=$("library-guide-language");langSelect.value=locale;
+$("library-footer").textContent="MASHINA v1.0 · "+t("USB connection required. Save edited sounds first.");
+$("library-guide").textContent=t("Web Library guide");$("library-guide").href="./guide.html?lang="+locale;
+langSelect.onchange=async()=>{const next=langSelect.value;langSelect.value=locale;
+  if(dev||busy||$("operation").open||$("confirmation").open||$("collection-save-dialog").open){status("Disconnect FM1 before changing language.","error");return;}
+  if(!await askConfirmation({title:"Language",message:"Switching language reloads the page. Save offline collections and pending changes first. Continue?",action:"OPEN"}))return;
+  const u=new URL(location.href);u.searchParams.set("lang",next);location.assign(u.href);
+};
+</script></main></body></html>

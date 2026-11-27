@@ -220,7 +220,7 @@ def main(pkg, version, out, prev=None):
         library.mkdir(parents=True, exist_ok=True)
         for src, dest in (("presets-library-manager.html", "index.html"), ("presets-library-guide.html", "guide.html"), ("initialize-library.html", "initialize.html")):
             shutil.copy(HERE / src, library / dest)
-        for f in ("presets-library-codec.mjs", "presets-library-midi.mjs", "presets-library-sync.mjs", "factory-presets-from-code.json", "factory-catalog-selection.mjs", "full-device-backup.mjs", "projects-library-codec.mjs", "projects-library-view.mjs", "performance-backup.mjs", "fm1backup.js", "legacy-user-extract.mjs", "emulator-snapshot-editor.mjs", "emulator-library-inspector.mjs"):
+        for f in ("web-library-locales.mjs", "web-library-messages.mjs", "presets-library-codec.mjs", "presets-library-midi.mjs", "presets-library-sync.mjs", "factory-presets-from-code.json", "factory-catalog-selection.mjs", "full-device-backup.mjs", "projects-library-codec.mjs", "projects-library-view.mjs", "performance-backup.mjs", "fm1backup.js", "legacy-user-extract.mjs", "emulator-snapshot-editor.mjs", "emulator-library-inspector.mjs"):
             shutil.copy(HERE / f, library / f)
         (library / "emu").mkdir(exist_ok=True)
         for f in ("worklet.js", "emulator-flash-backup.mjs"):
