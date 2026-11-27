@@ -38,13 +38,13 @@ for(const lang of languages.slice(1)){
  assert.deepEqual(Object.keys(extra[lang]).sort(),messageKeys);
  for(const key of [...enKeys,...messageKeys]){
    const value=extra[lang][key]??catalog[lang][key];assert(value&&value.trim(),lang+": "+key);
-   assert.deepEqual([...value.matchAll(/\\{\\d+\\}/g)].map(x=>x[0]).sort(),[...key.matchAll(/\\{\\d+\\}/g)].map(x=>x[0]).sort(),lang+": "+key);
+   assert.deepEqual([...value.matchAll(/\{\d+\}/g)].map(x=>x[0]).sort(),[...key.matchAll(/\{\d+\}/g)].map(x=>x[0]).sort(),lang+": "+key);
  }
  assert.notEqual(translate("Connect FM1",lang),"Connect FM1");
  assert.notEqual(translate("Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.",lang),"Do not disconnect USB, operate FM1 controls or leave this page while the operation is running.");
 }
-assert.match(script,/localizeStatic\\(document.body\\)/);
+assert.match(script,/localizeStatic\(document.body\)/);
 assert.match(script,/langSelect.onchange/);
-assert.match(script,/location.assign\\(u.href\\)/);
-assert.match(script,/guide.html\\?lang=/);
+assert.match(script,/location.assign\(u.href\)/);
+assert.match(script,/guide.html\?lang=/);
 console.log("PASS: all five Web Library translation catalogs, dynamic placeholders and language links");
